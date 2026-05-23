@@ -7,7 +7,8 @@ export default function Chat() {
   const { messages, isLoading, error, send, clear } = useChat()
 
   return (
-    <div className="h-full flex flex-col gap-4 animate-fade-in" style={{ maxHeight: 'calc(100vh - 112px)' }}>
+    <div className="flex flex-col gap-3 animate-fade-in"
+         style={{ height: 'calc(100dvh - 56px - 80px - 32px)' }}>
       {/* Toolbar */}
       <div className="flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -20,13 +21,13 @@ export default function Chat() {
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-400 transition"
           >
             <Trash2 size={13} />
-            Effacer
+            <span className="hidden sm:inline">Effacer</span>
           </button>
         )}
       </div>
 
       {/* Chat area */}
-      <div className="glass-card flex-1 flex flex-col overflow-hidden">
+      <div className="glass-card flex-1 flex flex-col overflow-hidden min-h-0">
         <ChatWindow messages={messages} isLoading={isLoading} onSend={send} />
 
         {error && (
@@ -35,7 +36,7 @@ export default function Chat() {
           </div>
         )}
 
-        <div className="p-4 border-t border-navy-700/50 flex-shrink-0">
+        <div className="p-3 md:p-4 border-t border-navy-700/50 flex-shrink-0">
           <ChatInput onSend={send} disabled={isLoading} />
         </div>
       </div>

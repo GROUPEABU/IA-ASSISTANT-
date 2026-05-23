@@ -12,12 +12,12 @@ const Section = ({ icon: Icon, title, children }) => (
 )
 
 const Field = ({ label, description, children }) => (
-  <div className="flex items-start justify-between gap-4">
+  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
     <div className="flex-1">
       <p className="text-sm font-medium text-slate-200">{label}</p>
       {description && <p className="text-xs text-slate-500 mt-0.5">{description}</p>}
     </div>
-    <div className="flex-shrink-0">{children}</div>
+    <div className="flex-shrink-0 w-full sm:w-auto">{children}</div>
   </div>
 )
 
@@ -29,13 +29,13 @@ export default function Settings() {
           <input
             type="password"
             placeholder="sk-ant-..."
-            className="w-64 bg-navy-900/60 border border-navy-700/50 rounded-lg px-3 py-1.5
+            className="w-full sm:w-64 bg-navy-900/60 border border-navy-700/50 rounded-lg px-3 py-2
                        text-sm text-slate-300 placeholder-slate-600
                        focus:outline-none focus:border-cyan-400/50 transition"
           />
         </Field>
         <Field label="Modèle Claude" description="Modèle utilisé pour les réponses">
-          <select className="w-48 bg-navy-900/60 border border-navy-700/50 rounded-lg px-3 py-1.5
+          <select className="w-full sm:w-48 bg-navy-900/60 border border-navy-700/50 rounded-lg px-3 py-2
                              text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition">
             <option>claude-sonnet-4-6</option>
             <option>claude-opus-4-7</option>
@@ -70,7 +70,7 @@ export default function Settings() {
 
       <Section icon={Globe} title="Données & Région">
         <Field label="Devise" description="Monnaie par défaut pour les rapports">
-          <select className="w-32 bg-navy-900/60 border border-navy-700/50 rounded-lg px-3 py-1.5
+          <select className="w-full sm:w-32 bg-navy-900/60 border border-navy-700/50 rounded-lg px-3 py-2
                              text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition">
             <option>EUR (€)</option>
             <option>GBP (£)</option>
@@ -78,7 +78,7 @@ export default function Settings() {
           </select>
         </Field>
         <Field label="Langue" description="Langue de l'interface et des rapports">
-          <select className="w-32 bg-navy-900/60 border border-navy-700/50 rounded-lg px-3 py-1.5
+          <select className="w-full sm:w-32 bg-navy-900/60 border border-navy-700/50 rounded-lg px-3 py-2
                              text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition">
             <option>Français</option>
             <option>English</option>

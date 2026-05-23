@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom'
-import { Bell, Search } from 'lucide-react'
+import { Bell, Search, Menu } from 'lucide-react'
 
 const pageTitles = {
   '/dashboard': { title: 'Tableau de bord', sub: 'Vue d\'ensemble des ventes' },
@@ -8,19 +8,27 @@ const pageTitles = {
   '/settings': { title: 'Paramètres', sub: 'Configuration de l\'application' },
 }
 
-export default function Header() {
+export default function Header({ onMenuToggle }) {
   const { pathname } = useLocation()
   const page = pageTitles[pathname] ?? { title: '', sub: '' }
 
   return (
-    <header className="h-16 flex-shrink-0 bg-navy-800/50 border-b border-navy-700/50 flex items-center px-6 gap-4">
+    <header className="h-14 md:h-16 flex-shrink-0 bg-navy-800/50 border-b border-navy-700/50 flex items-center px-4 md:px-6 gap-3">
+      {/* Hamburger — mobile only */}
+      <button
+        onClick={onMenuToggle}
+        className="md:hidden w-9 h-9 flex items-center justify-center text-slate-400 hover:text-cyan-400 transition"
+      >
+        <Menu size={20} />
+      </button>
+
       {/* Page info */}
-      <div className="flex-1">
-        <h1 className="text-base font-semibold text-white">{page.title}</h1>
-        <p className="text-xs text-slate-500">{page.sub}</p>
+      <div className="flex-1 min-w-0">
+        <h1 className="text-sm md:text-base font-semibold text-white truncate">{page.title}</h1>
+        <p className="text-[10px] md:text-xs text-slate-500 hidden sm:block">{page.sub}</p>
       </div>
 
-      {/* Search */}
+      {/* Search — md+ */}
       <div className="relative hidden md:block">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
         <input
@@ -41,7 +49,7 @@ export default function Header() {
 
       {/* Avatar */}
       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500 flex items-center justify-center
-                      text-navy-900 text-xs font-bold cursor-pointer">
+                      text-navy-900 text-xs font-bold cursor-pointer flex-shrink-0">
         AB
       </div>
     </header>
