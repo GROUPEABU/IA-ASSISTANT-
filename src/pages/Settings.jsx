@@ -45,6 +45,7 @@ export default function Settings() {
   const [saved, setSaved] = useState(false)
   const { language, currency, density, changeLanguage, changeCurrency, changeDensity, t } = useSettings()
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('abu_api_key') || '')
 
   const handleTheme = (v) => {
     setTheme(v)
@@ -52,6 +53,11 @@ export default function Settings() {
   }
 
   const handleSave = () => {
+    if (apiKey.trim()) {
+      localStorage.setItem('abu_api_key', apiKey.trim())
+    } else {
+      localStorage.removeItem('abu_api_key')
+    }
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -63,6 +69,8 @@ export default function Settings() {
         <Field label={t('settings_api_key_label')} description={t('settings_api_key_desc')}>
           <input
             type="password"
+            value={apiKey}
+            onChange={e => setApiKey(e.target.value)}
             placeholder="sk-ant-..."
             className="w-full sm:w-64 bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
                        text-sm text-slate-300 placeholder-slate-600

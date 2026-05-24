@@ -9,8 +9,8 @@ export function useChat() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const send = useCallback(async (text) => {
-    const userMsg = { id: newId(), role: 'user', content: text }
+  const send = useCallback(async (text, attachment = null) => {
+    const userMsg = { id: newId(), role: 'user', content: text, attachment }
     setMessages((prev) => [...prev, userMsg])
     setIsLoading(true)
     setError(null)

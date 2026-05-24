@@ -76,7 +76,7 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 export default function Tco() {
-  const { t } = useSettings()
+  const { t, formatCurrency } = useSettings()
   const [vehicles, setVehicles] = useState([emptyVehicle(1), emptyVehicle(2)])
   const [years, setYears] = useState(4)
   const [kmYear, setKmYear] = useState(15000)
@@ -380,7 +380,7 @@ export default function Tco() {
                   <LabelList
                     dataKey="total"
                     position="right"
-                    formatter={v => `${formatNumber(Math.round(v))} €`}
+                    formatter={v => formatCurrency(Math.round(v))}
                     style={{ fill: '#94a3b8', fontSize: 11, fontWeight: 600 }}
                   />
                 </Bar>
@@ -392,7 +392,7 @@ export default function Tco() {
           {results.length >= 2 && results[0].total < results[results.length - 1].total && (
             <div className="mx-4 mb-4 px-4 py-3 rounded-xl bg-emerald-400/8 border border-emerald-400/20">
               <div className="text-xs font-semibold text-emerald-400">
-                💰 {results[0].nom} — économie de {formatNumber(results[results.length - 1].total - results[0].total)} € vs {results[results.length - 1].nom}
+                💰 {results[0].nom} — économie de {formatCurrency(Math.round(results[results.length - 1].total - results[0].total))} vs {results[results.length - 1].nom}
               </div>
               <div className="text-[11px] text-slate-500 mt-0.5">Sur {years} ans · {(kmYear/1000).toFixed(0)} 000 km/an</div>
             </div>
@@ -422,7 +422,7 @@ export default function Tco() {
                     <td className="px-4 py-2.5 text-slate-400">{row.label}</td>
                     {results.map((r, i) => (
                       <td key={i} className="px-3 py-2.5 text-right text-slate-300 font-medium">
-                        {formatNumber(Math.round(r[row.key]))} €
+                        {formatCurrency(Math.round(r[row.key]))}
                       </td>
                     ))}
                   </tr>
@@ -431,7 +431,7 @@ export default function Tco() {
                   <td className="px-4 py-3 text-white font-bold uppercase text-[11px] tracking-wider">{t('total_tco')}</td>
                   {results.map((r, i) => (
                     <td key={i} className="px-3 py-3 text-right font-bold text-base" style={{ color: i === 0 ? r.color : '#E0E1E1' }}>
-                      {formatNumber(Math.round(r.total))} €
+                      {formatCurrency(Math.round(r.total))}
                     </td>
                   ))}
                 </tr>

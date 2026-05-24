@@ -4,17 +4,17 @@ import ChatInput from '@/components/chat/ChatInput'
 import { useChat } from '@/hooks/useChat'
 import { useSettings } from '@/contexts/SettingsContext'
 
-const SUGGESTED = [
-  'Quel est le malus CO₂ pour un SUV 150 g/km en France ?',
-  'Compare les coûts TCO Peugeot 308 vs Volkswagen Golf',
-  'Arguments de vente pour convaincre un client flottes BtoB',
-  'Tendance prix marché Renault Clio 2022 occasion',
-]
-
 export default function Chat() {
   const { t } = useSettings()
   const { messages, isLoading, error, send, clear } = useChat()
   const isEmpty = messages.length === 0
+
+  const suggestions = [
+    t('chat_s1'),
+    t('chat_s2'),
+    t('chat_s3'),
+    t('chat_s4'),
+  ]
 
   return (
     <div className="flex flex-col gap-3 animate-fade-in flex-1 min-h-0">
@@ -22,7 +22,7 @@ export default function Chat() {
       <div className="flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse-slow flex-shrink-0" />
-          <span className="text-xs text-slate-500">Assistant IA · Opérationnel</span>
+          <span className="text-xs text-slate-500">Assistant IA · {t('ai_operational')}</span>
         </div>
         {messages.length > 0 && (
           <button
@@ -40,7 +40,7 @@ export default function Chat() {
 
         {/* Welcome state */}
         {isEmpty && !isLoading && (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 gap-5">
+          <div className="flex-1 flex flex-col items-center justify-center p-6 gap-5 overflow-y-auto">
             <div className="relative">
               <div className="absolute inset-0 rounded-full bg-cyan-400/20 blur-xl scale-150" />
               <div className="relative w-14 h-14 rounded-2xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center">
@@ -50,12 +50,14 @@ export default function Chat() {
             <div className="text-center">
               <h3 className="text-base font-semibold text-white mb-1">{t('chat_assistant_name')}</h3>
               <p className="text-sm text-slate-500 max-w-xs leading-relaxed">
-                Posez vos questions sur les produits, le marché automobile ou les stratégies commerciales.
+                {t('chat_welcome_desc')}
               </p>
             </div>
             <div className="w-full max-w-md space-y-2">
-              <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest text-center mb-3">Suggestions</p>
-              {SUGGESTED.map((q) => (
+              <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest text-center mb-3">
+                {t('suggestions_label')}
+              </p>
+              {suggestions.map((q) => (
                 <button
                   key={q}
                   onClick={() => send(q)}

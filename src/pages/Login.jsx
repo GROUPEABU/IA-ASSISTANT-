@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Eye, EyeOff, Lock, User, AlertCircle, Sparkles } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
 import Logo from '@/components/ui/Logo'
+
+const REMEMBER_KEY = 'abu_remember'
 
 export default function Login() {
   const { login } = useAuth()
@@ -10,8 +12,23 @@ export default function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [remember, setRemember] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(REMEMBER_KEY)
+      if (saved) {
+        const { username: u, password: p } = JSON.parse(saved)
+        setUsername(u || '')
+        setPassword(p || '')
+        setRemember(true)
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -23,6 +40,12 @@ export default function Login() {
     if (!ok) {
       setError(t('login_error'))
       setLoading(false)
+    } else {
+      if (remember) {
+        localStorage.setItem(REMEMBER_KEY, JSON.stringify({ username: username.trim(), password }))
+      } else {
+        localStorage.removeItem(REMEMBER_KEY)
+      }
     }
   }
 
@@ -99,6 +122,30 @@ export default function Login() {
                 </button>
               </div>
             </div>
+
+            {/* Remember me */}
+            <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+              <div
+                onClick={() => setRemember(v => !v)}
+                className={`w-4 h-4 rounded flex items-center justify-center border transition-all flex-shrink-0
+                  ${remember
+                    ? 'bg-cyan-400 border-cyan-400'
+                    : 'bg-navy-900/80 border-navy-700/60 group-hover:border-cyan-400/40'
+                  }`}
+              >
+                {remember && (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 4L3.5 6.5L9 1" stroke="#0D273C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </div>
+              <span
+                onClick={() => setRemember(v => !v)}
+                className="text-xs text-slate-400 group-hover:text-slate-300 transition"
+              >
+                {t('login_remember')}
+              </span>
+            </label>
 
             {error && (
               <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">

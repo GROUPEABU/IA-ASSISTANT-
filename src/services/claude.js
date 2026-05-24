@@ -4,12 +4,40 @@ leurs données de ventes, identifier des tendances, comparer des performances r�
 et générer des insights actionnables. Réponds toujours en français, de façon précise et professionnelle.
 Formate tes réponses avec des listes et chiffres quand c'est pertinent.`
 
+function buildContent(text, attachment) {
+  if (!attachment) return text || ''
+
+  const content = []
+
+  if (attachment.type === 'application/pdf') {
+    content.push({
+      type: 'document',
+      source: { type: 'base64', media_type: 'application/pdf', data: attachment.base64 },
+    })
+  } else if (attachment.type.startsWith('image/')) {
+    content.push({
+      type: 'image',
+      source: { type: 'base64', media_type: attachment.type, data: attachment.base64 },
+    })
+  }
+
+  if (text) content.push({ type: 'text', text })
+  return content.length === 1 && typeof content[0] === 'object' && content[0].type === 'text'
+    ? content[0].text
+    : content
+}
+
 export async function sendMessage(messages) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
+  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || localStorage.getItem('abu_api_key')
 
   if (!apiKey) {
-    throw new Error('Clé API Anthropic manquante. Configurez VITE_ANTHROPIC_API_KEY dans votre fichier .env')
+    throw new Error('Clé API Anthropic manquante. Renseignez votre clé dans Paramètres.')
   }
+
+  const apiMessages = messages.map(({ role, content, attachment }) => ({
+    role,
+    content: buildContent(content, attachment),
+  }))
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -23,7 +51,7 @@ export async function sendMessage(messages) {
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
-      messages: messages.map(({ role, content }) => ({ role, content })),
+      messages: apiMessages,
     }),
   })
 

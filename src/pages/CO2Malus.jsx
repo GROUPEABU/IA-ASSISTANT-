@@ -4,6 +4,7 @@ import {
   formatDateFR, getImportDecote, getImportDecoteNL, getImportDecotePT,
   getImportDecoteDE, getImportDecoteES, getImportDecoteBE, getImportDecoteIE,
 } from '@/utils/malusWorld'
+import { useSettings } from '@/contexts/SettingsContext'
 
 const SEVERITY_COLOR = { none: '#50E5E5', low: '#A5F3FC', medium: '#facc15', high: '#fb923c', very_high: '#f87171' }
 const SEVERITY_LABEL = { none: 'Aucun', low: 'Faible', medium: 'Modéré', high: 'Élevé', very_high: 'Très élevé' }
@@ -94,6 +95,7 @@ function SegButton({ options, value, setValue, cols = 2 }) {
 }
 
 export default function CO2Malus() {
+  const { formatCurrency } = useSettings()
   const [emission, setEmission] = useState(143)
   const [weight, setWeight] = useState(1450)
   const [fuelType, setFuelType] = useState('thermique')
@@ -355,7 +357,7 @@ export default function CO2Malus() {
             <div className="p-4">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-semibold text-slate-200">Prix HT du véhicule</span>
-                <span className="text-sm font-bold text-cyan-400">{vehiclePrice.toLocaleString('fr-FR')} €</span>
+                <span className="text-sm font-bold text-cyan-400">{formatCurrency(vehiclePrice)}</span>
               </div>
               <input type="range" min={5000} max={150000} step={1000} value={vehiclePrice}
                 onChange={e => setVehiclePrice(Number(e.target.value))}
@@ -547,7 +549,7 @@ export default function CO2Malus() {
                     <div className="bg-white/3 rounded-lg px-3 py-2.5 border border-white/7">
                       <div className="text-[11px] text-slate-500 mb-1">MALUS CO₂ ({emission} g/km)</div>
                       <div className="text-lg font-medium text-cyan-400">
-                        {result.malus_co2.toLocaleString('fr-FR')} €
+                        {formatCurrency(result.malus_co2)}
                       </div>
                       {fuelType === 'ev' && result.country.code === 'FR' && (
                         <div className="text-[11px] text-sky-300 mt-1">✓ EV exempté</div>
@@ -562,7 +564,7 @@ export default function CO2Malus() {
                         )
                       </div>
                       <div className="text-lg font-medium text-sky-300">
-                        {result.malus_poids.toLocaleString('fr-FR')} €
+                        {formatCurrency(result.malus_poids)}
                       </div>
                       {result.country.code === 'FR' && fuelType === 'phev' && (
                         <div className="text-[11px] text-sky-200 mt-1">
@@ -579,7 +581,7 @@ export default function CO2Malus() {
                     <div className="rounded-lg px-3 py-2.5 border border-cyan-400/30 bg-cyan-400/8">
                       <div className="text-[11px] text-sky-200 mb-1">TOTAL À PAYER</div>
                       <div className="text-lg font-semibold text-cyan-400">
-                        {result.specific_penalty_amount.toLocaleString('fr-FR')} €
+                        {formatCurrency(result.specific_penalty_amount)}
                       </div>
                     </div>
                   </div>
