@@ -161,7 +161,7 @@ export default function MarketAnalysis({ product }) {
               <h3 className="text-sm font-semibold text-white">Analyse marché temps réel</h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              L'Argus · La Centrale · Caradisiac · AutoScout24 → Claude
+              L'Argus · La Centrale · Le Bon Coin → Claude
             </p>
             {snippets.length > 0 && <SourceBadges snippets={snippets} />}
             {fetchedAt && (
@@ -207,7 +207,7 @@ export default function MarketAnalysis({ product }) {
             <Globe size={32} className="text-slate-700 mx-auto mb-3" />
             <p className="text-sm text-slate-400 mb-1 font-medium">Analyse VN & VO en temps réel</p>
             <p className="text-xs text-slate-600 mb-4">
-              Lit L'Argus, La Centrale, Caradisiac et AutoScout24<br />
+              Lit L'Argus, La Centrale et Le Bon Coin<br />
               puis génère une analyse complète avec Claude
             </p>
             <p className="text-[11px] text-cyan-400/60">Gratuit · Sans inscription · Sans carte bancaire</p>

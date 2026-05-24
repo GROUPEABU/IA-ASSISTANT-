@@ -12,12 +12,8 @@ const SOURCES = [
     url: (v) => `https://www.lacentrale.fr/listing?makesModelsCommercialNames=${encodeURIComponent(v)}`,
   },
   {
-    label: 'Caradisiac',
-    url: (v) => `https://www.caradisiac.com/?s=${encodeURIComponent(v)}`,
-  },
-  {
-    label: 'AutoScout24',
-    url: (v) => `https://www.autoscout24.fr/lst?search=${encodeURIComponent(v)}&atype=U`,
+    label: 'Le Bon Coin',
+    url: (v) => `https://www.leboncoin.fr/recherche?category=2&text=${encodeURIComponent(v)}`,
   },
 ]
 
