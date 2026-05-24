@@ -6,8 +6,20 @@ import { SettingsProvider } from '@/contexts/SettingsContext'
 if (localStorage.getItem('theme') === 'light') {
   document.documentElement.classList.add('light')
 }
+
 import Layout from '@/components/layout/Layout'
+import CookieBanner from '@/components/ui/CookieBanner'
+
+// Auth pages (public)
 import Login from '@/pages/Login'
+import ForgotPassword from '@/pages/ForgotPassword'
+import ResetPassword from '@/pages/ResetPassword'
+
+// Legal pages (public)
+import MentionsLegales from '@/pages/MentionsLegales'
+import PolitiqueConfidentialite from '@/pages/PolitiqueConfidentialite'
+
+// Protected pages
 import Hub from '@/pages/Hub'
 import Products from '@/pages/Products'
 import ProductDetail from '@/pages/ProductDetail'
@@ -27,23 +39,38 @@ function ProtectedRoute({ children }) {
 function AppRoutes() {
   const { isAuthenticated } = useAuth()
   return (
-    <Routes>
-      <Route path="/login" element={isAuthenticated ? <Navigate to="/hub" replace /> : <Login />} />
-      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        <Route index element={<Navigate to="/hub" replace />} />
-        <Route path="hub" element={<Hub />} />
-        <Route path="products" element={<Products />} />
-        <Route path="products/:id" element={<ProductDetail />} />
-        <Route path="co2-malus" element={<CO2Malus />} />
-        <Route path="chat" element={<Chat />} />
-        <Route path="price-watch" element={<PriceWatch />} />
-        <Route path="objections" element={<Objections />} />
-        <Route path="pitch" element={<PitchGenerator />} />
-        <Route path="tco" element={<Tco />} />
-        <Route path="settings" element={<Settings />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/hub" replace />} />
-    </Routes>
+    <>
+      <Routes>
+        {/* Public auth routes */}
+        <Route path="/login" element={isAuthenticated ? <Navigate to="/hub" replace /> : <Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password"  element={<ResetPassword />} />
+
+        {/* Public legal routes */}
+        <Route path="/mentions-legales"            element={<MentionsLegales />} />
+        <Route path="/politique-confidentialite"   element={<PolitiqueConfidentialite />} />
+
+        {/* Protected app routes */}
+        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route index element={<Navigate to="/hub" replace />} />
+          <Route path="hub"           element={<Hub />} />
+          <Route path="products"      element={<Products />} />
+          <Route path="products/:id"  element={<ProductDetail />} />
+          <Route path="co2-malus"     element={<CO2Malus />} />
+          <Route path="chat"          element={<Chat />} />
+          <Route path="price-watch"   element={<PriceWatch />} />
+          <Route path="objections"    element={<Objections />} />
+          <Route path="pitch"         element={<PitchGenerator />} />
+          <Route path="tco"           element={<Tco />} />
+          <Route path="settings"      element={<Settings />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/hub" replace />} />
+      </Routes>
+
+      {/* Global cookie consent banner */}
+      <CookieBanner />
+    </>
   )
 }
 

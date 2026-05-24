@@ -27,6 +27,10 @@ const DATE_MONTHS = [
 ]
 const selectStyle = { background: 'rgba(80,229,229,0.05)', borderColor: 'rgba(80,229,229,0.2)', color: '#50E5E5', fontFamily: 'inherit' }
 
+function getDaysInMonth(year, month) {
+  return new Date(parseInt(year), parseInt(month), 0).getDate()
+}
+
 function SliderSection({ label, value, setValue, min, max, step = 1, unit, color, presets }) {
   return (
     <div className="glass-card p-3 mb-2">
@@ -272,11 +276,15 @@ export default function CO2Malus() {
           <span className="text-[11px] text-slate-500 font-medium tracking-widest uppercase">Date 1ère immat</span>
           <span className="text-xs font-semibold text-amber-400">{formatDateFR(dateImmat)}</span>
         </div>
-        {/* Two selects instead of date input — avoids mobile overflow entirely */}
-        <div className="grid grid-cols-2 gap-2 mb-2.5">
+        <div className="grid grid-cols-3 gap-2 mb-2.5">
           <select
             value={dateImmat.split('-')[0]}
-            onChange={e => setDateImmat(`${e.target.value}-${dateImmat.split('-')[1]}-01`)}
+            onChange={e => {
+              const y = e.target.value, m = dateImmat.split('-')[1]
+              const maxD = getDaysInMonth(y, m)
+              const d = String(Math.min(parseInt(dateImmat.split('-')[2]), maxD)).padStart(2, '0')
+              setDateImmat(`${y}-${m}-${d}`)
+            }}
             className="w-full px-2 py-2 rounded-lg border outline-none text-sm font-medium"
             style={selectStyle}
           >
@@ -284,11 +292,27 @@ export default function CO2Malus() {
           </select>
           <select
             value={dateImmat.split('-')[1]}
-            onChange={e => setDateImmat(`${dateImmat.split('-')[0]}-${e.target.value}-01`)}
+            onChange={e => {
+              const y = dateImmat.split('-')[0], m = e.target.value
+              const maxD = getDaysInMonth(y, m)
+              const d = String(Math.min(parseInt(dateImmat.split('-')[2]), maxD)).padStart(2, '0')
+              setDateImmat(`${y}-${m}-${d}`)
+            }}
             className="w-full px-2 py-2 rounded-lg border outline-none text-sm font-medium"
             style={selectStyle}
           >
             {DATE_MONTHS.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
+          </select>
+          <select
+            value={dateImmat.split('-')[2]}
+            onChange={e => setDateImmat(`${dateImmat.split('-')[0]}-${dateImmat.split('-')[1]}-${e.target.value}`)}
+            className="w-full px-2 py-2 rounded-lg border outline-none text-sm font-medium"
+            style={selectStyle}
+          >
+            {Array.from({ length: getDaysInMonth(dateImmat.split('-')[0], dateImmat.split('-')[1]) }, (_, i) => {
+              const d = String(i + 1).padStart(2, '0')
+              return <option key={d} value={d}>{i + 1}</option>
+            })}
           </select>
         </div>
         <div className="grid grid-cols-4 gap-1">
@@ -296,9 +320,9 @@ export default function CO2Malus() {
             <button key={p.d} onClick={() => setDateImmat(p.d)}
               className="py-1.5 rounded-lg text-[10px] font-medium transition border active:scale-95 truncate"
               style={{
-                borderColor: dateImmat.slice(0,7) === p.d.slice(0,7) ? '#fbbf24' : 'rgba(255,255,255,0.08)',
-                background: dateImmat.slice(0,7) === p.d.slice(0,7) ? 'rgba(251,191,36,0.12)' : 'transparent',
-                color: dateImmat.slice(0,7) === p.d.slice(0,7) ? '#fbbf24' : '#475569',
+                borderColor: dateImmat === p.d ? '#fbbf24' : 'rgba(255,255,255,0.08)',
+                background: dateImmat === p.d ? 'rgba(251,191,36,0.12)' : 'transparent',
+                color: dateImmat === p.d ? '#fbbf24' : '#475569',
               }}
             >{p.l}</button>
           ))}
