@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Home, BookOpen, Gauge, MessageSquare, LayoutDashboard } from 'lucide-react'
+import { Home, BookOpen, Gauge, MessageSquare, Settings } from 'lucide-react'
 import clsx from 'clsx'
 
 const items = [
@@ -7,7 +7,7 @@ const items = [
   { to: '/products', icon: BookOpen, label: 'Produits' },
   { to: '/co2-malus', icon: Gauge, label: 'CO₂' },
   { to: '/chat', icon: MessageSquare, label: 'IA Chat' },
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Stats' },
+  { to: '/settings', icon: Settings, label: 'Config' },
 ]
 
 export default function BottomNav() {

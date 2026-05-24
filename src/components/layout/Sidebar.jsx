@@ -1,7 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard, MessageSquare, FileBarChart2,
-  Settings, Car, Zap, X, Home, BookOpen, Gauge,
+  MessageSquare, Settings, Car, Zap, X, Home, BookOpen, Gauge,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -10,16 +9,14 @@ const navGroups = [
     label: 'Portail membres',
     items: [
       { to: '/hub', icon: Home, label: 'Accueil Hub' },
-      { to: '/products', icon: BookOpen, label: 'Fiches Produits' },
+      { to: '/products', icon: BookOpen, label: 'Fiches & Rapports' },
       { to: '/co2-malus', icon: Gauge, label: 'CO₂ & Malus' },
     ],
   },
   {
-    label: 'Analyse & IA',
+    label: 'Assistant IA',
     items: [
-      { to: '/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
       { to: '/chat', icon: MessageSquare, label: 'Assistant IA' },
-      { to: '/reports', icon: FileBarChart2, label: 'Rapports' },
     ],
   },
   {
