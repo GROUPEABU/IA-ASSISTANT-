@@ -20,42 +20,44 @@ const DATE_PRESETS = [
 
 function SliderSection({ label, value, setValue, min, max, step = 1, unit, color, presets }) {
   return (
-    <div className="glass-card p-4 mb-3">
-      <div className="flex justify-between items-center mb-3">
+    <div className="glass-card p-3 mb-2">
+      <div className="flex justify-between items-center mb-2.5">
         <span className="text-[11px] text-slate-500 font-medium tracking-widest uppercase">{label}</span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => setValue(v => Math.max(min, v - step))}
-            className="w-7 h-7 rounded-lg border border-cyan-400/20 bg-cyan-400/5 text-cyan-400 text-base flex items-center justify-center transition hover:bg-cyan-400/10"
+            className="w-7 h-7 rounded-lg border flex items-center justify-center transition active:scale-95 text-lg leading-none"
+            style={{ borderColor: `${color}30`, background: `${color}08`, color }}
           >−</button>
           <div className="flex items-baseline gap-1">
             <input
               type="number" min={min} max={max} value={value} inputMode="numeric"
               onChange={e => { const v = e.target.value === '' ? min : Number(e.target.value); if (!isNaN(v)) setValue(Math.min(max, Math.max(min, v))) }}
-              className="w-16 text-2xl font-bold text-right bg-transparent border-0 border-b border-cyan-400/20 outline-none text-cyan-400"
-              style={{ fontFamily: 'inherit', MozAppearance: 'textfield', WebkitAppearance: 'none' }}
+              className="w-16 text-2xl font-bold text-right bg-transparent border-0 border-b outline-none"
+              style={{ fontFamily: 'inherit', MozAppearance: 'textfield', WebkitAppearance: 'none', color, borderColor: `${color}30` }}
             />
-            <span className="text-sm text-cyan-400/70">{unit}</span>
+            <span className="text-xs font-medium" style={{ color, opacity: 0.65 }}>{unit}</span>
           </div>
           <button
             onClick={() => setValue(v => Math.min(max, v + step))}
-            className="w-7 h-7 rounded-lg border border-cyan-400/20 bg-cyan-400/5 text-cyan-400 text-base flex items-center justify-center transition hover:bg-cyan-400/10"
+            className="w-7 h-7 rounded-lg border flex items-center justify-center transition active:scale-95 text-lg leading-none"
+            style={{ borderColor: `${color}30`, background: `${color}08`, color }}
           >+</button>
         </div>
       </div>
       <input
         type="range" min={min} max={max} step={step} value={value}
         onChange={e => setValue(Number(e.target.value))}
-        className="w-full h-1 block mb-3" style={{ accentColor: color }}
+        className="w-full block mb-2.5" style={{ accentColor: color, height: 3 }}
       />
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-4 gap-1">
         {presets.map(v => (
           <button key={v} onClick={() => setValue(v)}
-            className="py-2 rounded-lg text-[11px] font-medium transition border"
+            className="py-1.5 rounded-lg text-[11px] font-medium transition border active:scale-95"
             style={{
-              borderColor: value === v ? color : 'rgba(255,255,255,0.1)',
+              borderColor: value === v ? color : 'rgba(255,255,255,0.08)',
               background: value === v ? `${color}18` : 'transparent',
-              color: value === v ? color : '#64748b',
+              color: value === v ? color : '#475569',
             }}
           >{v}</button>
         ))}
@@ -66,17 +68,17 @@ function SliderSection({ label, value, setValue, min, max, step = 1, unit, color
 
 function SegButton({ options, value, setValue, cols = 2 }) {
   return (
-    <div className={`grid gap-0 bg-navy-900/40 rounded-xl p-1`} style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+    <div className="grid gap-0 bg-navy-900/50 rounded-xl p-1" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
       {options.map(o => (
         <button key={o.k} onClick={() => setValue(o.k)}
-          className="py-2.5 rounded-[9px] text-xs font-medium transition flex flex-col items-center gap-0.5"
+          className="py-2 rounded-[9px] text-xs font-medium transition flex flex-col items-center gap-0.5 active:scale-95"
           style={{
             background: value === o.k ? 'rgba(80,229,229,0.16)' : 'transparent',
             color: value === o.k ? '#50E5E5' : '#64748b',
           }}
         >
           <span className="font-semibold">{o.l}</span>
-          {o.note && <span className="text-[10px] opacity-65">{o.note}</span>}
+          {o.note && <span className="text-[10px] opacity-60">{o.note}</span>}
         </button>
       ))}
     </div>
@@ -141,16 +143,6 @@ export default function CO2Malus() {
     )
   }
 
-  const getBareme = () => {
-    const d = new Date(dateImmat)
-    if (d < new Date('2024-01-01')) return { y: '2023', seuil: '123', plafond: '50k€' }
-    if (d < new Date('2025-03-01')) return { y: '2024', seuil: '118', plafond: '60k€' }
-    if (d < new Date('2026-01-01')) return { y: '2025', seuil: '113', plafond: '70k€' }
-    if (d < new Date('2026-09-01')) return { y: '2026', seuil: '108', plafond: '80k€' }
-    return { y: '2027', seuil: '103', plafond: '90k€' }
-  }
-  const bareme = getBareme()
-
   return (
     <div className="flex flex-col gap-3 animate-fade-in flex-1 min-h-0 overflow-y-auto">
       {/* Header */}
@@ -160,11 +152,11 @@ export default function CO2Malus() {
       </div>
 
       {/* Legend */}
-      <div className="glass-card p-4 flex-shrink-0">
-        <div className="flex flex-wrap gap-4 justify-center">
+      <div className="glass-card px-3 py-2.5 flex-shrink-0">
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 justify-center">
           {Object.entries(RELIABILITY_CONFIG).map(([k, v]) => (
-            <div key={k} className="flex items-center gap-2 text-[11px]">
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: v.color, boxShadow: `0 0 6px ${v.color}88` }} />
+            <div key={k} className="flex items-center gap-1.5 text-[11px]">
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: v.color, boxShadow: `0 0 5px ${v.color}88` }} />
               <span className="font-semibold" style={{ color: v.color }}>{v.label}</span>
               <span className="text-slate-600">{v.desc}</span>
             </div>
@@ -180,36 +172,38 @@ export default function CO2Malus() {
       />
 
       {/* Weight Slider */}
-      <div className="glass-card p-4 mb-3">
-        <div className="flex justify-between items-center mb-3">
+      <div className="glass-card p-3 mb-2">
+        <div className="flex justify-between items-center mb-2.5">
           <span className="text-[11px] text-slate-500 font-medium tracking-widest uppercase">Masse</span>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setWeight(v => Math.max(800, v - 1))}
-              className="w-7 h-7 rounded-lg border border-sky-400/20 bg-sky-400/5 text-sky-300 text-base flex items-center justify-center transition hover:bg-sky-400/10">−</button>
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => setWeight(v => Math.max(800, v - 10))}
+              className="w-7 h-7 rounded-lg border flex items-center justify-center transition active:scale-95 text-lg leading-none"
+              style={{ borderColor: 'rgba(125,211,252,0.25)', background: 'rgba(125,211,252,0.06)', color: '#7DD3FC' }}>−</button>
             <div className="flex items-baseline gap-1">
               <input type="number" min={800} max={3500} step={10} value={weight} inputMode="numeric"
                 onChange={e => { const v = e.target.value === '' ? 800 : Number(e.target.value); if (!isNaN(v)) setWeight(Math.min(3500, Math.max(800, v))) }}
-                className="w-16 text-2xl font-bold text-right bg-transparent border-0 border-b border-sky-300/20 outline-none text-sky-300"
-                style={{ fontFamily: 'inherit', MozAppearance: 'textfield', WebkitAppearance: 'none' }}
+                className="w-16 text-2xl font-bold text-right bg-transparent border-0 border-b outline-none"
+                style={{ fontFamily: 'inherit', MozAppearance: 'textfield', WebkitAppearance: 'none', color: '#7DD3FC', borderColor: 'rgba(125,211,252,0.25)' }}
               />
-              <span className="text-sm text-sky-300/70">kg</span>
+              <span className="text-xs font-medium" style={{ color: '#7DD3FC', opacity: 0.65 }}>kg</span>
             </div>
-            <button onClick={() => setWeight(v => Math.min(3500, v + 1))}
-              className="w-7 h-7 rounded-lg border border-sky-400/20 bg-sky-400/5 text-sky-300 text-base flex items-center justify-center transition hover:bg-sky-400/10">+</button>
+            <button onClick={() => setWeight(v => Math.min(3500, v + 10))}
+              className="w-7 h-7 rounded-lg border flex items-center justify-center transition active:scale-95 text-lg leading-none"
+              style={{ borderColor: 'rgba(125,211,252,0.25)', background: 'rgba(125,211,252,0.06)', color: '#7DD3FC' }}>+</button>
           </div>
         </div>
         <input type="range" min={800} max={3000} step={10} value={weight}
           onChange={e => setWeight(Number(e.target.value))}
-          className="w-full h-1 block mb-3" style={{ accentColor: '#7DD3FC' }}
+          className="w-full block mb-2.5" style={{ accentColor: '#7DD3FC', height: 3 }}
         />
-        <div className="grid grid-cols-4 gap-1.5">
+        <div className="grid grid-cols-4 gap-1">
           {WEIGHT_PRESETS.map(v => (
             <button key={v} onClick={() => setWeight(v)}
-              className="py-2 rounded-lg text-[11px] font-medium transition border"
+              className="py-1.5 rounded-lg text-[11px] font-medium transition border active:scale-95"
               style={{
-                borderColor: weight === v ? '#7DD3FC' : 'rgba(255,255,255,0.1)',
+                borderColor: weight === v ? '#7DD3FC' : 'rgba(255,255,255,0.08)',
                 background: weight === v ? 'rgba(125,211,252,0.12)' : 'transparent',
-                color: weight === v ? '#7DD3FC' : '#64748b',
+                color: weight === v ? '#7DD3FC' : '#475569',
               }}
             >{v}</button>
           ))}
@@ -217,8 +211,8 @@ export default function CO2Malus() {
       </div>
 
       {/* Motorisation */}
-      <div className="glass-card p-4 mb-3">
-        <div className="flex justify-between items-center mb-3">
+      <div className="glass-card p-3 mb-2">
+        <div className="flex justify-between items-center mb-2.5">
           <span className="text-[11px] text-slate-500 font-medium tracking-widest uppercase">Motorisation</span>
           <span className="text-xs font-semibold text-cyan-400">
             {{ thermique: 'Thermique', hybride: 'Hybride', phev: 'PHEV', ev: 'Électrique' }[fuelType]}
@@ -233,33 +227,25 @@ export default function CO2Malus() {
       </div>
 
       {/* Date immatriculation */}
-      <div className="glass-card p-4 mb-3">
-        <div className="flex justify-between items-center mb-3">
+      <div className="glass-card p-3 mb-2">
+        <div className="flex justify-between items-center mb-2.5">
           <span className="text-[11px] text-slate-500 font-medium tracking-widest uppercase">Date 1ère immat</span>
           <span className="text-xs font-semibold text-amber-400">{formatDateFR(dateImmat)}</span>
         </div>
         <input
           type="date" value={dateImmat} min="2023-01-01" max="2030-12-31"
           onChange={e => setDateImmat(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-lg text-sm bg-cyan-400/5 border border-cyan-400/25 text-cyan-400 outline-none mb-3"
-          style={{ colorScheme: 'dark', fontFamily: 'inherit' }}
+          className="w-full px-3 py-2.5 rounded-lg text-sm border outline-none mb-2.5 text-center font-medium"
+          style={{ colorScheme: 'dark', fontFamily: 'inherit', background: 'rgba(80,229,229,0.05)', borderColor: 'rgba(80,229,229,0.2)', color: '#50E5E5' }}
         />
-        <div className="bg-cyan-400/5 rounded-lg px-3 py-2 mb-3">
-          <div className="text-xs text-cyan-400 font-semibold mb-0.5">🇫🇷 Barème {bareme.y}</div>
-          <div className="text-[11px] text-slate-500">
-            Seuil <span className="text-cyan-400 font-medium">{bareme.seuil} g/km</span>
-            <span className="mx-2 text-slate-600">·</span>
-            Plafond <span className="text-cyan-400 font-medium">{bareme.plafond}</span>
-          </div>
-        </div>
-        <div className="grid grid-cols-4 gap-1.5">
+        <div className="grid grid-cols-4 gap-1">
           {DATE_PRESETS.map(p => (
             <button key={p.d} onClick={() => setDateImmat(p.d)}
-              className="py-2 rounded-lg text-[11px] font-medium transition border"
+              className="py-1.5 rounded-lg text-[11px] font-medium transition border active:scale-95"
               style={{
-                borderColor: dateImmat === p.d ? '#fbbf24' : 'rgba(255,255,255,0.1)',
+                borderColor: dateImmat === p.d ? '#fbbf24' : 'rgba(255,255,255,0.08)',
                 background: dateImmat === p.d ? 'rgba(251,191,36,0.12)' : 'transparent',
-                color: dateImmat === p.d ? '#fbbf24' : '#64748b',
+                color: dateImmat === p.d ? '#fbbf24' : '#475569',
               }}
             >{p.l}</button>
           ))}
@@ -267,10 +253,10 @@ export default function CO2Malus() {
       </div>
 
       {/* Advanced params toggle */}
-      <div className="mb-3">
+      <div className="mb-2">
         <button
           onClick={() => setShowAdvanced(v => !v)}
-          className="w-full px-4 py-3 rounded-xl text-sm font-medium flex justify-between items-center transition border"
+          className="w-full px-4 py-2.5 rounded-xl text-sm font-medium flex justify-between items-center transition border active:scale-[0.99]"
           style={{
             background: showAdvanced ? 'rgba(80,229,229,0.07)' : 'rgba(255,255,255,0.02)',
             borderColor: showAdvanced ? 'rgba(80,229,229,0.3)' : 'rgba(255,255,255,0.08)',
@@ -278,8 +264,8 @@ export default function CO2Malus() {
           }}
         >
           <span>Paramètres avancés</span>
-          <span className="text-xs px-2.5 py-1 rounded-md bg-white/5 border border-white/10">
-            {showAdvanced ? 'Masquer' : 'Afficher'}
+          <span className="text-[11px] px-2 py-0.5 rounded-md" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: showAdvanced ? '#50E5E5' : '#64748b' }}>
+            {showAdvanced ? '▲ Masquer' : '▼ Afficher'}
           </span>
         </button>
 
@@ -393,7 +379,7 @@ export default function CO2Malus() {
       </div>
 
       {/* Mode tabs */}
-      <div className="grid grid-cols-2 gap-0 bg-navy-900/60 rounded-xl p-1 mb-3 flex-shrink-0">
+      <div className="grid grid-cols-2 gap-0 bg-navy-900/60 rounded-xl p-1 mb-2 flex-shrink-0">
         {[{ k: 'country', l: '🔍 Analyse par pays' }, { k: 'compare', l: '⚖️ Comparateur' }].map(tab => (
           <button key={tab.k} onClick={() => setMode(tab.k)}
             className="py-2.5 rounded-[10px] text-sm font-medium transition"
@@ -410,7 +396,7 @@ export default function CO2Malus() {
       {mode === 'country' && (
         <>
           {/* Reliability filter */}
-          <div className="grid grid-cols-4 gap-0 bg-navy-900/60 rounded-xl p-1 mb-3 flex-shrink-0">
+          <div className="grid grid-cols-4 gap-0 bg-navy-900/60 rounded-xl p-1 mb-2 flex-shrink-0">
             {[{ k: 'all', l: 'Tous' }, { k: 'official', l: '✓ Officiel' }, { k: 'indicative', l: '~ Indicatif' }, { k: 'info', l: 'ℹ Info' }].map(f => (
               <button key={f.k} onClick={() => setReliabilityFilter(f.k)}
                 className="py-2 rounded-[9px] text-[11px] transition"
@@ -427,26 +413,26 @@ export default function CO2Malus() {
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="🔎  Rechercher un pays..."
-            className="w-full px-4 py-3 rounded-xl text-sm bg-white/3 border border-white/9 text-slate-200 outline-none mb-3"
-            style={{ fontFamily: 'inherit' }}
+            className="w-full px-3 py-2.5 rounded-xl text-sm text-slate-200 outline-none mb-2"
+            style={{ fontFamily: 'inherit', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}
           />
 
           {/* Country grid */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-4">
+          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1.5 mb-3">
             {filtered.map(c => {
               const cfg = RELIABILITY_CONFIG[c.reliability]
               const isSelected = selectedCountry?.code === c.code
               return (
                 <button key={c.code} onClick={() => handleCountry(c)}
-                  className="py-2.5 px-1 rounded-xl text-center flex flex-col items-center gap-1 transition border"
+                  className="py-2 px-1 rounded-xl text-center flex flex-col items-center gap-0.5 transition active:scale-95"
                   style={{
-                    border: `1px solid ${isSelected ? 'rgba(80,229,229,0.6)' : 'rgba(255,255,255,0.07)'}`,
-                    background: isSelected ? 'rgba(80,229,229,0.12)' : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${isSelected ? 'rgba(80,229,229,0.55)' : 'rgba(255,255,255,0.07)'}`,
+                    background: isSelected ? 'rgba(80,229,229,0.1)' : 'rgba(255,255,255,0.02)',
                   }}
                 >
-                  <span className="text-2xl">{c.flag}</span>
-                  <span className="text-[11px] text-slate-400">{c.name}</span>
-                  <span className="text-[10px] font-semibold" style={{ color: cfg.color }}>{cfg.label}</span>
+                  <span className="text-xl">{c.flag}</span>
+                  <span className="text-[10px] text-slate-400 leading-tight">{c.name}</span>
+                  <span className="text-[9px] font-bold tracking-wide" style={{ color: cfg.color }}>{cfg.label.replace('✓ ', '').replace('~ ', '').replace('ℹ ', '')}</span>
                 </button>
               )
             })}
@@ -632,21 +618,21 @@ export default function CO2Malus() {
               <span className="text-sm font-semibold text-white">Sélectionnez les pays</span>
               <span className="text-xs text-slate-500">{selectedForCompare.length}/6</span>
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-3">
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 mb-3">
               {COUNTRIES.map(c => {
                 const cfg = RELIABILITY_CONFIG[c.reliability]
                 const sel = selectedForCompare.find(x => x.code === c.code)
                 return (
                   <button key={c.code} onClick={() => toggleCompare(c)}
-                    className="py-2 px-1 rounded-xl text-center flex flex-col items-center gap-1 transition border"
+                    className="py-2 px-1 rounded-xl text-center flex flex-col items-center gap-0.5 transition active:scale-95"
                     style={{
-                      border: `1px solid ${sel ? 'rgba(80,229,229,0.6)' : 'rgba(255,255,255,0.07)'}`,
-                      background: sel ? 'rgba(80,229,229,0.12)' : 'rgba(255,255,255,0.02)',
+                      border: `1px solid ${sel ? 'rgba(80,229,229,0.55)' : 'rgba(255,255,255,0.07)'}`,
+                      background: sel ? 'rgba(80,229,229,0.1)' : 'rgba(255,255,255,0.02)',
                     }}
                   >
                     <span className="text-xl">{c.flag}</span>
-                    <span className="text-[10px] text-slate-400">{c.name}</span>
-                    <span className="text-[10px]" style={{ color: cfg.color }}>{cfg.label}</span>
+                    <span className="text-[10px] text-slate-400 leading-tight">{c.name}</span>
+                    <span className="text-[9px] font-bold" style={{ color: cfg.color }}>{cfg.label.replace('✓ ', '').replace('~ ', '').replace('ℹ ', '')}</span>
                   </button>
                 )
               })}
