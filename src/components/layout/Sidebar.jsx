@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  MessageSquare, Settings, Zap, X, Home, BookOpen, Gauge, Bell, ShieldCheck, LogOut,
+  MessageSquare, Settings, Zap, X, Home, BookOpen, Gauge, Bell, ShieldCheck, Mic, LogOut, Calculator,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '@/contexts/AuthContext'
@@ -20,6 +20,8 @@ const navGroups = [
     items: [
       { to: '/price-watch', icon: Bell, label: 'Veille prix' },
       { to: '/objections', icon: ShieldCheck, label: 'Réponses objections' },
+      { to: '/pitch', icon: Mic, label: 'Générateur de pitch' },
+      { to: '/tco', icon: Calculator, label: 'Calculateur TCO' },
     ],
   },
   {

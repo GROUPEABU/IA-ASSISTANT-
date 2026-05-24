@@ -10,6 +10,8 @@ import Chat from '@/pages/Chat'
 import Settings from '@/pages/Settings'
 import PriceWatch from '@/pages/PriceWatch'
 import Objections from '@/pages/Objections'
+import PitchGenerator from '@/pages/PitchGenerator'
+import Tco from '@/pages/Tco'
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth()
@@ -30,6 +32,8 @@ function AppRoutes() {
         <Route path="chat" element={<Chat />} />
         <Route path="price-watch" element={<PriceWatch />} />
         <Route path="objections" element={<Objections />} />
+        <Route path="pitch" element={<PitchGenerator />} />
+        <Route path="tco" element={<Tco />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/hub" replace />} />

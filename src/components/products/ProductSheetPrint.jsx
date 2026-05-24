@@ -21,33 +21,59 @@ const ProductSheetPrint = forwardRef(({ product, malus, malusColor }, ref) => {
   return (
     <div ref={ref} className="space-y-4">
       {/* Identité produit */}
-      <div className="glass-card p-5">
-        <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-cyan-400/10 border border-cyan-400/20
-                          flex items-center justify-center flex-shrink-0">
-            <Car size={28} className="text-cyan-400" />
-          </div>
-          <div className="flex-1">
-            <p className="text-xs text-slate-500 uppercase tracking-widest mb-1">{product.origin}</p>
-            <h2 className="text-2xl font-bold text-white">{product.fullName}</h2>
-            <p className="text-sm text-slate-400 mt-1">{product.tagline}</p>
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <Badge variant="cyan">{product.segment}</Badge>
-              <Badge variant="default">{product.year}</Badge>
-              {product.colors.slice(0, 2).map((c) => (
-                <span key={c} className="text-[10px] text-slate-500">· {c}</span>
-              ))}
+      <div className="glass-card overflow-hidden">
+        {/* Photo véhicule */}
+        {product.image ? (
+          <div className="relative h-48 md:h-64 bg-navy-900/60 overflow-hidden">
+            <img
+              src={product.image}
+              alt={product.fullName}
+              className="w-full h-full object-cover"
+              onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex' }}
+            />
+            <div className="hidden absolute inset-0 items-center justify-center bg-cyan-400/5">
+              <Car size={48} className="text-cyan-400/40" />
             </div>
           </div>
-          <div className="text-right flex-shrink-0">
-            <p className="text-xs text-slate-500">À partir de</p>
-            <p className="text-xl font-bold text-white">{formatNumber(product.prix.base)} €</p>
-            <p className="text-xs text-slate-500">jusqu'à {formatNumber(product.prix.haut)} €</p>
-            {malus > 0 && (
-              <p className={`text-xs font-semibold mt-1 ${malusColor === 'danger' ? 'text-red-400' : 'text-amber-400'}`}>
-                + Malus {formatNumber(malus)} €
-              </p>
-            )}
+        ) : (
+          <div className="h-36 md:h-48 bg-gradient-to-br from-navy-900/80 to-cyan-400/5
+                          flex items-center justify-center gap-4 border-b border-navy-700/30">
+            <div className="w-20 h-20 rounded-2xl bg-cyan-400/10 border border-cyan-400/20
+                            flex items-center justify-center">
+              <Car size={36} className="text-cyan-400" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-widest">{product.brand}</p>
+              <p className="text-2xl font-bold text-white">{product.model}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{product.year}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="p-5">
+          <div className="flex items-start gap-4">
+            <div className="flex-1">
+              <p className="text-xs text-slate-500 uppercase tracking-widest mb-1">{product.origin}</p>
+              <h2 className="text-xl font-bold text-white">{product.fullName}</h2>
+              <p className="text-sm text-slate-400 mt-1">{product.tagline}</p>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                <Badge variant="cyan">{product.segment}</Badge>
+                <Badge variant="default">{product.year}</Badge>
+                {product.colors.slice(0, 2).map((c) => (
+                  <span key={c} className="text-[10px] text-slate-500">· {c}</span>
+                ))}
+              </div>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <p className="text-xs text-slate-500">À partir de</p>
+              <p className="text-xl font-bold text-white">{formatNumber(product.prix.base)} €</p>
+              <p className="text-xs text-slate-500">jusqu'à {formatNumber(product.prix.haut)} €</p>
+              {malus > 0 && (
+                <p className={`text-xs font-semibold mt-1 ${malusColor === 'danger' ? 'text-red-400' : 'text-amber-400'}`}>
+                  + Malus {formatNumber(malus)} €
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>

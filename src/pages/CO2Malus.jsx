@@ -2,7 +2,7 @@ import { ExternalLink } from 'lucide-react'
 
 export default function CO2Malus() {
   return (
-    <div className="flex flex-col gap-3 animate-fade-in" style={{ height: 'calc(100dvh - 56px - 80px - 32px)' }}>
+    <div className="flex flex-col gap-3 animate-fade-in flex-1 min-h-0">
       <div className="flex items-center justify-between flex-shrink-0">
         <div>
           <h2 className="text-sm font-semibold text-white">CO₂ & Malus Mondial</h2>

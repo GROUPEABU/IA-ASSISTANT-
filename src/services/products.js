@@ -102,10 +102,10 @@ export const PRODUCTS = [
     ],
 
     concurrents: [
-      { nom: 'Toyota Yaris Cross HEV', prix: 28990, co2: 102 },
-      { nom: 'Renault Austral HEV', prix: 34490, co2: 108 },
-      { nom: 'Peugeot 3008 HEV', prix: 39990, co2: 112 },
-      { nom: 'Kia Sportage HEV', prix: 36990, co2: 130 },
+      { nom: 'Toyota Yaris Cross HEV', prix: 28990, co2: 102, conso: 4.7 },
+      { nom: 'Renault Austral HEV',    prix: 34490, co2: 108, conso: 5.2 },
+      { nom: 'Peugeot 3008 HEV',       prix: 39990, co2: 112, conso: 5.1 },
+      { nom: 'Kia Sportage HEV',        prix: 36990, co2: 130, conso: 5.8 },
     ],
 
     btob: {
@@ -122,6 +122,7 @@ export const PRODUCTS = [
         'Valeur résiduelle à confirmer sur le marché VO',
       ],
       remise_cible: '8-12%',
+      argument_prix: 'Full Hybrid complet à 27 900 € — TCO imbattable sur 4 ans vs thermique comparable',
     },
 
     btoc: {
@@ -167,8 +168,8 @@ export const PRODUCTS = [
       'Vert Eucalyptus (métallisé)',
     ],
     finitions: [
-      { nom: 'Select',    prix: null, description: 'Prix à confirmer' },
-      { nom: 'Exclusive', prix: null, description: 'Prix à confirmer' },
+      { nom: 'Select',    prix: 38900, description: 'Sièges tissu, connectivité complète, 20 ADAS' },
+      { nom: 'Exclusive', prix: 46900, description: 'Sièges cuir, audio SONY, V2L, équipements premium' },
     ],
 
     specs: {
@@ -177,19 +178,28 @@ export const PRODUCTS = [
       couple: '365 Nm',
       transmission: 'DHT — Transmission hybride rechargeable',
       traction: 'Traction avant (FWD)',
+      cylindree: '1 499 cm³ · 4 cylindres · Turbo · Injection directe',
       norme: 'Euro 6e',
+      batterie_kwh: 18.3,
+      type_batterie: 'LFP',
+      autonomie_electrique: 75,
       co2_wltp: 35,
+      classe_co2: 'A',
       consommation: '2,4 L/100km (WLTP PHEV)',
       autonomie_wltp: 1200,
-      vitesse_max: null,
-      acceleration: null,
+      vitesse_max: 185,
+      acceleration: '~7,5 s (0–100 km/h)',
       longueur: 4535,
       largeur: 1865,
       hauteur: 1720,
       empattement: 2710,
       coffre: 450,
+      coffre_max: 1400,
       reservoir: 55,
       poids: 1950,
+      ptac: 2430,
+      charge_toit: 75,
+      remorquage: '1 500 kg (freinée)',
     },
 
     prix: {
@@ -226,16 +236,16 @@ export const PRODUCTS = [
     ],
 
     concurrents: [
-      { nom: 'Peugeot 3008 PHEV', prix: 45990, co2: 21 },
-      { nom: 'Kia Sportage PHEV', prix: 44990, co2: 31 },
-      { nom: 'Mitsubishi Outlander PHEV', prix: 47990, co2: 46 },
-      { nom: 'Toyota RAV4 PHEV', prix: 50990, co2: 22 },
+      { nom: 'Peugeot 3008 PHEV',       prix: 45990, co2: 21, conso: 1.6 },
+      { nom: 'Kia Sportage PHEV',         prix: 44990, co2: 31, conso: 1.6 },
+      { nom: 'Mitsubishi Outlander PHEV', prix: 47990, co2: 46, conso: 2.5 },
+      { nom: 'Toyota RAV4 PHEV',          prix: 50990, co2: 22, conso: 1.8 },
     ],
 
     btob: {
       cibles: ['Cadres & dirigeants', 'Véhicules de direction premium', 'Flottes grandes entreprises', 'Transport de personnes'],
       atouts: [
-        'CO₂ très bas (~35 g/km) → exonéré de malus, avantage en nature réduit',
+        'CO₂ 35 g/km → exonéré de malus, avantage en nature minimal',
         '5 étoiles Euro-NCAP : argument sécurité flotte incontournable',
         '1 200 km autonomie totale : zéro anxiété pour les grands déplacements',
         'Technologie V2L : utilisation comme groupe électrogène sur chantier/events',
@@ -246,6 +256,7 @@ export const PRODUCTS = [
         'Réseau de recharge à vérifier selon les trajets',
       ],
       remise_cible: '10-15%',
+      argument_prix: 'PHEV 5★ Euro-NCAP, 14,8", V2L, 1 200 km — 8 000 € sous les équivalents européens',
     },
 
     btoc: {

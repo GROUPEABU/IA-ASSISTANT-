@@ -9,7 +9,8 @@ const pageTitles = {
   '/chat':        { title: 'Assistant IA', sub: 'Posez vos questions commerciales' },
   '/price-watch': { title: 'Veille prix', sub: 'Prix marché en temps réel' },
   '/objections':  { title: 'Réponses aux objections', sub: 'Arguments de vente prêts à l\'emploi' },
-  '/compare':     { title: 'Comparateur', sub: 'Véhicules côte à côte' },
+  '/tco':         { title: 'Calculateur TCO', sub: 'Coût total de possession sur 3–5 ans' },
+  '/pitch':       { title: 'Générateur de pitch', sub: 'Pitch de vente IA adapté au profil client' },
   '/settings':    { title: 'Paramètres', sub: 'Configuration de votre compte' },
 }
 

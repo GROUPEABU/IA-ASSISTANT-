@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck } from 'lucide-react'
+import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck, Calculator, Mic } from 'lucide-react'
 
 const tools = [
   {
@@ -35,6 +35,22 @@ const tools = [
     badge: 'BtoB · BtoC',
   },
   {
+    to: '/tco',
+    icon: Calculator,
+    color: 'teal',
+    title: 'Calculateur TCO',
+    description: 'Comparez le coût total de possession sur 3 à 5 ans : prix, malus, carburant et entretien.',
+    badge: '3–5 ans',
+  },
+  {
+    to: '/pitch',
+    icon: Mic,
+    color: 'indigo',
+    title: 'Générateur de pitch',
+    description: 'Pitch de vente IA structuré en 4 parties, adapté au profil BtoC ou BtoB du client.',
+    badge: 'IA',
+  },
+  {
     to: '/chat',
     icon: MessageSquare,
     color: 'violet',
@@ -45,11 +61,13 @@ const tools = [
 ]
 
 const colorMap = {
-  cyan:    { bg: 'bg-cyan-400/10',    border: 'border-cyan-400/20',    icon: 'text-cyan-400',    badge: 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20',    hoverTitle: 'group-hover:text-cyan-400' },
+  cyan:    { bg: 'bg-cyan-400/10',    border: 'border-cyan-400/20',    icon: 'text-cyan-400',    badge: 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20',       hoverTitle: 'group-hover:text-cyan-400' },
   emerald: { bg: 'bg-emerald-400/10', border: 'border-emerald-400/20', icon: 'text-emerald-400', badge: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20', hoverTitle: 'group-hover:text-emerald-400' },
-  violet:  { bg: 'bg-violet-400/10',  border: 'border-violet-400/20',  icon: 'text-violet-400',  badge: 'bg-violet-400/10 text-violet-400 border-violet-400/20',  hoverTitle: 'group-hover:text-violet-400' },
-  amber:   { bg: 'bg-amber-400/10',   border: 'border-amber-400/20',   icon: 'text-amber-400',   badge: 'bg-amber-400/10 text-amber-400 border-amber-400/20',   hoverTitle: 'group-hover:text-amber-400' },
-  rose:    { bg: 'bg-rose-400/10',    border: 'border-rose-400/20',    icon: 'text-rose-400',    badge: 'bg-rose-400/10 text-rose-400 border-rose-400/20',    hoverTitle: 'group-hover:text-rose-400' },
+  violet:  { bg: 'bg-violet-400/10',  border: 'border-violet-400/20',  icon: 'text-violet-400',  badge: 'bg-violet-400/10 text-violet-400 border-violet-400/20',   hoverTitle: 'group-hover:text-violet-400' },
+  amber:   { bg: 'bg-amber-400/10',   border: 'border-amber-400/20',   icon: 'text-amber-400',   badge: 'bg-amber-400/10 text-amber-400 border-amber-400/20',     hoverTitle: 'group-hover:text-amber-400' },
+  rose:    { bg: 'bg-rose-400/10',    border: 'border-rose-400/20',    icon: 'text-rose-400',    badge: 'bg-rose-400/10 text-rose-400 border-rose-400/20',       hoverTitle: 'group-hover:text-rose-400' },
+  teal:    { bg: 'bg-teal-400/10',    border: 'border-teal-400/20',    icon: 'text-teal-400',    badge: 'bg-teal-400/10 text-teal-400 border-teal-400/20',       hoverTitle: 'group-hover:text-teal-400' },
+  indigo:  { bg: 'bg-indigo-400/10',  border: 'border-indigo-400/20',  icon: 'text-indigo-400',  badge: 'bg-indigo-400/10 text-indigo-400 border-indigo-400/20', hoverTitle: 'group-hover:text-indigo-400' },
 }
 
 export default function Hub() {
@@ -118,7 +136,7 @@ export default function Hub() {
         {[
           { label: 'Pays couverts', value: '40' },
           { label: 'Fiches produits', value: '2+' },
-          { label: 'Outils disponibles', value: '5' },
+          { label: 'Outils disponibles', value: '7' },
         ].map(({ label, value }) => (
           <div key={label} className="glass-card px-3 py-3 text-center">
             <p className="text-lg font-bold text-cyan-400">{value}</p>
