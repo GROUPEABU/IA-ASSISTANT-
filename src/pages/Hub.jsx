@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck, GitCompare } from 'lucide-react'
+import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck } from 'lucide-react'
 
 const tools = [
   {
@@ -23,8 +23,8 @@ const tools = [
     icon: Bell,
     color: 'amber',
     title: 'Veille prix concurrence',
-    description: 'Prix marché en temps réel depuis La Centrale, Le Bon Coin et L\'Argus. Tendance, cote et conseils achat/vente.',
-    badge: 'Temps réel',
+    description: 'Filtres La Centrale, LBC et L\'Argus. Prix moyen réaliste VO/VN, tendance marché et conseils.',
+    badge: 'VO · VN',
   },
   {
     to: '/objections',
@@ -35,17 +35,9 @@ const tools = [
     badge: 'BtoB · BtoC',
   },
   {
-    to: '/compare',
-    icon: GitCompare,
-    color: 'violet',
-    title: 'Comparateur de modèles',
-    description: 'Comparez 2 ou 3 véhicules côte à côte : prix, malus, specs. Verdict IA avec recommandation BtoB/BtoC.',
-    badge: '2–3 véhicules',
-  },
-  {
     to: '/chat',
     icon: MessageSquare,
-    color: 'cyan',
+    color: 'violet',
     title: 'Assistant IA',
     description: 'Posez toutes vos questions sur les produits, le marché ou les stratégies commerciales.',
     badge: 'IA',
@@ -126,7 +118,7 @@ export default function Hub() {
         {[
           { label: 'Pays couverts', value: '40' },
           { label: 'Fiches produits', value: '2+' },
-          { label: 'Outils disponibles', value: '6' },
+          { label: 'Outils disponibles', value: '5' },
         ].map(({ label, value }) => (
           <div key={label} className="glass-card px-3 py-3 text-center">
             <p className="text-lg font-bold text-cyan-400">{value}</p>

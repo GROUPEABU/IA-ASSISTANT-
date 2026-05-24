@@ -10,7 +10,6 @@ import Chat from '@/pages/Chat'
 import Settings from '@/pages/Settings'
 import PriceWatch from '@/pages/PriceWatch'
 import Objections from '@/pages/Objections'
-import Compare from '@/pages/Compare'
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth()
@@ -31,7 +30,6 @@ function AppRoutes() {
         <Route path="chat" element={<Chat />} />
         <Route path="price-watch" element={<PriceWatch />} />
         <Route path="objections" element={<Objections />} />
-        <Route path="compare" element={<Compare />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/hub" replace />} />
