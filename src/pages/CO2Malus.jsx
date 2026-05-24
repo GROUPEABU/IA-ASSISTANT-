@@ -140,13 +140,27 @@ export default function CO2Malus() {
 
   useEffect(() => {
     if (result) {
-      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50)
+      setTimeout(() => {
+        const el = resultRef.current
+        if (!el) return
+        const scroller = document.querySelector('main') || window
+        const top = el.getBoundingClientRect().top + (scroller === window ? window.scrollY : scroller.scrollTop) - 16
+        if (scroller === window) window.scrollTo({ top, behavior: 'smooth' })
+        else scroller.scrollTo({ top, behavior: 'smooth' })
+      }, 60)
     }
   }, [result])
 
   useEffect(() => {
     if (compareResults.length >= 2) {
-      setTimeout(() => compareResultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50)
+      setTimeout(() => {
+        const el = compareResultRef.current
+        if (!el) return
+        const scroller = document.querySelector('main') || window
+        const top = el.getBoundingClientRect().top + (scroller === window ? window.scrollY : scroller.scrollTop) - 16
+        if (scroller === window) window.scrollTo({ top, behavior: 'smooth' })
+        else scroller.scrollTo({ top, behavior: 'smooth' })
+      }, 60)
     }
   }, [compareResults])
 
@@ -159,7 +173,7 @@ export default function CO2Malus() {
   }
 
   return (
-    <div className="flex flex-col gap-3 animate-fade-in flex-1 min-h-0 overflow-y-auto">
+    <div className="flex flex-col gap-3 animate-fade-in">
       {/* Header */}
       <div className="flex-shrink-0">
         <h2 className="text-sm font-semibold text-white">CO₂ & Malus Mondial</h2>
