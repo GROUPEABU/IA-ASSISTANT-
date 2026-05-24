@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import Layout from '@/components/layout/Layout'
+import Login from '@/pages/Login'
 import Hub from '@/pages/Hub'
 import Products from '@/pages/Products'
 import ProductDetail from '@/pages/ProductDetail'
@@ -10,23 +12,39 @@ import PriceWatch from '@/pages/PriceWatch'
 import Objections from '@/pages/Objections'
 import Compare from '@/pages/Compare'
 
+function ProtectedRoute({ children }) {
+  const { isAuthenticated } = useAuth()
+  return isAuthenticated ? children : <Navigate to="/login" replace />
+}
+
+function AppRoutes() {
+  const { isAuthenticated } = useAuth()
+  return (
+    <Routes>
+      <Route path="/login" element={isAuthenticated ? <Navigate to="/hub" replace /> : <Login />} />
+      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <Route index element={<Navigate to="/hub" replace />} />
+        <Route path="hub" element={<Hub />} />
+        <Route path="products" element={<Products />} />
+        <Route path="products/:id" element={<ProductDetail />} />
+        <Route path="co2-malus" element={<CO2Malus />} />
+        <Route path="chat" element={<Chat />} />
+        <Route path="price-watch" element={<PriceWatch />} />
+        <Route path="objections" element={<Objections />} />
+        <Route path="compare" element={<Compare />} />
+        <Route path="settings" element={<Settings />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/hub" replace />} />
+    </Routes>
+  )
+}
+
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/hub" replace />} />
-          <Route path="hub" element={<Hub />} />
-          <Route path="products" element={<Products />} />
-          <Route path="products/:id" element={<ProductDetail />} />
-          <Route path="co2-malus" element={<CO2Malus />} />
-          <Route path="chat" element={<Chat />} />
-          <Route path="price-watch" element={<PriceWatch />} />
-          <Route path="objections" element={<Objections />} />
-          <Route path="compare" element={<Compare />} />
-          <Route path="settings" element={<Settings />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </AuthProvider>
   )
 }

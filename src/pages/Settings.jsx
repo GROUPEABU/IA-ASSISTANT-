@@ -25,7 +25,7 @@ export default function Settings() {
   return (
     <div className="max-w-2xl space-y-4 animate-fade-in">
       <Section icon={Key} title="API & Intégrations">
-        <Field label="Clé API Anthropic" description="Utilisée pour l'assistant IA">
+        <Field label="Clé API IA" description="Clé d'accès pour l'assistant et les analyses">
           <input
             type="password"
             placeholder="sk-ant-..."
@@ -34,12 +34,12 @@ export default function Settings() {
                        focus:outline-none focus:border-cyan-400/50 transition"
           />
         </Field>
-        <Field label="Modèle Claude" description="Modèle utilisé pour les réponses">
+        <Field label="Puissance IA" description="Niveau de traitement utilisé pour les analyses">
           <select className="w-full sm:w-48 bg-navy-900/60 border border-navy-700/50 rounded-lg px-3 py-2
                              text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition">
-            <option>claude-sonnet-4-6</option>
-            <option>claude-opus-4-7</option>
-            <option>claude-haiku-4-5</option>
+            <option value="standard">Standard</option>
+            <option value="performance">Performance</option>
+            <option value="ultra">Ultra</option>
           </select>
         </Field>
         <div className="flex justify-end">

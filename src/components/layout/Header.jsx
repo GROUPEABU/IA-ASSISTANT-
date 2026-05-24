@@ -1,16 +1,30 @@
-import { useLocation } from 'react-router-dom'
-import { Bell, Search, Menu } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { Menu, LogOut } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 const pageTitles = {
-  '/dashboard': { title: 'Tableau de bord', sub: 'Vue d\'ensemble des ventes' },
-  '/chat': { title: 'Assistant IA', sub: 'Posez vos questions sur les données' },
-  '/reports': { title: 'Rapports', sub: 'Analyses et exports' },
-  '/settings': { title: 'Paramètres', sub: 'Configuration de l\'application' },
+  '/hub':         { title: 'Portail Membres', sub: 'Bienvenue sur votre espace Autobuyunion' },
+  '/products':    { title: 'Fiches & Rapports', sub: 'Catalogue et fiches produits' },
+  '/co2-malus':   { title: 'CO₂ & Malus', sub: 'Calculateur de fiscalité automobile' },
+  '/chat':        { title: 'Assistant IA', sub: 'Posez vos questions commerciales' },
+  '/price-watch': { title: 'Veille prix', sub: 'Prix marché en temps réel' },
+  '/objections':  { title: 'Réponses aux objections', sub: 'Arguments de vente prêts à l\'emploi' },
+  '/compare':     { title: 'Comparateur', sub: 'Véhicules côte à côte' },
+  '/settings':    { title: 'Paramètres', sub: 'Configuration de votre compte' },
 }
 
 export default function Header({ onMenuToggle }) {
   const { pathname } = useLocation()
-  const page = pageTitles[pathname] ?? { title: '', sub: '' }
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const base = '/' + pathname.split('/')[1]
+  const page = pageTitles[base] ?? { title: '', sub: '' }
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
 
   return (
     <header className="h-14 md:h-16 flex-shrink-0 bg-navy-800/50 border-b border-navy-700/50 flex items-center px-4 md:px-6 gap-3">
@@ -28,29 +42,27 @@ export default function Header({ onMenuToggle }) {
         <p className="text-[10px] md:text-xs text-slate-500 hidden sm:block">{page.sub}</p>
       </div>
 
-      {/* Search — md+ */}
-      <div className="relative hidden md:block">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-        <input
-          type="text"
-          placeholder="Rechercher..."
-          className="w-52 bg-navy-900/60 border border-navy-700/50 rounded-lg pl-9 pr-3 py-1.5
-                     text-sm text-slate-300 placeholder-slate-600
-                     focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/20 transition"
-        />
-      </div>
-
-      {/* Notifications */}
-      <button className="relative w-9 h-9 rounded-lg border border-navy-700/50 flex items-center justify-center
-                         text-slate-400 hover:text-cyan-400 hover:border-cyan-400/30 transition">
-        <Bell size={16} />
-        <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400" />
-      </button>
-
-      {/* Avatar */}
-      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500 flex items-center justify-center
-                      text-navy-900 text-xs font-bold cursor-pointer flex-shrink-0">
-        AB
+      {/* User info + logout */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {user && (
+          <span className="hidden sm:block text-xs text-slate-500 truncate max-w-[120px]">
+            {user.name}
+          </span>
+        )}
+        {/* Avatar */}
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
+                        flex items-center justify-center text-navy-900 text-xs font-bold">
+          {user?.initials ?? 'AB'}
+        </div>
+        {/* Logout — desktop */}
+        <button
+          onClick={handleLogout}
+          title="Se déconnecter"
+          className="hidden md:flex w-9 h-9 rounded-lg border border-navy-700/50 items-center justify-center
+                     text-slate-400 hover:text-red-400 hover:border-red-400/30 transition"
+        >
+          <LogOut size={15} />
+        </button>
       </div>
     </header>
   )

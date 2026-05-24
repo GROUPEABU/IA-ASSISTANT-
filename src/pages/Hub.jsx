@@ -48,7 +48,7 @@ const tools = [
     color: 'cyan',
     title: 'Assistant IA',
     description: 'Posez toutes vos questions sur les produits, le marché ou les stratégies commerciales.',
-    badge: 'Claude 4',
+    badge: 'IA',
   },
 ]
 

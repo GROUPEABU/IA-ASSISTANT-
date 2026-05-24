@@ -99,10 +99,10 @@ export default function MarketAnalysis({ product }) {
         setFetchedAt(webData.fetchedAt)
         setLoadingStep(`${webData.snippets.length} sources lues · Analyse IA en cours…`)
       } else {
-        setLoadingStep('Analyse avec les données de Claude…')
+        setLoadingStep('Analyse IA en cours…')
       }
 
-      // Étape 2 : analyse Claude
+      // Étape 2 : analyse IA
       const prompt = buildMarketPrompt(product.fullName, webData.snippets || [], product)
       const result = await sendMessage([{ role: 'user', content: prompt }])
       setAnalysis(result)
@@ -161,7 +161,7 @@ export default function MarketAnalysis({ product }) {
               <h3 className="text-sm font-semibold text-white">Analyse marché temps réel</h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              L'Argus · La Centrale · Le Bon Coin → Claude
+              L'Argus · La Centrale · Le Bon Coin
             </p>
             {snippets.length > 0 && <SourceBadges snippets={snippets} />}
             {fetchedAt && (
@@ -208,7 +208,7 @@ export default function MarketAnalysis({ product }) {
             <p className="text-sm text-slate-400 mb-1 font-medium">Analyse VN & VO en temps réel</p>
             <p className="text-xs text-slate-600 mb-4">
               Lit L'Argus, La Centrale et Le Bon Coin<br />
-              puis génère une analyse complète avec Claude
+              puis génère une analyse complète
             </p>
             <p className="text-[11px] text-cyan-400/60">Gratuit · Sans inscription · Sans carte bancaire</p>
           </div>

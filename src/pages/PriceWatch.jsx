@@ -64,7 +64,7 @@ export default function PriceWatch() {
       const raw = await fetchPrices(vehicle)
       setFetchedAt(raw.fetchedAt)
 
-      setStep('Analyse des prix avec Claude…')
+      setStep('Analyse des prix en cours…')
       const analysis = await analyzePrices(vehicle, raw.sources || [])
       setResult({ ...analysis, sources: raw.sources })
     } catch (err) {

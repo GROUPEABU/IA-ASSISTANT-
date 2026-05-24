@@ -146,7 +146,7 @@ Sois percutant, concret et adapté au marché français.`
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-sm font-semibold text-white">Pitch de vente IA</h3>
-            <p className="text-xs text-slate-500">Généré par Claude · Prêt à l'emploi</p>
+            <p className="text-xs text-slate-500">Généré par IA · Prêt à l'emploi</p>
           </div>
           <Button size="sm" variant={pitch ? 'ghost' : 'primary'} onClick={generatePitch} disabled={loading}>
             {loading ? <Spinner size="sm" /> : <RefreshCw size={13} />}

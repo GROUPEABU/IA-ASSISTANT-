@@ -13,7 +13,7 @@ export default function Chat() {
       <div className="flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse-slow" />
-          <span className="text-xs text-slate-500">Assistant connecté · Claude Sonnet 4</span>
+          <span className="text-xs text-slate-500">Assistant connecté · Opérationnel</span>
         </div>
         {messages.length > 0 && (
           <button

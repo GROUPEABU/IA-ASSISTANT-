@@ -98,7 +98,7 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
                 <div>
                   <p className="text-sm font-medium text-white">Analyse en cours…</p>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Claude recherche les specs, prix, CO₂ et données marché pour "{query}"
+                    Recherche des specs, prix, CO₂ et données marché pour "{query}"
                   </p>
                 </div>
               </div>
