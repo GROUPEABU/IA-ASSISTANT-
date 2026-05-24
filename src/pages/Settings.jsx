@@ -1,4 +1,4 @@
-import { Key, Palette, Bell, Globe } from 'lucide-react'
+import { Key, Palette, Globe } from 'lucide-react'
 import Button from '@/components/ui/Button'
 
 const Section = ({ icon: Icon, title, children }) => (
@@ -45,27 +45,6 @@ export default function Settings() {
         <div className="flex justify-end">
           <Button size="sm">Enregistrer</Button>
         </div>
-      </Section>
-
-      <Section icon={Bell} title="Notifications">
-        <Field label="Alertes de performance" description="Notifier si les ventes baissent de plus de 10 %">
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" className="sr-only peer" defaultChecked />
-            <div className="w-9 h-5 bg-navy-700 peer-focus:ring-2 peer-focus:ring-cyan-400/30 rounded-full peer
-                            peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-0.5
-                            after:bg-white after:rounded-full after:h-4 after:w-4 after:transition
-                            peer-checked:bg-cyan-400" />
-          </label>
-        </Field>
-        <Field label="Rapports hebdomadaires" description="Envoi automatique chaque lundi">
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" className="sr-only peer" />
-            <div className="w-9 h-5 bg-navy-700 peer-focus:ring-2 peer-focus:ring-cyan-400/30 rounded-full peer
-                            peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-0.5
-                            after:bg-white after:rounded-full after:h-4 after:w-4 after:transition
-                            peer-checked:bg-cyan-400" />
-          </label>
-        </Field>
       </Section>
 
       <Section icon={Globe} title="Données & Région">
