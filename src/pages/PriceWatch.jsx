@@ -6,6 +6,7 @@ import {
 import { sendMessage } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import { formatNumber } from '@/utils/formatters'
+import { useSettings } from '@/contexts/SettingsContext'
 
 // ── Données filtres ────────────────────────────────────────────────────────────
 const MAKES = [
@@ -142,6 +143,7 @@ function KpiCard({ label, value, highlight, sub }) {
 
 // ── Page principale ───────────────────────────────────────────────────────────
 export default function PriceWatch() {
+  const { t } = useSettings()
   const [type, setType]           = useState('vo')
   const [make, setMake]           = useState('')
   const [model, setModel]         = useState('')
@@ -208,23 +210,23 @@ export default function PriceWatch() {
       <div className="glass-card p-4 md:p-5">
         <div className="flex items-center gap-2 mb-4">
           <Bell size={15} className="text-cyan-400" />
-          <h2 className="text-sm font-semibold text-white">Veille prix concurrence</h2>
+          <h2 className="text-sm font-semibold text-white">{t('tool_price_title')}</h2>
           <span className="text-xs text-slate-500 hidden sm:inline">La Centrale · LBC · L'Argus</span>
         </div>
 
         {/* VO / VN toggle */}
         <div className="flex gap-1 p-1 bg-navy-900/60 rounded-xl w-fit mb-4 border border-navy-700/40">
-          {[{ id: 'vo', label: 'Occasion (VO)' }, { id: 'vn', label: 'Neuf (VN)' }].map(t => (
+          {[{ id: 'vo', label: t('used_vehicle') }, { id: 'vn', label: t('new_vehicle') }].map(tab => (
             <button
-              key={t.id}
-              onClick={() => { setType(t.id); if (t.id === 'vn') setMileageMax('') }}
+              key={tab.id}
+              onClick={() => { setType(tab.id); if (tab.id === 'vn') setMileageMax('') }}
               className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                type === t.id
+                type === tab.id
                   ? 'bg-cyan-400 text-navy-900'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              {t.label}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -232,7 +234,7 @@ export default function PriceWatch() {
         {/* Ligne 1 : Marque + Modèle + Année min + Année max */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-2">
           <div>
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Marque</label>
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('make_label')}</label>
             <input
               type="text"
               value={make}
@@ -249,7 +251,7 @@ export default function PriceWatch() {
           </div>
 
           <div>
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Modèle</label>
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('model_label')}</label>
             <input
               type="text"
               value={model}
@@ -302,7 +304,7 @@ export default function PriceWatch() {
                        disabled:opacity-40 disabled:pointer-events-none"
           >
             {loading ? <Spinner size="sm" /> : <Search size={14} />}
-            {loading ? 'Analyse…' : 'Analyser les prix'}
+            {loading ? t('analyzing') : t('analyze_btn')}
           </button>
 
           {centraleUrl && !loading && (
@@ -374,17 +376,17 @@ export default function PriceWatch() {
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <KpiCard
-              label="Prix moyen marché"
+              label={t('avg_price')}
               value={fmtEur(result.prix_moyen)}
               highlight
               sub="hors aberrants"
             />
             <KpiCard
-              label="Prix médian"
+              label={t('median_price')}
               value={fmtEur(result.prix_median)}
             />
             <KpiCard
-              label="Fourchette courante"
+              label={t('price_range')}
               value={result.prix_q1 && result.prix_q3
                 ? `${formatNumber(result.prix_q1)} – ${formatNumber(result.prix_q3)} €`
                 : 'N/D'}

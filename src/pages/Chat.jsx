@@ -2,6 +2,7 @@ import { Trash2, MessageSquare, Sparkles } from 'lucide-react'
 import ChatWindow from '@/components/chat/ChatWindow'
 import ChatInput from '@/components/chat/ChatInput'
 import { useChat } from '@/hooks/useChat'
+import { useSettings } from '@/contexts/SettingsContext'
 
 const SUGGESTED = [
   'Quel est le malus CO₂ pour un SUV 150 g/km en France ?',
@@ -11,6 +12,7 @@ const SUGGESTED = [
 ]
 
 export default function Chat() {
+  const { t } = useSettings()
   const { messages, isLoading, error, send, clear } = useChat()
   const isEmpty = messages.length === 0
 
@@ -28,7 +30,7 @@ export default function Chat() {
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-400 transition px-2.5 py-1.5 rounded-lg hover:bg-red-400/10"
           >
             <Trash2 size={13} />
-            <span className="hidden sm:inline">Effacer</span>
+            <span className="hidden sm:inline">{t('chat_clear')}</span>
           </button>
         )}
       </div>
@@ -46,7 +48,7 @@ export default function Chat() {
               </div>
             </div>
             <div className="text-center">
-              <h3 className="text-base font-semibold text-white mb-1">Assistant Autobuyunion</h3>
+              <h3 className="text-base font-semibold text-white mb-1">{t('chat_assistant_name')}</h3>
               <p className="text-sm text-slate-500 max-w-xs leading-relaxed">
                 Posez vos questions sur les produits, le marché automobile ou les stratégies commerciales.
               </p>

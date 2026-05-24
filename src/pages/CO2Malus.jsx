@@ -257,7 +257,7 @@ export default function CO2Malus() {
       </div>
 
       {/* Date immatriculation */}
-      <div className="glass-card p-3 mb-2">
+      <div className="glass-card p-3 mb-2 overflow-hidden">
         <div className="flex justify-between items-center mb-2.5">
           <span className="text-[11px] text-slate-500 font-medium tracking-widest uppercase">Date 1ère immat</span>
           <span className="text-xs font-semibold text-amber-400">{formatDateFR(dateImmat)}</span>
@@ -265,8 +265,8 @@ export default function CO2Malus() {
         <input
           type="date" value={dateImmat} min="2023-01-01" max="2030-12-31"
           onChange={e => setDateImmat(e.target.value)}
-          className="w-full px-3 py-1.5 rounded-lg text-xs border outline-none mb-2.5 text-center font-medium"
-          style={{ colorScheme: 'dark', fontFamily: 'inherit', background: 'rgba(80,229,229,0.05)', borderColor: 'rgba(80,229,229,0.2)', color: '#50E5E5' }}
+          className="w-full min-w-0 px-3 py-2.5 rounded-lg border outline-none mb-2.5 font-medium"
+          style={{ colorScheme: 'dark', fontFamily: 'inherit', fontSize: '15px', maxWidth: '100%', background: 'rgba(80,229,229,0.05)', borderColor: 'rgba(80,229,229,0.2)', color: '#50E5E5' }}
         />
         <div className="grid grid-cols-4 gap-1">
           {DATE_PRESETS.map(p => (

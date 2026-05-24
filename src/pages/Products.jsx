@@ -7,11 +7,11 @@ import { getMalus, getMalusColor } from '@/utils/malus'
 import Badge from '@/components/ui/Badge'
 import { formatNumber } from '@/utils/formatters'
 import VehicleSearchModal from '@/components/products/VehicleSearchModal'
+import { useSettings } from '@/contexts/SettingsContext'
 
-const statusLabel = { new: 'Nouveau', soon: 'Bientôt', available: 'Disponible' }
 const statusVariant = { new: 'cyan', soon: 'warning', available: 'success' }
 
-function ProductCard({ product, onDelete, navigate }) {
+function ProductCard({ product, onDelete, navigate, t, formatCurrency }) {
   const malus = getMalus(product.specs.co2_wltp, product.prix.haut)
   const mc = getMalusColor(product.specs.co2_wltp)
 
@@ -26,8 +26,8 @@ function ProductCard({ product, onDelete, navigate }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
             {product._generated
-              ? <Badge variant="cyan">IA Généré</Badge>
-              : <Badge variant={statusVariant[product.status]}>{statusLabel[product.status]}</Badge>}
+              ? <Badge variant="cyan">{t('product_generated')}</Badge>
+              : <Badge variant={statusVariant[product.status]}>{t(`product_${product.status}`)}</Badge>}
             <span className="text-xs text-slate-500">{product.year}</span>
           </div>
           <h2 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors leading-tight">
@@ -73,19 +73,19 @@ function ProductCard({ product, onDelete, navigate }) {
       {/* Price & Malus */}
       <div className="flex items-center justify-between pt-3 border-t border-navy-700/50 mb-2">
         <div>
-          <span className="text-[11px] text-slate-500">À partir de </span>
-          <span className="text-base font-bold text-white">{formatNumber(product.prix.base)} €</span>
+          <span className="text-[11px] text-slate-500">{t('from_price')} </span>
+          <span className="text-base font-bold text-white">{formatCurrency(product.prix.base)}</span>
         </div>
         <div className="text-right">
           <span className="text-[11px] text-slate-500">Malus FR </span>
           <span className={`text-sm font-bold ${mc === 'danger' ? 'text-red-400' : mc === 'orange' ? 'text-amber-400' : 'text-emerald-400'}`}>
-            {malus > 0 ? `+${formatNumber(malus)} €` : 'Exonéré'}
+            {malus > 0 ? `+${formatCurrency(malus)}` : t('exempt')}
           </span>
         </div>
       </div>
 
       <div className="flex items-center gap-1.5 text-xs text-cyan-400 font-semibold">
-        Voir la fiche complète <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+        {t('view_sheet')} <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
       </div>
     </div>
   )
@@ -93,6 +93,7 @@ function ProductCard({ product, onDelete, navigate }) {
 
 export default function Products() {
   const navigate = useNavigate()
+  const { t, formatCurrency } = useSettings()
   const [showSearch, setShowSearch] = useState(false)
   const { generated, add, remove } = useGeneratedProducts()
 
@@ -109,7 +110,7 @@ export default function Products() {
                      px-3 py-2 rounded-lg hover:bg-cyan-300 active:scale-95 transition-all"
         >
           <Sparkles size={13} />
-          Générer une fiche IA
+          {t('generate_sheet')}
         </button>
       </div>
 
@@ -128,7 +129,7 @@ export default function Products() {
           <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Fiches intégrées</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {PRODUCTS.map((product) => (
-              <ProductCard key={product.id} product={product} navigate={navigate} />
+              <ProductCard key={product.id} product={product} navigate={navigate} t={t} formatCurrency={formatCurrency} />
             ))}
           </div>
         </div>
@@ -144,7 +145,7 @@ export default function Products() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {generated.map((product) => (
-              <ProductCard key={product.id} product={product} navigate={navigate} onDelete={remove} />
+              <ProductCard key={product.id} product={product} navigate={navigate} onDelete={remove} t={t} formatCurrency={formatCurrency} />
             ))}
           </div>
         </div>
@@ -154,9 +155,9 @@ export default function Products() {
       {allProducts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 gap-4">
           <Car size={40} className="text-slate-700" />
-          <p className="text-sm text-slate-500">Aucun produit. Générez votre première fiche.</p>
+          <p className="text-sm text-slate-500">{t('no_products')}</p>
           <button onClick={() => setShowSearch(true)} className="btn-primary text-sm flex items-center gap-2">
-            <Sparkles size={14} /> Générer une fiche IA
+            <Sparkles size={14} /> {t('generate_sheet')}
           </button>
         </div>
       )}

@@ -4,6 +4,7 @@ import { sendMessage } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
+import { useSettings } from '@/contexts/SettingsContext'
 
 const PROFILES = [
   { id: 'btoc_famille', label: 'Famille',       sublabel: 'Particulier',        icon: Users,     segment: 'btoc', color: '#50E5E5' },
@@ -14,6 +15,7 @@ const PROFILES = [
 ]
 
 export default function PitchGenerator() {
+  const { t } = useSettings()
   const [vehicleId, setVehicleId] = useState('')
   const [customVehicle, setCustomVehicle] = useState('')
   const [profileId, setProfileId] = useState('btoc_famille')
@@ -210,7 +212,7 @@ Réponds UNIQUEMENT en JSON valide :
                      disabled:opacity-40 disabled:pointer-events-none shadow-lg shadow-cyan-400/15"
         >
           {loading ? <Spinner size="sm" /> : <Mic size={14} />}
-          {loading ? 'Génération…' : 'Générer le pitch'}
+          {loading ? t('generating') : t('generate_pitch_btn')}
         </button>
       </div>
 
@@ -248,7 +250,7 @@ Réponds UNIQUEMENT en JSON valide :
                 <div className="w-6 h-6 rounded-lg bg-emerald-400/15 flex items-center justify-center">
                   <span className="text-emerald-400 text-xs font-bold leading-none">1</span>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Accroche</span>
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">{t('hook_label')}</span>
               </div>
               <button onClick={() => copySection(pitch.accroche)} className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-emerald-400/10 transition">
                 <Copy size={12} />
@@ -265,7 +267,7 @@ Réponds UNIQUEMENT en JSON valide :
               <div className="w-6 h-6 rounded-lg bg-cyan-400/15 flex items-center justify-center">
                 <span className="text-cyan-400 text-xs font-bold leading-none">2</span>
               </div>
-              <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Arguments clés</span>
+              <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">{t('key_args')}</span>
             </div>
             <div className="space-y-2">
               {pitch.arguments.map((arg, i) => (
@@ -305,7 +307,7 @@ Réponds UNIQUEMENT en JSON valide :
                 <div className="w-6 h-6 rounded-lg bg-violet-400/15 flex items-center justify-center">
                   <span className="text-violet-400 text-xs font-bold leading-none">4</span>
                 </div>
-                <span className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">Closing</span>
+                <span className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">{t('closing_label')}</span>
               </div>
               <button onClick={() => copySection(pitch.closing)} className="p-1.5 rounded-lg text-slate-500 hover:text-violet-400 hover:bg-violet-400/10 transition">
                 <Copy size={12} />
@@ -325,9 +327,9 @@ Réponds UNIQUEMENT en JSON valide :
                        hover:border-cyan-400/30 hover:text-cyan-300 active:scale-95 transition-all"
           >
             {copied ? (
-              <><Check size={14} className="text-emerald-400" /><span className="text-emerald-400">Copié !</span></>
+              <><Check size={14} className="text-emerald-400" /><span className="text-emerald-400">{t('copied')}</span></>
             ) : (
-              <><Copy size={14} />Copier le pitch complet</>
+              <><Copy size={14} />{t('copy_pitch')}</>
             )}
           </button>
         </div>

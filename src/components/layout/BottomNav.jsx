@@ -1,23 +1,26 @@
 import { NavLink } from 'react-router-dom'
 import { Home, BookOpen, Bell, Gauge, ShieldCheck, MessageSquare } from 'lucide-react'
 import clsx from 'clsx'
-
-const items = [
-  { to: '/hub',        icon: Home,          label: 'Hub' },
-  { to: '/products',   icon: BookOpen,      label: 'Produits' },
-  { to: '/price-watch',icon: Bell,          label: 'Prix' },
-  { to: '/co2-malus',  icon: Gauge,         label: 'Malus' },
-  { to: '/objections', icon: ShieldCheck,   label: 'Objections' },
-  { to: '/chat',       icon: MessageSquare, label: 'IA Chat' },
-]
+import { useSettings } from '@/contexts/SettingsContext'
 
 export default function BottomNav() {
+  const { t } = useSettings()
+
+  const items = [
+    { to: '/hub',         icon: Home,          labelKey: 'bn_hub' },
+    { to: '/products',    icon: BookOpen,      labelKey: 'bn_products' },
+    { to: '/price-watch', icon: Bell,          labelKey: 'bn_price' },
+    { to: '/co2-malus',   icon: Gauge,         labelKey: 'bn_malus' },
+    { to: '/objections',  icon: ShieldCheck,   labelKey: 'bn_objections' },
+    { to: '/chat',        icon: MessageSquare, labelKey: 'bn_chat' },
+  ]
+
   return (
     <nav
       className="md:hidden fixed bottom-0 inset-x-0 z-10 flex items-stretch pb-safe"
       style={{ background: 'rgba(10,27,44,0.97)', borderTop: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(16px)' }}
     >
-      {items.map(({ to, icon: Icon, label }) => (
+      {items.map(({ to, icon: Icon, labelKey }) => (
         <NavLink
           key={to}
           to={to}
@@ -37,7 +40,7 @@ export default function BottomNav() {
                 <Icon size={16} />
               </span>
               <span className={clsx('leading-none', isActive ? 'text-cyan-400' : 'text-slate-600')}>
-                {label}
+                {t(labelKey)}
               </span>
             </>
           )}

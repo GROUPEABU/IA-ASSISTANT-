@@ -4,43 +4,45 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSettings } from '@/contexts/SettingsContext'
 import Logo from '@/components/ui/Logo'
-
-const navGroups = [
-  {
-    label: 'Portail membres',
-    items: [
-      { to: '/hub',      icon: Home,         label: 'Accueil Hub' },
-      { to: '/products', icon: BookOpen,      label: 'Fiches & Rapports' },
-      { to: '/co2-malus',icon: Gauge,         label: 'CO₂ & Malus' },
-    ],
-  },
-  {
-    label: 'Outils de vente',
-    items: [
-      { to: '/price-watch', icon: Bell,        label: 'Veille prix' },
-      { to: '/objections',  icon: ShieldCheck, label: 'Réponses objections' },
-      { to: '/pitch',       icon: Mic,         label: 'Générateur de pitch' },
-      { to: '/tco',         icon: Calculator,  label: 'Calculateur TCO' },
-    ],
-  },
-  {
-    label: 'Assistant IA',
-    items: [
-      { to: '/chat', icon: MessageSquare, label: 'Assistant IA' },
-    ],
-  },
-  {
-    label: 'Compte',
-    items: [
-      { to: '/settings', icon: Settings, label: 'Paramètres' },
-    ],
-  },
-]
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth()
+  const { t } = useSettings()
   const navigate = useNavigate()
+
+  const navGroups = [
+    {
+      labelKey: 'nav_portal',
+      items: [
+        { to: '/hub',       icon: Home,         labelKey: 'nav_hub' },
+        { to: '/products',  icon: BookOpen,      labelKey: 'nav_products' },
+        { to: '/co2-malus', icon: Gauge,         labelKey: 'nav_co2' },
+      ],
+    },
+    {
+      labelKey: 'nav_tools',
+      items: [
+        { to: '/price-watch', icon: Bell,        labelKey: 'nav_price_watch' },
+        { to: '/objections',  icon: ShieldCheck, labelKey: 'nav_objections' },
+        { to: '/pitch',       icon: Mic,         labelKey: 'nav_pitch' },
+        { to: '/tco',         icon: Calculator,  labelKey: 'nav_tco' },
+      ],
+    },
+    {
+      labelKey: 'nav_ai',
+      items: [
+        { to: '/chat', icon: MessageSquare, labelKey: 'nav_chat' },
+      ],
+    },
+    {
+      labelKey: 'nav_account',
+      items: [
+        { to: '/settings', icon: Settings, labelKey: 'nav_settings' },
+      ],
+    },
+  ]
 
   const handleLogout = () => {
     logout()
@@ -68,12 +70,12 @@ export default function Sidebar({ isOpen, onClose }) {
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
         {navGroups.map((group) => (
-          <div key={group.label}>
+          <div key={group.labelKey}>
             <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest px-2 mb-2">
-              {group.label}
+              {t(group.labelKey)}
             </p>
             <div className="space-y-0.5">
-              {group.items.map(({ to, icon: Icon, label }) => (
+              {group.items.map(({ to, icon: Icon, labelKey }) => (
                 <NavLink
                   key={to}
                   to={to}
@@ -81,7 +83,7 @@ export default function Sidebar({ isOpen, onClose }) {
                   className={({ isActive }) => clsx('nav-item', isActive && 'nav-item-active')}
                 >
                   <Icon size={16} />
-                  {label}
+                  {t(labelKey)}
                 </NavLink>
               ))}
             </div>
@@ -91,19 +93,17 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Footer */}
       <div className="px-3 pb-4 pt-3 border-t border-navy-700/50 space-y-2">
-        {/* IA status */}
         <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-cyan-400/5 border border-cyan-400/10">
           <div className="w-6 h-6 rounded-lg bg-cyan-400/15 flex items-center justify-center flex-shrink-0">
             <Zap size={13} className="text-cyan-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold text-cyan-400 leading-tight">IA Opérationnelle</p>
-            <p className="text-[10px] text-slate-500">Connecté · Prêt</p>
+            <p className="text-[11px] font-semibold text-cyan-400 leading-tight">{t('ai_operational')}</p>
+            <p className="text-[10px] text-slate-500">{t('connected_ready')}</p>
           </div>
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse-slow flex-shrink-0" />
         </div>
 
-        {/* User + logout */}
         {user && (
           <div className="flex items-center gap-2.5 px-2 py-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
@@ -117,7 +117,7 @@ export default function Sidebar({ isOpen, onClose }) {
             </div>
             <button
               onClick={handleLogout}
-              title="Se déconnecter"
+              title={t('logout')}
               className="text-slate-500 hover:text-red-400 transition p-1.5 rounded-lg hover:bg-red-400/10"
             >
               <LogOut size={14} />

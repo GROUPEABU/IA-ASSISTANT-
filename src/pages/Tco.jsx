@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelL
 import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { getMalus } from '@/utils/malus'
 import { formatNumber } from '@/utils/formatters'
+import { useSettings } from '@/contexts/SettingsContext'
 
 // ─── Maintenance defaults ───────────────────────────────────────────────────
 const MAINT_TIERS = [
@@ -75,6 +76,7 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 export default function Tco() {
+  const { t } = useSettings()
   const [vehicles, setVehicles] = useState([emptyVehicle(1), emptyVehicle(2)])
   const [years, setYears] = useState(4)
   const [kmYear, setKmYear] = useState(15000)
@@ -130,7 +132,7 @@ export default function Tco() {
   return (
     <div className="flex flex-col gap-3 animate-fade-in flex-1 min-h-0 overflow-y-auto">
       <div className="flex-shrink-0">
-        <h2 className="text-sm font-semibold text-white">Calculateur TCO</h2>
+        <h2 className="text-sm font-semibold text-white">{t('page_tco_title')}</h2>
         <p className="text-xs text-slate-500">Coût total de possession · Comparez jusqu'à 4 véhicules</p>
       </div>
 
@@ -308,18 +310,18 @@ export default function Tco() {
                   </div>
                   {/* Tier selector */}
                   <div className="grid grid-cols-3 gap-0 bg-navy-900/50 rounded-xl p-1 mb-2">
-                    {MAINT_TIERS.map(t => (
-                      <button key={t.k} onClick={() => {
-                        update(v.id, 'tier', t.k)
-                        update(v.id, 'maint', getMaintDefault(v.fuelType, t.k))
+                    {MAINT_TIERS.map(tier => (
+                      <button key={tier.k} onClick={() => {
+                        update(v.id, 'tier', tier.k)
+                        update(v.id, 'maint', getMaintDefault(v.fuelType, tier.k))
                         update(v.id, 'maintManual', false)
                       }}
                         className="py-1.5 rounded-[9px] text-[10px] font-semibold transition leading-tight"
                         style={{
-                          background: v.tier === t.k ? 'rgba(80,229,229,0.16)' : 'transparent',
-                          color: v.tier === t.k ? '#50E5E5' : '#64748b',
+                          background: v.tier === tier.k ? 'rgba(80,229,229,0.16)' : 'transparent',
+                          color: v.tier === tier.k ? '#50E5E5' : '#64748b',
                         }}
-                      >{t.l}</button>
+                      >{tier.l}</button>
                     ))}
                   </div>
                   {/* Manual override */}
@@ -348,7 +350,7 @@ export default function Tco() {
             style={{ borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.12)' }}
           >
             <Plus size={15} />
-            Ajouter un véhicule
+            {t('add_vehicle')}
           </button>
         )}
       </div>
@@ -426,7 +428,7 @@ export default function Tco() {
                   </tr>
                 ))}
                 <tr className="bg-white/3">
-                  <td className="px-4 py-3 text-white font-bold uppercase text-[11px] tracking-wider">Total TCO</td>
+                  <td className="px-4 py-3 text-white font-bold uppercase text-[11px] tracking-wider">{t('total_tco')}</td>
                   {results.map((r, i) => (
                     <td key={i} className="px-3 py-3 text-right font-bold text-base" style={{ color: i === 0 ? r.color : '#E0E1E1' }}>
                       {formatNumber(Math.round(r.total))} €

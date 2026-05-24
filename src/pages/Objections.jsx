@@ -4,6 +4,7 @@ import { sendMessage } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
+import { useSettings } from '@/contexts/SettingsContext'
 
 const SEGMENTS = [
   { id: 'btoc', label: 'BtoC', sub: 'Particuliers' },
@@ -23,6 +24,7 @@ const CATEGORY_COLORS = {
 }
 
 function ObjectionCard({ item, index, isOpen, onToggle }) {
+  const { t } = useSettings()
   const catColor = CATEGORY_COLORS[item.categorie?.toLowerCase()] || CATEGORY_COLORS.concurrence
 
   return (
@@ -49,7 +51,7 @@ function ObjectionCard({ item, index, isOpen, onToggle }) {
       {isOpen && (
         <div className="px-4 pb-4 pl-8 animate-fade-in">
           <div className="bg-emerald-400/5 border border-emerald-400/20 rounded-xl p-3">
-            <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2">Réponse recommandée</p>
+            <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2">{t('recommended_answer')}</p>
             <p className="text-sm text-slate-300 leading-relaxed">{item.reponse}</p>
           </div>
           {item.argument_cle && (
@@ -65,6 +67,7 @@ function ObjectionCard({ item, index, isOpen, onToggle }) {
 }
 
 export default function Objections() {
+  const { t } = useSettings()
   const [vehicleId, setVehicleId] = useState('')
   const [customVehicle, setCustomVehicle] = useState('')
   const [segment, setSegment] = useState('both')
@@ -209,7 +212,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
                        disabled:opacity-40 disabled:pointer-events-none"
           >
             {loading ? <Spinner size="sm" /> : <ShieldCheck size={14} />}
-            {loading ? 'Génération…' : 'Générer les 10 objections'}
+            {loading ? t('generating') : t('generate_obj_btn')}
           </button>
           {objections.length > 0 && (
             <button onClick={handlePrint}
