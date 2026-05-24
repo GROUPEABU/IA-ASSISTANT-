@@ -148,13 +148,8 @@ export default function CO2Malus() {
       {/* Header */}
       <div className="flex-shrink-0">
         <h2 className="text-sm font-semibold text-white">CO₂ & Malus Mondial</h2>
-        <p className="text-xs text-slate-500">Calculateur sur 40 pays · Autobuyunion</p>
+        <p className="text-xs text-slate-500">Calculateur sur 40 pays · Estimation indicative</p>
       </div>
-
-      {/* Disclaimer subtitle */}
-      <p className="text-xs text-slate-500 text-center -mt-1 flex-shrink-0">
-        Estimation indicative · Consultez les autorités fiscales avant tout achat
-      </p>
 
       {/* Legend */}
       <div className="glass-card px-3 py-2.5 flex-shrink-0">
