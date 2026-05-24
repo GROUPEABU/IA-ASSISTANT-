@@ -485,7 +485,12 @@ export default function CO2Malus() {
                     <div className="text-xl font-bold text-white">{result.country.name}</div>
                     <div className="text-[11px] text-slate-400 leading-snug">{result.tax_name}</div>
                     <div className="text-[11px] mt-0.5" style={{ color: RELIABILITY_CONFIG[result.reliability].color }}>
-                      {RELIABILITY_CONFIG[result.reliability].label} · {result.source}
+                      {RELIABILITY_CONFIG[result.reliability].label} ·{' '}
+                      {result.source_url
+                        ? <a href={result.source_url} target="_blank" rel="noopener noreferrer"
+                            className="underline underline-offset-2 opacity-80 hover:opacity-100"
+                            style={{ color: RELIABILITY_CONFIG[result.reliability].color }}>{result.source}</a>
+                        : result.source}
                     </div>
                   </div>
                 </div>
@@ -579,9 +584,12 @@ export default function CO2Malus() {
                             {b.min_gkm}–{b.max_gkm ? b.max_gkm : '∞'} g/km
                           </span>
                           <span className={isActive ? 'text-cyan-400 font-semibold' : 'text-slate-400'}>
-                            {b.rate_display}
+                            {b.label}
                           </span>
-                          {isActive && <span className="ml-auto text-[10px] font-bold text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded-full">◀ actif</span>}
+                          <span className="ml-auto text-[11px]" style={{ color: isActive ? '#50E5E5' : '#475569' }}>
+                            {b.penalty}
+                          </span>
+                          {isActive && <span className="text-[10px] font-bold text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded-full ml-1">◀</span>}
                         </div>
                       )
                     })}
@@ -608,9 +616,12 @@ export default function CO2Malus() {
                             {b.min_kg}–{b.max_kg ? b.max_kg : '∞'} kg
                           </span>
                           <span className={isActive ? 'text-sky-300 font-semibold' : 'text-slate-400'}>
-                            {b.rate_display}
+                            {b.label}
                           </span>
-                          {isActive && <span className="ml-auto text-[10px] font-bold text-sky-300 bg-sky-300/10 px-2 py-0.5 rounded-full">◀ actif</span>}
+                          <span className="ml-auto text-[11px]" style={{ color: isActive ? '#7DD3FC' : '#475569' }}>
+                            {b.penalty}
+                          </span>
+                          {isActive && <span className="text-[10px] font-bold text-sky-300 bg-sky-300/10 px-2 py-0.5 rounded-full ml-1">◀</span>}
                         </div>
                       )
                     })}
@@ -630,6 +641,33 @@ export default function CO2Malus() {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {result.notes && (
+                <div className="px-5 pt-4 pb-1 border-t border-white/7">
+                  <div className="text-[11px] text-slate-500 tracking-wider mb-2 uppercase">Calcul détaillé</div>
+                  <div className="text-[11px] text-slate-400 leading-relaxed">{result.notes}</div>
+                </div>
+              )}
+
+              {/* Source officielle */}
+              {result.source_url && (
+                <div className="px-5 py-4 border-t border-white/7 bg-white/[0.015] rounded-b-2xl">
+                  <div className="text-[11px] text-slate-500 tracking-wider mb-2 uppercase">Source officielle</div>
+                  <a href={result.source_url} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-xs font-medium hover:opacity-90 transition"
+                    style={{ color: RELIABILITY_CONFIG[result.reliability].color }}>
+                    <span>↗</span>
+                    <span>{result.source}</span>
+                  </a>
+                  <div className="text-[10px] text-slate-600 mt-0.5 font-mono truncate">{result.source_url}</div>
+                  {result.legal_ref && (
+                    <div className="text-[11px] text-slate-400 mt-2 pt-2 border-t border-white/5">
+                      <span className="text-slate-500 mr-1">Réf. légale :</span>{result.legal_ref}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -725,6 +763,18 @@ export default function CO2Malus() {
                         <div className="text-2xl font-bold"
                           style={{ color: (r.specific_penalty_amount || 0) > 0 ? '#fb923c' : '#50E5E5' }}>
                           {r.specific_penalty}
+                        </div>
+                        <div className="mt-2 flex items-center gap-3 flex-wrap">
+                          {r.source_url && (
+                            <a href={r.source_url} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-[10px] hover:opacity-90 transition"
+                              style={{ color: cfg.color }}>
+                              <span>↗</span>{r.source}
+                            </a>
+                          )}
+                          {r.legal_ref && (
+                            <span className="text-[10px] text-slate-500">{r.legal_ref}</span>
+                          )}
                         </div>
                       </div>
                     )

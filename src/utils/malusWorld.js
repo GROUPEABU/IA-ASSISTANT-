@@ -1112,8 +1112,9 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           has_malus: totalApresBonus > 0,
           severity: sev(totalApresBonus),
           notes: `Date d'immat. = ${formatDateFR(dateImmat)}.${isImported ? ` Véhicule importé (réception UE) : décote ${decote}%.` : ""} CO₂ ${malusCO2.toLocaleString("fr-FR")} € + Poids ${poidsApplique.toLocaleString("fr-FR")} € = ${total.toLocaleString("fr-FR")} € (plafond ${plafond.toLocaleString("fr-FR")} €).`,
-          source: "service-public.fr",
-          source_url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F35947",
+          source: "service-public.fr / Légifrance",
+          source_url: "https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000044595989/LEGISCTA000044597055/",
+          legal_ref: "Art. L421-58 à L421-81-1 CIBS · Art. L421-70 (familles ≥3 enfants) · JORF 30/12/2024",
           reliability: "official",
           advanced_params: ["childrenCount"]
         };
@@ -1178,6 +1179,7 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           notes: `Date d'immat. = ${formatDateFR(dateImmat)}. Barème ${ukPeriod}/27. Supplément +£440/an pendant 5 ans si véhicule > £40 000.`,
           source: "gov.uk",
           source_url: "https://www.gov.uk/vehicle-tax-rate-tables",
+          legal_ref: "Vehicle Excise and Registration Act 1994 (VERA) · Schedule 1 · Finance (No.2) Act 2023",
           reliability: "official"
         };
       }
@@ -1239,8 +1241,9 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           has_malus: totalAnnual > 0,
           severity: sev(totalAnnual * 10),
           notes: `CO₂ ${co2Component}€/an + Cylindrée ${cylComponent}€/an (${displacement}cm³ × ${cylRate}€)${isImported ? ` − ${decoteDE}% (importé)` : ''} = ${totalAnnual} €/an. À payer CHAQUE ANNÉE.`,
-          source: "ADAC / Bundeszollverwaltung",
-          source_url: "https://www.zoll.de",
+          source: "Bundeszentralamt für Steuern (BZSt)",
+          source_url: "https://www.gesetze-im-internet.de/kraftstg/",
+          legal_ref: "Kraftfahrzeugsteuergesetz (KfzStG) §9 · BGBl. I 2002, S. 3843 · Einkommensteuergesetz §6 EV",
           reliability: "official",
           advanced_params: ["displacement", "fuelKind"]
         };
@@ -1298,8 +1301,9 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           has_malus: pct > 0,
           severity: sev(est),
           notes: `Montant = ${finalPct.toFixed(2)}% × ${vehiclePrice.toLocaleString()} € (prix HT)${isImported ? ` − ${decoteES}% (importé)` : ''} = ${est.toLocaleString()} €. Région : ${regionLabel}.`,
-          source: "Agencia Tributaria",
-          source_url: "https://sede.agenciatributaria.gob.es",
+          source: "Agencia Tributaria (AEAT)",
+          source_url: "https://sede.agenciatributaria.gob.es/Sede/procedimientoini/GX04.shtml",
+          legal_ref: "Ley 38/1992 art. 65–74 (Impuestos Especiales) · R.D. 1165/1995 · Orden HAP/544/2013",
           reliability: "official",
           advanced_params: ["vehiclePrice", "esRegion"]
         };
@@ -1353,7 +1357,8 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           severity: sev(a),
           notes: isImported ? `Véhicule importé : décote BPM ${decoteNL}% (Tabel afschrijving Belastingdienst). BPM brut: ${brut.toLocaleString()} € → ${a.toLocaleString()} €.` : "Surtaxe diesel possible. Barème durci chaque année.",
           source: "Belastingdienst",
-          source_url: "https://www.belastingdienst.nl",
+          source_url: "https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/belastingdienst/zakelijk/andere_belastingen/bpm/",
+          legal_ref: "Wet BPM 1992 (Wet op de belasting van personenauto's en motorrijwielen) · Belastingplan 2025 (Stb. 2024, 397)",
           reliability: "official"
         };
       }
@@ -1378,7 +1383,8 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           severity: "none",
           notes: "Réf. juridique : Pas de malus CO₂ depuis l'abrogation de l'ecotassa (L. 145/2018) le 31/12/2021. IPT régie par DPR 641/1972. Bollo régional. Superbollo : +20 €/kW au-delà de 185 kW. Ecobonus jusqu'à 11 000 € pour EV.",
           source: "Agenzia delle Entrate / ACI",
-          source_url: "https://www.aci.it",
+          source_url: "https://www.agenziaentrate.gov.it/portale/imposta-provinciale-trascrizione-ipt",
+          legal_ref: "DPR 641/1972 (IPT) · D.L. 98/2011 art.23 (superbollo) · Legge 145/2018 (ecotassa abrogée 31/12/2021)",
           reliability: "official"
         };
       }
@@ -1438,8 +1444,9 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           has_malus: a > 0,
           severity: sev(a),
           notes: `Cylindrée ${cylBrut} € + CO₂ ${co2Brut} €${isImported ? ` - décote ${decotePT}%` : ''} = ${a.toLocaleString()} €.`,
-          source: "Autoridade Tributária",
-          source_url: "https://aduaneiro.portaldasfinancas.gov.pt",
+          source: "Autoridade Tributária e Aduaneira (AT)",
+          source_url: "https://aduaneiro.portaldasfinancas.gov.pt/isv",
+          legal_ref: "Lei 22-A/2007 (Código ISV) · LOE 2025 (Lei n.º 24-D/2024) · Tabelas C (CO₂ WLTP) et D (décote)",
           reliability: "official",
           advanced_params: ["displacement", "fuelKind"]
         };
@@ -1502,8 +1509,9 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           has_malus: total > 0,
           severity: aCO2 === 0 && aPoids === 0 ? "none" : total < 500 ? "low" : total < 3000 ? "medium" : total < 15000 ? "high" : "very_high",
           notes: `CO₂ ~${aCO2} € + Poids ~${aPoids} €. Conversion NOK→EUR @0,087. EV : seul le poids s'applique.`,
-          source: "skatteetaten.no",
-          source_url: "https://www.skatteetaten.no",
+          source: "Skatteetaten (Administration fiscale norvégienne)",
+          source_url: "https://www.skatteetaten.no/bedrift-og-organisasjon/avgifter/saravgifter/om/engangsavgift/",
+          legal_ref: "Stortingsvedtak om engangsavgift 2025 §2 (CO₂) · §4 (poids) · Prop. 1 LS (2024-2025)",
           reliability: "official"
         };
       }
@@ -1582,8 +1590,9 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           has_malus: a > 100,
           severity: sev(a),
           notes: notes,
-          source: "SPW Finances Wallonie / Vlabel Vlaanderen / Bruxelles Fiscalités Fisc",
+          source: "SPW Finances / Vlabel / Bruxelles Fiscalités",
           source_url: "https://finances.wallonie.be",
+          legal_ref: "Wallonie : Décret 21/12/2023 (SPW Finances) · Flandre : BIV Vlabel (Decreet 23/12/2021) · Bruxelles : Ordonnance 21/12/2018",
           reliability: "indicative",
           advanced_params: ["beRegion"]
         };
@@ -1628,8 +1637,9 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           has_malus: total > 0,
           severity: sev(total),
           notes: `NoVA : ${novaPct.toFixed(1)}% × ${vehiclePrice.toLocaleString()} € = ${novaAmount.toLocaleString()} € + Pénalité ${penalty} €.`,
-          source: "Bundesministerium Finanzen",
-          source_url: "https://www.bmf.gv.at",
+          source: "Bundesministerium für Finanzen (BMF)",
+          source_url: "https://www.bmf.gv.at/themen/steuern/kraftfahrzeuge/nova.html",
+          legal_ref: "Normverbrauchsabgabegesetz 1991 (BGBl. I Nr. 695/1991) · BGBl. I Nr. 62/2022 (réforme WLTP 2021)",
           reliability: "official",
           advanced_params: ["vehiclePrice"]
         };
@@ -1681,8 +1691,9 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           has_malus: pct > 0,
           severity: sev(est),
           notes: `Montant = ${pct}% × ${vehiclePrice.toLocaleString()} € (prix HT).`,
-          source: "Vero (Tax Administration)",
-          source_url: "https://www.vero.fi",
+          source: "Vero (Finnish Tax Administration)",
+          source_url: "https://www.vero.fi/yritykset-ja-yhteisot/tietoa-yritysverotuksesta/autoverotus/",
+          legal_ref: "Autoverolaki 1482/1994 (Finlex) · Autoveroasetus 1134/2002 · Laki autoverolain muuttamisesta 2024",
           reliability: "official",
           advanced_params: ["vehiclePrice"]
         };
@@ -1724,7 +1735,8 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           severity: sev(a),
           notes: "Tarifs 2025: tillæg CO₂ 280 kr/g, bundfradrag 33 600 DKK. Tarifs 2026: 294 kr/g, 35 200 DKK. EV: bundfradrag 165 500 DKK + fradrag grøn 45 000 DKK. Réf: Lov om registreringsafgift §3.",
           source: "Motorstyrelsen / Skat.dk",
-          source_url: "https://motorst.dk",
+          source_url: "https://motorst.dk/registreringsafgift/",
+          legal_ref: "Lovbekendtgørelse nr. 177 af 22/02/2024 (registreringsafgiftsloven) §3 + §5a (tillæg CO₂)",
           reliability: "indicative"
         };
       }
@@ -1760,7 +1772,8 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           severity: sev(a * 3),
           notes: "Annuelle pendant 3 ans, puis taxe normale. Pas de malus immat depuis 2022.",
           source: "Transportstyrelsen",
-          source_url: "https://www.transportstyrelsen.se",
+          source_url: "https://www.transportstyrelsen.se/sv/vagtrafik/Fordon/Fordonsavgifter/Fordonsskatt/",
+          legal_ref: "Vägtrafikskattelag (2006:227) §4 · Prop. 2021/22:61 (bonus-malus) · SFS 2022:1128",
           reliability: "indicative"
         };
       }
@@ -1784,8 +1797,9 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           has_malus: false,
           severity: "none",
           notes: "Loi CO₂ révisée (1er janv. 2025) - Cible 93,6 g/km WLTP. Petits importateurs paient avant immatriculation. Voitures >12 mois à l'étranger exemptées de la sanction CO₂. Source: BFE/ASTRA. Taxe circulation annuelle cantonale variable.",
-          source: "Cantons + Admin fédérale",
-          source_url: "https://www.estv.admin.ch",
+          source: "OFROU / OFEN / AFC (Admin fédérale CH)",
+          source_url: "https://www.bafu.admin.ch/bafu/fr/home/themes/air/droit/reduire-les-emissions-de-co2/voitures-de-tourisme.html",
+          legal_ref: "Loi CO₂ révisée (RS 641.71) en vigueur 01/01/2025 · Ordonnance CO₂ (RS 641.711) · Automobilsteuer 4% (LIMPV RS 641.51)",
           reliability: "info"
         };
       }
@@ -1809,8 +1823,9 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           has_malus: false,
           severity: "none",
           notes: "Réforme vers taxation CO₂ discutée depuis 2021 mais pas adoptée.",
-          source: "Ministerstwo Finansów",
-          source_url: "https://www.gov.pl/web/finanse",
+          source: "Ministerstwo Finansów (Ministère des Finances PL)",
+          source_url: "https://www.podatki.gov.pl/akcyza/wyroby-akcyzowe/samochody-osobowe/",
+          legal_ref: "Ustawa o podatku akcyzowym z 6/12/2008 art. 100 (Dz.U. 2009 nr 3 poz. 11) · cylindrée ≤2L: 3,1% / >2L: 18,6%",
           reliability: "info"
         };
       }
@@ -1840,8 +1855,9 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           has_malus: a > 0,
           severity: sev(a),
           notes: "Conversion ZAR→EUR @0,049. Une des rares taxes CO₂ d'Afrique.",
-          source: "SARS (Tax Authority)",
-          source_url: "https://www.sars.gov.za",
+          source: "SARS (South African Revenue Service)",
+          source_url: "https://www.sars.gov.za/types-of-tax/excise/environmental-levy/co2-emissions-tax/",
+          legal_ref: "Customs & Excise Act 91/1964 Schedule 1 Part 3B · Budget 2025 (R132/g au-dessus 95 g/km)",
           reliability: "official"
         };
       }
@@ -1881,8 +1897,9 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           has_malus: a > 0,
           severity: sev(a),
           notes: "S'ajoute à ARF (Additional Registration Fee) + COE (Certificate of Entitlement, peut dépasser S$100k).",
-          source: "LTA Singapore",
-          source_url: "https://www.lta.gov.sg",
+          source: "LTA Singapore (Land Transport Authority)",
+          source_url: "https://www.lta.gov.sg/content/ltagov/en/getting_around/owning_a_vehicle/buying_a_vehicle/vehicle_emission_scheme.html",
+          legal_ref: "Road Traffic Act (Cap 276) · LTA VES Notice 2018 (revised 2024) · Carbon Emissions-Based Vehicle Scheme",
           reliability: "official"
         };
       }
@@ -1906,8 +1923,9 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           has_malus: false,
           severity: "none",
           notes: "Système gravement obsolète : 95% du marché US (SUV/trucks) y échappe. Pas de réforme CO₂ fédérale en vue.",
-          source: "EPA / IRS",
+          source: "EPA / IRS (Internal Revenue Service)",
           source_url: "https://www.epa.gov/fueleconomy/gas-guzzler-tax",
+          legal_ref: "Internal Revenue Code §4064 (Energy Tax Act 1978) · IRS Form 6197 · Exemption: SUV, pickups, minivans",
           reliability: "info"
         };
       }
@@ -1931,8 +1949,9 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           has_malus: false,
           severity: "none",
           notes: "Québec a son propre système (Roulez vert). Pas de malus CO₂ direct au Canada fédéral.",
-          source: "Canada Revenue Agency",
-          source_url: "https://www.canada.ca/en/revenue-agency",
+          source: "Canada Revenue Agency (CRA)",
+          source_url: "https://www.canada.ca/en/revenue-agency/services/tax/businesses/topics/payroll/benefits-allowances/automobile/green-levy.html",
+          legal_ref: "Excise Tax Act Part III.1 · Budget Implementation Act 2007 · Sched. I (>13L/100km)",
           reliability: "info"
         };
       }
@@ -2056,8 +2075,9 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           has_malus: false,
           severity: "none",
           notes: "Système basé sur la taille du véhicule, pas les émissions. EV bénéficient lourdement.",
-          source: "CBIC / GST Council",
-          source_url: "https://www.cbic.gov.in",
+          source: "CBIC / GST Council of India",
+          source_url: "https://cbic-gst.gov.in/gst-goods-services-rates.html",
+          legal_ref: "CGST Act 2017 + GST Compensation Cess Act 2017 · Schedule IV (cess 1–22% automobiles)",
           reliability: "info"
         };
       }
@@ -2093,28 +2113,28 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
         const decoteIE = isImported ? getImportDecoteIE(dateImmat) : 0;
         const v = Math.round(vBrut * (1 - decoteIE / 100));
         const evNote = new Date(dateImmat) >= new Date("2026-01-01") ? "EV : 7% OMSP (relief supprimé au 01/01/2026 — Budget IE 2026)" : "EV : 0% + crédit ≤€5 000 OMSP (immat. avant 01/01/2026)";
-        return {tax_name:"VRT (Vehicle Registration Tax)",threshold_gkm:51,max_penalty_eur:null,currency_symbol:"€",system_description:`Finance Act 1992 Part II + Budget IE 2026. VRT = % OMSP irlandais, 20 bandes CO₂ WLTP (7–41%). Relief EV ≤€50k OMSP supprimé au 01/01/2026.${isImported ? ` Importé : décote ${decoteIE}% (Revenue.ie OMSP table).` : ""}`,brackets:[{min_gkm:0,max_gkm:50,penalty:"7%",label:"EV / très faible"},{min_gkm:51,max_gkm:155,penalty:"7–23%",label:"A–F"},{min_gkm:156,max_gkm:230,penalty:"30–36%",label:"G–I"},{min_gkm:231,max_gkm:999,penalty:"41%",label:"J max"}],exemptions:[evNote],specific_penalty:v===0?"0 €":"~"+v.toLocaleString("fr-FR")+" €"+(isImported?" (−"+decoteIE+"%)":""),specific_penalty_amount:v,has_malus:true,severity:sev(v),notes:`${bd.r}% × ${vehiclePrice.toLocaleString()} €${isImported ? ` − ${decoteIE}% (importé)` : ""} = ${v.toLocaleString()} €. NOx levy en supplément selon émissions.`,source:"Revenue.ie",source_url:"https://www.revenue.ie/en/vrt/calculating-vrt/applying-tax.aspx",reliability:"official"}; }
+        return {tax_name:"VRT (Vehicle Registration Tax)",threshold_gkm:51,max_penalty_eur:null,currency_symbol:"€",system_description:`Finance Act 1992 Part II + Budget IE 2026. VRT = % OMSP irlandais, 20 bandes CO₂ WLTP (7–41%). Relief EV ≤€50k OMSP supprimé au 01/01/2026.${isImported ? ` Importé : décote ${decoteIE}% (Revenue.ie OMSP table).` : ""}`,brackets:[{min_gkm:0,max_gkm:50,penalty:"7%",label:"EV / très faible"},{min_gkm:51,max_gkm:155,penalty:"7–23%",label:"A–F"},{min_gkm:156,max_gkm:230,penalty:"30–36%",label:"G–I"},{min_gkm:231,max_gkm:999,penalty:"41%",label:"J max"}],exemptions:[evNote],specific_penalty:v===0?"0 €":"~"+v.toLocaleString("fr-FR")+" €"+(isImported?" (−"+decoteIE+"%)":""),specific_penalty_amount:v,has_malus:true,severity:sev(v),notes:`${bd.r}% × ${vehiclePrice.toLocaleString()} €${isImported ? ` − ${decoteIE}% (importé)` : ""} = ${v.toLocaleString()} €. NOx levy en supplément selon émissions.`,source:"Revenue.ie",source_url:"https://www.revenue.ie/en/vrt/calculating-vrt/applying-tax.aspx",legal_ref:"Finance Act 1992 Part II Section 131 · Revenue VRT Manual Chapter 3 · Finance Act 2025 (Budget IE 2026)",reliability:"official"}; }
     case "LU":
       { const t=g<=90?0:g<=130?Math.round((g-90)*8):g<=175?Math.round(40*8+(g-130)*15):Math.round(40*8+45*15+(g-175)*25);
-        return {tax_name:"Taxe d’immatriculation CO₂ (Luxembourg)",threshold_gkm:91,max_penalty_eur:null,currency_symbol:"€",system_description:"Loi 22/12/2006 + RGD 23/12/2016 - Progressive selon CO₂ WLTP. 8 €/g (91–130g), 15 €/g (131–175g), 25 €/g au-delà.",brackets:[{min_gkm:0,max_gkm:90,penalty:"0 €",label:"Exempté"},{min_gkm:91,max_gkm:130,penalty:"8 €/g",label:"Basse"},{min_gkm:131,max_gkm:175,penalty:"15 €/g",label:"Haute"},{min_gkm:176,max_gkm:999,penalty:"25 €/g",label:"Max"}],exemptions:["EV : exempté + bonus €5 000"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" €",specific_penalty_amount:t,has_malus:g>90,severity:sev(t),notes:"Parmi les plus favorables aux EV d’Europe.",source:"Gouvernement du Luxembourg",source_url:"https://guichet.public.lu",reliability:"official"}; }
+        return {tax_name:"Taxe d’immatriculation CO₂ (Luxembourg)",threshold_gkm:91,max_penalty_eur:null,currency_symbol:"€",system_description:"Loi 22/12/2006 + RGD 23/12/2016 - Progressive selon CO₂ WLTP. 8 €/g (91–130g), 15 €/g (131–175g), 25 €/g au-delà.",brackets:[{min_gkm:0,max_gkm:90,penalty:"0 €",label:"Exempté"},{min_gkm:91,max_gkm:130,penalty:"8 €/g",label:"Basse"},{min_gkm:131,max_gkm:175,penalty:"15 €/g",label:"Haute"},{min_gkm:176,max_gkm:999,penalty:"25 €/g",label:"Max"}],exemptions:["EV : exempté + bonus €5 000"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" €",specific_penalty_amount:t,has_malus:g>90,severity:sev(t),notes:"Parmi les plus favorables aux EV d’Europe.",source:"Gouvernement du Luxembourg (Administration de l'enregistrement)",source_url:"https://guichet.public.lu/fr/citoyens/transport/vehicules/immatriculation/taxe-immatriculation.html",legal_ref:"Loi du 22/12/2006 (Mémorial A-N° 227) · RGD du 23/12/2016 · CO₂ WLTP depuis 01/01/2020",reliability:"official"}; }
     case "SI":
       { const t=g<=110?0:g<=150?Math.round((g-110)*25):g<=200?Math.round(40*25+(g-150)*55):Math.round(40*25+50*55+(g-200)*120);
-        return {tax_name:"Davek na motorna vozila (DMV)",threshold_gkm:111,max_penalty_eur:null,currency_symbol:"€",system_description:"Taxe slovène progressive. Seuil 110 g/km.",brackets:[{min_gkm:0,max_gkm:110,penalty:"0 €",label:"Exempté"},{min_gkm:111,max_gkm:150,penalty:"25 €/g",label:"Basse"},{min_gkm:151,max_gkm:200,penalty:"55 €/g",label:"Haute"},{min_gkm:201,max_gkm:999,penalty:"120 €/g",label:"Max"}],exemptions:["EV : 0%"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" €",specific_penalty_amount:t,has_malus:g>110,severity:sev(t),notes:"Estimation 2024.",source:"FURS",source_url:"https://www.fu.gov.si",reliability:"official"}; }
+        return {tax_name:"Davek na motorna vozila (DMV)",threshold_gkm:111,max_penalty_eur:null,currency_symbol:"€",system_description:"Taxe slovène progressive. Seuil 110 g/km.",brackets:[{min_gkm:0,max_gkm:110,penalty:"0 €",label:"Exempté"},{min_gkm:111,max_gkm:150,penalty:"25 €/g",label:"Basse"},{min_gkm:151,max_gkm:200,penalty:"55 €/g",label:"Haute"},{min_gkm:201,max_gkm:999,penalty:"120 €/g",label:"Max"}],exemptions:["EV : 0%"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" €",specific_penalty_amount:t,has_malus:g>110,severity:sev(t),notes:"Estimation 2024.",source:"FURS (Finančna uprava RS)",source_url:"https://www.fu.gov.si/davki_in_druge_dajatve/podrocja_dela/trosarine_in_okoljske_dajatve/davek_na_motorna_vozila/",legal_ref:"ZDMV – Zakon o davku na motorna vozila (Ur.l. RS 52/1999) · Uredba vlade RS 2024",reliability:"official"}; }
     case "GR":
       { const t=g<=100?0:g<=120?Math.round((g-100)*90):g<=140?Math.round(20*90+(g-120)*120):g<=160?Math.round(20*90+20*120+(g-140)*200):Math.round(20*90+20*120+20*200+(g-160)*400);
-        return {tax_name:"Taxe d’immatriculation CO₂ (Grèce)",threshold_gkm:101,max_penalty_eur:null,currency_symbol:"€",system_description:"Progressive. Seuil 100 g/km. 90→400 €/g.",brackets:[{min_gkm:0,max_gkm:100,penalty:"0 €",label:"Exempté"},{min_gkm:101,max_gkm:120,penalty:"90 €/g",label:"Basse"},{min_gkm:121,max_gkm:140,penalty:"120 €/g",label:"Modérée"},{min_gkm:141,max_gkm:160,penalty:"200 €/g",label:"Haute"},{min_gkm:161,max_gkm:999,penalty:"400 €/g",label:"Max"}],exemptions:["EV : exempté + bonus €6 000"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" €",specific_penalty_amount:t,has_malus:g>100,severity:sev(t),notes:"Barème 2024.",source:"AADE Greece",source_url:"https://www.aade.gr",reliability:"official"}; }
+        return {tax_name:"Taxe d’immatriculation CO₂ (Grèce)",threshold_gkm:101,max_penalty_eur:null,currency_symbol:"€",system_description:"Progressive. Seuil 100 g/km. 90→400 €/g.",brackets:[{min_gkm:0,max_gkm:100,penalty:"0 €",label:"Exempté"},{min_gkm:101,max_gkm:120,penalty:"90 €/g",label:"Basse"},{min_gkm:121,max_gkm:140,penalty:"120 €/g",label:"Modérée"},{min_gkm:141,max_gkm:160,penalty:"200 €/g",label:"Haute"},{min_gkm:161,max_gkm:999,penalty:"400 €/g",label:"Max"}],exemptions:["EV : exempté + bonus €6 000"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" €",specific_penalty_amount:t,has_malus:g>100,severity:sev(t),notes:"Barème 2024.",source:"AADE (Ανεξάρτητη Αρχή Δημοσίων Εσόδων)",source_url:"https://www.aade.gr/menoy/phorologikos-odigos/foros-polvteloias-kai-loipa-teli-kai-eisphores/teli-taxtinomisis-aytokiniton",legal_ref:"Ν. 2960/2001 Τελωνειακός Κώδικας – Άρθρο 121 · Παράρτημα IV (CO₂ WLTP)",reliability:"official"}; }
     case "EE":
       { const t=g<=0?0:g<=117?Math.round(g*2):Math.round(117*2+(g-117)*15);
-        return {tax_name:"Sõidukimaks (taxe annuelle CO₂)",threshold_gkm:1,max_penalty_eur:null,currency_symbol:"€",system_description:"Taxe annuelle depuis juillet 2024.",brackets:[{min_gkm:0,max_gkm:0,penalty:"0 €",label:"EV"},{min_gkm:1,max_gkm:117,penalty:"2 €/g/an",label:"Basse"},{min_gkm:118,max_gkm:999,penalty:"15 €/g",label:"Haute"}],exemptions:["EV : ~50 €/an fixe"],specific_penalty:"~"+t.toLocaleString("fr-FR")+" €/an",specific_penalty_amount:t,has_malus:true,severity:sev(t),notes:"Depuis le 1er juillet 2024. Annuelle.",source:"Maanteeamet",source_url:"https://www.mnt.ee",reliability:"official"}; }
+        return {tax_name:"Sõidukimaks (taxe annuelle CO₂)",threshold_gkm:1,max_penalty_eur:null,currency_symbol:"€",system_description:"Taxe annuelle depuis juillet 2024.",brackets:[{min_gkm:0,max_gkm:0,penalty:"0 €",label:"EV"},{min_gkm:1,max_gkm:117,penalty:"2 €/g/an",label:"Basse"},{min_gkm:118,max_gkm:999,penalty:"15 €/g",label:"Haute"}],exemptions:["EV : ~50 €/an fixe"],specific_penalty:"~"+t.toLocaleString("fr-FR")+" €/an",specific_penalty_amount:t,has_malus:true,severity:sev(t),notes:"Depuis le 1er juillet 2024. Annuelle.",source:"Maanteeamet (Transport Administration)",source_url:"https://www.mnt.ee/et/liiklus/mootorsoidukimaks",legal_ref:"Mootorsõidukimaksu seadus (RT I 2024, 5) – en vigueur 01/07/2024",reliability:"official"}; }
     case "MT":
       { const t=g<=100?0:g<=130?Math.round((g-100)*30):g<=160?Math.round(30*30+(g-130)*60):Math.round(30*30+30*60+(g-160)*100);
-        return {tax_name:"Registration Tax (Malte)",threshold_gkm:101,max_penalty_eur:null,currency_symbol:"€",system_description:"Progressive sur CO₂. Seuil 100 g/km.",brackets:[{min_gkm:0,max_gkm:100,penalty:"0 €",label:"Exempté"},{min_gkm:101,max_gkm:130,penalty:"30 €/g",label:"Basse"},{min_gkm:131,max_gkm:160,penalty:"60 €/g",label:"Haute"},{min_gkm:161,max_gkm:999,penalty:"100 €/g",label:"Max"}],exemptions:["EV : exempté + grant €11 000"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" €",specific_penalty_amount:t,has_malus:g>100,severity:sev(t),notes:"Estimation 2024.",source:"Transport Malta",source_url:"https://www.transport.gov.mt",reliability:"official"}; }
+        return {tax_name:"Registration Tax (Malte)",threshold_gkm:101,max_penalty_eur:null,currency_symbol:"€",system_description:"Progressive sur CO₂. Seuil 100 g/km.",brackets:[{min_gkm:0,max_gkm:100,penalty:"0 €",label:"Exempté"},{min_gkm:101,max_gkm:130,penalty:"30 €/g",label:"Basse"},{min_gkm:131,max_gkm:160,penalty:"60 €/g",label:"Haute"},{min_gkm:161,max_gkm:999,penalty:"100 €/g",label:"Max"}],exemptions:["EV : exempté + grant €11 000"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" €",specific_penalty_amount:t,has_malus:g>100,severity:sev(t),notes:"Estimation 2024.",source:"Transport Malta",source_url:"https://www.transport.gov.mt/land/vehicle-registration-1780",legal_ref:"Motor Vehicles (Registration and Licensing) Act (Cap. 368) · LN 346 of 2009 (CO₂ Schedule)",reliability:"official"}; }
     case "CY":
       { const t=g<=120?0:g<=150?Math.round((g-120)*40):g<=180?Math.round(30*40+(g-150)*80):Math.round(30*40+30*80+(g-180)*150);
-        return {tax_name:"Taxe d’immatriculation CO₂ (Chypre)",threshold_gkm:121,max_penalty_eur:null,currency_symbol:"€",system_description:"Progressive selon CO₂. Seuil 120 g/km.",brackets:[{min_gkm:0,max_gkm:120,penalty:"0 €",label:"Exempté"},{min_gkm:121,max_gkm:150,penalty:"40 €/g",label:"Basse"},{min_gkm:151,max_gkm:180,penalty:"80 €/g",label:"Haute"},{min_gkm:181,max_gkm:999,penalty:"150 €/g",label:"Max"}],exemptions:["EV : exempté"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" €",specific_penalty_amount:t,has_malus:g>120,severity:sev(t),notes:"Estimation 2024.",source:"Dept Road Transport Cyprus",source_url:"https://www.moi.gov.cy",reliability:"official"}; }
+        return {tax_name:"Taxe d’immatriculation CO₂ (Chypre)",threshold_gkm:121,max_penalty_eur:null,currency_symbol:"€",system_description:"Progressive selon CO₂. Seuil 120 g/km.",brackets:[{min_gkm:0,max_gkm:120,penalty:"0 €",label:"Exempté"},{min_gkm:121,max_gkm:150,penalty:"40 €/g",label:"Basse"},{min_gkm:151,max_gkm:180,penalty:"80 €/g",label:"Haute"},{min_gkm:181,max_gkm:999,penalty:"150 €/g",label:"Max"}],exemptions:["EV : exempté"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" €",specific_penalty_amount:t,has_malus:g>120,severity:sev(t),notes:"Estimation 2024.",source:"Τμήμα Οδικών Μεταφορών (Road Transport Dept)",source_url:"https://www.mcw.gov.cy/mcw/rsd/rsd.nsf/index_en/index_en",legal_ref:"Customs & Excise Laws 2004 (Cap. 82) · N. 88(I)/2006 · CO₂ Registration Tax Schedule 2024",reliability:"official"}; }
     case "HR":
       { const t=g<=110?0:g<=150?Math.round((g-110)*20):Math.round(40*20+(g-150)*50);
-        return {tax_name:"Posebni porez na motorna vozila (Croatie)",threshold_gkm:111,max_penalty_eur:null,currency_symbol:"€",system_description:"Taxe combinant CO₂ et puissance (kW).",brackets:[{min_gkm:0,max_gkm:110,penalty:"0 €",label:"Exempté"},{min_gkm:111,max_gkm:150,penalty:"~20 €/g",label:"Modéré"},{min_gkm:151,max_gkm:999,penalty:"~50 €/g",label:"Élevé"}],exemptions:["EV : exempté"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" € (estimatif)",specific_penalty_amount:t,has_malus:g>110,severity:sev(t),notes:"Estimation. Système CO₂ + puissance.",source:"Porezna uprava HR",source_url:"https://www.porezna-uprava.hr",reliability:"indicative"}; }
+        return {tax_name:"Posebni porez na motorna vozila (Croatie)",threshold_gkm:111,max_penalty_eur:null,currency_symbol:"€",system_description:"Taxe combinant CO₂ et puissance (kW).",brackets:[{min_gkm:0,max_gkm:110,penalty:"0 €",label:"Exempté"},{min_gkm:111,max_gkm:150,penalty:"~20 €/g",label:"Modéré"},{min_gkm:151,max_gkm:999,penalty:"~50 €/g",label:"Élevé"}],exemptions:["EV : exempté"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" € (estimatif)",specific_penalty_amount:t,has_malus:g>110,severity:sev(t),notes:"Estimation. Système CO₂ + puissance.",source:"Porezna uprava (Administration fiscale croate)",source_url:"https://www.porezna-uprava.hr/HR_porezni_sustav/Stranice/posebni-porez-na-motorna-vozila.aspx",legal_ref:"Zakon o posebnom porezu na motorna vozila (NN 15/13, 108/13, 115/16, 66/19)",reliability:"indicative"}; }
     case "SK": return {tax_name:"Pas de malus CO₂ (Slovaquie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"€",system_description:"Pas de malus CO₂ à l’immatriculation.",brackets:[{min_gkm:0,max_gkm:999,penalty:"0 €",label:"Pas de malus"}],exemptions:["EV : TVA réduite"],specific_penalty:"Pas de malus CO₂",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Réforme en discussion.",source:"Ministerstvo financíí SR",source_url:"https://www.mfsr.sk",reliability:"indicative"};
     case "CZ": return {tax_name:"Pas de malus CO₂ (Tchéquie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"CZK",system_description:"Pas de malus CO₂ à l’immatriculation.",brackets:[{min_gkm:0,max_gkm:999,penalty:"0 CZK",label:"Pas de malus"}],exemptions:["EV : incentives jusqu’à 300 000 CZK"],specific_penalty:"Pas de malus CO₂",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Transition EV lente.",source:"Finanční správa ČR",source_url:"https://www.financnisprava.cz",reliability:"indicative"};
     case "HU": return {tax_name:"Regisztrációs adó (Hongrie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"HUF",system_description:"Taxée basée sur puissance (kW) et âge.",brackets:[{min_gkm:0,max_gkm:999,penalty:"Selon kW + âge",label:"Taxe immat."}],exemptions:["EV : exempté"],specific_penalty:"Selon puissance (pas CO₂)",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Basée puissance moteur.",source:"NAV Magyarország",source_url:"https://nav.gov.hu",reliability:"indicative"};
