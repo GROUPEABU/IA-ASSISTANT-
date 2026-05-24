@@ -156,7 +156,20 @@ export default function CO2Malus() {
       {/* Header */}
       <div className="flex-shrink-0">
         <h2 className="text-sm font-semibold text-white">CO₂ & Malus Mondial</h2>
-        <p className="text-xs text-slate-500">Calculateur sur 40 pays · Autobuyunion v42</p>
+        <p className="text-xs text-slate-500">Calculateur sur 40 pays · Autobuyunion</p>
+      </div>
+
+      {/* Legend */}
+      <div className="glass-card p-4 flex-shrink-0">
+        <div className="flex flex-wrap gap-4 justify-center">
+          {Object.entries(RELIABILITY_CONFIG).map(([k, v]) => (
+            <div key={k} className="flex items-center gap-2 text-[11px]">
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: v.color, boxShadow: `0 0 6px ${v.color}88` }} />
+              <span className="font-semibold" style={{ color: v.color }}>{v.label}</span>
+              <span className="text-slate-600">{v.desc}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* CO2 Slider */}
@@ -606,10 +619,6 @@ export default function CO2Malus() {
                 </div>
               )}
 
-              {/* Footer disclaimer */}
-              <div className="px-5 py-4 border-t border-white/7 text-[11px] text-slate-600 text-center leading-relaxed">
-                Les montants affichés sont fournis à titre indicatif et ne constituent pas un conseil fiscal. Vérifiez auprès de l'autorité compétente de chaque pays.
-              </div>
             </div>
           )}
         </>
@@ -692,29 +701,13 @@ export default function CO2Malus() {
                     )
                   })}
               </div>
-              <div className="px-4 py-3 border-t border-white/7 text-[11px] text-slate-600 text-center">
-                Estimation indicative — vérifiez auprès des autorités fiscales de chaque pays.
-              </div>
             </div>
           )}
         </>
       )}
 
-      {/* Legend */}
-      <div className="glass-card p-4 mt-2">
-        <div className="flex flex-wrap gap-4 justify-center">
-          {Object.entries(RELIABILITY_CONFIG).map(([k, v]) => (
-            <div key={k} className="flex items-center gap-2 text-[11px]">
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: v.color, boxShadow: `0 0 6px ${v.color}88` }} />
-              <span className="font-semibold" style={{ color: v.color }}>{v.label}</span>
-              <span className="text-slate-600">{v.desc}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="text-center text-[11px] text-slate-700 pb-2">
-        CO₂ & Malus Mondial v42 · Autobuyunion · 40 pays
+      <div className="text-center text-[11px] text-slate-500 leading-relaxed pb-2 px-4 glass-card p-4 mt-2">
+        Les montants affichés sont fournis à titre indicatif et ne constituent pas un conseil fiscal. Les barèmes sont susceptibles d'évoluer — vérifiez auprès de l'autorité compétente de chaque pays avant toute acquisition.
       </div>
     </div>
   )
