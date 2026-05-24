@@ -1,9 +1,10 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  MessageSquare, Settings, Car, Zap, X, Home, BookOpen, Gauge, Bell, ShieldCheck, GitCompare, LogOut,
+  MessageSquare, Settings, Zap, X, Home, BookOpen, Gauge, Bell, ShieldCheck, GitCompare, LogOut,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '@/contexts/AuthContext'
+import Logo from '@/components/ui/Logo'
 
 const navGroups = [
   {
@@ -53,16 +54,8 @@ export default function Sidebar({ isOpen, onClose }) {
       isOpen ? 'translate-x-0' : '-translate-x-full',
     )}>
       {/* Logo */}
-      <div className="p-5 border-b border-navy-700/50 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-cyan-400/10 border border-cyan-400/30 flex items-center justify-center">
-            <Car size={18} className="text-cyan-400" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-cyan-400 tracking-widest uppercase">Autobuyunion</p>
-            <p className="text-[10px] text-slate-500 font-medium">Portail Membres</p>
-          </div>
-        </div>
+      <div className="px-4 py-4 border-b border-navy-700/50 flex items-center justify-between">
+        <Logo size="sm" />
         <button onClick={onClose} className="md:hidden w-8 h-8 flex items-center justify-center text-slate-500 hover:text-white transition">
           <X size={18} />
         </button>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Car, Eye, EyeOff, Lock, User, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, Lock, User, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import Logo from '@/components/ui/Logo'
 
 export default function Login() {
   const { login } = useAuth()
@@ -34,12 +35,8 @@ export default function Login() {
       <div className="w-full max-w-sm relative">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-cyan-400/10 border border-cyan-400/30
-                          flex items-center justify-center mb-4 shadow-lg shadow-cyan-400/10">
-            <Car size={30} className="text-cyan-400" />
-          </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Autobuyunion</h1>
-          <p className="text-sm text-slate-400 mt-1">Portail Membres — Accès privé</p>
+          <Logo size="md" className="mb-4" />
+          <p className="text-sm text-slate-400">Portail Membres — Accès privé</p>
         </div>
 
         {/* Card */}
