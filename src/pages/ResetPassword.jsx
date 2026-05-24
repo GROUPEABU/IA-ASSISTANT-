@@ -4,35 +4,20 @@ import { Eye, EyeOff, Lock, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-r
 import Logo from '@/components/ui/Logo'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
+import { readResetToken, consumeResetToken } from '@/utils/passwordReset'
 
-const RESET_KEY_PREFIX = 'abu_reset_'
-
-const PWD_RULES = {
-  minLength:    { test: p => p.length >= 8,            label: '8 caractères minimum' },
-  hasUppercase: { test: p => /[A-Z]/.test(p),          label: '1 majuscule' },
-  hasDigit:     { test: p => /\d/.test(p),             label: '1 chiffre' },
-}
+// ── Password validation ───────────────────────────────────────────────────────
+const PASSWORD_RULES = [
+  { key: 'minLength',    test: p => p.length >= 8,   label: '8 caractères minimum' },
+  { key: 'hasUppercase', test: p => /[A-Z]/.test(p), label: '1 majuscule'          },
+  { key: 'hasDigit',     test: p => /\d/.test(p),    label: '1 chiffre'            },
+]
 
 function validatePassword(password) {
-  return Object.entries(PWD_RULES).map(([key, rule]) => ({
-    key,
-    label: rule.label,
-    ok: rule.test(password),
-  }))
+  return PASSWORD_RULES.map(rule => ({ ...rule, ok: rule.test(password) }))
 }
 
-function readToken(username) {
-  try {
-    const raw = localStorage.getItem(RESET_KEY_PREFIX + username.toLowerCase())
-    if (!raw) return null
-    return JSON.parse(raw)
-  } catch { return null }
-}
-
-function consumeToken(username) {
-  localStorage.removeItem(RESET_KEY_PREFIX + username.toLowerCase())
-}
-
+// ── Component ────────────────────────────────────────────────────────────────
 export default function ResetPassword() {
   const { t }           = useSettings()
   const { resetPassword } = useAuth()
@@ -41,52 +26,43 @@ export default function ResetPassword() {
 
   const prefillUser = params.get('user') || ''
 
-  const [username, setUsername]         = useState(prefillUser)
-  const [code, setCode]                 = useState('')
-  const [password, setPassword]         = useState('')
-  const [confirm, setConfirm]           = useState('')
-  const [showPwd, setShowPwd]           = useState(false)
-  const [loading, setLoading]           = useState(false)
-  const [error, setError]               = useState('')
-  const [success, setSuccess]           = useState(false)
+  const [username, setUsername] = useState(prefillUser)
+  const [code, setCode]         = useState('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm]   = useState('')
+  const [showPwd, setShowPwd]   = useState(false)
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState('')
+  const [success, setSuccess]   = useState(false)
 
-  const rules     = validatePassword(password)
+  const rules      = validatePassword(password)
   const allRulesOk = rules.every(r => r.ok)
   const canSubmit  = username.trim() && code.length === 6 && allRulesOk && password === confirm
 
   useEffect(() => {
-    if (success) {
-      const timer = setTimeout(() => navigate('/login'), 3000)
-      return () => clearTimeout(timer)
-    }
+    if (!success) return
+    const timer = setTimeout(() => navigate('/login'), 3000)
+    return () => clearTimeout(timer)
   }, [success, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
 
-    if (password !== confirm) {
-      setError(t('reset_error_pwd'))
-      return
-    }
-    if (!allRulesOk) {
-      setError(t('reset_error_weak'))
-      return
-    }
+    if (password !== confirm) { setError(t('reset_error_pwd'));  return }
+    if (!allRulesOk)          { setError(t('reset_error_weak')); return }
 
     setLoading(true)
     await new Promise(r => setTimeout(r, 400))
 
-    const token = readToken(username)
-    const now   = Date.now()
-
-    if (!token || token.code !== code || now > token.exp) {
+    const token = readResetToken(username)
+    if (!token || token.code !== code || Date.now() > token.exp) {
       setError(t('reset_error_code'))
       setLoading(false)
       return
     }
 
-    consumeToken(username)
+    consumeResetToken(username)
     resetPassword(username, password)
     setSuccess(true)
     setLoading(false)
@@ -94,7 +70,7 @@ export default function ResetPassword() {
 
   if (success) {
     return (
-      <div className="min-h-[100dvh] bg-navy-900 flex flex-col items-center justify-center p-4">
+      <div className="min-h-[100dvh] bg-navy-900 flex items-center justify-center p-4">
         <div className="glass-card p-8 max-w-sm w-full text-center">
           <CheckCircle size={40} className="text-emerald-400 mx-auto mb-4" />
           <h2 className="text-lg font-semibold text-white mb-2">{t('reset_success_title')}</h2>
@@ -125,7 +101,7 @@ export default function ResetPassword() {
           <p className="text-[11px] text-slate-500 mb-5">{t('reset_subtitle')}</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Username (hidden if prefilled) */}
+            {/* Username — shown only when not pre-filled via URL */}
             {!prefillUser && (
               <div>
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
@@ -142,7 +118,7 @@ export default function ResetPassword() {
               </div>
             )}
 
-            {/* Reset code */}
+            {/* OTP code */}
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
                 {t('reset_code_label')}
@@ -185,7 +161,6 @@ export default function ResetPassword() {
                 </button>
               </div>
 
-              {/* Password strength rules */}
               {password.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {rules.map(r => (
@@ -219,9 +194,7 @@ export default function ResetPassword() {
                 className="w-full bg-navy-900/80 border border-navy-700/60 rounded-xl
                            px-3 py-3 text-sm text-white placeholder-slate-600
                            focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/20 transition"
-                style={{
-                  borderColor: confirm && confirm !== password ? 'rgba(248,113,113,0.5)' : undefined
-                }}
+                style={{ borderColor: confirm && confirm !== password ? 'rgba(248,113,113,0.5)' : undefined }}
               />
             </div>
 
@@ -239,11 +212,12 @@ export default function ResetPassword() {
                          bg-gradient-to-r from-cyan-400 to-cyan-500 text-navy-900
                          hover:from-cyan-300 hover:to-cyan-400 active:scale-[0.98] transition-all
                          disabled:opacity-40 disabled:pointer-events-none
-                         flex items-center justify-center gap-2"
+                         flex items-center justify-center"
             >
-              {loading ? (
-                <span className="w-4 h-4 border-2 border-navy-900/30 border-t-navy-900 rounded-full animate-spin" />
-              ) : t('reset_btn')}
+              {loading
+                ? <span className="w-4 h-4 border-2 border-navy-900/30 border-t-navy-900 rounded-full animate-spin" />
+                : t('reset_btn')
+              }
             </button>
           </form>
         </div>

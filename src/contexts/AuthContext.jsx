@@ -1,27 +1,27 @@
 import { createContext, useContext, useState, useCallback } from 'react'
+import { findUserByUsername, validateCredentials } from '@/data/users'
 
-const USERS = [
-  { id: 1, username: 'admin', password: 'autobuyunion2025', name: 'Administrateur', role: 'admin', initials: 'AD' },
-  { id: 2, username: 'membre', password: 'membre123', name: 'Membre', role: 'membre', initials: 'MB' },
-  { id: 3, username: 'demo@autobuyunion.eu', password: 'Demo2025!', name: 'Compte Démo', role: 'membre', initials: 'DM' },
-]
-
+// ── localStorage keys ────────────────────────────────────────────────────────
 const SESSION_KEY    = 'abu_session'
 const SECURITY_KEY   = 'abu_login_security'
-const PW_OVERRIDE    = 'abu_pw_overrides'
+const PW_OVERRIDE_KEY = 'abu_pw_overrides'
 
-const MAX_ATTEMPTS   = 5
-const WINDOW_MS      = 15 * 60 * 1000   // 15 min window
-const LOCKOUT_MS     = 15 * 60 * 1000   // 15 min lockout
-const LOCKOUT_LONG   = 60 * 60 * 1000   // 1h after 10 fails
+// ── Brute-force constants ────────────────────────────────────────────────────
+const MAX_ATTEMPTS  = 5
+const WINDOW_MS     = 15 * 60 * 1000   // rolling window for counting failures
+const LOCKOUT_SHORT = 15 * 60 * 1000   // ≥5 failures  → 15 min lockout
+const LOCKOUT_LONG  = 60 * 60 * 1000   // ≥10 failures → 1 h  lockout
 
+// ── Pure helpers (no side effects) ─────────────────────────────────────────
 function readSecurity() {
   try { return JSON.parse(localStorage.getItem(SECURITY_KEY) || '{}') } catch { return {} }
 }
-function saveSecurity(data) {
-  localStorage.setItem(SECURITY_KEY, JSON.stringify(data))
+
+function readPasswordOverrides() {
+  try { return JSON.parse(localStorage.getItem(PW_OVERRIDE_KEY) || '{}') } catch { return {} }
 }
 
+// ── Context ──────────────────────────────────────────────────────────────────
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
@@ -32,49 +32,50 @@ export function AuthProvider({ children }) {
     } catch { return null }
   })
 
+  // ── Security status (called on every Login render) ───────────────────────
   const getSecurityStatus = useCallback(() => {
-    const sec = readSecurity()
-    const now  = Date.now()
-    // Purge attempts outside the rolling window
-    const recent = (sec.attempts || []).filter(t => now - t < WINDOW_MS)
-    const failCount = recent.length
-    const blockedUntil = sec.blocked_until || 0
-    const isBlocked = now < blockedUntil
-    const remainingMs = isBlocked ? blockedUntil - now : 0
-    const attemptsLeft = Math.max(0, MAX_ATTEMPTS - failCount)
-    return { isBlocked, remainingMs, failCount, attemptsLeft, recent }
+    const { attempts = [], blocked_until = 0 } = readSecurity()
+    const now    = Date.now()
+    const recent = attempts.filter(t => now - t < WINDOW_MS)
+    const isBlocked    = now < blocked_until
+    const remainingMs  = isBlocked ? blocked_until - now : 0
+    const attemptsLeft = Math.max(0, MAX_ATTEMPTS - recent.length)
+    return { isBlocked, remainingMs, failCount: recent.length, attemptsLeft }
   }, [])
 
   const recordFailure = useCallback(() => {
-    const sec = readSecurity()
-    const now = Date.now()
-    const recent = [...(sec.attempts || []).filter(t => now - t < WINDOW_MS), now]
-    let blocked_until = sec.blocked_until || 0
-    if (recent.length >= 10) blocked_until = now + LOCKOUT_LONG
-    else if (recent.length >= MAX_ATTEMPTS) blocked_until = now + LOCKOUT_MS
-    saveSecurity({ attempts: recent, blocked_until })
+    const { attempts = [] } = readSecurity()
+    const now    = Date.now()
+    const recent = [...attempts.filter(t => now - t < WINDOW_MS), now]
+    const blocked_until =
+      recent.length >= 10 ? now + LOCKOUT_LONG  :
+      recent.length >= MAX_ATTEMPTS ? now + LOCKOUT_SHORT : 0
+    localStorage.setItem(SECURITY_KEY, JSON.stringify({ attempts: recent, blocked_until }))
   }, [])
 
   const clearSecurity = useCallback(() => {
     localStorage.removeItem(SECURITY_KEY)
   }, [])
 
+  // ── Auth actions ─────────────────────────────────────────────────────────
   const login = useCallback((username, password) => {
-    // Check password override first (from password reset)
-    const overrides = (() => { try { return JSON.parse(localStorage.getItem(PW_OVERRIDE) || '{}') } catch { return {} } })()
-    const override = overrides[username.toLowerCase()]
+    // Check for a password override (set via the reset-password flow)
+    const overrides = readPasswordOverrides()
+    const override  = overrides[username.toLowerCase()]
 
-    let found = null
-    if (override && override === password) {
-      found = USERS.find(u => u.username.toLowerCase() === username.toLowerCase())
-    } else {
-      found = USERS.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password)
-    }
+    const safeUser = override && override === password
+      ? (() => {
+          const user = findUserByUsername(username)
+          if (!user) return null
+          const { password: _, ...safe } = user
+          return safe
+        })()
+      : validateCredentials(username, password)
 
-    if (!found) return false
-    const { password: _, ...safe } = found
-    setUser(safe)
-    localStorage.setItem(SESSION_KEY, JSON.stringify(safe))
+    if (!safeUser) return false
+
+    setUser(safeUser)
+    localStorage.setItem(SESSION_KEY, JSON.stringify(safeUser))
     clearSecurity()
     return true
   }, [clearSecurity])
@@ -84,19 +85,31 @@ export function AuthProvider({ children }) {
     localStorage.removeItem(SESSION_KEY)
   }, [])
 
+  /** Stores a new password override that takes precedence over the hardcoded one. */
   const resetPassword = useCallback((username, newPassword) => {
-    const overrides = (() => { try { return JSON.parse(localStorage.getItem(PW_OVERRIDE) || '{}') } catch { return {} } })()
+    const overrides = readPasswordOverrides()
     overrides[username.toLowerCase()] = newPassword
-    localStorage.setItem(PW_OVERRIDE, JSON.stringify(overrides))
+    localStorage.setItem(PW_OVERRIDE_KEY, JSON.stringify(overrides))
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, getSecurityStatus, recordFailure, clearSecurity, resetPassword }}>
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated: !!user,
+      login,
+      logout,
+      resetPassword,
+      getSecurityStatus,
+      recordFailure,
+      clearSecurity,
+    }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
 export function useAuth() {
-  return useContext(AuthContext)
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
+  return ctx
 }

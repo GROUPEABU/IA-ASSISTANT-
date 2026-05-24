@@ -3,27 +3,14 @@ import { Link } from 'react-router-dom'
 import { User, ArrowLeft, Send, CheckCircle, Key } from 'lucide-react'
 import Logo from '@/components/ui/Logo'
 import { useSettings } from '@/contexts/SettingsContext'
-
-const RESET_KEY_PREFIX = 'abu_reset_'
-const RESET_TTL_MS     = 15 * 60 * 1000  // 15 minutes
-
-function generateCode() {
-  return Math.floor(100000 + Math.random() * 900000).toString()
-}
-
-function storeResetToken(username, code) {
-  const data = { code, exp: Date.now() + RESET_TTL_MS }
-  localStorage.setItem(RESET_KEY_PREFIX + username.toLowerCase(), JSON.stringify(data))
-}
-
-// Hard-coded usernames that can request a reset (mirrors AuthContext USERS)
-const VALID_USERNAMES = ['admin', 'membre', 'demo@autobuyunion.eu']
+import { findUserByUsername } from '@/data/users'
+import { generateOTP, storeResetToken } from '@/utils/passwordReset'
 
 export default function ForgotPassword() {
   const { t } = useSettings()
   const [username, setUsername]   = useState('')
   const [loading, setLoading]     = useState(false)
-  const [state, setState]         = useState('idle') // idle | success | not_found
+  const [state, setState]         = useState('idle') // 'idle' | 'success' | 'not_found'
   const [resetCode, setResetCode] = useState('')
 
   const handleSubmit = async (e) => {
@@ -34,13 +21,13 @@ export default function ForgotPassword() {
     setLoading(true)
     await new Promise(r => setTimeout(r, 600))
 
-    if (!VALID_USERNAMES.includes(clean)) {
+    if (!findUserByUsername(clean)) {
       setState('not_found')
       setLoading(false)
       return
     }
 
-    const code = generateCode()
+    const code = generateOTP()
     storeResetToken(clean, code)
     setResetCode(code)
     setState('success')
@@ -75,7 +62,7 @@ export default function ForgotPassword() {
           </div>
 
           {state === 'success' ? (
-            <SuccessView resetCode={resetCode} username={username} t={t} />
+            <SuccessView resetCode={resetCode} username={username.trim().toLowerCase()} t={t} />
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -150,7 +137,6 @@ function SuccessView({ resetCode, username, t }) {
         </div>
       </div>
 
-      {/* Demo mode: show the code directly */}
       <div className="p-4 rounded-xl bg-amber-400/6 border border-amber-400/25 text-center">
         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
           {t('forgot_code_hint')}
@@ -162,7 +148,7 @@ function SuccessView({ resetCode, username, t }) {
       </div>
 
       <Link
-        to={`/reset-password?user=${encodeURIComponent(username.trim().toLowerCase())}`}
+        to={`/reset-password?user=${encodeURIComponent(username)}`}
         className="block w-full py-3 rounded-xl text-sm font-bold text-center
                    bg-gradient-to-r from-cyan-400 to-cyan-500 text-navy-900
                    hover:from-cyan-300 hover:to-cyan-400 transition-all active:scale-[0.98]"

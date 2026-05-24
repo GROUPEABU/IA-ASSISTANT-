@@ -1,30 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Eye, EyeOff, Lock, User, AlertCircle, Sparkles, ShieldAlert } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
+import { useCaptcha } from '@/hooks/useCaptcha'
 import Logo from '@/components/ui/Logo'
 
 const REMEMBER_KEY = 'abu_remember'
-
-function useCaptcha() {
-  const [challenge, setChallenge] = useState(null)
-  const [answer, setAnswer]       = useState('')
-
-  const generate = useCallback(() => {
-    const a = Math.floor(Math.random() * 9) + 1
-    const b = Math.floor(Math.random() * 9) + 1
-    setChallenge({ a, b, expected: a + b })
-    setAnswer('')
-  }, [])
-
-  const verify = useCallback(() => {
-    if (!challenge) return true
-    return parseInt(answer, 10) === challenge.expected
-  }, [challenge, answer])
-
-  return { challenge, answer, setAnswer, generate, verify }
-}
 
 function formatCountdown(ms) {
   const min = Math.ceil(ms / 60000)
@@ -34,6 +16,7 @@ function formatCountdown(ms) {
 export default function Login() {
   const { login, getSecurityStatus, recordFailure } = useAuth()
   const { t } = useSettings()
+
   const [username, setUsername]       = useState('')
   const [password, setPassword]       = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -42,49 +25,51 @@ export default function Login() {
   const [loading, setLoading]         = useState(false)
   const [, setTick]                   = useState(0)
 
-  const captcha = useCaptcha()
+  // Destructure stable references from the hook so they are safe in dep arrays
+  const { challenge, answer, setAnswer, generate, verify } = useCaptcha()
+
   const { isBlocked, remainingMs, attemptsLeft, failCount } = getSecurityStatus()
   const showCaptcha = failCount >= 2
 
-  // Re-render every second while blocked (for countdown)
+  // Re-render every second while blocked to update the countdown display
   useEffect(() => {
     if (!isBlocked) return
     const id = setInterval(() => setTick(t => t + 1), 1000)
     return () => clearInterval(id)
   }, [isBlocked])
 
-  // Generate captcha when it becomes needed
+  // Generate a new challenge when the captcha section becomes visible
   useEffect(() => {
-    if (showCaptcha && !captcha.challenge) captcha.generate()
-  }, [showCaptcha]) // eslint-disable-line
+    if (showCaptcha && !challenge) generate()
+  }, [showCaptcha, challenge, generate])
 
+  // Restore "remember me" credentials on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem(REMEMBER_KEY)
-      if (saved) {
-        const { username: u, password: p } = JSON.parse(saved)
-        setUsername(u || '')
-        setPassword(p || '')
-        setRemember(true)
-      }
-    } catch { /* ignore */ }
+      if (!saved) return
+      const { username: u, password: p } = JSON.parse(saved)
+      setUsername(u || '')
+      setPassword(p || '')
+      setRemember(true)
+    } catch { /* malformed data — ignore */ }
   }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!username.trim() || !password.trim()) return
-    if (isBlocked) return
+    if (!username.trim() || !password.trim() || isBlocked) return
 
-    if (showCaptcha && !captcha.verify()) {
+    if (showCaptcha && !verify()) {
       setError('Code de vérification incorrect.')
-      captcha.generate()
+      generate()
       return
     }
 
     setLoading(true)
     setError('')
     await new Promise(r => setTimeout(r, 400))
-    const ok = login(username, password)
+
+    const ok = login(username.trim(), password)
     if (!ok) {
       recordFailure()
       const { isBlocked: nowBlocked, remainingMs: ms, attemptsLeft: left } = getSecurityStatus()
@@ -95,40 +80,25 @@ export default function Login() {
       } else {
         setError(t('login_error'))
       }
-      if (showCaptcha) captcha.generate()
+      if (showCaptcha) generate()
       setLoading(false)
-    } else {
-      if (remember) {
-        localStorage.setItem(REMEMBER_KEY, JSON.stringify({ username: username.trim(), password }))
-      } else {
-        localStorage.removeItem(REMEMBER_KEY)
-      }
+      return
     }
+
+    if (remember) {
+      localStorage.setItem(REMEMBER_KEY, JSON.stringify({ username: username.trim(), password }))
+    } else {
+      localStorage.removeItem(REMEMBER_KEY)
+    }
+    // Successful login — AuthProvider updates the session, Router redirects
   }
 
   return (
     <div className="min-h-[100dvh] bg-navy-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute inset-0 dot-grid opacity-30" />
-        <div className="absolute -top-1/4 -left-1/4 w-[70vw] h-[70vw] rounded-full bg-cyan-400/6 blur-3xl" />
-        <div className="absolute -bottom-1/4 -right-1/4 w-[60vw] h-[60vw] rounded-full bg-blue-500/5 blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] rounded-full bg-cyan-400/3 blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-cyan-400/5" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-cyan-400/3" />
-      </div>
+      <Background />
 
       <div className="w-full max-w-sm relative">
-        <div className="flex flex-col items-center mb-8">
-          <div className="mb-5 relative">
-            <div className="absolute inset-0 rounded-full bg-cyan-400/15 blur-xl scale-150" />
-            <Logo size="md" className="relative" />
-          </div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/20 mb-2">
-            <Sparkles size={11} className="text-cyan-400" />
-            <span className="text-[11px] font-bold text-cyan-400 uppercase tracking-widest">{t('login_portal_badge')}</span>
-          </div>
-          <p className="text-xs text-slate-500">{t('login_tagline')}</p>
-        </div>
+        <Header t={t} />
 
         <div className="glass-card p-6 md:p-8 shadow-2xl shadow-black/40">
           <h2 className="text-base font-semibold text-white mb-1">{t('login_heading')}</h2>
@@ -140,7 +110,7 @@ export default function Login() {
               <div>
                 <p className="text-xs font-semibold text-red-400">Accès temporairement bloqué</p>
                 <p className="text-[11px] text-red-400/80 mt-0.5">
-                  Trop de tentatives incorrectes. Réessayez dans {formatCountdown(remainingMs)}.
+                  Réessayez dans {formatCountdown(remainingMs)}.
                 </p>
               </div>
             </div>
@@ -173,10 +143,7 @@ export default function Login() {
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   {t('login_password')}
                 </label>
-                <Link
-                  to="/forgot-password"
-                  className="text-[10px] text-cyan-400/70 hover:text-cyan-400 transition"
-                >
+                <Link to="/forgot-password" className="text-[10px] text-cyan-400/70 hover:text-cyan-400 transition">
                   {t('login_forgot')}
                 </Link>
               </div>
@@ -204,47 +171,25 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Remember me */}
-            <label className="flex items-center gap-2.5 cursor-pointer select-none group">
-              <div
-                onClick={() => setRemember(v => !v)}
-                className={`w-4 h-4 rounded flex items-center justify-center border transition-all flex-shrink-0
-                  ${remember
-                    ? 'bg-cyan-400 border-cyan-400'
-                    : 'bg-navy-900/80 border-navy-700/60 group-hover:border-cyan-400/40'
-                  }`}
-              >
-                {remember && (
-                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                    <path d="M1 4L3.5 6.5L9 1" stroke="#0D273C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                )}
-              </div>
-              <span
-                onClick={() => setRemember(v => !v)}
-                className="text-xs text-slate-400 group-hover:text-slate-300 transition"
-              >
-                {t('login_remember')}
-              </span>
-            </label>
+            <RememberMe checked={remember} onChange={setRemember} t={t} />
 
-            {/* Anti-robot challenge after 2 failures */}
-            {showCaptcha && captcha.challenge && !isBlocked && (
+            {showCaptcha && challenge && !isBlocked && (
               <div className="p-3 rounded-xl bg-amber-400/6 border border-amber-400/20">
                 <div className="flex items-center gap-2 mb-2">
                   <ShieldAlert size={13} className="text-amber-400" />
                   <span className="text-[11px] font-semibold text-amber-400">Vérification anti-robot</span>
                 </div>
                 <p className="text-xs text-slate-400 mb-2">
-                  Combien font <strong className="text-white">{captcha.challenge.a} + {captcha.challenge.b}</strong> ?
+                  Combien font <strong className="text-white">{challenge.a} + {challenge.b}</strong> ?
                 </p>
                 <input
                   type="number"
-                  value={captcha.answer}
-                  onChange={e => captcha.setAnswer(e.target.value)}
+                  value={answer}
+                  onChange={e => setAnswer(e.target.value)}
                   placeholder="Votre réponse"
-                  className="w-full bg-navy-900/80 border border-navy-700/60 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/60 transition"
                   inputMode="numeric"
+                  className="w-full bg-navy-900/80 border border-navy-700/60 rounded-lg px-3 py-2 text-sm text-white
+                             placeholder-slate-600 focus:outline-none focus:border-cyan-400/60 transition"
                 />
               </div>
             )}
@@ -289,5 +234,63 @@ export default function Login() {
         </div>
       </div>
     </div>
+  )
+}
+
+// ── Sub-components (keep Login readable at a glance) ─────────────────────────
+
+function Background() {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div className="absolute inset-0 dot-grid opacity-30" />
+      <div className="absolute -top-1/4 -left-1/4 w-[70vw] h-[70vw] rounded-full bg-cyan-400/6 blur-3xl" />
+      <div className="absolute -bottom-1/4 -right-1/4 w-[60vw] h-[60vw] rounded-full bg-blue-500/5 blur-3xl" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] rounded-full bg-cyan-400/3 blur-3xl" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-cyan-400/5" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-cyan-400/3" />
+    </div>
+  )
+}
+
+function Header({ t }) {
+  return (
+    <div className="flex flex-col items-center mb-8">
+      <div className="mb-5 relative">
+        <div className="absolute inset-0 rounded-full bg-cyan-400/15 blur-xl scale-150" />
+        <Logo size="md" className="relative" />
+      </div>
+      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/20 mb-2">
+        <Sparkles size={11} className="text-cyan-400" />
+        <span className="text-[11px] font-bold text-cyan-400 uppercase tracking-widest">{t('login_portal_badge')}</span>
+      </div>
+      <p className="text-xs text-slate-500">{t('login_tagline')}</p>
+    </div>
+  )
+}
+
+function RememberMe({ checked, onChange, t }) {
+  return (
+    <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+      <div
+        onClick={() => onChange(v => !v)}
+        className={`w-4 h-4 rounded flex items-center justify-center border transition-all flex-shrink-0
+          ${checked
+            ? 'bg-cyan-400 border-cyan-400'
+            : 'bg-navy-900/80 border-navy-700/60 group-hover:border-cyan-400/40'
+          }`}
+      >
+        {checked && (
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+            <path d="M1 4L3.5 6.5L9 1" stroke="#0D273C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+      </div>
+      <span
+        onClick={() => onChange(v => !v)}
+        className="text-xs text-slate-400 group-hover:text-slate-300 transition"
+      >
+        {t('login_remember')}
+      </span>
+    </label>
   )
 }
