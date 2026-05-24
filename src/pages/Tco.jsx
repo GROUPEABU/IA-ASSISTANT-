@@ -1,470 +1,451 @@
 import { useState, useMemo } from 'react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { Calculator, TrendingDown, Fuel, Wrench } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts'
+import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { getMalus } from '@/utils/malus'
 import { formatNumber } from '@/utils/formatters'
-import { PRODUCTS } from '@/services/products'
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+// ─── Maintenance defaults ───────────────────────────────────────────────────
+const MAINT_TIERS = [
+  { k: 'low',     l: 'Low-cost / Chinois', thermique: 800,  hybride: 900,  phev: 1000, ev: 600  },
+  { k: 'mid',     l: 'Généraliste',        thermique: 1200, hybride: 1400, phev: 1500, ev: 800  },
+  { k: 'premium', l: 'Premium',            thermique: 2000, hybride: 2200, phev: 2400, ev: 1400 },
+]
 
-function parseConso(str) {
-  if (typeof str === 'number') return str
-  const match = String(str).replace(',', '.').match(/[\d.]+/)
-  return match ? parseFloat(match[0]) : 7.0
+const FUEL_LABELS = { thermique: 'Thermique', hybride: 'Hybride', phev: 'PHEV', ev: 'Électrique' }
+
+const COLORS = ['#50E5E5', '#7DD3FC', '#a78bfa', '#fb923c']
+
+const emptyVehicle = (id) => ({
+  id,
+  nom: '',
+  prix: '',
+  co2: '',
+  fuelType: 'thermique',
+  conso: '',       // L/100km (thermique/hybride) or kWh/100km (ev)
+  maint: '',       // annual maintenance €, overrides tier default
+  tier: 'mid',
+  open: true,
+})
+
+function getMaintDefault(fuelType, tier) {
+  const t = MAINT_TIERS.find(x => x.k === tier) || MAINT_TIERS[1]
+  return t[fuelType] || t.thermique
 }
 
-function isPhev(product) {
-  if (!product) return false
-  return product.model.includes('PHEV') || product.segment.includes('Plug-in')
-}
+function calcTco({ prix, co2, fuelType, conso, maint, years, kmYear, fuelPrice, elecPrice }) {
+  const p = Number(prix) || 0
+  const c = Number(co2) || 0
+  const cons = Number(conso) || 0
+  const malus = getMalus(c, p)
 
-function calcVehicle({ nom, prix, co2, conso, years, kmYear, fuelPrice, electricPct, phev, maintenancePerYear }) {
-  const malus = getMalus(co2, prix)
-  const thermalConso = phev ? conso * (1 - electricPct) : conso
-  const electricConsoEur = phev ? kmYear * electricPct * 0.036 : 0 // 3.6€/100km electric
-  const annualFuel = (kmYear * thermalConso / 100 * fuelPrice) + electricConsoEur
+  let annualFuel = 0
+  if (fuelType === 'ev') {
+    annualFuel = (kmYear * cons / 100) * elecPrice
+  } else if (fuelType === 'phev') {
+    // assume ~50% electric for realistic PHEV
+    annualFuel = (kmYear * cons / 100) * fuelPrice * 0.5 + (kmYear * 0.5 * 0.18) * elecPrice
+  } else {
+    annualFuel = (kmYear * cons / 100) * fuelPrice
+  }
+
   const totalFuel = Math.round(annualFuel * years)
-  const totalMaint = maintenancePerYear * years
-  const total = prix + malus + totalFuel + totalMaint
-  return { nom, prix, malus, totalFuel, totalMaint, total }
+  const totalMaint = Number(maint) * years
+  const total = p + malus + totalFuel + totalMaint
+  return { malus, totalFuel, totalMaint, total }
 }
-
-// ---------------------------------------------------------------------------
-// Custom Tooltip
-// ---------------------------------------------------------------------------
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   const total = payload.reduce((s, p) => s + (p.value || 0), 0)
   return (
-    <div className="bg-navy-800 border border-navy-700/50 rounded-xl p-3 text-xs space-y-1 shadow-cyan-lg z-50">
-      <p className="font-bold text-white mb-2">{label}</p>
-      {payload.map((p) => (
-        <div key={p.name} className="flex justify-between gap-4">
-          <span style={{ color: p.color }}>{p.name}</span>
+    <div className="bg-navy-800 border border-navy-700/50 rounded-xl p-3 text-xs space-y-1 shadow-lg">
+      <p className="font-bold text-white mb-2 truncate max-w-[180px]">{label}</p>
+      {payload.map(p => (
+        <div key={p.name} className="flex justify-between gap-6">
+          <span style={{ color: p.fill }}>{p.name}</span>
           <span className="text-white font-semibold">{formatNumber(Math.round(p.value))} €</span>
         </div>
       ))}
-      <div className="flex justify-between gap-4 border-t border-navy-700 pt-1 mt-1">
-        <span className="text-cyan-400 font-bold">TOTAL</span>
-        <span className="text-cyan-400 font-bold">{formatNumber(Math.round(total))} €</span>
+      <div className="flex justify-between gap-6 border-t border-navy-700/50 pt-1 mt-1">
+        <span className="font-bold text-slate-300">Total</span>
+        <span className="font-bold text-cyan-400">{formatNumber(Math.round(total))} €</span>
       </div>
     </div>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Chip button helper
-// ---------------------------------------------------------------------------
-
-function Chip({ active, onClick, children }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95
-        ${active
-          ? 'bg-cyan-400 text-navy-900 border-cyan-400'
-          : 'bg-navy-900/60 border-navy-700/50 text-slate-400 hover:border-cyan-400/40 hover:text-slate-200'
-        }`}
-    >
-      {children}
-    </button>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
-
-const KM_OPTIONS = [10000, 15000, 20000, 30000]
-const YEAR_OPTIONS = [3, 4, 5]
-const ELECTRIC_PCT_OPTIONS = [0, 0.3, 0.5, 0.7]
-
-// Stack colours
-const COLOR_PRIX = '#1e3a52'
-const COLOR_MALUS = '#f87171'
-const COLOR_FUEL = '#fb923c'
-const COLOR_MAINT = '#475569'
-const COLOR_JAECOO = '#50E5E5'
-const COLOR_COMPETITOR = '#64748b'
-
 export default function Tco() {
-  const [vehicleId, setVehicleId] = useState(PRODUCTS[0]?.id || '')
+  const [vehicles, setVehicles] = useState([emptyVehicle(1), emptyVehicle(2)])
+  const [years, setYears] = useState(4)
   const [kmYear, setKmYear] = useState(15000)
   const [fuelPrice, setFuelPrice] = useState(1.85)
-  const [years, setYears] = useState(4)
-  const [electricPct, setElectricPct] = useState(0.5)
+  const [elecPrice, setElecPrice] = useState(0.25)
 
-  // -------------------------------------------------------------------------
-  // Derived data
-  // -------------------------------------------------------------------------
+  const nextId = () => Math.max(...vehicles.map(v => v.id)) + 1
 
-  const selectedProduct = useMemo(
-    () => PRODUCTS.find((p) => p.id === vehicleId),
-    [vehicleId]
-  )
+  const update = (id, field, val) =>
+    setVehicles(vs => vs.map(v => {
+      if (v.id !== id) return v
+      const updated = { ...v, [field]: val }
+      // auto-set maintenance when tier or fuelType changes
+      if ((field === 'tier' || field === 'fuelType') && !v.maintManual) {
+        updated.maint = getMaintDefault(updated.fuelType, updated.tier)
+      }
+      return updated
+    }))
 
-  const phev = useMemo(() => isPhev(selectedProduct), [selectedProduct])
-
-  const maintenancePerYear = phev ? 950 : 800
-
-  const chartData = useMemo(() => {
-    if (!selectedProduct) return []
-
-    const ownConso = parseConso(selectedProduct.specs.consommation)
-    const ownEntry = calcVehicle({
-      nom: selectedProduct.fullName,
-      prix: selectedProduct.prix.base,
-      co2: selectedProduct.specs.co2_wltp,
-      conso: ownConso,
-      years,
-      kmYear,
-      fuelPrice,
-      electricPct,
-      phev,
-      maintenancePerYear,
-    })
-
-    const competitorEntries = (selectedProduct.concurrents || []).map((c) => {
-      const conso = typeof c.conso === 'number' ? c.conso : parseConso(c.conso || 7)
-      return calcVehicle({
-        nom: c.nom,
-        prix: c.prix,
-        co2: c.co2,
-        conso,
-        years,
-        kmYear,
-        fuelPrice,
-        electricPct,
-        phev: false, // competitors are not PHEV in the data
-        maintenancePerYear: 800,
-      })
-    })
-
-    // JAECOO first, then sort competitors by total ascending
-    const sorted = [...competitorEntries].sort((a, b) => a.total - b.total)
-    return [{ ...ownEntry, isOwn: true }, ...sorted.map((e) => ({ ...e, isOwn: false }))]
-  }, [selectedProduct, years, kmYear, fuelPrice, electricPct, phev, maintenancePerYear])
-
-  // Savings vs most expensive
-  const savings = useMemo(() => {
-    if (!chartData.length) return null
-    const ownTotal = chartData[0]?.total
-    const maxTotal = Math.max(...chartData.map((d) => d.total))
-    const diff = maxTotal - ownTotal
-    return diff > 0 ? diff : null
-  }, [chartData])
-
-  // Chart height responsive
-  const chartHeight = Math.max(200, Math.min(320, chartData.length * 52))
-
-  // Format short name for Y-axis (truncate long names)
-  const shortName = (name) => {
-    if (name.length <= 20) return name
-    return name.slice(0, 18) + '…'
+  const addVehicle = () => {
+    if (vehicles.length >= 4) return
+    const id = nextId()
+    setVehicles(vs => [...vs, { ...emptyVehicle(id), maint: getMaintDefault('thermique', 'mid') }])
   }
 
+  const removeVehicle = (id) => setVehicles(vs => vs.filter(v => v.id !== id))
+
+  const toggleOpen = (id) => setVehicles(vs => vs.map(v => v.id === id ? { ...v, open: !v.open } : v))
+
+  // Init maint on first render
+  const vehiclesWithMaint = vehicles.map(v => ({
+    ...v,
+    maint: v.maint !== '' ? v.maint : getMaintDefault(v.fuelType, v.tier),
+  }))
+
+  const results = useMemo(() => {
+    return vehiclesWithMaint
+      .filter(v => v.nom && Number(v.prix) > 0)
+      .map((v, i) => {
+        const { malus, totalFuel, totalMaint, total } = calcTco({
+          prix: v.prix, co2: v.co2, fuelType: v.fuelType,
+          conso: v.conso, maint: v.maint,
+          years, kmYear, fuelPrice, elecPrice,
+        })
+        return { nom: v.nom, prix: Number(v.prix), malus, totalFuel, totalMaint, total, color: COLORS[i % COLORS.length] }
+      })
+      .sort((a, b) => a.total - b.total)
+  }, [vehiclesWithMaint, years, kmYear, fuelPrice, elecPrice])
+
+  const hasResults = results.length >= 1
+  const bestTotal = hasResults ? results[0].total : 0
+
   return (
-    <div className="space-y-5 animate-fade-in">
-      {/* Page header */}
-      <div className="flex items-center gap-2">
-        <Calculator size={16} className="text-cyan-400" />
-        <h2 className="text-sm font-semibold text-white">TCO — Coût Total de Possession</h2>
-        <span className="text-xs text-slate-500">Carburant · Malus · Entretien</span>
+    <div className="flex flex-col gap-3 animate-fade-in flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-shrink-0">
+        <h2 className="text-sm font-semibold text-white">Calculateur TCO</h2>
+        <p className="text-xs text-slate-500">Coût total de possession · Comparez jusqu'à 4 véhicules</p>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Config panel                                                         */}
-      {/* ------------------------------------------------------------------ */}
-      <div className="glass-card p-4 md:p-5 space-y-4">
-        {/* Row 1 — Vehicle chips */}
-        <div>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-            Véhicule JAECOO
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {PRODUCTS.map((p) => (
-              <Chip
-                key={p.id}
-                active={vehicleId === p.id}
-                onClick={() => setVehicleId(p.id)}
-              >
-                {p.fullName}
-              </Chip>
-            ))}
-          </div>
-        </div>
-
-        {/* Row 2 — km/year + fuel price */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Global config */}
+      <div className="glass-card p-4">
+        <div className="text-[11px] text-slate-500 font-medium tracking-widest uppercase mb-3">Paramètres</div>
+        <div className="grid grid-cols-2 gap-3">
+          {/* Duration */}
           <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-              Kilométrage annuel
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {KM_OPTIONS.map((km) => (
-                <Chip key={km} active={kmYear === km} onClick={() => setKmYear(km)}>
-                  {formatNumber(km)} km
-                </Chip>
+            <div className="text-xs text-slate-400 mb-1.5">Durée</div>
+            <div className="flex gap-1">
+              {[3, 4, 5].map(y => (
+                <button key={y} onClick={() => setYears(y)}
+                  className="flex-1 py-2 rounded-lg text-xs font-semibold border transition"
+                  style={{
+                    borderColor: years === y ? '#50E5E5' : 'rgba(255,255,255,0.1)',
+                    background: years === y ? 'rgba(80,229,229,0.12)' : 'transparent',
+                    color: years === y ? '#50E5E5' : '#64748b',
+                  }}
+                >{y} ans</button>
               ))}
             </div>
           </div>
 
+          {/* Km/year */}
           <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-              Prix du carburant
-            </p>
+            <div className="text-xs text-slate-400 mb-1.5">Km/an</div>
+            <div className="flex gap-1">
+              {[10000, 15000, 20000, 30000].map(k => (
+                <button key={k} onClick={() => setKmYear(k)}
+                  className="flex-1 py-2 rounded-lg text-[10px] font-semibold border transition"
+                  style={{
+                    borderColor: kmYear === k ? '#50E5E5' : 'rgba(255,255,255,0.1)',
+                    background: kmYear === k ? 'rgba(80,229,229,0.12)' : 'transparent',
+                    color: kmYear === k ? '#50E5E5' : '#64748b',
+                  }}
+                >{k >= 1000 ? `${k/1000}k` : k}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Fuel price */}
+          <div>
+            <div className="text-xs text-slate-400 mb-1.5">Prix carburant (€/L)</div>
             <div className="flex items-center gap-2">
-              <div className="relative flex-1 max-w-[160px]">
-                <input
-                  type="number"
-                  min="1"
-                  max="3"
-                  step="0.01"
-                  value={fuelPrice}
-                  onChange={(e) => setFuelPrice(parseFloat(e.target.value) || 1.85)}
-                  className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2
-                             text-sm text-white focus:outline-none focus:border-cyan-400/60
-                             focus:ring-1 focus:ring-cyan-400/20 transition"
-                />
-              </div>
-              <span className="text-xs text-slate-400">€ / litre</span>
+              <input
+                type="number" step="0.05" min="0.5" max="4" value={fuelPrice}
+                onChange={e => setFuelPrice(Number(e.target.value))}
+                className="flex-1 px-3 py-2 rounded-lg text-sm text-cyan-400 font-semibold border border-cyan-400/20 bg-cyan-400/5 outline-none text-center"
+                style={{ fontFamily: 'inherit', MozAppearance: 'textfield' }}
+              />
+              <span className="text-xs text-slate-500">€/L</span>
             </div>
           </div>
-        </div>
 
-        {/* Row 3 — Duration */}
-        <div>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-            Durée de possession
-          </p>
-          <div className="flex gap-2">
-            {YEAR_OPTIONS.map((y) => (
-              <Chip key={y} active={years === y} onClick={() => setYears(y)}>
-                {y} ans
-              </Chip>
-            ))}
-          </div>
-        </div>
-
-        {/* Row 4 — PHEV electric share (only when PHEV selected) */}
-        {phev && (
+          {/* Electric price */}
           <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-              Part électrique (usage quotidien)
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {ELECTRIC_PCT_OPTIONS.map((pct) => (
-                <Chip
-                  key={pct}
-                  active={electricPct === pct}
-                  onClick={() => setElectricPct(pct)}
-                >
-                  {Math.round(pct * 100)} %
-                </Chip>
-              ))}
+            <div className="text-xs text-slate-400 mb-1.5">Prix électricité (€/kWh)</div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number" step="0.01" min="0.05" max="1" value={elecPrice}
+                onChange={e => setElecPrice(Number(e.target.value))}
+                className="flex-1 px-3 py-2 rounded-lg text-sm text-sky-300 font-semibold border border-sky-300/20 bg-sky-300/5 outline-none text-center"
+                style={{ fontFamily: 'inherit', MozAppearance: 'textfield' }}
+              />
+              <span className="text-xs text-slate-500">€/kWh</span>
             </div>
-            <p className="text-[10px] text-slate-600 mt-1.5">
-              Proportion des km parcourus en mode 100 % électrique (recharge régulière à domicile)
-            </p>
           </div>
+        </div>
+      </div>
+
+      {/* Vehicle forms */}
+      <div className="flex flex-col gap-2">
+        {vehiclesWithMaint.map((v, idx) => (
+          <div key={v.id} className="glass-card overflow-hidden">
+            {/* Header row */}
+            <div
+              className="flex items-center gap-3 px-4 py-3 cursor-pointer"
+              onClick={() => toggleOpen(v.id)}
+            >
+              <span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-navy-900"
+                style={{ background: COLORS[idx % COLORS.length] }}>
+                {idx + 1}
+              </span>
+              <span className="flex-1 text-sm font-medium truncate" style={{ color: v.nom ? '#E0E1E1' : '#475569' }}>
+                {v.nom || `Véhicule ${idx + 1}`}
+              </span>
+              {v.nom && Number(v.prix) > 0 && (
+                <span className="text-xs text-slate-500">{formatNumber(Number(v.prix))} €</span>
+              )}
+              <div className="flex items-center gap-2">
+                {vehicles.length > 1 && (
+                  <button onClick={e => { e.stopPropagation(); removeVehicle(v.id) }}
+                    className="w-6 h-6 flex items-center justify-center text-slate-600 hover:text-red-400 transition rounded">
+                    <Trash2 size={13} />
+                  </button>
+                )}
+                {v.open ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
+              </div>
+            </div>
+
+            {v.open && (
+              <div className="px-4 pb-4 border-t border-white/5 pt-3 space-y-3">
+                {/* Name */}
+                <div>
+                  <label className="text-[11px] text-slate-500 uppercase tracking-wider">Nom du véhicule</label>
+                  <input
+                    value={v.nom}
+                    onChange={e => update(v.id, 'nom', e.target.value)}
+                    placeholder="ex : Toyota Yaris Cross HEV"
+                    className="w-full mt-1 px-3 py-2.5 rounded-lg text-sm text-white bg-white/3 border border-white/10 outline-none"
+                    style={{ fontFamily: 'inherit' }}
+                  />
+                </div>
+
+                {/* Price + CO2 */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[11px] text-slate-500 uppercase tracking-wider">Prix (€)</label>
+                    <input
+                      type="number" value={v.prix}
+                      onChange={e => update(v.id, 'prix', e.target.value)}
+                      placeholder="28 900"
+                      className="w-full mt-1 px-3 py-2.5 rounded-lg text-sm text-white bg-white/3 border border-white/10 outline-none"
+                      style={{ fontFamily: 'inherit', MozAppearance: 'textfield' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-500 uppercase tracking-wider">CO₂ (g/km)</label>
+                    <input
+                      type="number" value={v.co2}
+                      onChange={e => update(v.id, 'co2', e.target.value)}
+                      placeholder="120"
+                      className="w-full mt-1 px-3 py-2.5 rounded-lg text-sm text-white bg-white/3 border border-white/10 outline-none"
+                      style={{ fontFamily: 'inherit', MozAppearance: 'textfield' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Fuel type */}
+                <div>
+                  <label className="text-[11px] text-slate-500 uppercase tracking-wider">Motorisation</label>
+                  <div className="grid grid-cols-4 gap-0 bg-navy-900/50 rounded-xl p-1 mt-1">
+                    {Object.entries(FUEL_LABELS).map(([k, l]) => (
+                      <button key={k} onClick={() => update(v.id, 'fuelType', k)}
+                        className="py-2 rounded-[9px] text-[11px] font-semibold transition"
+                        style={{
+                          background: v.fuelType === k ? 'rgba(80,229,229,0.16)' : 'transparent',
+                          color: v.fuelType === k ? '#50E5E5' : '#64748b',
+                        }}
+                      >{l}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Consumption */}
+                <div>
+                  <label className="text-[11px] text-slate-500 uppercase tracking-wider">
+                    {v.fuelType === 'ev' ? 'Consommation (kWh/100km)' : 'Consommation (L/100km)'}
+                  </label>
+                  <input
+                    type="number" step="0.1" value={v.conso}
+                    onChange={e => update(v.id, 'conso', e.target.value)}
+                    placeholder={v.fuelType === 'ev' ? '17' : v.fuelType === 'phev' ? '2.4' : v.fuelType === 'hybride' ? '5.3' : '7.0'}
+                    className="w-full mt-1 px-3 py-2.5 rounded-lg text-sm text-white bg-white/3 border border-white/10 outline-none"
+                    style={{ fontFamily: 'inherit', MozAppearance: 'textfield' }}
+                  />
+                </div>
+
+                {/* Maintenance tier + override */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-[11px] text-slate-500 uppercase tracking-wider">Entretien / réparations</label>
+                    <span className="text-[10px] text-slate-600">modifiable</span>
+                  </div>
+                  {/* Tier selector */}
+                  <div className="grid grid-cols-3 gap-0 bg-navy-900/50 rounded-xl p-1 mb-2">
+                    {MAINT_TIERS.map(t => (
+                      <button key={t.k} onClick={() => {
+                        update(v.id, 'tier', t.k)
+                        update(v.id, 'maint', getMaintDefault(v.fuelType, t.k))
+                        update(v.id, 'maintManual', false)
+                      }}
+                        className="py-1.5 rounded-[9px] text-[10px] font-semibold transition leading-tight"
+                        style={{
+                          background: v.tier === t.k ? 'rgba(80,229,229,0.16)' : 'transparent',
+                          color: v.tier === t.k ? '#50E5E5' : '#64748b',
+                        }}
+                      >{t.l}</button>
+                    ))}
+                  </div>
+                  {/* Manual override */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number" step="100" value={v.maint}
+                      onChange={e => {
+                        update(v.id, 'maint', e.target.value)
+                        update(v.id, 'maintManual', true)
+                      }}
+                      className="flex-1 px-3 py-2 rounded-lg text-sm text-amber-400 font-semibold border border-amber-400/20 bg-amber-400/5 outline-none text-center"
+                      style={{ fontFamily: 'inherit', MozAppearance: 'textfield' }}
+                    />
+                    <span className="text-xs text-slate-500">€/an</span>
+                  </div>
+                  <p className="text-[10px] text-slate-600 mt-1">Entretien + réparations estimés · ajustez selon votre expérience</p>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {vehicles.length < 4 && (
+          <button onClick={addVehicle}
+            className="glass-card px-4 py-3 flex items-center justify-center gap-2 text-sm text-slate-400 hover:text-cyan-400 border-dashed transition w-full"
+            style={{ borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.12)' }}
+          >
+            <Plus size={15} />
+            Ajouter un véhicule
+          </button>
         )}
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Results                                                              */}
-      {/* ------------------------------------------------------------------ */}
-      {selectedProduct && chartData.length > 0 && (
-        <div className="glass-card p-4 md:p-5 space-y-5">
-          {/* Title row */}
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <h3 className="text-sm font-semibold text-white">
-              TCO sur{' '}
-              <span className="text-cyan-400">{years} ans</span>
-              {' '}—{' '}
-              <span className="text-cyan-400">{formatNumber(kmYear)} km/an</span>
-            </h3>
-            <div className="flex items-center gap-3 text-[10px] text-slate-500 flex-wrap">
-              <span className="flex items-center gap-1">
-                <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: COLOR_PRIX }} />
-                Prix achat
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: COLOR_MALUS }} />
-                Malus
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: COLOR_FUEL }} />
-                Carburant
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: COLOR_MAINT }} />
-                Entretien
-              </span>
+      {/* Results */}
+      {hasResults && (
+        <div className="glass-card overflow-hidden animate-fade-in">
+          <div className="px-4 py-3 border-b border-white/7">
+            <div className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">
+              TCO sur {years} ans · {(kmYear/1000).toFixed(0)}k km/an
             </div>
           </div>
 
-          {/* Stacked bar chart */}
-          <div style={{ height: chartHeight }}>
+          {/* Bar chart */}
+          <div className="px-2 pt-4 pb-2" style={{ height: 200 + results.length * 40 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={chartData}
-                layout="vertical"
-                margin={{ top: 0, right: 16, left: 8, bottom: 0 }}
-                barSize={22}
-              >
-                <XAxis
-                  type="number"
-                  tick={{ fontSize: 10, fill: '#64748b' }}
-                  tickFormatter={(v) => `${formatNumber(Math.round(v / 1000))}k`}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="nom"
-                  width={130}
-                  tick={({ x, y, payload, index }) => {
-                    const item = chartData[index]
-                    return (
-                      <text
-                        x={x}
-                        y={y}
-                        dy={4}
-                        textAnchor="end"
-                        fontSize={10}
-                        fill={item?.isOwn ? '#50E5E5' : '#94a3b8'}
-                        fontWeight={item?.isOwn ? '700' : '400'}
-                      >
-                        {shortName(payload.value)}
-                      </text>
-                    )
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                <Bar dataKey="prix" name="Prix achat" stackId="a" fill={COLOR_PRIX} radius={[0, 0, 0, 0]}>
-                  {chartData.map((entry, index) => (
-                    <Cell
-                      key={`prix-${index}`}
-                      fill={entry.isOwn ? '#1e4a6a' : COLOR_PRIX}
-                    />
-                  ))}
+              <BarChart data={results} layout="vertical" margin={{ left: 8, right: 60, top: 0, bottom: 0 }}>
+                <XAxis type="number" hide />
+                <YAxis type="category" dataKey="nom" width={110} tick={{ fill: '#94a3b8', fontSize: 11 }} tickLine={false} axisLine={false} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+                <Bar dataKey="prix" name="Prix" stackId="a" fill="#334155" radius={[0,0,0,0]}>
+                  {results.map((r, i) => <Cell key={i} fill={i === 0 ? `${r.color}cc` : '#334155'} />)}
                 </Bar>
-                <Bar dataKey="malus" name="Malus" stackId="a" fill={COLOR_MALUS}>
-                  {chartData.map((entry, index) => (
-                    <Cell key={`malus-${index}`} fill={COLOR_MALUS} />
-                  ))}
-                </Bar>
-                <Bar dataKey="totalFuel" name="Carburant" stackId="a" fill={COLOR_FUEL}>
-                  {chartData.map((entry, index) => (
-                    <Cell key={`fuel-${index}`} fill={COLOR_FUEL} />
-                  ))}
-                </Bar>
-                <Bar dataKey="totalMaint" name="Entretien" stackId="a" fill={COLOR_MAINT} radius={[0, 3, 3, 0]}>
-                  {chartData.map((entry, index) => (
-                    <Cell key={`maint-${index}`} fill={COLOR_MAINT} />
-                  ))}
+                <Bar dataKey="malus" name="Malus" stackId="a" fill="#f87171" />
+                <Bar dataKey="totalFuel" name="Carburant" stackId="a" fill="#fbbf24" />
+                <Bar dataKey="totalMaint" name="Entretien" stackId="a" fill="#64748b" radius={[0,4,4,0]}>
+                  <LabelList
+                    dataKey="total"
+                    position="right"
+                    formatter={v => `${formatNumber(Math.round(v))} €`}
+                    style={{ fill: '#94a3b8', fontSize: 11, fontWeight: 600 }}
+                  />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           {/* Savings callout */}
-          {savings && savings > 500 && (
-            <div className="flex items-center gap-3 bg-cyan-400/10 border border-cyan-400/25 rounded-xl px-4 py-3">
-              <TrendingDown size={16} className="text-cyan-400 flex-shrink-0" />
-              <div>
-                <p className="text-xs font-bold text-cyan-400">
-                  Économie vs le plus cher : –{formatNumber(Math.round(savings))} €
-                </p>
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  sur {years} ans à {formatNumber(kmYear)} km/an
-                </p>
+          {results.length >= 2 && results[0].total < results[results.length - 1].total && (
+            <div className="mx-4 mb-4 px-4 py-3 rounded-xl bg-emerald-400/8 border border-emerald-400/20">
+              <div className="text-xs font-semibold text-emerald-400">
+                💰 {results[0].nom} — économie de {formatNumber(results[results.length - 1].total - results[0].total)} € vs {results[results.length - 1].nom}
               </div>
+              <div className="text-[11px] text-slate-500 mt-0.5">Sur {years} ans · {(kmYear/1000).toFixed(0)} 000 km/an</div>
             </div>
           )}
 
           {/* Detail table */}
-          <div className="overflow-x-auto -mx-1">
-            <table className="w-full min-w-[520px] text-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-navy-700/50">
-                  <th className="text-left py-2 px-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    Véhicule
-                  </th>
-                  <th className="text-right py-2 px-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    Prix
-                  </th>
-                  <th className="text-right py-2 px-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    Malus
-                  </th>
-                  <th className="text-right py-2 px-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    <span className="flex items-center justify-end gap-1">
-                      <Fuel size={10} />
-                      Carburant
-                    </span>
-                  </th>
-                  <th className="text-right py-2 px-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    <span className="flex items-center justify-end gap-1">
-                      <Wrench size={10} />
-                      Entretien
-                    </span>
-                  </th>
-                  <th className="text-right py-2 px-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    TOTAL
-                  </th>
+                <tr className="border-t border-white/7">
+                  <th className="px-4 py-2.5 text-left text-[11px] text-slate-500 font-medium uppercase tracking-wider">Poste</th>
+                  {results.map((r, i) => (
+                    <th key={i} className="px-3 py-2.5 text-right text-[11px] font-semibold" style={{ color: r.color }}>
+                      {r.nom}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody>
-                {chartData.map((row, i) => (
-                  <tr
-                    key={i}
-                    className={`border-b border-navy-700/20 last:border-0 transition-colors
-                      ${row.isOwn
-                        ? 'bg-cyan-400/10 hover:bg-cyan-400/15'
-                        : 'hover:bg-navy-700/20'
-                      }`}
-                  >
-                    <td className={`py-2.5 px-2 font-semibold ${row.isOwn ? 'text-cyan-400' : 'text-slate-300'}`}>
-                      {row.nom}
-                      {row.isOwn && (
-                        <span className="ml-1.5 text-[9px] bg-cyan-400/20 text-cyan-400 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                          JAECOO
-                        </span>
-                      )}
-                    </td>
-                    <td className={`py-2.5 px-2 text-right tabular-nums ${row.isOwn ? 'text-slate-300 font-semibold' : 'text-slate-400'}`}>
-                      {formatNumber(row.prix)} €
-                    </td>
-                    <td className={`py-2.5 px-2 text-right tabular-nums ${row.malus > 0 ? 'text-red-400' : 'text-emerald-400'} font-semibold`}>
-                      {row.malus > 0 ? `+${formatNumber(row.malus)} €` : '—'}
-                    </td>
-                    <td className={`py-2.5 px-2 text-right tabular-nums ${row.isOwn ? 'text-slate-300 font-semibold' : 'text-slate-400'}`}>
-                      {formatNumber(row.totalFuel)} €
-                    </td>
-                    <td className={`py-2.5 px-2 text-right tabular-nums ${row.isOwn ? 'text-slate-300 font-semibold' : 'text-slate-400'}`}>
-                      {formatNumber(row.totalMaint)} €
-                    </td>
-                    <td className={`py-2.5 px-2 text-right tabular-nums font-bold ${row.isOwn ? 'text-cyan-400' : 'text-slate-300'}`}>
-                      {formatNumber(row.total)} €
-                    </td>
+              <tbody className="divide-y divide-white/5">
+                {[
+                  { label: 'Prix d\'achat', key: 'prix' },
+                  { label: 'Malus CO₂ + poids', key: 'malus' },
+                  { label: `Carburant (${years} ans)`, key: 'totalFuel' },
+                  { label: `Entretien (${years} ans)`, key: 'totalMaint' },
+                ].map(row => (
+                  <tr key={row.key}>
+                    <td className="px-4 py-2.5 text-slate-400">{row.label}</td>
+                    {results.map((r, i) => (
+                      <td key={i} className="px-3 py-2.5 text-right text-slate-300 font-medium">
+                        {formatNumber(Math.round(r[row.key]))} €
+                      </td>
+                    ))}
                   </tr>
                 ))}
+                <tr className="bg-white/3">
+                  <td className="px-4 py-3 text-white font-bold uppercase text-[11px] tracking-wider">Total TCO</td>
+                  {results.map((r, i) => (
+                    <td key={i} className="px-3 py-3 text-right font-bold text-base" style={{ color: i === 0 ? r.color : '#E0E1E1' }}>
+                      {formatNumber(Math.round(r.total))} €
+                    </td>
+                  ))}
+                </tr>
               </tbody>
             </table>
           </div>
 
-          {/* Footer note */}
-          <p className="text-[10px] text-slate-600 leading-relaxed">
-            * Entretien estimé {formatNumber(maintenancePerYear)} €/an
-            {phev && ' · PHEV : consommation WLTP (charge régulière supposée)'}
-            {' '}· Malus France 2025 (barème WLTP) · Carburant SP95-E10 à {fuelPrice.toFixed(2)} €/L
-            {phev && ` · Électricité estimée 3,6 €/100 km (${Math.round(electricPct * 100)} % des km en électrique)`}
-          </p>
+          <div className="px-4 py-3 border-t border-white/7 text-[11px] text-slate-600">
+            Calcul indicatif · Malus France 2025 · Entretien estimé — valeurs ajustables par véhicule
+          </div>
+        </div>
+      )}
+
+      {!hasResults && (
+        <div className="glass-card p-8 text-center text-slate-500 text-sm">
+          Renseignez au moins un véhicule (nom + prix) pour voir le TCO
         </div>
       )}
     </div>
