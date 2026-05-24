@@ -148,7 +148,8 @@ export default function CO2Malus() {
       {/* Header */}
       <div className="flex-shrink-0">
         <h2 className="text-sm font-semibold text-white">CO₂ & Malus Mondial</h2>
-        <p className="text-xs text-slate-500">Calculateur sur 40 pays · Estimation indicative</p>
+        <p className="text-xs text-slate-500">Calculateur sur 40 pays · Autobuyunion</p>
+        <p className="text-[11px] text-slate-600 mt-0.5">Estimation indicative · Consultez les autorités fiscales avant tout achat</p>
       </div>
 
       {/* Legend */}
@@ -692,8 +693,8 @@ export default function CO2Malus() {
         </>
       )}
 
-      <div className="text-center text-[11px] text-slate-500 leading-relaxed pb-2 px-4 glass-card p-4 mt-2">
-        Estimation indicative · Consultez les autorités fiscales avant tout achat
+      <div className="glass-card p-4 mt-2 text-center text-[11px] text-slate-500 leading-relaxed pb-2 px-4">
+        Les montants affichés sont fournis à titre indicatif et ne constituent pas un conseil fiscal. Les barèmes sont susceptibles d'évoluer — vérifiez auprès de l'autorité compétente de chaque pays avant toute acquisition.
       </div>
     </div>
   )
