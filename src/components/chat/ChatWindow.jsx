@@ -20,28 +20,30 @@ export default function ChatWindow({ messages, isLoading, onSend }) {
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 px-4 py-8">
-        <div className="text-center">
-          <div className="w-14 h-14 rounded-2xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🤖</span>
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 px-3 py-4 overflow-y-auto">
+        {/* Header compact */}
+        <div className="text-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center mx-auto mb-2">
+            <span className="text-xl">🤖</span>
           </div>
-          <h2 className="text-lg font-semibold text-white mb-1">Bonjour, comment puis-je vous aider ?</h2>
-          <p className="text-sm text-slate-500 max-w-sm">
-            Je suis votre assistant IA spécialisé dans l'analyse des données de ventes automobiles Autobuyunion.
+          <h2 className="text-base font-semibold text-white mb-0.5">Comment puis-je vous aider ?</h2>
+          <p className="text-xs text-slate-500 max-w-xs">
+            Assistant IA spécialisé dans la vente automobile Autobuyunion.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-xl">
+        {/* Suggestions 2×3 */}
+        <div className="grid grid-cols-2 gap-2 w-full max-w-xl flex-shrink-0">
           {SUGGESTIONS.map((s) => (
             <button
               key={s.text}
               onClick={() => onSend(s.text)}
               className="text-left bg-navy-800/60 border border-navy-700/50
-                         rounded-xl px-3 py-2.5 hover:border-cyan-400/30 hover:bg-navy-800
-                         transition-all duration-150 flex flex-col gap-1"
+                         rounded-xl px-2.5 py-2 hover:border-cyan-400/30 hover:bg-navy-800
+                         transition-all duration-150 flex flex-col gap-0.5"
             >
-              <span className="text-[10px] font-bold text-cyan-400/70 uppercase tracking-wider">{s.tag}</span>
-              <span className="text-xs text-slate-300 leading-snug">{s.text}</span>
+              <span className="text-[9px] font-bold text-cyan-400/70 uppercase tracking-wider leading-none">{s.tag}</span>
+              <span className="text-[11px] text-slate-300 leading-snug line-clamp-2">{s.text}</span>
             </button>
           ))}
         </div>

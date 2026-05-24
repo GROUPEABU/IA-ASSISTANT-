@@ -101,7 +101,7 @@ export default function Hub() {
                 <h3 className={`text-sm font-bold text-white mb-1 group-hover:${c.icon} transition-colors`}>
                   {title}
                 </h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{description}</p>
+                <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">{description}</p>
               </div>
 
               {/* CTA */}
@@ -114,7 +114,7 @@ export default function Hub() {
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 min-w-0">
         {[
           { label: 'Pays couverts', value: '40' },
           { label: 'Fiches produits', value: '2+' },

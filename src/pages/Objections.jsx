@@ -158,12 +158,12 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
         {allProducts.length > 0 && (
           <div className="mb-4">
             <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">Raccourcis catalogue</p>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
               {allProducts.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => { setVehicleId(p.id); setCustomVehicle(p.fullName) }}
-                  className={`text-xs px-2.5 py-1 rounded-lg border transition ${
+                  className={`text-xs px-2.5 py-1.5 rounded-lg border transition truncate text-left ${
                     vehicleId === p.id
                       ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/40'
                       : 'text-slate-400 border-navy-600/50 hover:text-cyan-400 hover:border-cyan-400/30'

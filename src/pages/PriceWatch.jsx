@@ -230,7 +230,7 @@ export default function PriceWatch() {
         </div>
 
         {/* Ligne 1 : Marque + Modèle + Année min + Année max */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-2">
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Marque</label>
             <input
@@ -276,7 +276,7 @@ export default function PriceWatch() {
         </div>
 
         {/* Ligne 2 : Km max (VO only) + Carburant + Boîte */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
           {type === 'vo' && (
             <FilterSelect label="Kilométrage max" value={mileageMax} onChange={setMileageMax}>
               {MILEAGE_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
