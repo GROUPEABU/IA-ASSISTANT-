@@ -9,6 +9,7 @@ if (localStorage.getItem('theme') === 'light') {
 
 import Layout from '@/components/layout/Layout'
 import CookieBanner from '@/components/ui/CookieBanner'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 // Auth pages (public)
 import Login from '@/pages/Login'
@@ -76,12 +77,14 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <SettingsProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </AuthProvider>
-    </SettingsProvider>
+    <ErrorBoundary>
+      <SettingsProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </AuthProvider>
+      </SettingsProvider>
+    </ErrorBoundary>
   )
 }
