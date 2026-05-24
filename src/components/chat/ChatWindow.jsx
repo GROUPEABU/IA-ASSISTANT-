@@ -3,10 +3,12 @@ import ChatMessage from './ChatMessage'
 import Spinner from '@/components/ui/Spinner'
 
 const SUGGESTIONS = [
-  'Quel est le modèle le plus vendu ce mois-ci ?',
-  'Compare les ventes France vs Allemagne en 2024',
-  'Génère un rapport de performance Q2',
-  'Quels véhicules ont le meilleur taux de marge ?',
+  { text: 'Comment répondre à un client qui trouve le prix trop élevé ?', tag: 'Objections' },
+  { text: 'Quels arguments pour vendre un JAECOO J6 à une entreprise ?', tag: 'BtoB' },
+  { text: 'Explique le malus 2025 pour un véhicule à 160 g/km de CO₂', tag: 'CO₂ & Malus' },
+  { text: 'Comment interpréter le prix moyen marché de la Veille Prix ?', tag: 'Veille prix' },
+  { text: 'Donne-moi un pitch de vente JAECOO J5 pour un particulier', tag: 'BtoC' },
+  { text: 'Quelles sont les étapes pour générer une fiche produit IA ?', tag: 'Fiches produits' },
 ]
 
 export default function ChatWindow({ messages, isLoading, onSend }) {
@@ -32,13 +34,14 @@ export default function ChatWindow({ messages, isLoading, onSend }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-xl">
           {SUGGESTIONS.map((s) => (
             <button
-              key={s}
-              onClick={() => onSend(s)}
-              className="text-left text-xs text-slate-400 bg-navy-800/60 border border-navy-700/50
-                         rounded-xl px-3 py-2.5 hover:border-cyan-400/30 hover:text-cyan-400
-                         transition-all duration-150"
+              key={s.text}
+              onClick={() => onSend(s.text)}
+              className="text-left bg-navy-800/60 border border-navy-700/50
+                         rounded-xl px-3 py-2.5 hover:border-cyan-400/30 hover:bg-navy-800
+                         transition-all duration-150 flex flex-col gap-1"
             >
-              {s}
+              <span className="text-[10px] font-bold text-cyan-400/70 uppercase tracking-wider">{s.tag}</span>
+              <span className="text-xs text-slate-300 leading-snug">{s.text}</span>
             </button>
           ))}
         </div>

@@ -162,7 +162,11 @@ export default function PriceWatch() {
 
   const search = async (overrides = {}) => {
     if (!canSearch && !overrides.make && !overrides.model) return
-    const filters = { make, model, type, yearMin, yearMax, mileageMax, fuel, gearbox, ...overrides }
+    // Résoudre le code La Centrale si l'utilisateur a tapé un label connu
+    const rawMake = overrides.make ?? make
+    const matchedMake = MAKES.find(m => m.label.toLowerCase() === rawMake.toLowerCase())
+    const resolvedMake = matchedMake ? matchedMake.code : rawMake
+    const filters = { make: resolvedMake, model, type, yearMin, yearMax, mileageMax, fuel, gearbox, ...overrides }
     const label = [filters.make, filters.model,
       filters.yearMin && `${filters.yearMin}${filters.yearMax ? '–'+filters.yearMax : '+'}`,
       filters.mileageMax && `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km`,
@@ -227,10 +231,22 @@ export default function PriceWatch() {
 
         {/* Ligne 1 : Marque + Modèle + Année min + Année max */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
-          <FilterSelect label="Marque" value={make} onChange={setMake}>
-            <option value="">— Marque —</option>
-            {MAKES.map(m => <option key={m.code} value={m.code}>{m.label}</option>)}
-          </FilterSelect>
+          <div>
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Marque</label>
+            <input
+              type="text"
+              value={make}
+              onChange={e => setMake(e.target.value)}
+              list="makes-list"
+              placeholder="Ex: Renault, BMW…"
+              className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+                         text-sm text-white placeholder-slate-600
+                         focus:outline-none focus:border-cyan-400/50 transition"
+            />
+            <datalist id="makes-list">
+              {MAKES.map(m => <option key={m.code} value={m.label} />)}
+            </datalist>
+          </div>
 
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Modèle</label>

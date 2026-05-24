@@ -136,56 +136,65 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
           <h2 className="text-sm font-semibold text-white">Réponses aux objections</h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-          {/* Produit catalogue */}
-          <div className="sm:col-span-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Véhicule catalogue
-            </label>
-            <select
-              value={vehicleId}
-              onChange={(e) => { setVehicleId(e.target.value); setCustomVehicle('') }}
-              className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-                         text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition"
-            >
-              <option value="">-- Sélectionner --</option>
+        {/* Véhicule — saisie libre principale */}
+        <div className="mb-3">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+            Véhicule
+          </label>
+          <input
+            type="text"
+            value={customVehicle}
+            onChange={(e) => { setCustomVehicle(e.target.value); setVehicleId('') }}
+            onKeyDown={(e) => e.key === 'Enter' && generate()}
+            placeholder="Ex: Peugeot 308 2023, BMW X1, Renault Clio 5, JAECOO J6…"
+            autoFocus
+            className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-3
+                       text-sm text-white placeholder-slate-600
+                       focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/20 transition"
+          />
+        </div>
+
+        {/* Raccourcis catalogue */}
+        {allProducts.length > 0 && (
+          <div className="mb-4">
+            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">Raccourcis catalogue</p>
+            <div className="flex flex-wrap gap-1.5">
               {allProducts.map((p) => (
-                <option key={p.id} value={p.id}>{p.fullName}</option>
+                <button
+                  key={p.id}
+                  onClick={() => { setVehicleId(p.id); setCustomVehicle(p.fullName) }}
+                  className={`text-xs px-2.5 py-1 rounded-lg border transition ${
+                    vehicleId === p.id
+                      ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/40'
+                      : 'text-slate-400 border-navy-600/50 hover:text-cyan-400 hover:border-cyan-400/30'
+                  }`}
+                >
+                  {p.fullName}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
+        )}
 
-          {/* Ou saisie libre */}
-          <div className="sm:col-span-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Ou autre véhicule
-            </label>
-            <input
-              type="text"
-              value={customVehicle}
-              onChange={(e) => { setCustomVehicle(e.target.value); setVehicleId('') }}
-              placeholder="Ex: BMW X1 2024"
-              className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-                         text-sm text-white placeholder-slate-600
-                         focus:outline-none focus:border-cyan-400/50 transition"
-            />
-          </div>
-
-          {/* Segment */}
-          <div className="sm:col-span-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Segment cible
-            </label>
-            <select
-              value={segment}
-              onChange={(e) => setSegment(e.target.value)}
-              className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-                         text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition"
-            >
-              {SEGMENTS.map((s) => (
-                <option key={s.id} value={s.id}>{s.label}</option>
-              ))}
-            </select>
+        {/* Segment */}
+        <div className="mb-4">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+            Segment cible
+          </label>
+          <div className="flex gap-1 p-1 bg-navy-900/60 rounded-xl w-fit border border-navy-700/40">
+            {SEGMENTS.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setSegment(s.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  segment === s.id
+                    ? 'bg-cyan-400 text-navy-900'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
           </div>
         </div>
 
