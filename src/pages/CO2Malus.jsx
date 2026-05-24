@@ -464,21 +464,19 @@ export default function CO2Malus() {
               </div>
 
               {/* Header */}
-              <div className="p-5 border-b border-white/7 flex justify-between items-start flex-wrap gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-3xl">{result.country.flag}</span>
-                    <div>
-                      <div className="text-base font-medium text-white">{result.country.name}</div>
-                      <div className="text-[11px] text-slate-500">{result.tax_name}</div>
-                      <div className="text-[11px] mt-0.5" style={{ color: RELIABILITY_CONFIG[result.reliability].color }}>
-                        {RELIABILITY_CONFIG[result.reliability].label} · {result.source}
-                      </div>
+              <div className="p-5 border-b border-white/7">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-3xl">{result.country.flag}</span>
+                  <div>
+                    <div className="text-xl font-bold text-white">{result.country.name}</div>
+                    <div className="text-[11px] text-slate-400 leading-snug">{result.tax_name}</div>
+                    <div className="text-[11px] mt-0.5" style={{ color: RELIABILITY_CONFIG[result.reliability].color }}>
+                      {RELIABILITY_CONFIG[result.reliability].label} · {result.source}
                     </div>
                   </div>
-                  <div className="text-xs text-slate-500 leading-relaxed">{result.system_description}</div>
                 </div>
-                <div className="rounded-xl px-4 py-2 text-center"
+                <div className="text-xs text-slate-500 leading-relaxed mb-3">{result.system_description}</div>
+                <div className="inline-block rounded-xl px-4 py-2"
                   style={{ background: `${sevColor(result.severity)}18`, border: `1px solid ${sevColor(result.severity)}44` }}>
                   <div className="text-[11px] text-slate-500 tracking-wider mb-0.5">SÉVÉRITÉ</div>
                   <div className="text-sm font-medium" style={{ color: sevColor(result.severity) }}>
@@ -629,12 +627,12 @@ export default function CO2Malus() {
       {/* Compare mode */}
       {mode === 'compare' && (
         <>
-          <div className="glass-card p-4 mb-3">
+          <div className="glass-card p-4 mb-2">
             <div className="flex justify-between items-center mb-3">
               <span className="text-sm font-semibold text-white">Sélectionnez les pays</span>
               <span className="text-xs text-slate-500">{selectedForCompare.length}/6</span>
             </div>
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 mb-3">
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
               {COUNTRIES.map(c => {
                 const cfg = RELIABILITY_CONFIG[c.reliability]
                 const sel = selectedForCompare.find(x => x.code === c.code)
@@ -653,7 +651,18 @@ export default function CO2Malus() {
                 )
               })}
             </div>
-            {selectedForCompare.length >= 2 && (
+          </div>
+
+          {selectedForCompare.length >= 2 && (
+            <div className="flex items-center justify-between gap-3 px-1 mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400">{selectedForCompare.length} pays :</span>
+                <div className="flex gap-0.5">
+                  {selectedForCompare.map(c => (
+                    <span key={c.code} className="text-lg leading-none">{c.flag}</span>
+                  ))}
+                </div>
+              </div>
               <button
                 onClick={() => {
                   const res = selectedForCompare.map(c => {
@@ -662,42 +671,46 @@ export default function CO2Malus() {
                   }).filter(Boolean)
                   setCompareResults(res)
                 }}
-                className="w-full py-2.5 rounded-xl text-sm font-semibold text-navy-900 bg-cyan-400 hover:bg-cyan-300 transition"
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border border-cyan-400/40 text-cyan-400 active:scale-95 transition"
+                style={{ background: 'rgba(80,229,229,0.06)' }}
               >
-                Comparer {selectedForCompare.length} pays
+                ⚖️ Comparer
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
           {compareResults.length >= 2 && (
             <div ref={compareResultRef} className="glass-card overflow-hidden animate-fade-in">
               <div className="px-4 py-3 border-b border-white/7">
-                <div className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">
-                  Comparaison · {emission} g/km · {weight} kg
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Résultats pour {emission} g/km · {weight} kg
                 </div>
               </div>
               <div className="divide-y divide-white/5">
                 {[...compareResults]
                   .sort((a, b) => (a.specific_penalty_amount || 0) - (b.specific_penalty_amount || 0))
-                  .map((r, i) => {
+                  .map((r) => {
                     const cfg = RELIABILITY_CONFIG[r.reliability]
                     return (
-                      <div key={r.country.code} className="flex items-center gap-3 px-4 py-3 flex-wrap">
-                        <span className="text-2xl">{r.country.flag}</span>
-                        <div className="flex-1 min-w-28">
-                          <div className="text-sm font-medium text-slate-200">{r.country.name}</div>
-                          <div className="text-[11px] text-slate-500">{r.tax_name}</div>
-                          <div className="text-[11px] font-semibold" style={{ color: cfg.color }}>{cfg.label}</div>
-                        </div>
-                        <div className="rounded-lg px-3 py-1.5 text-xs font-semibold"
-                          style={{ background: `${sevColor(r.severity)}18`, border: `1px solid ${sevColor(r.severity)}33`, color: sevColor(r.severity) }}>
-                          {sevLabel(r.severity)}
-                        </div>
-                        <div className="text-right min-w-28">
-                          <div className="text-sm font-semibold"
-                            style={{ color: (r.specific_penalty_amount || 0) > 0 ? '#fb923c' : '#50E5E5' }}>
-                            {r.specific_penalty}
+                      <div key={r.country.code} className="p-4">
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">{r.country.flag}</span>
+                            <div>
+                              <div className="text-sm font-bold text-white">{r.country.name}</div>
+                              <div className="text-[11px] text-slate-400 leading-snug">{r.tax_name}</div>
+                              <div className="text-[11px] font-semibold" style={{ color: cfg.color }}>{cfg.label}</div>
+                            </div>
                           </div>
+                          <div className="rounded-lg px-3 py-1.5 text-center flex-shrink-0"
+                            style={{ background: `${sevColor(r.severity)}18`, border: `1px solid ${sevColor(r.severity)}33` }}>
+                            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Sévérité</div>
+                            <div className="text-xs font-semibold" style={{ color: sevColor(r.severity) }}>{sevLabel(r.severity)}</div>
+                          </div>
+                        </div>
+                        <div className="text-2xl font-bold"
+                          style={{ color: (r.specific_penalty_amount || 0) > 0 ? '#fb923c' : '#50E5E5' }}>
+                          {r.specific_penalty}
                         </div>
                       </div>
                     )
