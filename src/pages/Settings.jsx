@@ -1,6 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Key, Palette, Globe, Check, Monitor, Sun } from 'lucide-react'
-import Button from '@/components/ui/Button'
 
 const Section = ({ icon: Icon, title, children }) => (
   <div className="glass-card overflow-hidden">
@@ -28,9 +27,23 @@ const Field = ({ label, description, children }) => (
 
 const DENSITY_OPTIONS = ['Compact', 'Normal', 'Large']
 
+function applyTheme(theme) {
+  if (theme === 'light') {
+    document.documentElement.classList.add('light')
+  } else {
+    document.documentElement.classList.remove('light')
+  }
+  localStorage.setItem('theme', theme)
+}
+
 export default function Settings() {
   const [saved, setSaved] = useState(false)
   const [density, setDensity] = useState(1)
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
+
+  useEffect(() => {
+    applyTheme(theme)
+  }, [theme])
 
   const handleSave = () => {
     setSaved(true)
@@ -73,10 +86,24 @@ export default function Settings() {
       <Section icon={Palette} title="Apparence">
         <Field label="Thème" description="Mode d'affichage de l'interface">
           <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-3 py-2 rounded-xl bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-xs font-semibold">
+            <button
+              onClick={() => setTheme('dark')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                theme === 'dark'
+                  ? 'bg-cyan-400/10 border-cyan-400/30 text-cyan-400'
+                  : 'border-navy-600/50 text-slate-500 hover:text-slate-300'
+              }`}
+            >
               <Monitor size={13} /> Sombre
             </button>
-            <button className="flex items-center gap-2 px-3 py-2 rounded-xl border border-navy-600/50 text-slate-500 text-xs font-medium hover:text-slate-300 transition">
+            <button
+              onClick={() => setTheme('light')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                theme === 'light'
+                  ? 'bg-cyan-400/10 border-cyan-400/30 text-cyan-400'
+                  : 'border-navy-600/50 text-slate-500 hover:text-slate-300'
+              }`}
+            >
               <Sun size={13} /> Clair
             </button>
           </div>
@@ -112,9 +139,11 @@ export default function Settings() {
         <Field label="Langue" description="Langue de l'interface et des rapports générés">
           <select className="w-full sm:w-36 bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
                              text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition">
-            <option>Français</option>
-            <option>English</option>
-            <option>Deutsch</option>
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+            <option value="it">Italiano</option>
+            <option value="es">Español</option>
           </select>
         </Field>
       </Section>

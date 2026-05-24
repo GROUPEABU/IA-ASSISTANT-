@@ -72,7 +72,6 @@ const colorMap = {
 
 const stats = [
   { label: 'Pays couverts', value: '40', icon: Globe, color: '#50E5E5' },
-  { label: 'Véhicules actifs', value: '12+', icon: BookOpen, color: '#7DD3FC' },
   { label: 'Outils IA', value: '7', icon: Zap, color: '#a78bfa' },
 ]
 

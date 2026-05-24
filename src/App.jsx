@@ -1,5 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
+
+// Apply saved theme immediately (before first render)
+if (localStorage.getItem('theme') === 'light') {
+  document.documentElement.classList.add('light')
+}
 import Layout from '@/components/layout/Layout'
 import Login from '@/pages/Login'
 import Hub from '@/pages/Hub'

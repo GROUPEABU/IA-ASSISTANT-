@@ -117,3 +117,87 @@
   background-image: radial-gradient(rgba(80,229,229,0.12) 1px, transparent 1px);
   background-size: 28px 28px;
 }
+
+/* ── Light Mode ─────────────────────────────────────────────────────────── */
+html.light body {
+  background-color: #e8eef5;
+  color: #0f172a;
+}
+
+html.light ::-webkit-scrollbar-track { background: #dde4ec; }
+html.light ::-webkit-scrollbar-thumb { background: #94a3b8; }
+
+html.light .glass-card {
+  background: rgba(255, 255, 255, 0.82) !important;
+  border-color: rgba(0, 0, 0, 0.09) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+}
+
+/* Nav / sidebar backgrounds */
+html.light header,
+html.light nav,
+html.light aside,
+html.light [class*="bg-navy-900"],
+html.light [class*="bg-navy-800"] {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Explicit navy bg overrides */
+html.light .bg-navy-900\/60,
+html.light .bg-navy-900\/80,
+html.light .bg-navy-900\/40,
+html.light .bg-navy-900\/20,
+html.light .bg-navy-800\/60,
+html.light .bg-navy-800\/40,
+html.light .bg-navy-800\/20,
+html.light .bg-navy-950 {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+}
+
+/* Text color overrides */
+html.light .text-white   { color: #0f172a !important; }
+html.light .text-slate-200 { color: #1e293b !important; }
+html.light .text-slate-300 { color: #334155 !important; }
+html.light .text-slate-400 { color: #64748b !important; }
+html.light .text-slate-500 { color: #94a3b8 !important; }
+
+/* Inputs / selects */
+html.light input:not([type="range"]),
+html.light select,
+html.light textarea {
+  background-color: #f8fafc !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  color: #0f172a !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Borders */
+html.light .border-navy-700\/50,
+html.light .border-white\/7,
+html.light .border-white\/5 {
+  border-color: rgba(0, 0, 0, 0.09) !important;
+}
+
+/* Dividers */
+html.light .divide-white\/5 > * + * {
+  border-color: rgba(0, 0, 0, 0.07) !important;
+}
+
+/* Nav items active */
+html.light .nav-item { color: #475569 !important; }
+html.light .nav-item:hover { background: rgba(0,0,0,0.04) !important; color: #0f172a !important; }
+
+/* Cyan accent stays cyan — no override needed */
+
+/* Dot grid lighter */
+html.light .dot-grid {
+  background-image: radial-gradient(rgba(80,229,229,0.2) 1px, transparent 1px);
+}
+
+/* Transition smooth */
+html, body, .glass-card, header, nav, aside { transition: background-color 0.25s ease, border-color 0.25s ease, color 0.2s ease; }
