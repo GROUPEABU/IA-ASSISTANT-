@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   buildCountryData, COUNTRIES, CUSTOM_EMISSIONS, RELIABILITY_CONFIG,
   formatDateFR, getImportDecote, getImportDecoteNL, getImportDecotePT,
@@ -106,6 +106,9 @@ export default function CO2Malus() {
   const [reliabilityFilter, setReliabilityFilter] = useState('all')
   const [selectedCountry, setSelectedCountry] = useState(null)
 
+  const resultRef = useRef(null)
+  const compareResultRef = useRef(null)
+
   const extra = { displacement, vehiclePrice, fuelKind, beRegion, esRegion, childrenCount }
 
   const filtered = COUNTRIES.filter(c =>
@@ -134,6 +137,18 @@ export default function CO2Malus() {
       }).filter(Boolean))
     }
   }, [emission, weight, fuelType, dateImmat, isImported, selectedForCompare, displacement, vehiclePrice, fuelKind, beRegion, esRegion, childrenCount])
+
+  useEffect(() => {
+    if (result) {
+      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50)
+    }
+  }, [result])
+
+  useEffect(() => {
+    if (compareResults.length >= 2) {
+      setTimeout(() => compareResultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50)
+    }
+  }, [compareResults])
 
   const toggleCompare = (c) => {
     setSelectedForCompare(prev =>
@@ -441,7 +456,7 @@ export default function CO2Malus() {
 
           {/* Results panel */}
           {result && (
-            <div className="glass-card overflow-hidden animate-fade-in">
+            <div ref={resultRef} className="glass-card overflow-hidden animate-fade-in">
               {/* Banner */}
               <div className="bg-cyan-400/10 border-b border-cyan-400/25 px-4 py-2 text-[11px] text-cyan-400 text-center">
                 📅 Calcul pour véhicule immatriculé le <strong>{formatDateFR(dateImmat)}</strong>
@@ -655,7 +670,7 @@ export default function CO2Malus() {
           </div>
 
           {compareResults.length >= 2 && (
-            <div className="glass-card overflow-hidden animate-fade-in">
+            <div ref={compareResultRef} className="glass-card overflow-hidden animate-fade-in">
               <div className="px-4 py-3 border-b border-white/7">
                 <div className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">
                   Comparaison · {emission} g/km · {weight} kg
