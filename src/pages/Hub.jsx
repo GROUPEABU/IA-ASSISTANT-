@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles } from 'lucide-react'
+import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck, GitCompare } from 'lucide-react'
 
 const tools = [
   {
@@ -19,9 +19,33 @@ const tools = [
     badge: '40 pays',
   },
   {
+    to: '/price-watch',
+    icon: Bell,
+    color: 'amber',
+    title: 'Veille prix concurrence',
+    description: 'Prix marché en temps réel depuis La Centrale, Le Bon Coin et L\'Argus. Tendance, cote et conseils achat/vente.',
+    badge: 'Temps réel',
+  },
+  {
+    to: '/objections',
+    icon: ShieldCheck,
+    color: 'rose',
+    title: 'Réponses aux objections',
+    description: 'Générez 10 objections clients fréquentes avec réponses percutantes pour n\'importe quel véhicule.',
+    badge: 'BtoB · BtoC',
+  },
+  {
+    to: '/compare',
+    icon: GitCompare,
+    color: 'violet',
+    title: 'Comparateur de modèles',
+    description: 'Comparez 2 ou 3 véhicules côte à côte : prix, malus, specs. Verdict IA avec recommandation BtoB/BtoC.',
+    badge: '2–3 véhicules',
+  },
+  {
     to: '/chat',
     icon: MessageSquare,
-    color: 'violet',
+    color: 'cyan',
     title: 'Assistant IA',
     description: 'Posez toutes vos questions sur les produits, le marché ou les stratégies commerciales.',
     badge: 'Claude 4',
@@ -60,7 +84,7 @@ export default function Hub() {
       </div>
 
       {/* Tools grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {tools.map(({ to, icon: Icon, color, title, description, badge }) => {
           const c = colorMap[color]
           return (
@@ -102,7 +126,7 @@ export default function Hub() {
         {[
           { label: 'Pays couverts', value: '40' },
           { label: 'Fiches produits', value: '2+' },
-          { label: 'Outils disponibles', value: '3' },
+          { label: 'Outils disponibles', value: '6' },
         ].map(({ label, value }) => (
           <div key={label} className="glass-card px-3 py-3 text-center">
             <p className="text-lg font-bold text-cyan-400">{value}</p>

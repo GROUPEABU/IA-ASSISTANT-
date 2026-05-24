@@ -4,10 +4,11 @@ import Hub from '@/pages/Hub'
 import Products from '@/pages/Products'
 import ProductDetail from '@/pages/ProductDetail'
 import CO2Malus from '@/pages/CO2Malus'
-import Dashboard from '@/pages/Dashboard'
 import Chat from '@/pages/Chat'
-import Reports from '@/pages/Reports'
 import Settings from '@/pages/Settings'
+import PriceWatch from '@/pages/PriceWatch'
+import Objections from '@/pages/Objections'
+import Compare from '@/pages/Compare'
 
 export default function App() {
   return (
@@ -19,9 +20,10 @@ export default function App() {
           <Route path="products" element={<Products />} />
           <Route path="products/:id" element={<ProductDetail />} />
           <Route path="co2-malus" element={<CO2Malus />} />
-          <Route path="dashboard" element={<Dashboard />} />
           <Route path="chat" element={<Chat />} />
-          <Route path="reports" element={<Reports />} />
+          <Route path="price-watch" element={<PriceWatch />} />
+          <Route path="objections" element={<Objections />} />
+          <Route path="compare" element={<Compare />} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>

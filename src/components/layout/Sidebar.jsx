@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import {
-  MessageSquare, Settings, Car, Zap, X, Home, BookOpen, Gauge,
+  MessageSquare, Settings, Car, Zap, X, Home, BookOpen, Gauge, Bell, ShieldCheck, GitCompare,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -11,6 +11,14 @@ const navGroups = [
       { to: '/hub', icon: Home, label: 'Accueil Hub' },
       { to: '/products', icon: BookOpen, label: 'Fiches & Rapports' },
       { to: '/co2-malus', icon: Gauge, label: 'CO₂ & Malus' },
+    ],
+  },
+  {
+    label: 'Outils de vente',
+    items: [
+      { to: '/price-watch', icon: Bell, label: 'Veille prix' },
+      { to: '/objections', icon: ShieldCheck, label: 'Réponses objections' },
+      { to: '/compare', icon: GitCompare, label: 'Comparateur' },
     ],
   },
   {
