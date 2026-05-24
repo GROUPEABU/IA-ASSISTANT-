@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect } from 'react'
 const USERS = [
   { id: 1, username: 'admin', password: 'autobuyunion2025', name: 'Administrateur', role: 'admin', initials: 'AD' },
   { id: 2, username: 'membre', password: 'membre123', name: 'Membre', role: 'membre', initials: 'MB' },
+  { id: 3, username: 'demo@autobuyunion.eu', password: 'Demo2025!', name: 'Compte Démo', role: 'membre', initials: 'DM' },
 ]
 
 const SESSION_KEY = 'abu_session'
