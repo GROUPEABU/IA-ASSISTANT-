@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TrendingUp, TrendingDown, AlertTriangle, Lightbulb, RefreshCw, Globe, ExternalLink, WifiOff, Info } from 'lucide-react'
+import { TrendingUp, TrendingDown, AlertTriangle, Lightbulb, RefreshCw, Globe, ExternalLink, Info, CheckCircle2 } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { fetchMarketData, buildMarketPrompt } from '@/services/marketSearch'
 import Spinner from '@/components/ui/Spinner'
@@ -26,33 +26,26 @@ function StatCard({ label, value, sub, trend }) {
   )
 }
 
-function SourceList({ snippets }) {
+function SourceBadges({ snippets }) {
   if (!snippets?.length) return null
   return (
-    <div className="glass-card p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <Globe size={13} className="text-cyan-400" />
-        <p className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Sources web consultées</p>
-      </div>
-      <div className="space-y-1.5">
-        {snippets.map((s, i) => (
-          <a
-            key={i}
-            href={s.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="flex items-start gap-2 group"
-          >
-            <span className="text-[10px] font-bold text-slate-600 w-4 flex-shrink-0 mt-0.5">{i + 1}</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-slate-300 group-hover:text-cyan-400 transition-colors truncate">{s.title}</p>
-              <p className="text-[10px] text-slate-600">{s.source}</p>
-            </div>
-            <ExternalLink size={10} className="text-slate-600 group-hover:text-cyan-400 flex-shrink-0 mt-1 transition-colors" />
-          </a>
-        ))}
-      </div>
+    <div className="flex items-center gap-2 flex-wrap mt-1">
+      {snippets.map((s, i) => (
+        <a
+          key={i}
+          href={s.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400
+                     bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-full
+                     hover:bg-emerald-400/20 transition"
+        >
+          <CheckCircle2 size={9} />
+          {s.source}
+          <ExternalLink size={8} />
+        </a>
+      ))}
     </div>
   )
 }
@@ -63,7 +56,7 @@ function AnalysisText({ text }) {
       {text.split('\n').map((line, i) => {
         if (/^\*\*\d+\./.test(line) || (line.startsWith('**') && line.endsWith('**'))) {
           return (
-            <h4 key={i} className="text-sm font-bold text-cyan-400 mt-5 mb-2 first:mt-0">
+            <h4 key={i} className="text-sm font-bold text-cyan-400 mt-5 mb-2 first:mt-0 pt-2 border-t border-navy-700/30 first:border-0 first:pt-0">
               {line.replace(/\*\*/g, '')}
             </h4>
           )
@@ -88,27 +81,25 @@ export default function MarketAnalysis({ product }) {
   const [loading, setLoading] = useState(false)
   const [loadingStep, setLoadingStep] = useState('')
   const [error, setError] = useState(null)
-  const [noKey, setNoKey] = useState(false)
   const [fetchedAt, setFetchedAt] = useState(null)
 
   const generate = async () => {
     setLoading(true)
     setError(null)
-    setNoKey(false)
     setSnippets([])
+    setAnalysis('')
 
     try {
-      // Étape 1 : fetch web
-      setLoadingStep('Recherche données web (L\'Argus, La Centrale, CCFA…)')
+      // Étape 1 : collecte web (Jina AI — gratuit, sans clé)
+      setLoadingStep("Lecture L'Argus · La Centrale · Caradisiac · AutoScout24…")
       const webData = await fetchMarketData(product.fullName)
 
-      if (webData.noKey) {
-        setNoKey(true)
-        setLoadingStep('Analyse avec données d\'entraînement Claude…')
-      } else if (webData.snippets?.length) {
+      if (webData.snippets?.length) {
         setSnippets(webData.snippets)
         setFetchedAt(webData.fetchedAt)
-        setLoadingStep(`${webData.snippets.length} sources trouvées · Analyse IA en cours…`)
+        setLoadingStep(`${webData.snippets.length} sources lues · Analyse IA en cours…`)
+      } else {
+        setLoadingStep('Analyse avec les données de Claude…')
       }
 
       // Étape 2 : analyse Claude
@@ -142,7 +133,7 @@ export default function MarketAnalysis({ product }) {
         />
       </div>
 
-      {/* Tendances produit */}
+      {/* Opportunités / Risques */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="glass-card p-4">
           <div className="flex items-center gap-2 mb-3">
@@ -161,21 +152,20 @@ export default function MarketAnalysis({ product }) {
         </div>
       </div>
 
-      {/* Analyse IA avec données web */}
+      {/* Analyse principale */}
       <div className="glass-card p-5">
         <div className="flex items-center justify-between mb-4 gap-3">
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Globe size={14} className="text-cyan-400" />
+              <Globe size={14} className="text-cyan-400 flex-shrink-0" />
               <h3 className="text-sm font-semibold text-white">Analyse marché temps réel</h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              {snippets.length > 0
-                ? `${snippets.length} sources web · L'Argus, La Centrale, CCFA · analysées par Claude`
-                : 'Web + connaissances Claude · VN & VO · Tendances & cotes'}
+              L'Argus · La Centrale · Caradisiac · AutoScout24 → Claude
             </p>
+            {snippets.length > 0 && <SourceBadges snippets={snippets} />}
             {fetchedAt && (
-              <p className="text-[10px] text-slate-600 mt-0.5">
+              <p className="text-[10px] text-slate-600 mt-1">
                 Actualisé le {new Date(fetchedAt).toLocaleString('fr-FR')}
               </p>
             )}
@@ -188,35 +178,17 @@ export default function MarketAnalysis({ product }) {
             className="flex-shrink-0"
           >
             {loading ? <Spinner size="sm" /> : <RefreshCw size={13} />}
-            {loading ? 'Analyse…' : analysis ? 'Actualiser' : 'Analyser le marché'}
+            {loading ? 'En cours…' : analysis ? 'Actualiser' : 'Analyser'}
           </Button>
         </div>
-
-        {/* No key warning */}
-        {noKey && !loading && (
-          <div className="flex gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 mb-4">
-            <WifiOff size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-amber-400">Données web non connectées</p>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Ajoutez <code className="bg-navy-700 px-1 rounded text-cyan-400">BRAVE_SEARCH_API_KEY</code> dans
-                vos variables Vercel pour activer la recherche temps réel (gratuit sur{' '}
-                <a href="https://brave.com/search/api/" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline">
-                  brave.com/search/api
-                </a>).
-                En attendant, l'analyse utilise les connaissances de Claude.
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Loading */}
         {loading && (
           <div className="flex flex-col items-center gap-3 py-8">
             <Spinner size="md" />
-            <p className="text-xs text-slate-400 text-center">{loadingStep}</p>
+            <p className="text-xs text-slate-400 text-center max-w-xs">{loadingStep}</p>
             <div className="w-48 h-1 bg-navy-700 rounded-full overflow-hidden">
-              <div className="h-full bg-cyan-400 rounded-full animate-pulse" style={{ width: '60%' }} />
+              <div className="h-full bg-cyan-400 rounded-full animate-pulse" style={{ width: '70%' }} />
             </div>
           </div>
         )}
@@ -229,31 +201,29 @@ export default function MarketAnalysis({ product }) {
           </div>
         )}
 
-        {/* Empty */}
+        {/* Empty state */}
         {!analysis && !loading && !error && (
           <div className="text-center py-10">
             <Globe size={32} className="text-slate-700 mx-auto mb-3" />
-            <p className="text-sm text-slate-500 mb-1">Analyse marché VN & VO en temps réel</p>
-            <p className="text-xs text-slate-600">
-              Cotes L'Argus · Prix La Centrale · Immatriculations CCFA · Tendances
+            <p className="text-sm text-slate-400 mb-1 font-medium">Analyse VN & VO en temps réel</p>
+            <p className="text-xs text-slate-600 mb-4">
+              Lit L'Argus, La Centrale, Caradisiac et AutoScout24<br />
+              puis génère une analyse complète avec Claude
             </p>
+            <p className="text-[11px] text-cyan-400/60">Gratuit · Sans inscription · Sans carte bancaire</p>
           </div>
         )}
 
-        {/* Result */}
+        {/* Analyse */}
         {analysis && !loading && <AnalysisText text={analysis} />}
       </div>
-
-      {/* Sources */}
-      {snippets.length > 0 && !loading && <SourceList snippets={snippets} />}
 
       {/* Disclaimer */}
       {analysis && (
         <div className="flex gap-2 p-3 rounded-xl bg-navy-900/40">
           <Info size={12} className="text-slate-600 flex-shrink-0 mt-0.5" />
           <p className="text-[10px] text-slate-600 leading-relaxed">
-            Analyse générée automatiquement. Vérifiez les données chiffrées avant utilisation commerciale.
-            {snippets.length > 0 ? ` Sources : ${[...new Set(snippets.map(s => s.source))].slice(0, 4).join(', ')}.` : ''}
+            Analyse générée automatiquement à partir de sources publiques. Vérifiez les données chiffrées avant utilisation commerciale.
           </p>
         </div>
       )}

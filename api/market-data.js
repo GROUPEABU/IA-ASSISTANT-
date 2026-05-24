@@ -1,90 +1,75 @@
-// Vercel Edge Function — Recherche web marché automobile
-// Sources : Brave Search → L'Argus, La Centrale, AutoScout24, CCFA, Caradisiac
+// Vercel Edge Function — Collecte données marché automobile
+// Utilise Jina AI Reader (gratuit, sans clé) pour lire L'Argus, La Centrale, Caradisiac
 export const config = { runtime: 'edge' }
 
-const AUTOMOTIVE_DOMAINS = [
-  'largus.fr', 'lacentrale.fr', 'autoscout24.fr', 'caradisiac.com',
-  'leboncoin.fr', 'pfa-auto.fr', 'ccfa.fr', 'autoplus.fr',
-  'turbo.fr', 'motortrend.fr', 'autonews.fr', 'argusauto.com',
+const SOURCES = [
+  {
+    label: "L'Argus",
+    url: (v) => `https://www.largus.fr/recherche/?q=${encodeURIComponent(v)}`,
+  },
+  {
+    label: 'La Centrale',
+    url: (v) => `https://www.lacentrale.fr/listing?makesModelsCommercialNames=${encodeURIComponent(v)}`,
+  },
+  {
+    label: 'Caradisiac',
+    url: (v) => `https://www.caradisiac.com/?s=${encodeURIComponent(v)}`,
+  },
+  {
+    label: 'AutoScout24',
+    url: (v) => `https://www.autoscout24.fr/lst?search=${encodeURIComponent(v)}&atype=U`,
+  },
 ]
 
-async function braveSearch(query, apiKey) {
-  const params = new URLSearchParams({
-    q: query,
-    count: '5',
-    country: 'fr',
-    search_lang: 'fr',
-    freshness: 'py',
-  })
-  const res = await fetch(`https://api.search.brave.com/res/v1/web/search?${params}`, {
+async function jinaFetch(targetUrl) {
+  // r.jina.ai convertit n'importe quelle page en markdown lisible par l'IA
+  const res = await fetch(`https://r.jina.ai/${targetUrl}`, {
     headers: {
-      Accept: 'application/json',
-      'Accept-Encoding': 'gzip',
-      'X-Subscription-Token': apiKey,
+      Accept: 'text/plain',
+      'X-Return-Format': 'text',
+      'X-Timeout': '8',
     },
+    signal: AbortSignal.timeout(10000),
   })
-  if (!res.ok) throw new Error(`Brave API error: ${res.status}`)
-  const data = await res.json()
-  return (data.web?.results || []).map((r) => ({
-    title: r.title,
-    description: r.description || '',
-    url: r.url,
-    source: new URL(r.url).hostname.replace('www.', ''),
-  }))
+  if (!res.ok) throw new Error(`${res.status}`)
+  const text = await res.text()
+  // Garder les 2500 premiers caractères pertinents
+  return text.replace(/\[.*?\]\(.*?\)/g, '').trim().slice(0, 2500)
 }
 
 export default async function handler(req) {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204 })
-  }
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204 })
 
   const { searchParams } = new URL(req.url)
   const vehicle = searchParams.get('vehicle')
 
   if (!vehicle) {
-    return new Response(JSON.stringify({ error: 'Paramètre vehicle manquant' }), { status: 400 })
+    return new Response(JSON.stringify({ error: 'vehicle requis' }), { status: 400 })
   }
 
-  const apiKey = process.env.BRAVE_SEARCH_API_KEY
-  if (!apiKey) {
-    return new Response(
-      JSON.stringify({ noKey: true, message: 'BRAVE_SEARCH_API_KEY non configurée' }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } },
-    )
-  }
+  const results = await Promise.allSettled(
+    SOURCES.map(async (source) => {
+      const content = await jinaFetch(source.url(vehicle))
+      return { source: source.label, content, url: source.url(vehicle) }
+    }),
+  )
 
-  try {
-    // 3 requêtes ciblées en parallèle
-    const queries = [
-      `${vehicle} prix cote occasion argus lacentrale France 2024 2025`,
-      `${vehicle} immatriculations ventes marché neuf France tendance`,
-      `${vehicle} prix neuf remise concession promotion France`,
-    ]
+  const snippets = results
+    .filter((r) => r.status === 'fulfilled' && r.value.content?.length > 100)
+    .map((r) => r.value)
 
-    const allResults = await Promise.allSettled(
-      queries.map((q) => braveSearch(q, apiKey)),
-    )
-
-    const snippets = allResults
-      .filter((r) => r.status === 'fulfilled')
-      .flatMap((r) => r.value)
-      .filter((item, idx, arr) => arr.findIndex((i) => i.url === item.url) === idx) // dédoublonner
-      .slice(0, 12)
-
-    // Trier : sources spécialisées auto en premier
-    const sorted = [
-      ...snippets.filter((s) => AUTOMOTIVE_DOMAINS.some((d) => s.source.includes(d))),
-      ...snippets.filter((s) => !AUTOMOTIVE_DOMAINS.some((d) => s.source.includes(d))),
-    ]
-
-    return new Response(
-      JSON.stringify({ snippets: sorted, fetchedAt: new Date().toISOString() }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } },
-    )
-  } catch (err) {
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } },
-    )
-  }
+  return new Response(
+    JSON.stringify({
+      snippets,
+      fetchedAt: new Date().toISOString(),
+      vehicle,
+    }),
+    {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
+    },
+  )
 }
