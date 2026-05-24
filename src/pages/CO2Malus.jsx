@@ -151,6 +151,11 @@ export default function CO2Malus() {
         <p className="text-xs text-slate-500">Calculateur sur 40 pays · Autobuyunion</p>
       </div>
 
+      {/* Disclaimer subtitle */}
+      <p className="text-xs text-slate-500 text-center -mt-1 flex-shrink-0">
+        Estimation indicative · Consultez les autorités fiscales avant tout achat
+      </p>
+
       {/* Legend */}
       <div className="glass-card px-3 py-2.5 flex-shrink-0">
         <div className="flex flex-wrap gap-x-4 gap-y-1.5 justify-center">
