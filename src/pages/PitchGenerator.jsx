@@ -7,11 +7,11 @@ import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
 
 const PROFILES = [
-  { id: 'btoc_famille', label: 'Famille',       sublabel: 'Particulier',        icon: Users,     segment: 'btoc', color: '#50E5E5' },
-  { id: 'btoc_rouleur', label: 'Gros rouleur',  sublabel: 'Particulier',        icon: Car,       segment: 'btoc', color: '#7DD3FC' },
-  { id: 'btob_pme',     label: 'PME / Artisan', sublabel: 'Professionnel',      icon: Wrench,    segment: 'btob', color: '#fbbf24' },
-  { id: 'btob_flotte',  label: 'Grande Flotte', sublabel: 'Entreprise',         icon: Building2, segment: 'btob', color: '#fb923c' },
-  { id: 'btob_cadre',   label: 'Cadre Dirig.',  sublabel: 'Dirigeant',          icon: Briefcase, segment: 'btob', color: '#a78bfa' },
+  { id: 'btoc_famille', labelKey: 'profile_family', subKey: 'profile_family_sub', icon: Users,     segment: 'btoc', color: '#50E5E5' },
+  { id: 'btoc_rouleur', labelKey: 'profile_driver', subKey: 'profile_family_sub', icon: Car,       segment: 'btoc', color: '#7DD3FC' },
+  { id: 'btob_pme',     labelKey: 'profile_pme',    subKey: 'profile_pme_sub',    icon: Wrench,    segment: 'btob', color: '#fbbf24' },
+  { id: 'btob_flotte',  labelKey: 'profile_fleet',  subKey: 'profile_fleet_sub',  icon: Building2, segment: 'btob', color: '#fb923c' },
+  { id: 'btob_cadre',   labelKey: 'profile_exec',   subKey: 'profile_exec_sub',   icon: Briefcase, segment: 'btob', color: '#a78bfa' },
 ]
 
 export default function PitchGenerator() {
@@ -57,7 +57,7 @@ DONNÉES PRODUIT :
 
       const prompt = `Tu es un expert commercial automobile pour Autobuyunion.
 
-Génère un pitch de vente structuré et percutant pour le ${vehicleName}, destiné à : ${profile.sublabel} — ${profile.label}.
+Génère un pitch de vente structuré et percutant pour le ${vehicleName}, destiné à : ${t(profile.subKey)} — ${t(profile.labelKey)}.
 ${context ? `\nContexte client : ${context}` : ''}
 ${productContext}
 
@@ -81,7 +81,7 @@ Réponds UNIQUEMENT en JSON valide :
       if (!match) throw new Error('Parsing erreur — réessayez')
       const data = JSON.parse(match[0])
       setPitch(data)
-      setGeneratedFor(`${vehicleName} · ${profile.sublabel} ${profile.label}`)
+      setGeneratedFor(`${vehicleName} · ${t(profile.subKey)} ${t(profile.labelKey)}`)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -113,20 +113,20 @@ Réponds UNIQUEMENT en JSON valide :
             <Mic size={15} className="text-cyan-400" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-white leading-tight">Générateur de pitch</h2>
-            <p className="text-[11px] text-slate-500">Pitch IA en 4 parties · Adapté au profil client</p>
+            <h2 className="text-sm font-semibold text-white leading-tight">{t('page_pitch_title')}</h2>
+            <p className="text-[11px] text-slate-500">{t('page_pitch_sub')}</p>
           </div>
         </div>
 
         {/* Vehicle */}
         <div className="mb-3">
-          <label className="section-label block mb-1">Véhicule</label>
+          <label className="section-label block mb-1">{t('vehicle_label')}</label>
           <input
             type="text"
             value={customVehicle}
             onChange={(e) => { setCustomVehicle(e.target.value); setVehicleId('') }}
             onKeyDown={(e) => e.key === 'Enter' && generate()}
-            placeholder="Ex: Peugeot 308 2023, BMW X1, JAECOO J5 HEV…"
+            placeholder={t('vehicle_ph')}
             className="input-field"
           />
         </div>
@@ -134,7 +134,7 @@ Réponds UNIQUEMENT en JSON valide :
         {/* Catalog shortcuts */}
         {allProducts.length > 0 && (
           <div className="mb-4">
-            <p className="section-label block mb-1.5">Raccourcis catalogue</p>
+            <p className="section-label block mb-1.5">{t('catalog_shortcuts')}</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
               {allProducts.map((p) => (
                 <button
@@ -155,7 +155,7 @@ Réponds UNIQUEMENT en JSON valide :
 
         {/* Profile selector */}
         <div className="mb-4">
-          <label className="section-label block mb-2">Profil client</label>
+          <label className="section-label block mb-2">{t('client_profile')}</label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {PROFILES.map((p) => {
               const Icon = p.icon
@@ -178,8 +178,8 @@ Réponds UNIQUEMENT en JSON valide :
                     <Icon size={14} style={{ color: isActive ? p.color : '#64748b' }} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold truncate" style={{ color: isActive ? p.color : '#94a3b8' }}>{p.label}</p>
-                    <p className="text-[10px] text-slate-600 truncate">{p.sublabel}</p>
+                    <p className="text-xs font-semibold truncate" style={{ color: isActive ? p.color : '#94a3b8' }}>{t(p.labelKey)}</p>
+                    <p className="text-[10px] text-slate-600 truncate">{t(p.subKey)}</p>
                   </div>
                 </button>
               )
@@ -190,13 +190,13 @@ Réponds UNIQUEMENT en JSON valide :
         {/* Context */}
         <div className="mb-4">
           <label className="section-label block mb-1">
-            Contexte <span className="text-slate-600 normal-case font-normal">(optionnel)</span>
+            {t('context_label')} <span className="text-slate-600 normal-case font-normal">{t('context_optional')}</span>
           </label>
           <textarea
             rows={2}
             value={context}
             onChange={(e) => setContext(e.target.value)}
-            placeholder="Budget évoqué, véhicule actuel, objection soulevée…"
+            placeholder={t('context_ph')}
             className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
                        text-sm text-white placeholder-slate-600 resize-none
                        focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/10 transition"
@@ -219,7 +219,7 @@ Réponds UNIQUEMENT en JSON valide :
       {loading && (
         <div className="glass-card p-10 flex flex-col items-center gap-3">
           <Spinner size="lg" />
-          <p className="text-sm text-slate-400">Génération du pitch commercial…</p>
+          <p className="text-sm text-slate-400">{t('generating')}</p>
         </div>
       )}
 
@@ -236,10 +236,10 @@ Réponds UNIQUEMENT en JSON valide :
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-white">{generatedFor}</p>
-              <p className="text-xs text-slate-500">Pitch prêt · 4 sections</p>
+              <p className="text-xs text-slate-500">{t('pitch_ready')}</p>
             </div>
             <button onClick={generate} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition px-2.5 py-1.5 rounded-lg hover:bg-cyan-400/5">
-              <RefreshCw size={11} /> Régénérer
+              <RefreshCw size={11} /> {t('regenerate')}
             </button>
           </div>
 
@@ -285,7 +285,7 @@ Réponds UNIQUEMENT en JSON valide :
               <div className="w-6 h-6 rounded-lg bg-amber-400/15 flex items-center justify-center">
                 <span className="text-amber-400 text-xs font-bold leading-none">3</span>
               </div>
-              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Réponses aux objections</span>
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">{t('obj_responses')}</span>
             </div>
             <div className="space-y-2.5">
               {pitch.objections.map((obj, i) => (

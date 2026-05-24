@@ -7,9 +7,9 @@ import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
 
 const SEGMENTS = [
-  { id: 'btoc', label: 'BtoC', sub: 'Particuliers' },
-  { id: 'btob', label: 'BtoB', sub: 'Entreprises' },
-  { id: 'both', label: 'Les deux', sub: 'Tous profils' },
+  { id: 'btoc', labelKey: 'btoc', subKey: 'btoc_sub' },
+  { id: 'btob', labelKey: 'btob', subKey: 'btob_sub' },
+  { id: 'both', labelKey: 'both', subKey: 'both_sub' },
 ]
 
 const CATEGORY_COLORS = {
@@ -90,7 +90,7 @@ export default function Objections() {
 
     try {
       const seg = SEGMENTS.find((s) => s.id === segment)
-      const segLabel = seg ? `${seg.label} — ${seg.sub}` : segment
+      const segLabel = seg ? `${t(seg.labelKey)} — ${t(seg.subKey)}` : segment
       const productContext = selectedProduct
         ? `Prix : ${selectedProduct.prix.base.toLocaleString('fr-FR')}€ – ${selectedProduct.prix.haut.toLocaleString('fr-FR')}€
 Origine : ${selectedProduct.origin}
@@ -137,20 +137,20 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
       <div className="glass-card p-4 md:p-5">
         <div className="flex items-center gap-2 mb-4">
           <ShieldCheck size={16} className="text-cyan-400" />
-          <h2 className="text-sm font-semibold text-white">Réponses aux objections</h2>
+          <h2 className="text-sm font-semibold text-white">{t('page_objections_title')}</h2>
         </div>
 
         {/* Véhicule — saisie libre principale */}
         <div className="mb-3">
           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-            Véhicule
+            {t('vehicle_label')}
           </label>
           <input
             type="text"
             value={customVehicle}
             onChange={(e) => { setCustomVehicle(e.target.value); setVehicleId('') }}
             onKeyDown={(e) => e.key === 'Enter' && generate()}
-            placeholder="Ex: Peugeot 308 2023, BMW X1, Renault Clio 5, JAECOO J5…"
+            placeholder={t('vehicle_ph')}
             className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-3
                        text-sm text-white placeholder-slate-600
                        focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/20 transition"
@@ -160,7 +160,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
         {/* Raccourcis catalogue */}
         {allProducts.length > 0 && (
           <div className="mb-4">
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">Raccourcis catalogue</p>
+            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">{t('catalog_shortcuts')}</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
               {allProducts.map((p) => (
                 <button
@@ -182,7 +182,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
         {/* Segment */}
         <div className="mb-4">
           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-            Segment cible
+            {t('segment_label')}
           </label>
           <div className="grid grid-cols-3 gap-1 p-1 bg-navy-900/60 rounded-xl border border-navy-700/40">
             {SEGMENTS.map((s) => (
@@ -195,8 +195,8 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <span className="text-xs font-bold leading-tight">{s.label}</span>
-                <span className={`text-[10px] leading-tight ${segment === s.id ? 'text-navy-900/70' : 'text-slate-600'}`}>{s.sub}</span>
+                <span className="text-xs font-bold leading-tight">{t(s.labelKey)}</span>
+                <span className={`text-[10px] leading-tight ${segment === s.id ? 'text-navy-900/70' : 'text-slate-600'}`}>{t(s.subKey)}</span>
               </button>
             ))}
           </div>
@@ -218,7 +218,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
             <button onClick={handlePrint}
               className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-cyan-400
                          border border-cyan-400/30 rounded-xl hover:bg-cyan-400/10 transition">
-              <Download size={14} /> Imprimer
+              <Download size={14} /> {t('print_btn')}
             </button>
           )}
         </div>
@@ -236,7 +236,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
       {loading && (
         <div className="glass-card p-8 flex flex-col items-center gap-3">
           <Spinner size="lg" />
-          <p className="text-sm text-slate-400">Génération des objections et réponses…</p>
+          <p className="text-sm text-slate-400">{t('generating')}</p>
         </div>
       )}
 
@@ -246,11 +246,11 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-white">{generatedFor}</p>
-              <p className="text-xs text-slate-500">{objections.length} objections · Cliquez pour révéler la réponse</p>
+              <p className="text-xs text-slate-500">{objections.length} {t('obj_count_hint')}</p>
             </div>
             <button onClick={generate}
               className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition">
-              <RefreshCw size={11} /> Régénérer
+              <RefreshCw size={11} /> {t('regenerate')}
             </button>
           </div>
 

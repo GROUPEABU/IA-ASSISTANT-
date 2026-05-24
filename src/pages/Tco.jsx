@@ -56,6 +56,7 @@ function calcTco({ prix, co2, fuelType, conso, maint, years, kmYear, fuelPrice, 
 }
 
 function CustomTooltip({ active, payload, label }) {
+  const { t } = useSettings()
   if (!active || !payload?.length) return null
   const total = payload.reduce((s, p) => s + (p.value || 0), 0)
   return (
@@ -68,7 +69,7 @@ function CustomTooltip({ active, payload, label }) {
         </div>
       ))}
       <div className="flex justify-between gap-6 border-t border-navy-700/50 pt-1 mt-1">
-        <span className="font-bold text-slate-300">Total</span>
+        <span className="font-bold text-slate-300">{t('total_tco')}</span>
         <span className="font-bold text-cyan-400">{formatNumber(Math.round(total))} €</span>
       </div>
     </div>
@@ -133,16 +134,16 @@ export default function Tco() {
     <div className="flex flex-col gap-3 animate-fade-in flex-1 min-h-0 overflow-y-auto">
       <div className="flex-shrink-0">
         <h2 className="text-sm font-semibold text-white">{t('page_tco_title')}</h2>
-        <p className="text-xs text-slate-500">Coût total de possession · Comparez jusqu'à 4 véhicules</p>
+        <p className="text-xs text-slate-500">{t('tco_description')}</p>
       </div>
 
       {/* Global config */}
       <div className="glass-card p-4">
-        <div className="text-[11px] text-slate-500 font-medium tracking-widest uppercase mb-3">Paramètres</div>
+        <div className="text-[11px] text-slate-500 font-medium tracking-widest uppercase mb-3">{t('params_label')}</div>
         <div className="grid grid-cols-2 gap-3">
           {/* Duration */}
           <div>
-            <div className="text-xs text-slate-400 mb-1.5">Durée</div>
+            <div className="text-xs text-slate-400 mb-1.5">{t('duration_label')}</div>
             <div className="flex gap-1">
               {[3, 4, 5].map(y => (
                 <button key={y} onClick={() => setYears(y)}
@@ -152,14 +153,14 @@ export default function Tco() {
                     background: years === y ? 'rgba(80,229,229,0.12)' : 'transparent',
                     color: years === y ? '#50E5E5' : '#64748b',
                   }}
-                >{y} ans</button>
+                >{y} {t('years_unit')}</button>
               ))}
             </div>
           </div>
 
           {/* Km/year */}
           <div>
-            <div className="text-xs text-slate-400 mb-1.5">Km/an</div>
+            <div className="text-xs text-slate-400 mb-1.5">{t('km_year')}</div>
             <div className="flex gap-1">
               {[10000, 15000, 20000, 30000].map(k => (
                 <button key={k} onClick={() => setKmYear(k)}
@@ -176,7 +177,7 @@ export default function Tco() {
 
           {/* Fuel price */}
           <div>
-            <div className="text-xs text-slate-400 mb-1.5">Prix carburant (€/L)</div>
+            <div className="text-xs text-slate-400 mb-1.5">{t('fuel_price_label')} ({t('fuel_price_unit')})</div>
             <div className="flex items-center gap-2">
               <input
                 type="number" step="0.05" min="0.5" max="4" value={fuelPrice}
@@ -190,7 +191,7 @@ export default function Tco() {
 
           {/* Electric price */}
           <div>
-            <div className="text-xs text-slate-400 mb-1.5">Prix électricité (€/kWh)</div>
+            <div className="text-xs text-slate-400 mb-1.5">{t('elec_price_label')} ({t('elec_price_unit')})</div>
             <div className="flex items-center gap-2">
               <input
                 type="number" step="0.01" min="0.05" max="1" value={elecPrice}
@@ -238,11 +239,11 @@ export default function Tco() {
               <div className="px-4 pb-4 border-t border-white/5 pt-3 space-y-3">
                 {/* Name */}
                 <div>
-                  <label className="text-[11px] text-slate-500 uppercase tracking-wider">Nom du véhicule</label>
+                  <label className="text-[11px] text-slate-500 uppercase tracking-wider">{t('vehicle_name_label')}</label>
                   <input
                     value={v.nom}
                     onChange={e => update(v.id, 'nom', e.target.value)}
-                    placeholder="ex : Toyota Yaris Cross HEV"
+                    placeholder={t('vehicle_name_ph')}
                     className="w-full mt-1 px-3 py-2.5 rounded-lg text-sm text-white bg-white/3 border border-white/10 outline-none"
                     style={{ fontFamily: 'inherit' }}
                   />
@@ -251,7 +252,7 @@ export default function Tco() {
                 {/* Price + CO2 */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[11px] text-slate-500 uppercase tracking-wider">Prix (€)</label>
+                    <label className="text-[11px] text-slate-500 uppercase tracking-wider">{t('price_label')} (€)</label>
                     <input
                       type="number" value={v.prix}
                       onChange={e => update(v.id, 'prix', e.target.value)}
@@ -261,7 +262,7 @@ export default function Tco() {
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-slate-500 uppercase tracking-wider">CO₂ (g/km)</label>
+                    <label className="text-[11px] text-slate-500 uppercase tracking-wider">{t('co2_input_label')}</label>
                     <input
                       type="number" value={v.co2}
                       onChange={e => update(v.id, 'co2', e.target.value)}
@@ -274,7 +275,7 @@ export default function Tco() {
 
                 {/* Fuel type */}
                 <div>
-                  <label className="text-[11px] text-slate-500 uppercase tracking-wider">Motorisation</label>
+                  <label className="text-[11px] text-slate-500 uppercase tracking-wider">{t('powertrain_label')}</label>
                   <div className="grid grid-cols-4 gap-0 bg-navy-900/50 rounded-xl p-1 mt-1">
                     {Object.entries(FUEL_LABELS).map(([k, l]) => (
                       <button key={k} onClick={() => update(v.id, 'fuelType', k)}
@@ -291,7 +292,7 @@ export default function Tco() {
                 {/* Consumption */}
                 <div>
                   <label className="text-[11px] text-slate-500 uppercase tracking-wider">
-                    {v.fuelType === 'ev' ? 'Consommation (kWh/100km)' : 'Consommation (L/100km)'}
+                    {t('consumption_label')} ({v.fuelType === 'ev' ? 'kWh/100km' : 'L/100km'})
                   </label>
                   <input
                     type="number" step="0.1" value={v.conso}
@@ -305,7 +306,7 @@ export default function Tco() {
                 {/* Maintenance tier + override */}
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="text-[11px] text-slate-500 uppercase tracking-wider">Entretien / réparations</label>
+                    <label className="text-[11px] text-slate-500 uppercase tracking-wider">{t('maintenance_label')}</label>
                     <span className="text-[10px] text-slate-600">modifiable</span>
                   </div>
                   {/* Tier selector */}
@@ -403,7 +404,7 @@ export default function Tco() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-t border-white/7">
-                  <th className="px-4 py-2.5 text-left text-[11px] text-slate-500 font-medium uppercase tracking-wider">Poste</th>
+                  <th className="px-4 py-2.5 text-left text-[11px] text-slate-500 font-medium uppercase tracking-wider">{t('tco_row_label')}</th>
                   {results.map((r, i) => (
                     <th key={i} className="px-3 py-2.5 text-right text-[11px] font-semibold" style={{ color: r.color }}>
                       {r.nom}
@@ -413,10 +414,10 @@ export default function Tco() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {[
-                  { label: 'Prix d\'achat', key: 'prix' },
-                  { label: 'Malus CO₂ + poids', key: 'malus' },
-                  { label: `Carburant (${years} ans)`, key: 'totalFuel' },
-                  { label: `Entretien (${years} ans)`, key: 'totalMaint' },
+                  { label: t('purchase_price'),                        key: 'prix' },
+                  { label: t('co2_malus_row'),                         key: 'malus' },
+                  { label: `${t('fuel_cost_row')} (${years} ${t('years_unit')})`, key: 'totalFuel' },
+                  { label: `${t('maint_cost_row')} (${years} ${t('years_unit')})`, key: 'totalMaint' },
                 ].map(row => (
                   <tr key={row.key}>
                     <td className="px-4 py-2.5 text-slate-400">{row.label}</td>
@@ -440,14 +441,14 @@ export default function Tco() {
           </div>
 
           <div className="px-4 py-3 border-t border-white/7 text-[11px] text-slate-600">
-            Calcul indicatif · Malus France 2025 · Entretien estimé — valeurs ajustables par véhicule
+            {t('tco_note')}
           </div>
         </div>
       )}
 
       {!hasResults && (
         <div className="glass-card p-8 text-center text-slate-500 text-sm">
-          Renseignez au moins un véhicule (nom + prix) pour voir le TCO
+          {t('tco_empty')}
         </div>
       )}
     </div>

@@ -240,7 +240,7 @@ export default function PriceWatch() {
               value={make}
               onChange={e => setMake(e.target.value)}
               list="makes-list"
-              placeholder="Ex: Renault, BMW…"
+              placeholder={t('make_ph')}
               className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
                          text-sm text-white placeholder-slate-600
                          focus:outline-none focus:border-cyan-400/50 transition"
@@ -257,20 +257,20 @@ export default function PriceWatch() {
               value={model}
               onChange={e => setModel(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && search()}
-              placeholder="Ex: Clio, 208, Golf…"
+              placeholder={t('model_ph')}
               className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
                          text-sm text-white placeholder-slate-600
                          focus:outline-none focus:border-cyan-400/50 transition"
             />
           </div>
 
-          <FilterSelect label="Année min" value={yearMin} onChange={setYearMin}>
-            <option value="">Année min</option>
+          <FilterSelect label={t('year_min')} value={yearMin} onChange={setYearMin}>
+            <option value="">{t('year_min')}</option>
             {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
           </FilterSelect>
 
-          <FilterSelect label="Année max" value={yearMax} onChange={setYearMax}>
-            <option value="">Année max</option>
+          <FilterSelect label={t('year_max')} value={yearMax} onChange={setYearMax}>
+            <option value="">{t('year_max')}</option>
             {YEARS.filter(y => !yearMin || y >= Number(yearMin)).map(y => (
               <option key={y} value={y}>{y}</option>
             ))}
@@ -420,18 +420,18 @@ export default function PriceWatch() {
           {/* Conseils */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="glass-card p-4">
-              <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2">Conseil achat</p>
+              <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2">{t('buy_advice')}</p>
               <p className="text-sm text-slate-300 leading-relaxed">{result.conseil_achat}</p>
             </div>
             <div className="glass-card p-4">
-              <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-2">Conseil vente</p>
+              <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-2">{t('sell_advice')}</p>
               <p className="text-sm text-slate-300 leading-relaxed">{result.conseil_vente}</p>
             </div>
           </div>
 
           {/* Sources + lien La Centrale */}
           <div className="glass-card p-4">
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Sources consultées</p>
+            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">{t('sources_consulted')}</p>
             <div className="flex flex-wrap gap-2">
               {result.sources?.map(s => (
                 <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer"
@@ -444,7 +444,7 @@ export default function PriceWatch() {
                 <a href={centraleUrl} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1 text-xs text-cyan-400 bg-cyan-400/5 border border-cyan-400/20
                              px-2.5 py-1 rounded-lg hover:bg-cyan-400/10 transition ml-auto">
-                  <SlidersHorizontal size={10} /> Ouvrir La Centrale avec ces filtres
+                  <SlidersHorizontal size={10} /> {t('open_la_centrale')}
                 </a>
               )}
             </div>
@@ -456,8 +456,8 @@ export default function PriceWatch() {
       {!result && !loading && !error && (
         <div className="glass-card p-10 text-center">
           <Bell size={36} className="text-slate-700 mx-auto mb-3" />
-          <p className="text-sm text-slate-400 mb-1">Sélectionnez une marque et un modèle</p>
-          <p className="text-xs text-slate-600">Affinez avec les filtres pour obtenir un prix marché précis</p>
+          <p className="text-sm text-slate-400 mb-1">{t('select_brand_model')}</p>
+          <p className="text-xs text-slate-600">{t('refine_filters')}</p>
         </div>
       )}
     </div>

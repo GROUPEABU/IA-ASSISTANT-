@@ -277,19 +277,19 @@ export default function CO2Malus() {
           <span className="text-xs font-semibold text-amber-400">{formatDateFR(dateImmat)}</span>
         </div>
         <div className="grid grid-cols-3 gap-2 mb-2.5">
+          {/* Day */}
           <select
-            value={dateImmat.split('-')[0]}
-            onChange={e => {
-              const y = e.target.value, m = dateImmat.split('-')[1]
-              const maxD = getDaysInMonth(y, m)
-              const d = String(Math.min(parseInt(dateImmat.split('-')[2]), maxD)).padStart(2, '0')
-              setDateImmat(`${y}-${m}-${d}`)
-            }}
+            value={dateImmat.split('-')[2]}
+            onChange={e => setDateImmat(`${dateImmat.split('-')[0]}-${dateImmat.split('-')[1]}-${e.target.value}`)}
             className="w-full px-2 py-2 rounded-lg border outline-none text-sm font-medium"
             style={selectStyle}
           >
-            {DATE_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+            {Array.from({ length: getDaysInMonth(dateImmat.split('-')[0], dateImmat.split('-')[1]) }, (_, i) => {
+              const d = String(i + 1).padStart(2, '0')
+              return <option key={d} value={d}>{i + 1}</option>
+            })}
           </select>
+          {/* Month */}
           <select
             value={dateImmat.split('-')[1]}
             onChange={e => {
@@ -303,16 +303,19 @@ export default function CO2Malus() {
           >
             {DATE_MONTHS.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
           </select>
+          {/* Year */}
           <select
-            value={dateImmat.split('-')[2]}
-            onChange={e => setDateImmat(`${dateImmat.split('-')[0]}-${dateImmat.split('-')[1]}-${e.target.value}`)}
+            value={dateImmat.split('-')[0]}
+            onChange={e => {
+              const y = e.target.value, m = dateImmat.split('-')[1]
+              const maxD = getDaysInMonth(y, m)
+              const d = String(Math.min(parseInt(dateImmat.split('-')[2]), maxD)).padStart(2, '0')
+              setDateImmat(`${y}-${m}-${d}`)
+            }}
             className="w-full px-2 py-2 rounded-lg border outline-none text-sm font-medium"
             style={selectStyle}
           >
-            {Array.from({ length: getDaysInMonth(dateImmat.split('-')[0], dateImmat.split('-')[1]) }, (_, i) => {
-              const d = String(i + 1).padStart(2, '0')
-              return <option key={d} value={d}>{i + 1}</option>
-            })}
+            {DATE_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
         <div className="grid grid-cols-4 gap-1">
