@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Mic, Copy, Check, RefreshCw, AlertCircle, ChevronRight, Users, Car, Wrench, Building2, Briefcase } from 'lucide-react'
-import { sendMessage } from '@/services/claude'
+import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
@@ -77,9 +77,7 @@ Réponds UNIQUEMENT en JSON valide :
 }`
 
       const raw = await sendMessage([{ role: 'user', content: prompt }])
-      const match = raw.match(/\{[\s\S]*\}/)
-      if (!match) throw new Error('Parsing erreur — réessayez')
-      const data = JSON.parse(match[0])
+      const data = extractJSON(raw, 'object')
       setPitch(data)
       setGeneratedFor(`${vehicleName} · ${t(profile.subKey)} ${t(profile.labelKey)}`)
     } catch (err) {

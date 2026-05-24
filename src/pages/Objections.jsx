@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ShieldCheck, RefreshCw, ChevronDown, ChevronUp, Download, AlertCircle } from 'lucide-react'
-import { sendMessage } from '@/services/claude'
+import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
@@ -116,9 +116,7 @@ Réponds UNIQUEMENT en JSON valide :
 Les objections doivent être réalistes, variées, couvrir : prix, marque inconnue, fiabilité, valeur de revente, malus, financement, SAV, concurrence.`
 
       const raw = await sendMessage([{ role: 'user', content: prompt }])
-      const match = raw.match(/\[[\s\S]*\]/)
-      if (!match) throw new Error('Parsing erreur — réessayez')
-      const data = JSON.parse(match[0])
+      const data = extractJSON(raw, 'array')
       setObjections(data)
       setGeneratedFor(`${vehicleName} · ${segLabel}`)
       setOpenIndex(0)

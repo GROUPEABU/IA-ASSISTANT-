@@ -3,7 +3,7 @@ import {
   Bell, Search, RefreshCw, TrendingUp, TrendingDown, Minus,
   AlertCircle, ExternalLink, Clock, SlidersHorizontal,
 } from 'lucide-react'
-import { sendMessage } from '@/services/claude'
+import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import { formatNumber } from '@/utils/formatters'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -111,9 +111,7 @@ Réponds UNIQUEMENT en JSON strict :
 }`
 
   const raw = await sendMessage([{ role: 'user', content: prompt }])
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('Parsing erreur — réessayez')
-  return JSON.parse(match[0])
+  return extractJSON(raw, 'object')
 }
 
 // ── Composants UI ─────────────────────────────────────────────────────────────

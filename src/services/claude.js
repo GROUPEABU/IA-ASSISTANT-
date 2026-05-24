@@ -1,35 +1,87 @@
+/**
+ * Anthropic Claude API client (direct browser → API).
+ *
+ * Constraints:
+ *  - This app has no backend. The API key is read from the user's localStorage
+ *    OR build-time env var. Browser-direct access requires the
+ *    `anthropic-dangerous-direct-browser-access` header.
+ *  - For production with multiple users, route this through a Vercel Edge
+ *    Function proxy that holds the key server-side. The current setup is
+ *    intentional for single-user/portal use.
+ */
+
+const ENDPOINT     = 'https://api.anthropic.com/v1/messages'
+const MODEL        = 'claude-sonnet-4-6'
+const API_VERSION  = '2023-06-01'
+const MAX_TOKENS   = 1024
+const STORAGE_KEY  = 'abu_api_key'
+
 const SYSTEM_PROMPT = `Tu es un assistant IA expert en analyse des ventes automobiles pour Autobuyunion,
 le premier groupement européen d'achat automobile. Tu aides les équipes commerciales à analyser
 leurs données de ventes, identifier des tendances, comparer des performances régionales,
 et générer des insights actionnables. Réponds toujours en français, de façon précise et professionnelle.
 Formate tes réponses avec des listes et chiffres quand c'est pertinent.`
 
+/**
+ * @typedef {object} Attachment
+ * @property {string} name    — original file name
+ * @property {string} type    — MIME type ('application/pdf' or 'image/*')
+ * @property {string} base64  — file content base64-encoded (no data: prefix)
+ *
+ * @typedef {object} ChatMessage
+ * @property {'user'|'assistant'} role
+ * @property {string} content
+ * @property {Attachment?} [attachment]
+ */
+
+/**
+ * Resolves the API key from build-time env or localStorage.
+ * @returns {string|null}
+ */
+function resolveApiKey() {
+  return import.meta.env.VITE_ANTHROPIC_API_KEY || localStorage.getItem(STORAGE_KEY) || null
+}
+
+/**
+ * Builds a single message's content payload, with optional file attachment.
+ *
+ * Anthropic's API accepts either a plain string OR an array of content blocks.
+ * We return the simplest valid shape for the inputs given.
+ *
+ * @param {string} text
+ * @param {Attachment|null} attachment
+ * @returns {string|Array<object>}
+ */
 function buildContent(text, attachment) {
   if (!attachment) return text || ''
 
-  const content = []
+  const blocks = []
 
   if (attachment.type === 'application/pdf') {
-    content.push({
-      type: 'document',
+    blocks.push({
+      type:   'document',
       source: { type: 'base64', media_type: 'application/pdf', data: attachment.base64 },
     })
   } else if (attachment.type.startsWith('image/')) {
-    content.push({
-      type: 'image',
+    blocks.push({
+      type:   'image',
       source: { type: 'base64', media_type: attachment.type, data: attachment.base64 },
     })
   }
 
-  if (text) content.push({ type: 'text', text })
-  return content.length === 1 && typeof content[0] === 'object' && content[0].type === 'text'
-    ? content[0].text
-    : content
+  if (text) blocks.push({ type: 'text', text })
+  return blocks
 }
 
+/**
+ * Sends a list of chat messages to Claude and returns the assistant text.
+ *
+ * @param {ChatMessage[]} messages
+ * @returns {Promise<string>}  the assistant's text response
+ * @throws  {Error} if no API key is configured, or if the API rejects the request
+ */
 export async function sendMessage(messages) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || localStorage.getItem('abu_api_key')
-
+  const apiKey = resolveApiKey()
   if (!apiKey) {
     throw new Error('Clé API Anthropic manquante. Renseignez votre clé dans Paramètres.')
   }
@@ -39,27 +91,51 @@ export async function sendMessage(messages) {
     content: buildContent(content, attachment),
   }))
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
+  const response = await fetch(ENDPOINT, {
+    method:  'POST',
     headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-      'anthropic-dangerous-direct-browser-access': 'true',
+      'x-api-key':                                   apiKey,
+      'anthropic-version':                           API_VERSION,
+      'content-type':                                'application/json',
+      'anthropic-dangerous-direct-browser-access':   'true',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: apiMessages,
+      model:      MODEL,
+      max_tokens: MAX_TOKENS,
+      system:     SYSTEM_PROMPT,
+      messages:   apiMessages,
     }),
   })
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}))
-    throw new Error(err.error?.message ?? `Erreur API: ${response.status}`)
+    throw new Error(err.error?.message ?? `Erreur API Anthropic (${response.status})`)
   }
 
-  const data = await response.json()
-  return data.content[0].text
+  const payload = await response.json()
+  const text = payload.content?.[0]?.text
+  if (typeof text !== 'string') {
+    throw new Error('Réponse API inattendue (pas de contenu textuel).')
+  }
+  return text
+}
+
+/**
+ * Extracts the first JSON block from a free-form Claude response.
+ * Useful for tools that ask Claude to return structured data inside prose.
+ *
+ * @param {string} raw       — raw text from sendMessage()
+ * @param {'array'|'object'} kind — which shape to extract
+ * @returns {unknown}
+ * @throws  {Error} if no valid JSON is found
+ */
+export function extractJSON(raw, kind = 'object') {
+  const pattern = kind === 'array' ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/
+  const match = raw.match(pattern)
+  if (!match) throw new Error('Réponse IA invalide : aucun JSON détecté.')
+  try {
+    return JSON.parse(match[0])
+  } catch {
+    throw new Error('Réponse IA invalide : JSON malformé.')
+  }
 }
