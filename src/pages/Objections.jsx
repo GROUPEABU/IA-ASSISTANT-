@@ -146,8 +146,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
             value={customVehicle}
             onChange={(e) => { setCustomVehicle(e.target.value); setVehicleId('') }}
             onKeyDown={(e) => e.key === 'Enter' && generate()}
-            placeholder="Ex: Peugeot 308 2023, BMW X1, Renault Clio 5, JAECOO J6…"
-            autoFocus
+            placeholder="Ex: Peugeot 308 2023, BMW X1, Renault Clio 5, JAECOO J5…"
             className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-3
                        text-sm text-white placeholder-slate-600
                        focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/20 transition"

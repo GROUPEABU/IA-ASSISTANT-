@@ -23,7 +23,7 @@ export default function Layout() {
 
       <div className="flex flex-col flex-1 overflow-hidden min-w-0">
         <Header onMenuToggle={toggle} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-20 md:pb-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6 flex flex-col">
           <Outlet />
         </main>
       </div>

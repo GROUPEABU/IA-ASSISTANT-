@@ -45,11 +45,11 @@ const tools = [
 ]
 
 const colorMap = {
-  cyan:    { bg: 'bg-cyan-400/10',    border: 'border-cyan-400/20',    icon: 'text-cyan-400',    badge: 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20' },
-  emerald: { bg: 'bg-emerald-400/10', border: 'border-emerald-400/20', icon: 'text-emerald-400', badge: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' },
-  violet:  { bg: 'bg-violet-400/10',  border: 'border-violet-400/20',  icon: 'text-violet-400',  badge: 'bg-violet-400/10 text-violet-400 border-violet-400/20' },
-  amber:   { bg: 'bg-amber-400/10',   border: 'border-amber-400/20',   icon: 'text-amber-400',   badge: 'bg-amber-400/10 text-amber-400 border-amber-400/20' },
-  rose:    { bg: 'bg-rose-400/10',    border: 'border-rose-400/20',    icon: 'text-rose-400',    badge: 'bg-rose-400/10 text-rose-400 border-rose-400/20' },
+  cyan:    { bg: 'bg-cyan-400/10',    border: 'border-cyan-400/20',    icon: 'text-cyan-400',    badge: 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20',    hoverTitle: 'group-hover:text-cyan-400' },
+  emerald: { bg: 'bg-emerald-400/10', border: 'border-emerald-400/20', icon: 'text-emerald-400', badge: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20', hoverTitle: 'group-hover:text-emerald-400' },
+  violet:  { bg: 'bg-violet-400/10',  border: 'border-violet-400/20',  icon: 'text-violet-400',  badge: 'bg-violet-400/10 text-violet-400 border-violet-400/20',  hoverTitle: 'group-hover:text-violet-400' },
+  amber:   { bg: 'bg-amber-400/10',   border: 'border-amber-400/20',   icon: 'text-amber-400',   badge: 'bg-amber-400/10 text-amber-400 border-amber-400/20',   hoverTitle: 'group-hover:text-amber-400' },
+  rose:    { bg: 'bg-rose-400/10',    border: 'border-rose-400/20',    icon: 'text-rose-400',    badge: 'bg-rose-400/10 text-rose-400 border-rose-400/20',    hoverTitle: 'group-hover:text-rose-400' },
 }
 
 export default function Hub() {
@@ -98,7 +98,7 @@ export default function Hub() {
 
               {/* Title + description */}
               <div>
-                <h3 className={`text-sm font-bold text-white mb-1 group-hover:${c.icon} transition-colors`}>
+                <h3 className={`text-sm font-bold text-white mb-1 ${c.hoverTitle} transition-colors`}>
                   {title}
                 </h3>
                 <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">{description}</p>

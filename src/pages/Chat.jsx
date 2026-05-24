@@ -7,8 +7,7 @@ export default function Chat() {
   const { messages, isLoading, error, send, clear } = useChat()
 
   return (
-    <div className="flex flex-col gap-3 animate-fade-in"
-         style={{ height: 'calc(100dvh - 56px - 80px - 32px)' }}>
+    <div className="flex flex-col gap-3 animate-fade-in flex-1 min-h-0">
       {/* Toolbar */}
       <div className="flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
