@@ -57,8 +57,11 @@ export default function Chat() {
                 <button
                   key={q}
                   onClick={() => send(q)}
-                  className="w-full text-left text-xs text-slate-400 px-4 py-3 rounded-xl border border-navy-700/50
-                             hover:border-cyan-400/30 hover:text-slate-300 hover:bg-cyan-400/5 transition-all flex items-start gap-2.5"
+                  className="w-full text-left text-xs text-slate-400 px-4 py-3 rounded-xl
+                             border border-navy-700/40 bg-navy-900/20
+                             active:bg-cyan-400/8 active:border-cyan-400/25
+                             transition-colors duration-100 flex items-start gap-2.5
+                             focus:outline-none"
                 >
                   <Sparkles size={12} className="text-cyan-400/60 flex-shrink-0 mt-0.5" />
                   {q}
