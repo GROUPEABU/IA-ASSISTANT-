@@ -261,3 +261,18 @@ html, body, .glass-card, header, nav, aside { transition: background-color 0.25s
 [data-density="large"] .text-lg  { font-size: 1.25rem !important; }
 [data-density="large"] .h-14 { height: 4rem !important; }
 [data-density="large"] .h-16 { height: 4.5rem !important; }
+
+/* ── Layout main scroll — immune to density padding overrides ──────────────── */
+/* On mobile, ensure the main scroll container always has enough bottom padding  */
+/* to scroll past the fixed bottom nav (≈85px) + iOS safe area.                 */
+/* Declared AFTER density rules so it wins when both have !important.            */
+@media (max-width: 767px) {
+  .layout-scroll-main {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 7rem) !important;
+  }
+}
+@media (min-width: 768px) {
+  .layout-scroll-main {
+    padding-bottom: 1.5rem !important;
+  }
+}
