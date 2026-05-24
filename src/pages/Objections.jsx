@@ -6,9 +6,9 @@ import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 
 const SEGMENTS = [
-  { id: 'btoc', label: 'BtoC — Particuliers' },
-  { id: 'btob', label: 'BtoB — Entreprises & Flottes' },
-  { id: 'both', label: 'Les deux' },
+  { id: 'btoc', label: 'BtoC', sub: 'Particuliers' },
+  { id: 'btob', label: 'BtoB', sub: 'Entreprises' },
+  { id: 'both', label: 'Les deux', sub: 'Tous profils' },
 ]
 
 const CATEGORY_COLORS = {
@@ -86,7 +86,8 @@ export default function Objections() {
     setObjections([])
 
     try {
-      const segLabel = SEGMENTS.find((s) => s.id === segment)?.label
+      const seg = SEGMENTS.find((s) => s.id === segment)
+      const segLabel = seg ? `${seg.label} — ${seg.sub}` : segment
       const productContext = selectedProduct
         ? `Prix : ${selectedProduct.prix.base.toLocaleString('fr-FR')}€ – ${selectedProduct.prix.haut.toLocaleString('fr-FR')}€
 Origine : ${selectedProduct.origin}
@@ -180,18 +181,19 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
             Segment cible
           </label>
-          <div className="flex gap-1 p-1 bg-navy-900/60 rounded-xl w-fit border border-navy-700/40">
+          <div className="grid grid-cols-3 gap-1 p-1 bg-navy-900/60 rounded-xl border border-navy-700/40">
             {SEGMENTS.map((s) => (
               <button
                 key={s.id}
                 onClick={() => setSegment(s.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex flex-col items-center py-2 px-1 rounded-lg text-center transition-all active:scale-95 ${
                   segment === s.id
                     ? 'bg-cyan-400 text-navy-900'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                {s.label}
+                <span className="text-xs font-bold leading-tight">{s.label}</span>
+                <span className={`text-[10px] leading-tight ${segment === s.id ? 'text-navy-900/70' : 'text-slate-600'}`}>{s.sub}</span>
               </button>
             ))}
           </div>
