@@ -27,9 +27,9 @@ export default function Hub() {
   ]
 
   const stats = [
-    { labelKey: 'stat_countries',      value: '40',    icon: Globe,      color: '#50E5E5' },
-    { labelKey: 'stat_tools',          value: '7',     icon: Zap,        color: '#a78bfa' },
-    { labelKey: 'stat_price_products', value: 'VO·VN', icon: TrendingUp, color: '#34d399' },
+    { label: '40 pays',        value: '40',  icon: Globe,      color: '#50E5E5', sub: t('stat_countries') },
+    { label: '7 outils',       value: '7',   icon: Zap,        color: '#a78bfa', sub: t('stat_tools') },
+    { label: 'Veille & Prix',  value: 'VO·VN',icon: TrendingUp, color: '#34d399', sub: t('stat_price_products') },
   ]
 
   return (
@@ -57,13 +57,13 @@ export default function Hub() {
 
       {/* ── Stats ────────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-2">
-        {stats.map(({ labelKey, value, icon: Icon, color }) => (
-          <div key={labelKey} className="glass-card px-3 py-3.5 text-center flex flex-col items-center gap-1.5">
+        {stats.map(({ label, value, icon: Icon, color, sub }) => (
+          <div key={label} className="glass-card px-2 py-3 text-center flex flex-col items-center gap-1">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${color}15` }}>
               <Icon size={13} style={{ color }} />
             </div>
-            <p className="text-lg font-bold leading-none" style={{ color }}>{value}</p>
-            <p className="text-[10px] text-slate-500 leading-tight">{t(labelKey)}</p>
+            <p className="text-base font-bold leading-none" style={{ color }}>{value}</p>
+            <p className="text-[9px] text-slate-500 leading-tight">{sub}</p>
           </div>
         ))}
       </div>

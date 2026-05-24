@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { createContext, useContext, useState, useMemo, useLayoutEffect } from 'react'
 import T from '@/i18n/translations'
 
 const RATES = { EUR: 1, GBP: 0.855, CHF: 0.965 }
@@ -13,45 +13,48 @@ function applyDensity(d) {
 export function SettingsProvider({ children }) {
   const [language, setLanguage] = useState(() => localStorage.getItem('lang') || 'fr')
   const [currency, setCurrency] = useState(() => localStorage.getItem('currency') || 'EUR')
-  const [density, setDensityState] = useState(() => localStorage.getItem('density') || 'normal')
+  const [density, setDensityState] = useState(() => {
+    const saved = localStorage.getItem('density') || 'normal'
+    applyDensity(saved)
+    return saved
+  })
 
-  useEffect(() => { applyDensity(density) }, [density])
+  // Use layout effect so density applies before first paint
+  useLayoutEffect(() => { applyDensity(density) }, [density])
 
-  const changeLanguage = useCallback((lang) => {
+  const changeLanguage = (lang) => {
     setLanguage(lang)
     localStorage.setItem('lang', lang)
-  }, [])
+  }
 
-  const changeCurrency = useCallback((cur) => {
+  const changeCurrency = (cur) => {
     setCurrency(cur)
     localStorage.setItem('currency', cur)
-  }, [])
+  }
 
-  const changeDensity = useCallback((d) => {
+  const changeDensity = (d) => {
     setDensityState(d)
     localStorage.setItem('density', d)
-  }, [])
+  }
 
-  const t = useCallback((key) => {
-    return T[language]?.[key] ?? T.fr[key] ?? key
-  }, [language])
+  // Derive t and formatCurrency inside useMemo so they always have fresh language/currency
+  const value = useMemo(() => {
+    const t = (key) => T[language]?.[key] ?? T.fr[key] ?? key
 
-  const formatCurrency = useCallback((amount, fromCurrency = 'EUR') => {
-    const inEur = fromCurrency === 'EUR' ? amount : amount / RATES[fromCurrency]
-    const converted = inEur * RATES[currency]
-    const sym = SYMBOLS[currency]
-    return currency === 'EUR'
-      ? `${Math.round(converted).toLocaleString('fr-FR')} €`
-      : currency === 'GBP'
-        ? `${sym}${Math.round(converted).toLocaleString('en-GB')}`
-        : `${sym}${Math.round(converted).toLocaleString('de-CH')}`
-  }, [currency])
+    const formatCurrency = (amount, fromCurrency = 'EUR') => {
+      if (!amount && amount !== 0) return '—'
+      const inEur = fromCurrency === 'EUR' ? amount : amount / RATES[fromCurrency]
+      const converted = Math.round(inEur * RATES[currency])
+      if (currency === 'GBP') return `£${converted.toLocaleString('en-GB')}`
+      if (currency === 'CHF') return `CHF ${converted.toLocaleString('de-CH')}`
+      return `${converted.toLocaleString('fr-FR')} €`
+    }
 
-  return (
-    <SettingsContext.Provider value={{ language, currency, density, changeLanguage, changeCurrency, changeDensity, t, formatCurrency }}>
-      {children}
-    </SettingsContext.Provider>
-  )
+    return { language, currency, density, changeLanguage, changeCurrency, changeDensity, t, formatCurrency }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language, currency, density])
+
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>
 }
 
 export function useSettings() {

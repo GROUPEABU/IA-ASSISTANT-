@@ -17,6 +17,14 @@ const DATE_PRESETS = [
   { d: '2025-10-01', l: 'Oct 25' }, { d: '2026-01-15', l: 'Janv 26' },
   { d: '2026-07-01', l: 'Juil 26' }, { d: '2026-09-15', l: 'Sept 26' },
 ]
+const DATE_YEARS = [2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030]
+const DATE_MONTHS = [
+  { v: '01', l: 'Janv.' }, { v: '02', l: 'Fév.' },  { v: '03', l: 'Mars' },
+  { v: '04', l: 'Avr.' },  { v: '05', l: 'Mai' },   { v: '06', l: 'Juin' },
+  { v: '07', l: 'Juil.' }, { v: '08', l: 'Août' },  { v: '09', l: 'Sept.' },
+  { v: '10', l: 'Oct.' },  { v: '11', l: 'Nov.' },  { v: '12', l: 'Déc.' },
+]
+const selectStyle = { background: 'rgba(80,229,229,0.05)', borderColor: 'rgba(80,229,229,0.2)', color: '#50E5E5', fontFamily: 'inherit' }
 
 function SliderSection({ label, value, setValue, min, max, step = 1, unit, color, presets }) {
   return (
@@ -257,25 +265,38 @@ export default function CO2Malus() {
       </div>
 
       {/* Date immatriculation */}
-      <div className="glass-card p-3 mb-2 overflow-hidden">
+      <div className="glass-card p-3 mb-2">
         <div className="flex justify-between items-center mb-2.5">
           <span className="text-[11px] text-slate-500 font-medium tracking-widest uppercase">Date 1ère immat</span>
           <span className="text-xs font-semibold text-amber-400">{formatDateFR(dateImmat)}</span>
         </div>
-        <input
-          type="date" value={dateImmat} min="2023-01-01" max="2030-12-31"
-          onChange={e => setDateImmat(e.target.value)}
-          className="w-full min-w-0 px-3 py-2.5 rounded-lg border outline-none mb-2.5 font-medium"
-          style={{ colorScheme: 'dark', fontFamily: 'inherit', fontSize: '15px', maxWidth: '100%', background: 'rgba(80,229,229,0.05)', borderColor: 'rgba(80,229,229,0.2)', color: '#50E5E5' }}
-        />
+        {/* Two selects instead of date input — avoids mobile overflow entirely */}
+        <div className="grid grid-cols-2 gap-2 mb-2.5">
+          <select
+            value={dateImmat.split('-')[0]}
+            onChange={e => setDateImmat(`${e.target.value}-${dateImmat.split('-')[1]}-01`)}
+            className="w-full px-2 py-2 rounded-lg border outline-none text-sm font-medium"
+            style={selectStyle}
+          >
+            {DATE_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+          <select
+            value={dateImmat.split('-')[1]}
+            onChange={e => setDateImmat(`${dateImmat.split('-')[0]}-${e.target.value}-01`)}
+            className="w-full px-2 py-2 rounded-lg border outline-none text-sm font-medium"
+            style={selectStyle}
+          >
+            {DATE_MONTHS.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
+          </select>
+        </div>
         <div className="grid grid-cols-4 gap-1">
           {DATE_PRESETS.map(p => (
             <button key={p.d} onClick={() => setDateImmat(p.d)}
               className="py-1.5 rounded-lg text-[10px] font-medium transition border active:scale-95 truncate"
               style={{
-                borderColor: dateImmat === p.d ? '#fbbf24' : 'rgba(255,255,255,0.08)',
-                background: dateImmat === p.d ? 'rgba(251,191,36,0.12)' : 'transparent',
-                color: dateImmat === p.d ? '#fbbf24' : '#475569',
+                borderColor: dateImmat.slice(0,7) === p.d.slice(0,7) ? '#fbbf24' : 'rgba(255,255,255,0.08)',
+                background: dateImmat.slice(0,7) === p.d.slice(0,7) ? 'rgba(251,191,36,0.12)' : 'transparent',
+                color: dateImmat.slice(0,7) === p.d.slice(0,7) ? '#fbbf24' : '#475569',
               }}
             >{p.l}</button>
           ))}
