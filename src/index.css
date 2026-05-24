@@ -24,10 +24,9 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  /* Larger touch targets on mobile */
-  button, a, [role="button"] {
-    min-height: 44px;
-    @apply flex items-center justify-center;
+  /* Touch targets minimum 44px — uniquement les boutons standalone */
+  button:not([class*="flex"]):not([class*="grid"]) {
+    min-height: 36px;
   }
 
   ::-webkit-scrollbar {

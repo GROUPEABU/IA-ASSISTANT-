@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Download, FileText, TrendingUp, Gauge, Users, Building2, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Download, FileText, TrendingUp, Gauge, Users } from 'lucide-react'
 import { getProduct } from '@/services/products'
-import { getMalus, getMalusColor, getMalusLabel } from '@/utils/malus'
+import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
+import { getMalus, getMalusColor } from '@/utils/malus'
 import { formatNumber } from '@/utils/formatters'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
@@ -23,7 +24,8 @@ export default function ProductDetail() {
   const navigate = useNavigate()
   const [tab, setTab] = useState('sheet')
   const printRef = useRef(null)
-  const product = getProduct(id)
+  const { generated } = useGeneratedProducts()
+  const product = getProduct(id) ?? generated.find((p) => p.id === id)
 
   if (!product) {
     return (
