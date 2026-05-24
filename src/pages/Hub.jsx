@@ -98,9 +98,8 @@ export default function Hub() {
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {[
-          { label: 'Membres actifs', value: '847' },
           { label: 'Pays couverts', value: '40' },
           { label: 'Fiches produits', value: '2+' },
           { label: 'Outils disponibles', value: '3' },
