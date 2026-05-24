@@ -693,7 +693,7 @@ export default function CO2Malus() {
       )}
 
       <div className="text-center text-[11px] text-slate-500 leading-relaxed pb-2 px-4 glass-card p-4 mt-2">
-        Les montants affichés sont fournis à titre indicatif et ne constituent pas un conseil fiscal. Les barèmes sont susceptibles d'évoluer — vérifiez auprès de l'autorité compétente de chaque pays avant toute acquisition.
+        Estimation indicative · Consultez les autorités fiscales avant tout achat
       </div>
     </div>
   )
