@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck, Calculator, Mic } from 'lucide-react'
+import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck, Calculator, Mic, Globe, Zap } from 'lucide-react'
 
 const tools = [
   {
@@ -15,7 +15,7 @@ const tools = [
     icon: Gauge,
     color: 'emerald',
     title: 'CO₂ & Malus',
-    description: 'Calculateur de malus écologique sur 40 pays. Positionnement prix et fiscalité.',
+    description: 'Calculateur de malus écologique sur 40 pays. Positionnement prix et fiscalité internationale.',
     badge: '40 pays',
   },
   {
@@ -61,30 +61,42 @@ const tools = [
 ]
 
 const colorMap = {
-  cyan:    { bg: 'bg-cyan-400/10',    border: 'border-cyan-400/20',    icon: 'text-cyan-400',    badge: 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20',       hoverTitle: 'group-hover:text-cyan-400' },
-  emerald: { bg: 'bg-emerald-400/10', border: 'border-emerald-400/20', icon: 'text-emerald-400', badge: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20', hoverTitle: 'group-hover:text-emerald-400' },
-  violet:  { bg: 'bg-violet-400/10',  border: 'border-violet-400/20',  icon: 'text-violet-400',  badge: 'bg-violet-400/10 text-violet-400 border-violet-400/20',   hoverTitle: 'group-hover:text-violet-400' },
-  amber:   { bg: 'bg-amber-400/10',   border: 'border-amber-400/20',   icon: 'text-amber-400',   badge: 'bg-amber-400/10 text-amber-400 border-amber-400/20',     hoverTitle: 'group-hover:text-amber-400' },
-  rose:    { bg: 'bg-rose-400/10',    border: 'border-rose-400/20',    icon: 'text-rose-400',    badge: 'bg-rose-400/10 text-rose-400 border-rose-400/20',       hoverTitle: 'group-hover:text-rose-400' },
-  teal:    { bg: 'bg-teal-400/10',    border: 'border-teal-400/20',    icon: 'text-teal-400',    badge: 'bg-teal-400/10 text-teal-400 border-teal-400/20',       hoverTitle: 'group-hover:text-teal-400' },
-  indigo:  { bg: 'bg-indigo-400/10',  border: 'border-indigo-400/20',  icon: 'text-indigo-400',  badge: 'bg-indigo-400/10 text-indigo-400 border-indigo-400/20', hoverTitle: 'group-hover:text-indigo-400' },
+  cyan:    { bg: 'bg-cyan-400/10',    border: 'border-cyan-400/20',    icon: 'text-cyan-400',    badge: 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20',       hoverBorder: '#50E5E5' },
+  emerald: { bg: 'bg-emerald-400/10', border: 'border-emerald-400/20', icon: 'text-emerald-400', badge: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20', hoverBorder: '#34d399' },
+  violet:  { bg: 'bg-violet-400/10',  border: 'border-violet-400/20',  icon: 'text-violet-400',  badge: 'bg-violet-400/10 text-violet-400 border-violet-400/20',   hoverBorder: '#a78bfa' },
+  amber:   { bg: 'bg-amber-400/10',   border: 'border-amber-400/20',   icon: 'text-amber-400',   badge: 'bg-amber-400/10 text-amber-400 border-amber-400/20',     hoverBorder: '#fbbf24' },
+  rose:    { bg: 'bg-rose-400/10',    border: 'border-rose-400/20',    icon: 'text-rose-400',    badge: 'bg-rose-400/10 text-rose-400 border-rose-400/20',       hoverBorder: '#fb7185' },
+  teal:    { bg: 'bg-teal-400/10',    border: 'border-teal-400/20',    icon: 'text-teal-400',    badge: 'bg-teal-400/10 text-teal-400 border-teal-400/20',       hoverBorder: '#2dd4bf' },
+  indigo:  { bg: 'bg-indigo-400/10',  border: 'border-indigo-400/20',  icon: 'text-indigo-400',  badge: 'bg-indigo-400/10 text-indigo-400 border-indigo-400/20', hoverBorder: '#818cf8' },
 }
+
+const stats = [
+  { label: 'Pays couverts', value: '40', icon: Globe, color: '#50E5E5' },
+  { label: 'Véhicules actifs', value: '12+', icon: BookOpen, color: '#7DD3FC' },
+  { label: 'Outils IA', value: '7', icon: Zap, color: '#a78bfa' },
+]
 
 export default function Hub() {
   const navigate = useNavigate()
 
   return (
-    <div className="space-y-5 animate-fade-in">
-      {/* Hero */}
-      <div className="glass-card p-5 md:p-8 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-radial from-cyan-400/5 to-transparent pointer-events-none" />
+    <div className="space-y-4 animate-fade-in">
+      {/* ── Hero ─────────────────────────────────────────────────────────────── */}
+      <div className="glass-card relative overflow-hidden p-5 md:p-8">
+        {/* Background dot texture */}
+        <div className="absolute inset-0 dot-grid opacity-40 pointer-events-none" />
+        {/* Gradient orbs */}
+        <div className="absolute -top-8 -right-8 w-56 h-56 rounded-full bg-cyan-400/8 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-8 -left-8 w-40 h-40 rounded-full bg-blue-500/6 blur-2xl pointer-events-none" />
+
         <div className="relative">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles size={14} className="text-cyan-400" />
-            <span className="text-xs font-semibold text-cyan-400 uppercase tracking-widest">Portail Membres</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/20 mb-3">
+            <Sparkles size={11} className="text-cyan-400" />
+            <span className="text-[11px] font-bold text-cyan-400 uppercase tracking-widest">Portail Membres</span>
           </div>
           <h1 className="text-xl md:text-3xl font-bold text-white mb-2 leading-tight">
-            Bienvenue sur votre<br className="hidden sm:block" /> espace Autobuyunion
+            Bienvenue sur votre espace<br className="hidden sm:block" />
+            <span className="gradient-text"> Autobuyunion</span>
           </h1>
           <p className="text-sm text-slate-400 max-w-xl leading-relaxed">
             Tous vos outils d'aide à la vente, d'analyse produit et de stratégie commerciale
@@ -93,7 +105,20 @@ export default function Hub() {
         </div>
       </div>
 
-      {/* Tools grid */}
+      {/* ── Stats ────────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-3 gap-2">
+        {stats.map(({ label, value, icon: Icon, color }) => (
+          <div key={label} className="glass-card px-3 py-3.5 text-center flex flex-col items-center gap-1.5">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${color}15` }}>
+              <Icon size={13} style={{ color }} />
+            </div>
+            <p className="text-lg font-bold leading-none" style={{ color }}>{value}</p>
+            <p className="text-[10px] text-slate-500 leading-tight">{label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Tools grid ───────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {tools.map(({ to, icon: Icon, color, title, description, badge }) => {
           const c = colorMap[color]
@@ -101,12 +126,15 @@ export default function Hub() {
             <button
               key={to}
               onClick={() => navigate(to)}
-              className="glass-card p-4 md:p-5 text-left hover:border-navy-600 active:scale-[0.98]
+              className="glass-card p-4 md:p-5 text-left active:scale-[0.98]
                          transition-all duration-200 group flex flex-col gap-3"
+              style={{ '--hw': c.hoverBorder }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = `${c.hoverBorder}30`; e.currentTarget.style.boxShadow = `0 4px 24px rgba(0,0,0,0.2), 0 0 0 1px ${c.hoverBorder}08` }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = ''; e.currentTarget.style.boxShadow = '' }}
             >
               {/* Top row: icon + badge */}
               <div className="flex items-center justify-between w-full">
-                <div className={`w-10 h-10 rounded-xl ${c.bg} border ${c.border} flex items-center justify-center flex-shrink-0`}>
+                <div className={`w-10 h-10 rounded-xl ${c.bg} border ${c.border} flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110`}>
                   <Icon size={18} className={c.icon} />
                 </div>
                 <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${c.badge}`}>
@@ -116,33 +144,23 @@ export default function Hub() {
 
               {/* Title + description */}
               <div>
-                <h3 className={`text-sm font-bold text-white mb-1 ${c.hoverTitle} transition-colors`}>
+                <h3 className={`text-sm font-bold text-white mb-1 transition-colors duration-200 ${c.icon} group-hover:opacity-100`}
+                  style={{ color: 'white' }}
+                  onMouseEnter={e => e.currentTarget.style.color = c.hoverBorder}
+                  onMouseLeave={e => e.currentTarget.style.color = 'white'}
+                >
                   {title}
                 </h3>
-                <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">{description}</p>
+                <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{description}</p>
               </div>
 
               {/* CTA */}
-              <div className={`flex items-center gap-1 text-xs font-semibold ${c.icon} mt-auto`}>
-                Accéder <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+              <div className={`flex items-center gap-1 text-xs font-semibold mt-auto ${c.icon}`}>
+                Accéder <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform duration-200" />
               </div>
             </button>
           )
         })}
-      </div>
-
-      {/* Quick stats */}
-      <div className="grid grid-cols-3 gap-2 min-w-0">
-        {[
-          { label: 'Pays couverts', value: '40' },
-          { label: 'Fiches produits', value: '2+' },
-          { label: 'Outils disponibles', value: '7' },
-        ].map(({ label, value }) => (
-          <div key={label} className="glass-card px-3 py-3 text-center">
-            <p className="text-lg font-bold text-cyan-400">{value}</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">{label}</p>
-          </div>
-        ))}
       </div>
     </div>
   )

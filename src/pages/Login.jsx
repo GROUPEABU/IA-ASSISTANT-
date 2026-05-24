@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, EyeOff, Lock, User, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, Lock, User, AlertCircle, Sparkles } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import Logo from '@/components/ui/Logo'
 
@@ -27,21 +27,36 @@ export default function Login() {
   return (
     <div className="min-h-[100dvh] bg-navy-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Background decoration */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[60vw] h-[60vw] rounded-full bg-cyan-400/5 blur-3xl" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-cyan-400/3 blur-3xl" />
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Dot grid */}
+        <div className="absolute inset-0 dot-grid opacity-30" />
+        {/* Gradient orbs */}
+        <div className="absolute -top-1/4 -left-1/4 w-[70vw] h-[70vw] rounded-full bg-cyan-400/6 blur-3xl" />
+        <div className="absolute -bottom-1/4 -right-1/4 w-[60vw] h-[60vw] rounded-full bg-blue-500/5 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] rounded-full bg-cyan-400/3 blur-3xl" />
+        {/* Decorative ring */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-cyan-400/5" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-cyan-400/3" />
       </div>
 
       <div className="w-full max-w-sm relative">
-        {/* Logo */}
+        {/* Logo & branding */}
         <div className="flex flex-col items-center mb-8">
-          <Logo size="md" className="mb-4" />
-          <p className="text-sm text-slate-400">Portail Membres — Accès privé</p>
+          <div className="mb-5 relative">
+            <div className="absolute inset-0 rounded-full bg-cyan-400/15 blur-xl scale-150" />
+            <Logo size="md" className="relative" />
+          </div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/20 mb-2">
+            <Sparkles size={11} className="text-cyan-400" />
+            <span className="text-[11px] font-bold text-cyan-400 uppercase tracking-widest">Portail Membres</span>
+          </div>
+          <p className="text-xs text-slate-500">1er Groupe Européen d'Achats Automobiles</p>
         </div>
 
         {/* Card */}
-        <div className="glass-card p-6 md:p-8">
-          <h2 className="text-base font-semibold text-white mb-6">Connexion à votre espace</h2>
+        <div className="glass-card p-6 md:p-8 shadow-2xl shadow-black/40">
+          <h2 className="text-base font-semibold text-white mb-1">Connexion à votre espace</h2>
+          <p className="text-xs text-slate-500 mb-6">Accès réservé aux membres Autobuyunion</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Username */}
@@ -103,10 +118,11 @@ export default function Login() {
             <button
               type="submit"
               disabled={!username.trim() || !password.trim() || loading}
-              className="w-full mt-2 py-3 bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
-                         hover:bg-cyan-300 active:scale-[0.98] transition-all
+              className="w-full mt-2 py-3 rounded-xl text-sm font-bold
+                         bg-gradient-to-r from-cyan-400 to-cyan-500 text-navy-900
+                         hover:from-cyan-300 hover:to-cyan-400 active:scale-[0.98] transition-all
                          disabled:opacity-40 disabled:pointer-events-none
-                         flex items-center justify-center gap-2"
+                         flex items-center justify-center gap-2 shadow-lg shadow-cyan-400/20"
             >
               {loading ? (
                 <>

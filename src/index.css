@@ -58,33 +58,62 @@
 @layer components {
   .glass-card {
     @apply bg-navy-800/60 backdrop-blur-sm border border-navy-700/50 rounded-xl;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .glass-card-glow {
+    @apply glass-card;
+  }
+  .glass-card-glow:hover {
+    @apply border-navy-600/80;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.25), 0 0 0 1px rgba(80,229,229,0.06);
   }
 
   .cyan-glow {
     text-shadow: 0 0 20px rgba(80, 229, 229, 0.5);
   }
 
+  .gradient-text {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-cyan-500;
+  }
+
   .btn-primary {
-    @apply bg-cyan-400 text-navy-900 font-semibold px-4 py-2 rounded-lg
+    @apply bg-cyan-400 text-navy-900 font-semibold px-4 py-2 rounded-xl
            hover:bg-cyan-300 active:scale-95 transition-all duration-150;
   }
 
   .btn-ghost {
-    @apply text-cyan-400 border border-cyan-400/30 px-4 py-2 rounded-lg
+    @apply text-cyan-400 border border-cyan-400/30 px-4 py-2 rounded-xl
            hover:bg-cyan-400/10 active:scale-95 transition-all duration-150;
   }
 
   .nav-item {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
-           text-slate-400 hover:text-cyan-400 hover:bg-navy-700/50 transition-all duration-150 cursor-pointer;
+    @apply flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium
+           text-slate-400 hover:text-white hover:bg-navy-700/40 transition-all duration-150 cursor-pointer;
   }
 
   .nav-item-active {
-    @apply text-cyan-400 bg-cyan-400/10 border-l-2 border-cyan-400;
+    @apply text-cyan-400 bg-gradient-to-r from-cyan-400/15 to-cyan-400/5 font-semibold;
+  }
+
+  .input-field {
+    @apply w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+           text-sm text-white placeholder-slate-600
+           focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/10 transition;
+  }
+
+  .section-label {
+    @apply text-[10px] font-bold text-slate-500 uppercase tracking-widest;
   }
 
   /* iOS safe-area bottom padding */
   .pb-safe {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
+}
+
+/* Subtle dot-grid texture for hero sections */
+.dot-grid {
+  background-image: radial-gradient(rgba(80,229,229,0.12) 1px, transparent 1px);
+  background-size: 28px 28px;
 }

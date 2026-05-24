@@ -10,18 +10,18 @@ const navGroups = [
   {
     label: 'Portail membres',
     items: [
-      { to: '/hub', icon: Home, label: 'Accueil Hub' },
-      { to: '/products', icon: BookOpen, label: 'Fiches & Rapports' },
-      { to: '/co2-malus', icon: Gauge, label: 'CO₂ & Malus' },
+      { to: '/hub',      icon: Home,         label: 'Accueil Hub' },
+      { to: '/products', icon: BookOpen,      label: 'Fiches & Rapports' },
+      { to: '/co2-malus',icon: Gauge,         label: 'CO₂ & Malus' },
     ],
   },
   {
     label: 'Outils de vente',
     items: [
-      { to: '/price-watch', icon: Bell, label: 'Veille prix' },
-      { to: '/objections', icon: ShieldCheck, label: 'Réponses objections' },
-      { to: '/pitch', icon: Mic, label: 'Générateur de pitch' },
-      { to: '/tco', icon: Calculator, label: 'Calculateur TCO' },
+      { to: '/price-watch', icon: Bell,        label: 'Veille prix' },
+      { to: '/objections',  icon: ShieldCheck, label: 'Réponses objections' },
+      { to: '/pitch',       icon: Mic,         label: 'Générateur de pitch' },
+      { to: '/tco',         icon: Calculator,  label: 'Calculateur TCO' },
     ],
   },
   {
@@ -49,7 +49,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
   return (
     <aside className={clsx(
-      'flex-shrink-0 bg-navy-800/95 border-r border-navy-700/50 flex flex-col z-30 transition-transform duration-300',
+      'flex-shrink-0 bg-navy-800/98 border-r border-navy-700/50 flex flex-col z-30 transition-transform duration-300',
       'md:relative md:translate-x-0 md:w-60',
       'fixed inset-y-0 left-0 w-72',
       isOpen ? 'translate-x-0' : '-translate-x-full',
@@ -57,16 +57,19 @@ export default function Sidebar({ isOpen, onClose }) {
       {/* Logo */}
       <div className="px-4 py-4 border-b border-navy-700/50 flex items-center justify-between">
         <Logo size="sm" />
-        <button onClick={onClose} className="md:hidden w-8 h-8 flex items-center justify-center text-slate-500 hover:text-white transition">
+        <button
+          onClick={onClose}
+          className="md:hidden w-8 h-8 flex items-center justify-center text-slate-500 hover:text-white hover:bg-navy-700/50 rounded-lg transition"
+        >
           <X size={18} />
         </button>
       </div>
 
-      {/* Navigation groupée */}
-      <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
         {navGroups.map((group) => (
           <div key={group.label}>
-            <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-3 mb-1">
+            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest px-2 mb-2">
               {group.label}
             </p>
             <div className="space-y-0.5">
@@ -77,7 +80,7 @@ export default function Sidebar({ isOpen, onClose }) {
                   onClick={onClose}
                   className={({ isActive }) => clsx('nav-item', isActive && 'nav-item-active')}
                 >
-                  <Icon size={17} />
+                  <Icon size={16} />
                   {label}
                 </NavLink>
               ))}
@@ -87,31 +90,35 @@ export default function Sidebar({ isOpen, onClose }) {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-navy-700/50 pb-safe space-y-2">
+      <div className="px-3 pb-4 pt-3 border-t border-navy-700/50 space-y-2">
         {/* IA status */}
-        <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-cyan-400/5 border border-cyan-400/10">
-          <Zap size={14} className="text-cyan-400 flex-shrink-0" />
-          <div>
-            <p className="text-[10px] font-semibold text-cyan-400">Assistant IA</p>
-            <p className="text-[10px] text-slate-500">Connecté · Opérationnel</p>
+        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-cyan-400/5 border border-cyan-400/10">
+          <div className="w-6 h-6 rounded-lg bg-cyan-400/15 flex items-center justify-center flex-shrink-0">
+            <Zap size={13} className="text-cyan-400" />
           </div>
-          <span className="ml-auto w-2 h-2 rounded-full bg-cyan-400 animate-pulse-slow" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-semibold text-cyan-400 leading-tight">IA Opérationnelle</p>
+            <p className="text-[10px] text-slate-500">Connecté · Prêt</p>
+          </div>
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse-slow flex-shrink-0" />
         </div>
+
         {/* User + logout */}
         {user && (
-          <div className="flex items-center gap-2 px-2 py-2">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
-                            flex items-center justify-center text-navy-900 text-[10px] font-bold flex-shrink-0">
+          <div className="flex items-center gap-2.5 px-2 py-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
+                            flex items-center justify-center text-navy-900 text-[11px] font-bold flex-shrink-0
+                            shadow-sm shadow-cyan-400/30">
               {user.initials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-white truncate">{user.name}</p>
+              <p className="text-xs font-semibold text-white truncate leading-tight">{user.name}</p>
               <p className="text-[10px] text-slate-500 capitalize">{user.role}</p>
             </div>
             <button
               onClick={handleLogout}
               title="Se déconnecter"
-              className="text-slate-500 hover:text-red-400 transition p-1"
+              className="text-slate-500 hover:text-red-400 transition p-1.5 rounded-lg hover:bg-red-400/10"
             >
               <LogOut size={14} />
             </button>

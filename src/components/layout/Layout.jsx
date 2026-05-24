@@ -10,11 +10,13 @@ export default function Layout() {
   const toggle = useCallback(() => setSidebarOpen((v) => !v), [])
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-navy-900">
+    <div className="flex h-[100dvh] overflow-hidden bg-navy-900 relative">
+      {/* Subtle background gradient */}
+      <div className="fixed inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% -20%, rgba(80,229,229,0.04) 0%, transparent 70%)' }} />
       {/* Overlay mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-20 bg-black/60 md:hidden"
+          className="fixed inset-0 z-20 bg-black/70 backdrop-blur-sm md:hidden"
           onClick={close}
         />
       )}
