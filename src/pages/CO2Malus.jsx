@@ -33,8 +33,8 @@ function SliderSection({ label, value, setValue, min, max, step = 1, unit, color
             <input
               type="number" min={min} max={max} value={value} inputMode="numeric"
               onChange={e => { const v = e.target.value === '' ? min : Number(e.target.value); if (!isNaN(v)) setValue(Math.min(max, Math.max(min, v))) }}
-              className="w-16 text-2xl font-bold text-right bg-transparent border-0 border-b outline-none"
-              style={{ fontFamily: 'inherit', MozAppearance: 'textfield', WebkitAppearance: 'none', color, borderColor: `${color}30` }}
+              className="w-16 text-2xl font-bold text-right bg-transparent border-0 outline-none"
+              style={{ fontFamily: 'inherit', MozAppearance: 'textfield', WebkitAppearance: 'none', color }}
             />
             <span className="text-xs font-medium" style={{ color, opacity: 0.65 }}>{unit}</span>
           </div>
@@ -183,8 +183,8 @@ export default function CO2Malus() {
             <div className="flex items-baseline gap-1">
               <input type="number" min={800} max={3500} step={10} value={weight} inputMode="numeric"
                 onChange={e => { const v = e.target.value === '' ? 800 : Number(e.target.value); if (!isNaN(v)) setWeight(Math.min(3500, Math.max(800, v))) }}
-                className="w-16 text-2xl font-bold text-right bg-transparent border-0 border-b outline-none"
-                style={{ fontFamily: 'inherit', MozAppearance: 'textfield', WebkitAppearance: 'none', color: '#7DD3FC', borderColor: 'rgba(125,211,252,0.25)' }}
+                className="w-16 text-2xl font-bold text-right bg-transparent border-0 outline-none"
+                style={{ fontFamily: 'inherit', MozAppearance: 'textfield', WebkitAppearance: 'none', color: '#7DD3FC' }}
               />
               <span className="text-xs font-medium" style={{ color: '#7DD3FC', opacity: 0.65 }}>kg</span>
             </div>
@@ -236,13 +236,13 @@ export default function CO2Malus() {
         <input
           type="date" value={dateImmat} min="2023-01-01" max="2030-12-31"
           onChange={e => setDateImmat(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-lg text-sm border outline-none mb-2.5 text-center font-medium"
+          className="w-full px-3 py-1.5 rounded-lg text-xs border outline-none mb-2.5 text-center font-medium"
           style={{ colorScheme: 'dark', fontFamily: 'inherit', background: 'rgba(80,229,229,0.05)', borderColor: 'rgba(80,229,229,0.2)', color: '#50E5E5' }}
         />
         <div className="grid grid-cols-4 gap-1">
           {DATE_PRESETS.map(p => (
             <button key={p.d} onClick={() => setDateImmat(p.d)}
-              className="py-1.5 rounded-lg text-[11px] font-medium transition border active:scale-95"
+              className="py-1.5 rounded-lg text-[10px] font-medium transition border active:scale-95 truncate"
               style={{
                 borderColor: dateImmat === p.d ? '#fbbf24' : 'rgba(255,255,255,0.08)',
                 background: dateImmat === p.d ? 'rgba(251,191,36,0.12)' : 'transparent',
