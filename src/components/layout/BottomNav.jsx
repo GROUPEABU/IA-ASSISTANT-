@@ -1,12 +1,13 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, MessageSquare, FileBarChart2, Settings } from 'lucide-react'
+import { Home, BookOpen, Gauge, MessageSquare, LayoutDashboard } from 'lucide-react'
 import clsx from 'clsx'
 
 const items = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/hub', icon: Home, label: 'Hub' },
+  { to: '/products', icon: BookOpen, label: 'Produits' },
+  { to: '/co2-malus', icon: Gauge, label: 'CO₂' },
   { to: '/chat', icon: MessageSquare, label: 'IA Chat' },
-  { to: '/reports', icon: FileBarChart2, label: 'Rapports' },
-  { to: '/settings', icon: Settings, label: 'Config' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Stats' },
 ]
 
 export default function BottomNav() {
@@ -27,11 +28,8 @@ export default function BottomNav() {
         >
           {({ isActive }) => (
             <>
-              <span className={clsx(
-                'w-9 h-7 flex items-center justify-center rounded-lg transition-colors',
-                isActive && 'bg-cyan-400/10',
-              )}>
-                <Icon size={18} />
+              <span className={clsx('w-9 h-7 flex items-center justify-center rounded-lg transition-colors', isActive && 'bg-cyan-400/10')}>
+                <Icon size={17} />
               </span>
               {label}
             </>
