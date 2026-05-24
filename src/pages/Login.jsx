@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useCaptcha } from '@/hooks/useCaptcha'
+import { interpolate } from '@/utils/interpolate'
 import Logo from '@/components/ui/Logo'
 
 const REMEMBER_KEY = 'abu_remember'
@@ -60,7 +61,7 @@ export default function Login() {
     if (!username.trim() || !password.trim() || isBlocked) return
 
     if (showCaptcha && !verify()) {
-      setError('Code de vérification incorrect.')
+      setError(t('login_captcha_wrong'))
       generate()
       return
     }
@@ -74,9 +75,10 @@ export default function Login() {
       recordFailure()
       const { isBlocked: nowBlocked, remainingMs: ms, attemptsLeft: left } = getSecurityStatus()
       if (nowBlocked) {
-        setError(`Compte temporairement bloqué. Réessayez dans ${formatCountdown(ms)}.`)
+        setError(interpolate(t('login_blocked_inline'), { time: formatCountdown(ms) }))
       } else if (left <= 2) {
-        setError(`Identifiants incorrects. ${left} tentative${left > 1 ? 's' : ''} restante${left > 1 ? 's' : ''}.`)
+        const key = left === 1 ? 'login_attempts_left_one' : 'login_attempts_left_many'
+        setError(interpolate(t(key), { n: left }))
       } else {
         setError(t('login_error'))
       }
@@ -105,12 +107,12 @@ export default function Login() {
           <p className="text-xs text-slate-500 mb-6">{t('login_subtitle')}</p>
 
           {isBlocked && (
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 mb-4">
-              <ShieldAlert size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
+            <div role="alert" className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 mb-4">
+              <ShieldAlert size={16} className="text-red-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
               <div>
-                <p className="text-xs font-semibold text-red-400">Accès temporairement bloqué</p>
+                <p className="text-xs font-semibold text-red-400">{t('login_blocked_title')}</p>
                 <p className="text-[11px] text-red-400/80 mt-0.5">
-                  Réessayez dans {formatCountdown(remainingMs)}.
+                  {interpolate(t('login_blocked_retry'), { time: formatCountdown(remainingMs) })}
                 </p>
               </div>
             </div>
@@ -176,18 +178,20 @@ export default function Login() {
             {showCaptcha && challenge && !isBlocked && (
               <div className="p-3 rounded-xl bg-amber-400/6 border border-amber-400/20">
                 <div className="flex items-center gap-2 mb-2">
-                  <ShieldAlert size={13} className="text-amber-400" />
-                  <span className="text-[11px] font-semibold text-amber-400">Vérification anti-robot</span>
+                  <ShieldAlert size={13} className="text-amber-400" aria-hidden="true" />
+                  <span className="text-[11px] font-semibold text-amber-400">{t('login_captcha_label')}</span>
                 </div>
-                <p className="text-xs text-slate-400 mb-2">
-                  Combien font <strong className="text-white">{challenge.a} + {challenge.b}</strong> ?
-                </p>
+                <label htmlFor="captcha-answer" className="text-xs text-slate-400 mb-2 block">
+                  {interpolate(t('login_captcha_question'), { a: challenge.a, b: challenge.b })}
+                </label>
                 <input
+                  id="captcha-answer"
                   type="number"
                   value={answer}
                   onChange={e => setAnswer(e.target.value)}
-                  placeholder="Votre réponse"
+                  placeholder={t('login_captcha_placeholder')}
                   inputMode="numeric"
+                  aria-label={t('login_captcha_label')}
                   className="w-full bg-navy-900/80 border border-navy-700/60 rounded-lg px-3 py-2 text-sm text-white
                              placeholder-slate-600 focus:outline-none focus:border-cyan-400/60 transition"
                 />
@@ -195,8 +199,8 @@ export default function Login() {
             )}
 
             {error && (
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
+              <div role="alert" className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                <AlertCircle size={14} className="text-red-400 flex-shrink-0" aria-hidden="true" />
                 <p className="text-xs text-red-400">{error}</p>
               </div>
             )}

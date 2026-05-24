@@ -17,6 +17,7 @@ export default function BottomNav() {
 
   return (
     <nav
+      aria-label="Navigation principale mobile"
       className="md:hidden fixed bottom-0 inset-x-0 z-10 flex items-stretch pb-safe"
       style={{ background: 'rgba(10,27,44,0.97)', borderTop: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(16px)' }}
     >
@@ -37,7 +38,7 @@ export default function BottomNav() {
                 'w-8 h-6 flex items-center justify-center rounded-lg transition-all duration-150',
                 isActive && 'bg-cyan-400/15',
               )}>
-                <Icon size={16} />
+                <Icon size={16} aria-hidden="true" />
               </span>
               <span className={clsx('leading-none', isActive ? 'text-cyan-400' : 'text-slate-600')}>
                 {t(labelKey)}

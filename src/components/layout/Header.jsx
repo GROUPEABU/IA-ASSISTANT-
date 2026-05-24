@@ -34,9 +34,10 @@ export default function Header({ onMenuToggle }) {
       style={{ background: 'rgba(13,39,60,0.85)', backdropFilter: 'blur(12px)' }}>
       <button
         onClick={onMenuToggle}
+        aria-label="Ouvrir le menu de navigation"
         className="md:hidden w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-navy-700/50 rounded-xl transition"
       >
-        <Menu size={20} />
+        <Menu size={20} aria-hidden="true" />
       </button>
 
       <div className="flex-1 min-w-0">
@@ -58,10 +59,11 @@ export default function Header({ onMenuToggle }) {
         <button
           onClick={handleLogout}
           title={t('logout')}
+          aria-label={t('logout')}
           className="hidden md:flex w-9 h-9 rounded-xl border border-navy-700/50 items-center justify-center
                      text-slate-400 hover:text-red-400 hover:border-red-400/30 hover:bg-red-400/5 transition"
         >
-          <LogOut size={15} />
+          <LogOut size={15} aria-hidden="true" />
         </button>
       </div>
     </header>
