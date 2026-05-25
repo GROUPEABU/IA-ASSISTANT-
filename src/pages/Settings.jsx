@@ -150,8 +150,6 @@ export default function Settings() {
                        text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition"
           >
             <option value="EUR">EUR (€)</option>
-            <option value="GBP">GBP (£)</option>
-            <option value="CHF">CHF</option>
           </select>
         </Field>
         <Field label={t('settings_language_label')} description={t('settings_language_desc')}>
