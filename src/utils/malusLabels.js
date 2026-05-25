@@ -51,6 +51,23 @@ function translateBracketLabel(label, lang) {
   return BRACKET_LABEL_MAP[label]?.[lang] || BRACKET_LABEL_MAP[label]?.en || label
 }
 
+const SUFFIX_MAP = {
+  en: { barème: 'Schedule', 'immat. en':   'reg. in', 'immat. depuis': 'reg. from', 'immat.': 'reg.' },
+  de: { barème: 'Tabelle',  'immat. en':   'Zul. in', 'immat. depuis': 'Zul. ab',   'immat.': 'Zul.' },
+  it: { barème: 'Tabella',  'immat. en':   'immat. nel', 'immat. depuis': 'immat. dal', 'immat.': 'immat.' },
+  es: { barème: 'Tabla',    'immat. en':   'matr. en', 'immat. depuis': 'matr. desde', 'immat.': 'matr.' },
+}
+
+function translateTaxNameSuffix(suffix, lang) {
+  if (!suffix || lang === 'fr') return suffix
+  const m = SUFFIX_MAP[lang] || SUFFIX_MAP.en
+  return suffix
+    .replace(/Barème/gi, m.barème)
+    .replace(/immat\. en\b/g, m['immat. en'])
+    .replace(/immat\. depuis\b/g, m['immat. depuis'])
+    .replace(/immat\./g, m['immat.'])
+}
+
 // ─── Translations ──────────────────────────────────────────────────────────────
 // For EU countries with fully calculated strings (FR, DE, GB, ES…), only the
 // static / predictable fields are overridden. Dynamic computed strings remain
@@ -973,7 +990,8 @@ export function localizeResult(result, lang) {
     // For FR/GB: prefix + the dynamic part (e.g. period/barème)
     const prefix = labels.tax_name_prefix || enLabels.tax_name_prefix
     const suffix = result.tax_name.split('—')[1] || ''
-    merged.tax_name = suffix ? `${prefix} —${suffix}` : prefix
+    const translatedSuffix = translateTaxNameSuffix(suffix, lang)
+    merged.tax_name = translatedSuffix ? `${prefix} —${translatedSuffix}` : prefix
   }
 
   if (labels.system_description || enLabels.system_description) {

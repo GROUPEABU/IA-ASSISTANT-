@@ -41,16 +41,19 @@ export function SettingsProvider({ children }) {
   const value = useMemo(() => {
     const t = (key) => T[language]?.[key] ?? T.fr[key] ?? key
 
+    const numLocale = { fr: 'fr-FR', en: 'en-GB', de: 'de-DE', it: 'it-IT', es: 'es-ES' }[language] || 'fr-FR'
+
     const formatCurrency = (amount, fromCurrency = 'EUR') => {
       if (!amount && amount !== 0) return '—'
       const inEur = fromCurrency === 'EUR' ? amount : amount / RATES[fromCurrency]
       const converted = Math.round(inEur * RATES[currency])
       if (currency === 'GBP') return `£${converted.toLocaleString('en-GB')}`
       if (currency === 'CHF') return `CHF ${converted.toLocaleString('de-CH')}`
-      return `${converted.toLocaleString('fr-FR')} €`
+      return `${converted.toLocaleString(numLocale)} €`
     }
 
-    return { language, currency, density, changeLanguage, changeCurrency, changeDensity, t, formatCurrency }
+    // Expose both `language` and `lang` so components can use either
+    return { language, lang: language, currency, density, changeLanguage, changeCurrency, changeDensity, t, formatCurrency }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language, currency, density])
 
