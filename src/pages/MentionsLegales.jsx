@@ -2,57 +2,53 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 
+/**
+ * Legal notice page. Fully localized.
+ * Company-specific values (SIREN, address, capital) intentionally kept as
+ * placeholder text — these are filled in once Autobuyunion provides them.
+ */
 export default function MentionsLegales() {
   const { t } = useSettings()
+
   return (
     <div className="min-h-[100dvh] bg-navy-900 flex flex-col">
       <header className="sticky top-0 z-10 bg-navy-900/95 backdrop-blur border-b border-white/7 px-4 py-3 flex items-center gap-3">
-        <Link to="/login" className="text-slate-400 hover:text-white transition">
-          <ArrowLeft size={16} />
+        <Link to="/login" className="text-slate-400 hover:text-white transition" aria-label={t('forgot_back_login')}>
+          <ArrowLeft size={16} aria-hidden="true" />
         </Link>
         <h1 className="text-sm font-semibold text-white">{t('legal_mentions')}</h1>
       </header>
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8 space-y-8">
-        <Section title="Éditeur du site">
-          <Row label="Dénomination sociale" value="Autobuyunion SAS" />
-          <Row label="Forme juridique" value="Société par Actions Simplifiée (SAS)" />
-          <Row label="Capital social" value="[Capital social en €]" />
-          <Row label="SIREN / SIRET" value="[Numéro SIREN/SIRET]" />
-          <Row label="RCS" value="[Ville d'immatriculation]" />
-          <Row label="Siège social" value="[Adresse complète], France" />
-          <Row label="Contact" value="contact@autobuyunion.eu" />
-          <Row label="Directeur de la publication" value="[Nom du directeur de la publication]" />
+        <Section title={t('legal_editor_title')}>
+          <Row label={t('legal_editor_name')}    value="Autobuyunion SAS" />
+          <Row label={t('legal_editor_form')}    value={t('legal_editor_form_value')} />
+          <Row label={t('legal_editor_capital')} value="[Capital social en €]" />
+          <Row label={t('legal_editor_siren')}   value="[Numéro SIREN/SIRET]" />
+          <Row label={t('legal_editor_rcs')}     value="[Ville d'immatriculation]" />
+          <Row label={t('legal_editor_address')} value="[Adresse complète], France" />
+          <Row label={t('legal_editor_contact')} value="contact@autobuyunion.eu" />
+          <Row label={t('legal_editor_director')} value="[Nom du directeur de la publication]" />
         </Section>
 
-        <Section title="Hébergement">
-          <Row label="Hébergeur" value="Vercel Inc." />
-          <Row label="Adresse" value="340 Pine Street, Suite 701, San Francisco, CA 94104, États-Unis" />
-          <Row label="Site web" value="https://vercel.com" />
+        <Section title={t('legal_hosting_title')}>
+          <Row label={t('legal_hosting_provider')} value="Vercel Inc." />
+          <Row label={t('legal_hosting_address')}  value="340 Pine Street, Suite 701, San Francisco, CA 94104, USA" />
+          <Row label={t('legal_hosting_website')}  value="https://vercel.com" />
         </Section>
 
-        <Section title="Propriété intellectuelle">
-          <p className="text-sm text-slate-400 leading-relaxed">
-            L'ensemble des contenus présents sur ce portail (textes, images, logotypes, fonctionnalités, codes source) sont la propriété exclusive d'Autobuyunion SAS ou de ses partenaires, et sont protégés par les lois françaises et internationales relatives à la propriété intellectuelle.
-          </p>
-          <p className="text-sm text-slate-400 leading-relaxed mt-3">
-            Toute reproduction, représentation, modification, publication ou adaptation de tout ou partie des éléments du portail, quel que soit le moyen ou le procédé utilisé, est interdite sans autorisation écrite préalable d'Autobuyunion SAS.
-          </p>
+        <Section title={t('legal_ip_title')}>
+          <p className="text-sm text-slate-400 leading-relaxed">{t('legal_ip_p1')}</p>
+          <p className="text-sm text-slate-400 leading-relaxed mt-3">{t('legal_ip_p2')}</p>
         </Section>
 
-        <Section title="Responsabilité">
-          <p className="text-sm text-slate-400 leading-relaxed">
-            Les informations et outils disponibles sur ce portail sont fournis à titre indicatif. Autobuyunion SAS s'efforce d'assurer l'exactitude des données (barèmes fiscaux, prix de marché, calculs TCO), mais ne saurait être tenu responsable des erreurs ou omissions, ni des résultats obtenus par l'utilisation de ces informations.
-          </p>
-          <p className="text-sm text-slate-400 leading-relaxed mt-3">
-            Les barèmes de malus CO₂ et autres données fiscales sont susceptibles d'évoluer. L'utilisateur est invité à consulter les autorités compétentes de chaque pays avant toute décision commerciale.
-          </p>
+        <Section title={t('legal_liability_title')}>
+          <p className="text-sm text-slate-400 leading-relaxed">{t('legal_liability_p1')}</p>
+          <p className="text-sm text-slate-400 leading-relaxed mt-3">{t('legal_liability_p2')}</p>
         </Section>
 
-        <Section title="Droit applicable">
-          <p className="text-sm text-slate-400 leading-relaxed">
-            Les présentes mentions légales sont soumises au droit français. En cas de litige, et à défaut de résolution amiable, les tribunaux français seront seuls compétents.
-          </p>
+        <Section title={t('legal_law_title')}>
+          <p className="text-sm text-slate-400 leading-relaxed">{t('legal_law_text')}</p>
         </Section>
 
         <div className="pt-4 flex gap-4 text-xs text-slate-600">

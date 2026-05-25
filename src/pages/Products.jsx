@@ -6,6 +6,7 @@ import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { getMalus, getMalusColor } from '@/utils/malus'
 import Badge from '@/components/ui/Badge'
 import { formatNumber } from '@/utils/formatters'
+import { interpolate } from '@/utils/interpolate'
 import VehicleSearchModal from '@/components/products/VehicleSearchModal'
 import { useSettings } from '@/contexts/SettingsContext'
 
@@ -77,7 +78,7 @@ function ProductCard({ product, onDelete, navigate, t, formatCurrency }) {
           <span className="text-base font-bold text-white">{formatCurrency(product.prix.base)}</span>
         </div>
         <div className="text-right">
-          <span className="text-[11px] text-slate-500">Malus FR </span>
+          <span className="text-[11px] text-slate-500">{t('products_fr_duty')} </span>
           <span className={`text-sm font-bold ${mc === 'danger' ? 'text-red-400' : mc === 'orange' ? 'text-amber-400' : 'text-emerald-400'}`}>
             {malus > 0 ? `+${formatCurrency(malus)}` : t('exempt')}
           </span>
@@ -103,7 +104,7 @@ export default function Products() {
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-slate-500">{allProducts.length} véhicule(s) référencé(s)</p>
+        <p className="text-xs text-slate-500">{interpolate(t('products_count'), { n: allProducts.length })}</p>
         <button
           onClick={() => setShowSearch(true)}
           className="flex items-center gap-2 text-xs font-bold text-navy-900 bg-cyan-400
@@ -118,8 +119,8 @@ export default function Products() {
       <div className="flex items-start gap-3 p-3 rounded-xl bg-cyan-400/5 border border-cyan-400/10">
         <Sparkles size={14} className="text-cyan-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-slate-400 leading-relaxed">
-          <span className="text-cyan-400 font-semibold">Nouveau :</span> Générez une fiche produit pour n'importe quel véhicule.
-          L'IA récupère les vraies specs, prix catalogue, CO₂ WLTP, concurrents et analyse marché automatiquement.
+          <span className="text-cyan-400 font-semibold">{t('products_banner_new')} </span>
+          {t('products_banner_text')}
         </p>
       </div>
 
