@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, Link, useNavigate } from 'react-router-dom'
 import {
   MessageSquare, Settings, Zap, X, Home, BookOpen, Gauge, Bell, ShieldCheck, Mic, LogOut, Calculator,
 } from 'lucide-react'
@@ -102,6 +102,14 @@ export default function Sidebar({ isOpen, onClose }) {
             <p className="text-[10px] text-slate-500">{t('connected_ready')}</p>
           </div>
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse-slow flex-shrink-0" />
+        </div>
+
+        <div className="flex items-center gap-3 px-2 py-1 flex-wrap">
+          <Link to="/mentions-legales"         className="text-[10px] text-slate-600 hover:text-slate-400 transition">{t('legal_mentions')}</Link>
+          <span className="text-slate-700 text-[10px]">·</span>
+          <Link to="/politique-confidentialite" className="text-[10px] text-slate-600 hover:text-slate-400 transition">{t('legal_privacy')}</Link>
+          <span className="text-slate-700 text-[10px]">·</span>
+          <Link to="/conditions-utilisation"   className="text-[10px] text-slate-600 hover:text-slate-400 transition">{t('legal_cgu')}</Link>
         </div>
 
         {user && (

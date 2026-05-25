@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Key, Palette, Globe, Check, Monitor, Sun } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Key, Palette, Globe, Check, Monitor, Sun, Scale, ChevronRight } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 
 const Section = ({ icon: Icon, title, children }) => (
@@ -163,6 +164,27 @@ export default function Settings() {
             <option value="en">English</option>
           </select>
         </Field>
+      </Section>
+
+      <Section icon={Scale} title={t('settings_legal_section')}>
+        {[
+          { to: '/mentions-legales',          labelKey: 'legal_mentions',  descKey: 'settings_legal_mentions_desc' },
+          { to: '/politique-confidentialite',  labelKey: 'legal_privacy',   descKey: 'settings_legal_privacy_desc' },
+          { to: '/conditions-utilisation',     labelKey: 'legal_cgu',       descKey: 'settings_legal_cgu_desc' },
+        ].map(({ to, labelKey, descKey }) => (
+          <Link
+            key={to}
+            to={to}
+            className="flex items-center justify-between gap-3 py-2.5 px-1 rounded-xl
+                       hover:bg-white/4 transition group -mx-1"
+          >
+            <div>
+              <p className="text-sm font-medium text-slate-200 group-hover:text-white transition">{t(labelKey)}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{t(descKey)}</p>
+            </div>
+            <ChevronRight size={14} className="text-slate-600 group-hover:text-cyan-400 transition flex-shrink-0" />
+          </Link>
+        ))}
       </Section>
     </div>
   )

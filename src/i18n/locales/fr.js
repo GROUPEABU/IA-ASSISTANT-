@@ -547,6 +547,10 @@ export default {
     cgu_art10_p2: "Pour toute question juridique relative à la Plateforme, contactez : legal@autobuyunion.eu",
     cgu_contact_label: "Contact juridique :",
     legal_cgu: "CGU",
+    settings_legal_section: 'Mentions légales',
+    settings_legal_mentions_desc: "Éditeur, hébergement, propriété intellectuelle",
+    settings_legal_privacy_desc: "RGPD, données traitées, vos droits",
+    settings_legal_cgu_desc: "Conditions d'accès et d'utilisation de la plateforme",
     // TCO inline
     tco_editable: 'modifiable',
     tco_maint_help: 'Entretien + réparations estimés · ajustez selon votre expérience',
