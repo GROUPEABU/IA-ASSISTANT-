@@ -51,9 +51,13 @@ export default function MentionsLegales() {
           <p className="text-sm text-slate-400 leading-relaxed">{t('legal_law_text')}</p>
         </Section>
 
-        <div className="pt-4 flex gap-4 text-xs text-slate-600">
+        <div className="pt-4 flex flex-wrap gap-4 text-xs text-slate-600">
           <Link to="/politique-confidentialite" className="hover:text-cyan-400 transition">
             {t('legal_privacy')}
+          </Link>
+          <span>·</span>
+          <Link to="/conditions-utilisation" className="hover:text-cyan-400 transition">
+            {t('legal_cgu')}
           </Link>
           <span>·</span>
           <span>© {new Date().getFullYear()} Autobuyunion SAS</span>

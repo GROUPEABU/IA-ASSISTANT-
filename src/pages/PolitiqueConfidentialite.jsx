@@ -114,9 +114,13 @@ export default function PolitiqueConfidentialite() {
           <p className="text-sm text-slate-400 leading-relaxed">{t('privacy_security_text')}</p>
         </Section>
 
-        <div className="pt-4 flex gap-4 text-xs text-slate-600">
+        <div className="pt-4 flex flex-wrap gap-4 text-xs text-slate-600">
           <Link to="/mentions-legales" className="hover:text-cyan-400 transition">
             {t('legal_mentions')}
+          </Link>
+          <span>·</span>
+          <Link to="/conditions-utilisation" className="hover:text-cyan-400 transition">
+            {t('legal_cgu')}
           </Link>
           <span>·</span>
           <span>© {new Date().getFullYear()} Autobuyunion SAS — GDPR</span>

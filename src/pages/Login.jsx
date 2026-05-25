@@ -235,6 +235,10 @@ export default function Login() {
           <Link to="/politique-confidentialite" className="text-[10px] text-slate-600 hover:text-slate-400 transition">
             {t('legal_privacy')}
           </Link>
+          <span className="text-slate-700">·</span>
+          <Link to="/conditions-utilisation" className="text-[10px] text-slate-600 hover:text-slate-400 transition">
+            {t('legal_cgu')}
+          </Link>
         </div>
       </div>
     </div>

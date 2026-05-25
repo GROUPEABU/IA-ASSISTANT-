@@ -19,6 +19,7 @@ import ResetPassword from '@/pages/ResetPassword'
 // Legal pages (public)
 import MentionsLegales from '@/pages/MentionsLegales'
 import PolitiqueConfidentialite from '@/pages/PolitiqueConfidentialite'
+import ConditionsUtilisation from '@/pages/ConditionsUtilisation'
 
 // Protected pages
 import Hub from '@/pages/Hub'
@@ -50,6 +51,7 @@ function AppRoutes() {
         {/* Public legal routes */}
         <Route path="/mentions-legales"            element={<MentionsLegales />} />
         <Route path="/politique-confidentialite"   element={<PolitiqueConfidentialite />} />
+        <Route path="/conditions-utilisation"      element={<ConditionsUtilisation />} />
 
         {/* Protected app routes */}
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
