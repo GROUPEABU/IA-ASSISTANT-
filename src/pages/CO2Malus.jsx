@@ -207,9 +207,10 @@ function ReliabilityLegend() {
 }
 
 function ModeTabs({ value, onChange }) {
+  const { t } = useSettings()
   const tabs = [
-    { k: 'country', l: '🔍 Analyse par pays' },
-    { k: 'compare', l: '⚖️ Comparateur' },
+    { k: 'country', lKey: 'co2_tab_country' },
+    { k: 'compare', lKey: 'co2_tab_compare' },
   ]
   return (
     <div role="tablist" className="grid grid-cols-2 gap-0 bg-navy-900/60 rounded-xl p-1 mb-2 flex-shrink-0">
@@ -227,7 +228,7 @@ function ModeTabs({ value, onChange }) {
               color:      isActive ? '#50E5E5' : '#64748b',
               fontWeight: isActive ? 600 : 400,
             }}
-          >{tab.l}</button>
+          >{t(tab.lKey)}</button>
         )
       })}
     </div>

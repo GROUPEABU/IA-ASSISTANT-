@@ -93,15 +93,15 @@ export default function MarketAnalysis({ product }) {
 
     try {
       // Étape 1 : collecte web (Jina AI — gratuit, sans clé)
-      setLoadingStep("Lecture L'Argus · La Centrale · Caradisiac · AutoScout24…")
+      setLoadingStep(t('market_step_reading'))
       const webData = await fetchMarketData(product.fullName)
 
       if (webData.snippets?.length) {
         setSnippets(webData.snippets)
         setFetchedAt(webData.fetchedAt)
-        setLoadingStep(`${webData.snippets.length} sources lues · Analyse IA en cours…`)
+        setLoadingStep(t('market_step_analyzing').replace('{n}', webData.snippets.length))
       } else {
-        setLoadingStep('Analyse IA en cours…')
+        setLoadingStep(t('market_step_ai'))
       }
 
       // Étape 2 : analyse IA
@@ -168,7 +168,7 @@ export default function MarketAnalysis({ product }) {
               <h3 className="text-sm font-semibold text-white">{t('market_realtime_title')}</h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              L'Argus · La Centrale · Le Bon Coin
+              {t('market_sources_label')}
             </p>
             {snippets.length > 0 && <SourceBadges snippets={snippets} />}
             {fetchedAt && (

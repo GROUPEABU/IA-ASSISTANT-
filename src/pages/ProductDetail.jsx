@@ -78,7 +78,7 @@ export default function ProductDetail() {
             <Badge variant="cyan">{product.segment}</Badge>
             {malus > 0 && (
               <Badge variant={malusColor === 'danger' ? 'danger' : 'warning'}>
-                Malus +{formatNumber(malus)} €
+                {t('malus_badge_label')} +{formatNumber(malus)} €
               </Badge>
             )}
           </div>

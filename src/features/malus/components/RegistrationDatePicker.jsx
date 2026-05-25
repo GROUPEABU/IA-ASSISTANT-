@@ -80,7 +80,7 @@ export default function RegistrationDatePicker({ value, onChange }) {
           <select
             value={day}
             onChange={setDay}
-            aria-label="Jour d'immatriculation"
+            aria-label={t('date_day_aria')}
             className="w-full px-1 py-2.5 rounded-xl border outline-none text-sm font-semibold text-center"
             style={{ ...SELECT_STYLE, textAlignLast: 'center' }}
           >
@@ -97,7 +97,7 @@ export default function RegistrationDatePicker({ value, onChange }) {
           <select
             value={month}
             onChange={setMonth}
-            aria-label="Mois d'immatriculation"
+            aria-label={t('date_month_aria')}
             className="w-full px-1 py-2.5 rounded-xl border outline-none text-sm font-semibold text-center"
             style={{ ...SELECT_STYLE, textAlignLast: 'center' }}
           >
@@ -111,7 +111,7 @@ export default function RegistrationDatePicker({ value, onChange }) {
           <select
             value={year}
             onChange={setYear}
-            aria-label="Année d'immatriculation"
+            aria-label={t('date_year_aria')}
             className="w-full px-1 py-2.5 rounded-xl border outline-none text-sm font-semibold text-center"
             style={{ ...SELECT_STYLE, textAlignLast: 'center' }}
           >

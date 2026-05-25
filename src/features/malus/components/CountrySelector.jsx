@@ -54,7 +54,7 @@ function ReliabilityFilter({ value, onChange }) {
   return (
     <div
       role="radiogroup"
-      aria-label="Filtre par fiabilité"
+      aria-label={t('co2_reliability_filter')}
       className="grid grid-cols-4 gap-0 bg-navy-900/60 rounded-xl p-1 mb-2 flex-shrink-0"
     >
       {options.map(f => {

@@ -7,14 +7,14 @@ import { useSettings } from '@/contexts/SettingsContext'
 import { readResetToken, consumeResetToken } from '@/utils/passwordReset'
 
 // ── Password validation ───────────────────────────────────────────────────────
-const PASSWORD_RULES = [
-  { key: 'minLength',    test: p => p.length >= 8,   label: '8 caractères minimum' },
-  { key: 'hasUppercase', test: p => /[A-Z]/.test(p), label: '1 majuscule'          },
-  { key: 'hasDigit',     test: p => /\d/.test(p),    label: '1 chiffre'            },
+const PASSWORD_RULE_TESTS = [
+  { key: 'minLength',    test: p => p.length >= 8,   labelKey: 'pwd_min_chars'  },
+  { key: 'hasUppercase', test: p => /[A-Z]/.test(p), labelKey: 'pwd_uppercase'  },
+  { key: 'hasDigit',     test: p => /\d/.test(p),    labelKey: 'pwd_digit'      },
 ]
 
-function validatePassword(password) {
-  return PASSWORD_RULES.map(rule => ({ ...rule, ok: rule.test(password) }))
+function validatePassword(password, t) {
+  return PASSWORD_RULE_TESTS.map(rule => ({ ...rule, label: t(rule.labelKey), ok: rule.test(password) }))
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -35,7 +35,7 @@ export default function ResetPassword() {
   const [error, setError]       = useState('')
   const [success, setSuccess]   = useState(false)
 
-  const rules      = validatePassword(password)
+  const rules      = validatePassword(password, t)
   const allRulesOk = rules.every(r => r.ok)
   const canSubmit  = username.trim() && code.length === 6 && allRulesOk && password === confirm
 

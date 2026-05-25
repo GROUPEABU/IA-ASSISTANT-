@@ -38,7 +38,7 @@ async function fetchPrices(filters) {
     Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== ''))
   )
   const res = await fetch(`/api/price-watch?${params}`)
-  if (!res.ok) throw new Error(`Erreur serveur: ${res.status}`)
+  if (!res.ok) throw new Error(`Server error: ${res.status}`)
   return res.json()
 }
 
@@ -49,7 +49,7 @@ async function analyzePrices(filters, sourcesData, fuels, gearboxes, lang = 'fr'
     filters.yearMin && filters.yearMax ? `${filters.yearMin}–${filters.yearMax}`
       : filters.yearMin ? `à partir de ${filters.yearMin}`
       : filters.yearMax ? `jusqu'en ${filters.yearMax}` : '',
-    filters.mileageMax ? `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km` : '',
+    filters.mileageMax ? `< ${Number(filters.mileageMax).toLocaleString()} km` : '',
     filters.fuel ? fuels.find(f => f.code === filters.fuel)?.label : '',
     filters.gearbox ? gearboxes.find(g => g.code === filters.gearbox)?.label : '',
   ].filter(Boolean).join(' · ')
@@ -170,7 +170,7 @@ export default function PriceWatch() {
     const filters = { make: resolvedMake, model, type, yearMin, yearMax, mileageMax, fuel, gearbox, ...overrides }
     const label = [filters.make, filters.model,
       filters.yearMin && `${filters.yearMin}${filters.yearMax ? '–'+filters.yearMax : '+'}`,
-      filters.mileageMax && `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km`,
+      filters.mileageMax && `< ${Number(filters.mileageMax).toLocaleString()} km`,
     ].filter(Boolean).join(' · ')
 
     setSearchLabel(label)
@@ -179,12 +179,12 @@ export default function PriceWatch() {
     setResult(null)
 
     try {
-      setStep('Collecte des annonces La Centrale · Le Bon Coin · L\'Argus…')
+      setStep(t('price_step_collecting'))
       const raw = await fetchPrices(filters)
       setFetchedAt(raw.fetchedAt)
       setCentraleUrl(raw.centraleUrl || '')
 
-      setStep('Calcul des prix moyens du marché…')
+      setStep(t('price_step_calculating'))
       const analysis = await analyzePrices(filters, raw.sources || [], FUELS, GEARBOXES, lang)
       setResult({ ...analysis, sources: raw.sources })
     } catch (err) {
@@ -210,7 +210,7 @@ export default function PriceWatch() {
         <div className="flex items-center gap-2 mb-4">
           <Bell size={15} className="text-cyan-400" />
           <h2 className="text-sm font-semibold text-white">{t('tool_price_title')}</h2>
-          <span className="text-xs text-slate-500 hidden sm:inline">La Centrale · LBC · L'Argus</span>
+          <span className="text-xs text-slate-500 hidden sm:inline">{t('price_sources_label')}</span>
         </div>
 
         {/* VO / VN toggle */}
@@ -314,7 +314,7 @@ export default function PriceWatch() {
               className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
                          px-3 py-2.5 rounded-xl hover:text-cyan-400 hover:border-cyan-400/30 transition"
             >
-              <ExternalLink size={12} /> Voir sur La Centrale
+              <ExternalLink size={12} /> {t('price_see_listing')}
             </a>
           )}
         </div>
@@ -350,7 +350,7 @@ export default function PriceWatch() {
                 {fetchedAt && (
                   <div className="flex items-center gap-1">
                     <Clock size={10} className="text-slate-600" />
-                    <span className="text-[10px] text-slate-600">{new Date(fetchedAt).toLocaleString('fr-FR')}</span>
+                    <span className="text-[10px] text-slate-600">{new Date(fetchedAt).toLocaleString()}</span>
                   </div>
                 )}
               </div>
