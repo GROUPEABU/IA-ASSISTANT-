@@ -144,7 +144,7 @@ function SuccessView({ resetCode, username, t }) {
         <div className="text-3xl font-bold tracking-[0.4em] text-amber-400 font-mono">
           {resetCode}
         </div>
-        <p className="text-[10px] text-slate-500 mt-2">Valable 15 minutes</p>
+        <p className="text-[10px] text-slate-500 mt-2">{t('forgot_code_validity')}</p>
       </div>
 
       <Link

@@ -22,7 +22,7 @@ export default function Chat() {
       <div className="flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse-slow flex-shrink-0" />
-          <span className="text-xs text-slate-500">Assistant IA · {t('ai_operational')}</span>
+          <span className="text-xs text-slate-500">{t('chat_status_assistant')} · {t('ai_operational')}</span>
         </div>
         {messages.length > 0 && (
           <button
@@ -77,7 +77,7 @@ export default function Chat() {
 
         {/* Messages */}
         {!isEmpty && (
-          <ChatWindow messages={messages} isLoading={isLoading} onSend={send} />
+          <ChatWindow messages={messages} isLoading={isLoading} />
         )}
 
         {error && (

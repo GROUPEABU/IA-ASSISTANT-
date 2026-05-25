@@ -221,128 +221,234 @@
   min-width: 0;
 }
 
-/* ── Light mode — premium SaaS redesign ────────────────────────────────────── */
+/* ── Light mode — premium SaaS theme (Linear / Vercel / Apple inspired) ────
+   Design tokens defined as CSS custom properties so theming is centralised.
+   Tinted neutrals (cool gray with subtle warmth) avoid the "stark white"
+   look. Layered surfaces (canvas → card → elevated) create visual depth.
+*/
+
 html.light {
   color-scheme: light;
+
+  /* Canvas layers — tinted, never pure white */
+  --surface-canvas:    #f6f8fb;  /* page background */
+  --surface-card:      #ffffff;  /* primary cards */
+  --surface-elevated:  #fcfdfe;  /* sub-cards inside cards */
+  --surface-muted:     #f1f4f8;  /* inputs / wells */
+  --surface-overlay:   rgba(255, 255, 255, 0.85);
+
+  /* Borders — low-contrast cool grays */
+  --border-default:    rgba(15, 23, 42, 0.07);
+  --border-strong:     rgba(15, 23, 42, 0.12);
+  --border-subtle:     rgba(15, 23, 42, 0.04);
+
+  /* Text — graduated cool grays for hierarchy */
+  --text-strong:       #0a1628;
+  --text-default:      #1e2a3d;
+  --text-muted:        #4a5568;
+  --text-subtle:       #6b7280;
+  --text-faint:        #9aa3b2;
+
+  /* Accent — cyan slightly desaturated for light backgrounds */
+  --accent-primary:    #0891b2;
+  --accent-hover:      #0e7490;
+  --accent-soft:       rgba(8, 145, 178, 0.08);
+  --accent-soft-hover: rgba(8, 145, 178, 0.12);
+  --accent-ring:       rgba(8, 145, 178, 0.18);
+
+  /* Shadows — refined, multi-layer */
+  --shadow-xs: 0 1px 1px rgba(15, 23, 42, 0.03);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 0 0 1px rgba(15, 23, 42, 0.03);
+  --shadow-md: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 4px 12px rgba(15, 23, 42, 0.06), 0 12px 32px rgba(15, 23, 42, 0.08);
 }
 
 html.light body {
-  background-color: #f0f4f9;
-  color: #0f172a;
+  background-color: var(--surface-canvas);
+  color: var(--text-default);
+  /* Subtle ambient gradient for extra depth */
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(8, 145, 178, 0.04), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(139, 92, 246, 0.025), transparent 50%);
+  background-attachment: fixed;
 }
 
-/* Cards with depth and subtle shadows */
+/* ── Cards — primary surface with refined shadow + border ────────────────── */
 html.light .glass-card {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border-color: rgba(148, 163, 184, 0.2) !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04) !important;
+  background:    var(--surface-card) !important;
+  border-color:  var(--border-default) !important;
+  box-shadow:    var(--shadow-sm) !important;
+  backdrop-filter: none !important;
 }
+
 html.light .glass-card-glow:hover {
-  border-color: rgba(6, 182, 212, 0.35) !important;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 0 0 1px rgba(6,182,212,0.15) !important;
+  border-color: var(--accent-ring) !important;
+  box-shadow:   var(--shadow-md), 0 0 0 1px var(--accent-soft) !important;
+  transform:    translateY(-1px);
 }
 
-/* Nav and layout surfaces */
+/* ── Header — frosted with subtle shadow ─────────────────────────────────── */
 html.light header {
-  background: rgba(255,255,255,0.98) !important;
-  border-bottom-color: rgba(148, 163, 184, 0.15) !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
+  background:           var(--surface-overlay) !important;
+  border-bottom-color:  var(--border-default) !important;
+  box-shadow:           var(--shadow-xs) !important;
+  backdrop-filter:      saturate(180%) blur(20px) !important;
 }
+
+/* ── Bottom nav — clean elevated bar ─────────────────────────────────────── */
 html.light nav.fixed.bottom-0 {
-  background: rgba(255,255,255,0.98) !important;
-  border-top-color: rgba(148,163,184,0.18) !important;
-  box-shadow: 0 -1px 8px rgba(0,0,0,0.06) !important;
+  background:           var(--surface-overlay) !important;
+  border-top-color:     var(--border-default) !important;
+  box-shadow:           0 -2px 16px rgba(15, 23, 42, 0.04) !important;
+  backdrop-filter:      saturate(180%) blur(20px) !important;
 }
+
+/* ── Sidebar — clean panel ───────────────────────────────────────────────── */
 html.light aside {
-  background: rgba(255,255,255,0.97) !important;
-  border-right-color: rgba(148,163,184,0.15) !important;
+  background:           var(--surface-card) !important;
+  border-right-color:   var(--border-default) !important;
+  box-shadow:           1px 0 2px rgba(15, 23, 42, 0.02) !important;
 }
 
-/* Main background with subtle pattern */
+/* ── Main content area ───────────────────────────────────────────────────── */
 html.light main {
-  background: #f0f4f9;
+  background: transparent !important;
 }
 
-/* Text hierarchy */
-html.light .text-white     { color: #0f172a !important; }
-html.light .text-slate-100 { color: #1e293b !important; }
-html.light .text-slate-200 { color: #334155 !important; }
-html.light .text-slate-300 { color: #475569 !important; }
-html.light .text-slate-400 { color: #64748b !important; }
-html.light .text-slate-500 { color: #94a3b8 !important; }
-html.light .text-slate-600 { color: #94a3b8 !important; }
+/* ── Text hierarchy — using design tokens ────────────────────────────────── */
+html.light .text-white      { color: var(--text-strong) !important; }
+html.light .text-slate-100  { color: var(--text-default) !important; }
+html.light .text-slate-200  { color: var(--text-default) !important; }
+html.light .text-slate-300  { color: var(--text-muted) !important; }
+html.light .text-slate-400  { color: var(--text-muted) !important; }
+html.light .text-slate-500  { color: var(--text-subtle) !important; }
+html.light .text-slate-600  { color: var(--text-faint) !important; }
+html.light .text-slate-700  { color: var(--text-default) !important; }
 
-/* Inputs with clean light styling */
-html.light input:not([type="range"]),
+/* ── Inputs — clean light fields with refined focus rings ────────────────── */
+html.light input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
 html.light select,
 html.light textarea {
-  background: #ffffff !important;
-  border-color: rgba(148, 163, 184, 0.35) !important;
-  color: #0f172a !important;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.04) !important;
+  background:    var(--surface-muted) !important;
+  border-color:  var(--border-default) !important;
+  color:         var(--text-strong) !important;
+  box-shadow:    inset 0 1px 2px rgba(15, 23, 42, 0.03) !important;
 }
-html.light input:focus:not([type="range"]),
+html.light input:hover:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+html.light select:hover,
+html.light textarea:hover {
+  border-color: var(--border-strong) !important;
+}
+html.light input:focus:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
 html.light select:focus,
 html.light textarea:focus {
-  border-color: rgba(6, 182, 212, 0.6) !important;
-  box-shadow: 0 0 0 3px rgba(6,182,212,0.12) !important;
+  background:    var(--surface-card) !important;
+  border-color:  var(--accent-primary) !important;
+  box-shadow:    0 0 0 3px var(--accent-ring) !important;
+  outline:       none !important;
 }
-
 html.light input::placeholder,
 html.light textarea::placeholder {
-  color: #cbd5e1 !important;
+  color: var(--text-faint) !important;
 }
 
-/* Nav items */
-html.light .nav-item          { color: #64748b !important; }
-html.light .nav-item:hover    { background: rgba(6,182,212,0.06) !important; color: #0f172a !important; }
-html.light .nav-item-active   { color: #0891b2 !important; background: rgba(6,182,212,0.1) !important; }
+/* ── Nav items — refined hover and active states ─────────────────────────── */
+html.light .nav-item        { color: var(--text-subtle) !important; }
+html.light .nav-item:hover  { background: var(--accent-soft) !important; color: var(--text-strong) !important; }
+html.light .nav-item-active { color: var(--accent-primary) !important; background: var(--accent-soft) !important; }
 
-/* Borders */
+/* ── Borders — using tokens ──────────────────────────────────────────────── */
 html.light [class*="border-navy"],
 html.light [class*="border-white"],
 html.light .border-navy-700\/50,
+html.light .border-navy-700\/40,
+html.light .border-navy-600\/50,
 html.light .border-white\/7,
-html.light .border-white\/5 {
-  border-color: rgba(148, 163, 184, 0.2) !important;
+html.light .border-white\/5,
+html.light .border-white\/10 {
+  border-color: var(--border-default) !important;
 }
 
-html.light .divide-white\/5 > * + * {
-  border-color: rgba(148, 163, 184, 0.15) !important;
+html.light .divide-white\/5 > * + *,
+html.light .divide-white\/7 > * + * {
+  border-color: var(--border-subtle) !important;
 }
 
-/* Backgrounds */
+/* ── Backgrounds — layered navy → light surfaces ─────────────────────────── */
 html.light [class*="bg-navy-900"],
 html.light [class*="bg-navy-800"],
 html.light .bg-navy-950 {
-  background-color: rgba(248, 250, 252, 0.9) !important;
+  background-color: var(--surface-elevated) !important;
 }
 html.light .bg-navy-900\/60,
 html.light .bg-navy-900\/80,
 html.light .bg-navy-900\/40,
 html.light .bg-navy-900\/20,
+html.light .bg-navy-900\/30,
+html.light .bg-navy-900\/50,
 html.light .bg-navy-800\/60,
 html.light .bg-navy-800\/40,
-html.light .bg-navy-800\/20 {
-  background-color: rgba(255, 255, 255, 0.8) !important;
+html.light .bg-navy-800\/20,
+html.light .bg-navy-800\/30 {
+  background-color: var(--surface-muted) !important;
 }
 
-/* Scrollbars */
-html.light ::-webkit-scrollbar-track { background: #e8eef5; }
-html.light ::-webkit-scrollbar-thumb { background: #cbd5e1; }
-html.light ::-webkit-scrollbar-thumb:hover { background: #0891b2; }
+/* Tooltip / popovers stay opaque white in light */
+html.light .bg-navy-800 {
+  background-color: var(--surface-card) !important;
+}
 
-/* Dot grid lighter */
+/* ── White-tinted utility backgrounds (already light, just adjust) ───────── */
+html.light .bg-white\/3,
+html.light .bg-white\/5 {
+  background-color: var(--surface-muted) !important;
+}
+
+/* ── Scrollbars — refined cool gray ─────────────────────────────────────── */
+html.light ::-webkit-scrollbar-track { background: var(--surface-canvas); }
+html.light ::-webkit-scrollbar-thumb { background: #d1d8e0; border-radius: 4px; }
+html.light ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
+
+/* ── Dot grid — light tint ──────────────────────────────────────────────── */
 html.light .dot-grid {
-  background-image: radial-gradient(rgba(6,182,212,0.15) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(8, 145, 178, 0.12) 1px, transparent 1px);
 }
 
-/* Cyan accent stays vibrant in light mode */
-html.light .text-cyan-400 { color: #0891b2 !important; }
-html.light .text-cyan-300 { color: #06b6d4 !important; }
-html.light .border-cyan-400\/30 { border-color: rgba(8,145,178,0.3) !important; }
+/* ── Cyan accent — darker for AA contrast on light surfaces ─────────────── */
+html.light .text-cyan-400 { color: var(--accent-primary) !important; }
+html.light .text-cyan-300 { color: var(--accent-hover) !important; }
+html.light .border-cyan-400\/30,
+html.light .border-cyan-400\/20,
+html.light .border-cyan-400\/15 { border-color: var(--accent-ring) !important; }
+html.light .bg-cyan-400\/10,
+html.light .bg-cyan-400\/8,
+html.light .bg-cyan-400\/15,
+html.light .bg-cyan-400\/5,
+html.light .bg-cyan-400\/6,
+html.light .bg-cyan-400\/7 { background-color: var(--accent-soft) !important; }
 
-/* Smooth transitions */
+/* Cyan button (primary CTA) — keep vibrant, accessible */
+html.light .bg-cyan-400 { background-color: var(--accent-primary) !important; color: #ffffff !important; }
+html.light .bg-cyan-500 { background-color: var(--accent-hover) !important; color: #ffffff !important; }
+html.light .from-cyan-400 { --tw-gradient-from: var(--accent-primary) !important; }
+html.light .to-cyan-500   { --tw-gradient-to:   var(--accent-hover) !important; }
+html.light .hover\:bg-cyan-300:hover { background-color: var(--accent-hover) !important; }
+html.light .text-navy-900 { color: #ffffff !important; }
+
+/* ── Status colour palettes — keep meaning, tune for light ───────────────── */
+html.light .bg-red-500\/10, html.light .bg-red-400\/10  { background-color: rgba(220, 38, 38, 0.07) !important; }
+html.light .border-red-500\/20, html.light .border-red-400\/20 { border-color: rgba(220, 38, 38, 0.25) !important; }
+html.light .text-red-400 { color: #dc2626 !important; }
+
+html.light .bg-emerald-400\/10, html.light .bg-emerald-400\/8 { background-color: rgba(5, 150, 105, 0.07) !important; }
+html.light .border-emerald-400\/20 { border-color: rgba(5, 150, 105, 0.25) !important; }
+html.light .text-emerald-400 { color: #059669 !important; }
+
+html.light .bg-amber-400\/10, html.light .bg-amber-400\/6 { background-color: rgba(217, 119, 6, 0.08) !important; }
+html.light .border-amber-400\/20, html.light .border-amber-400\/25 { border-color: rgba(217, 119, 6, 0.25) !important; }
+html.light .text-amber-400 { color: #d97706 !important; }
+
+/* ── Smooth transitions when toggling theme ──────────────────────────────── */
 html, body, .glass-card, header, nav, aside, main {
   transition: background-color 0.25s ease, border-color 0.25s ease, color 0.2s ease, box-shadow 0.25s ease;
 }

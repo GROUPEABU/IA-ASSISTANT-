@@ -75,7 +75,7 @@ export default function ResetPassword() {
           <CheckCircle size={40} className="text-emerald-400 mx-auto mb-4" />
           <h2 className="text-lg font-semibold text-white mb-2">{t('reset_success_title')}</h2>
           <p className="text-sm text-slate-400">{t('reset_success_msg')}</p>
-          <p className="text-xs text-slate-600 mt-3">Redirection automatique…</p>
+          <p className="text-xs text-slate-600 mt-3">{t('auto_redirect')}</p>
         </div>
       </div>
     )

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, X, Sparkles, Loader2, AlertCircle } from 'lucide-react'
 import { generateProductFromWeb } from '@/services/generateProduct'
+import { useSettings } from '@/contexts/SettingsContext'
 
 const SUGGESTIONS = [
   'Toyota Yaris Cross 2024',
@@ -14,6 +15,7 @@ const SUGGESTIONS = [
 ]
 
 export default function VehicleSearchModal({ onGenerated, onClose }) {
+  const { t } = useSettings()
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -52,7 +54,7 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
           <div className="flex items-center gap-2">
             <Sparkles size={16} className="text-cyan-400" />
             <div>
-              <p className="text-sm font-semibold text-white">Générer une fiche produit</p>
+              <p className="text-sm font-semibold text-white">{t('modal_generate_sheet')}</p>
               <p className="text-xs text-slate-500">L'IA recherche les vraies données du véhicule</p>
             </div>
           </div>
@@ -71,7 +73,7 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && generate()}
-                placeholder="Ex: Toyota Yaris Cross 2024..."
+                placeholder={t('modal_search_ph')}
                 autoFocus
                 className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl
                            pl-9 pr-3 py-3 text-sm text-white placeholder-slate-600

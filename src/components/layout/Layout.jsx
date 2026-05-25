@@ -1,10 +1,12 @@
 import { useState, useCallback } from 'react'
 import { Outlet } from 'react-router-dom'
+import { useSettings } from '@/contexts/SettingsContext'
 import Sidebar from './Sidebar'
 import Header from './Header'
 import BottomNav from './BottomNav'
 
 export default function Layout() {
+  const { t } = useSettings()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const close = useCallback(() => setSidebarOpen(false), [])
   const toggle = useCallback(() => setSidebarOpen((v) => !v), [])
@@ -18,7 +20,7 @@ export default function Layout() {
                    focus:px-3 focus:py-2 focus:bg-cyan-400 focus:text-navy-900
                    focus:font-semibold focus:text-sm focus:rounded-lg focus:shadow-lg"
       >
-        Aller au contenu principal
+        {t('skip_to_content')}
       </a>
 
       {/* Subtle background gradient */}

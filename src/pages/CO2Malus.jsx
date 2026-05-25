@@ -11,15 +11,19 @@ import CountrySelector    from '@/features/malus/components/CountrySelector'
 import MalusResultPanel   from '@/features/malus/components/MalusResultPanel'
 import CompareView        from '@/features/malus/components/CompareView'
 
+// Fuel options are i18n-aware — labelKey/noteKey are resolved via t() at render
 const FUEL_OPTIONS = [
-  { k: 'thermique', l: 'Thermique', note: '' },
-  { k: 'hybride',   l: 'Hybride',   note: '−100 kg' },
-  { k: 'phev',      l: 'PHEV >50 km', note: '≤200 kg / 15%' },
-  { k: 'ev',        l: 'Électrique', note: 'CO₂ + Poids' },
+  { k: 'thermique', labelKey: 'malus_fuel_thermal' },
+  { k: 'hybride',   labelKey: 'malus_fuel_hybrid', noteKey: 'malus_fuel_hybrid_note' },
+  { k: 'phev',      labelKey: 'malus_fuel_phev',   noteKey: 'malus_fuel_phev_note' },
+  { k: 'ev',        labelKey: 'malus_fuel_ev',     noteKey: 'malus_fuel_ev_note' },
 ]
 
-const FUEL_LABEL = {
-  thermique: 'Thermique', hybride: 'Hybride', phev: 'PHEV', ev: 'Électrique',
+const FUEL_LABEL_KEY = {
+  thermique: 'malus_fuel_thermal',
+  hybride:   'malus_fuel_hybrid',
+  phev:      'malus_fuel_phev',
+  ev:        'malus_fuel_ev',
 }
 
 /**
@@ -38,7 +42,7 @@ function scrollIntoView(element) {
 }
 
 export default function CO2Malus() {
-  const { formatCurrency } = useSettings()
+  const { t, formatCurrency } = useSettings()
   const malus = useMalusCalculation()
 
   const [search, setSearch]                   = useState('')
@@ -71,11 +75,11 @@ export default function CO2Malus() {
 
   return (
     <div className="flex flex-col gap-3 animate-fade-in">
-      <Header />
+      <Header t={t} />
       <ReliabilityLegend />
 
       <SliderSection
-        label="Émissions CO₂"
+        label={t('malus_emissions_label')}
         value={malus.emission}
         setValue={malus.setEmission}
         min={0} max={400}
@@ -87,10 +91,19 @@ export default function CO2Malus() {
 
       <div className="glass-card p-3 mb-2">
         <div className="flex justify-between items-center mb-2.5">
-          <span className="text-[11px] text-slate-500 font-medium tracking-widest uppercase">Motorisation</span>
-          <span className="text-xs font-semibold text-cyan-400">{FUEL_LABEL[malus.fuelType]}</span>
+          <span className="text-[11px] text-slate-500 font-medium tracking-widest uppercase">{t('malus_motorisation')}</span>
+          <span className="text-xs font-semibold text-cyan-400">{t(FUEL_LABEL_KEY[malus.fuelType])}</span>
         </div>
-        <SegButton cols={2} value={malus.fuelType} setValue={malus.setFuelType} options={FUEL_OPTIONS} />
+        <SegButton
+          cols={2}
+          value={malus.fuelType}
+          setValue={malus.setFuelType}
+          options={FUEL_OPTIONS.map(o => ({
+            k: o.k,
+            l: t(o.labelKey),
+            note: o.noteKey ? t(o.noteKey) : '',
+          }))}
+        />
       </div>
 
       <RegistrationDatePicker value={malus.dateImmat} onChange={malus.setDateImmat} />
@@ -149,26 +162,27 @@ export default function CO2Malus() {
         />
       )}
 
-      <Disclaimer />
+      <Disclaimer t={t} />
     </div>
   )
 }
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 
-function Header() {
+function Header({ t }) {
   return (
     <div className="flex-shrink-0">
-      <h2 className="text-sm font-semibold text-white">CO₂ & Malus Mondial</h2>
-      <p className="text-xs text-slate-500">Calculateur sur 40 pays · Autobuyunion</p>
+      <h2 className="text-sm font-semibold text-white">{t('malus_page_title')}</h2>
+      <p className="text-xs text-slate-500">{t('malus_page_subtitle')}</p>
       <p className="text-[11px] text-slate-500 mt-0.5">
-        Estimation indicative · Consultez les autorités fiscales avant tout achat
+        {t('malus_page_intro_disclaimer')}
       </p>
     </div>
   )
 }
 
 function ReliabilityLegend() {
+  const { t } = useSettings()
   return (
     <div className="glass-card px-3 py-2.5 flex-shrink-0">
       <div className="flex flex-wrap gap-x-4 gap-y-1.5 justify-center">
@@ -178,8 +192,8 @@ function ReliabilityLegend() {
               className="w-1.5 h-1.5 rounded-full flex-shrink-0"
               style={{ background: v.color, boxShadow: `0 0 5px ${v.color}88` }}
             />
-            <span className="font-semibold" style={{ color: v.color }}>{v.label}</span>
-            <span className="text-slate-600">{v.desc}</span>
+            <span className="font-semibold" style={{ color: v.color }}>{t(v.labelKey)}</span>
+            <span className="text-slate-600">{t(v.descKey)}</span>
           </div>
         ))}
       </div>
@@ -215,12 +229,10 @@ function ModeTabs({ value, onChange }) {
   )
 }
 
-function Disclaimer() {
+function Disclaimer({ t }) {
   return (
     <div className="glass-card p-4 mt-2 text-center text-[11px] text-slate-500 leading-relaxed pb-2 px-4">
-      Les montants affichés sont fournis à titre indicatif et ne constituent pas un conseil fiscal.
-      Les barèmes sont susceptibles d'évoluer — vérifiez auprès de l'autorité compétente de chaque
-      pays avant toute acquisition.
+      {t('co2_disclaimer')}
     </div>
   )
 }

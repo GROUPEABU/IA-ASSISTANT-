@@ -66,7 +66,7 @@ function ProductCard({ product, onDelete, navigate, t, formatCurrency }) {
         </div>
         <div className="bg-navy-900/40 rounded-lg p-2 text-center">
           <p className="text-sm font-bold text-white leading-none">{product.specs.coffre}</p>
-          <p className="text-[10px] text-slate-500 mt-1">L coffre</p>
+          <p className="text-[10px] text-slate-500 mt-1">{t('products_trunk_unit')}</p>
         </div>
       </div>
 
@@ -126,7 +126,7 @@ export default function Products() {
       {/* Fiches statiques */}
       {PRODUCTS.length > 0 && (
         <div>
-          <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Fiches intégrées</p>
+          <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">{t('products_builtin_sheets')}</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {PRODUCTS.map((product) => (
               <ProductCard key={product.id} product={product} navigate={navigate} t={t} formatCurrency={formatCurrency} />
@@ -139,9 +139,9 @@ export default function Products() {
       {generated.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Fiches générées par IA</p>
+            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{t('products_ai_generated')}</p>
             <Clock size={10} className="text-slate-600" />
-            <span className="text-[10px] text-slate-600">Sauvegardées localement</span>
+            <span className="text-[10px] text-slate-600">{t('products_saved_locally')}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {generated.map((product) => (

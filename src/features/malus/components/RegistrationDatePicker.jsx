@@ -1,5 +1,33 @@
+import { useMemo } from 'react'
 import { formatDateFR } from '@/utils/malusWorld'
-import { DATE_YEARS, DATE_MONTHS, DATE_PRESETS, SELECT_STYLE, getDaysInMonth } from '../constants'
+import { useSettings } from '@/contexts/SettingsContext'
+import { DATE_YEARS, DATE_PRESETS, SELECT_STYLE, getDaysInMonth } from '../constants'
+
+const LOCALE_MAP = { fr: 'fr-FR', en: 'en-GB', de: 'de-DE', it: 'it-IT', es: 'es-ES' }
+
+/**
+ * Build a list of [value, label] pairs for the 12 months of the year, using
+ * the user's active locale via Intl.DateTimeFormat. value is "01".."12" so
+ * the value contract is unchanged from the previous module-level constant.
+ */
+function getLocalizedMonths(lang) {
+  const fmt = new Intl.DateTimeFormat(LOCALE_MAP[lang] || 'fr-FR', { month: 'short' })
+  return Array.from({ length: 12 }, (_, i) => {
+    const v = String(i + 1).padStart(2, '0')
+    const label = fmt.format(new Date(2025, i, 15)).replace(/\.$/, '')
+    return { v, l: label.charAt(0).toUpperCase() + label.slice(1) }
+  })
+}
+
+/**
+ * Formats a date preset label like "Mars 25" / "Mar 25" depending on locale.
+ */
+function formatPresetLabel(isoDate, lang) {
+  const [year, month] = isoDate.split('-')
+  const fmt = new Intl.DateTimeFormat(LOCALE_MAP[lang] || 'fr-FR', { month: 'short' })
+  const m = fmt.format(new Date(parseInt(year), parseInt(month) - 1, 1)).replace(/\.$/, '')
+  return `${m.charAt(0).toUpperCase() + m.slice(1)} ${year.slice(2)}`
+}
 
 /**
  * Registration-date picker for the malus calculator.
@@ -11,8 +39,15 @@ import { DATE_YEARS, DATE_MONTHS, DATE_PRESETS, SELECT_STYLE, getDaysInMonth } f
  * @param {function} props.onChange  — receives the new ISO date
  */
 export default function RegistrationDatePicker({ value, onChange }) {
+  const { t, language } = useSettings()
   const [year, month, day] = value.split('-')
   const daysInMonth = getDaysInMonth(year, month)
+
+  const localizedMonths = useMemo(() => getLocalizedMonths(language), [language])
+  const localizedPresets = useMemo(
+    () => DATE_PRESETS.map(p => ({ ...p, l: formatPresetLabel(p.d, language) })),
+    [language],
+  )
 
   const clampDay = (newYear, newMonth) => {
     const max = getDaysInMonth(newYear, newMonth)
@@ -35,7 +70,7 @@ export default function RegistrationDatePicker({ value, onChange }) {
     <div className="glass-card p-3 mb-2">
       <div className="flex justify-between items-center mb-2.5">
         <span className="text-[11px] text-slate-500 font-medium tracking-widest uppercase">
-          Date 1ère immat
+          {t('malus_date_label')}
         </span>
         <span className="text-xs font-semibold text-amber-400">{formatDateFR(value)}</span>
       </div>
@@ -59,7 +94,7 @@ export default function RegistrationDatePicker({ value, onChange }) {
           className="w-full px-2 py-2 rounded-lg border outline-none text-sm font-medium"
           style={SELECT_STYLE}
         >
-          {DATE_MONTHS.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
+          {localizedMonths.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
         </select>
         <select
           value={year}
@@ -72,7 +107,7 @@ export default function RegistrationDatePicker({ value, onChange }) {
         </select>
       </div>
       <div className="grid grid-cols-4 gap-1">
-        {DATE_PRESETS.map(p => {
+        {localizedPresets.map(p => {
           const isActive = value === p.d
           return (
             <button

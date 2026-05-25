@@ -1,4 +1,5 @@
 import { COUNTRIES, RELIABILITY_CONFIG } from '@/utils/malusWorld'
+import { useSettings } from '@/contexts/SettingsContext'
 import { sevColor, sevLabel } from '../constants'
 
 /**
@@ -48,6 +49,7 @@ export default function CompareView({
 }
 
 function CountryCheckboxGrid({ selected, onToggle }) {
+  const { t } = useSettings()
   return (
     <div className="glass-card p-4 mb-2">
       <div className="flex justify-between items-center mb-3">
@@ -72,7 +74,7 @@ function CountryCheckboxGrid({ selected, onToggle }) {
               <span className="text-xl">{c.flag}</span>
               <span className="text-[10px] text-slate-400 leading-tight">{c.name}</span>
               <span className="text-[9px] font-bold" style={{ color: cfg.color }}>
-                {cfg.label.replace('✓ ', '').replace('~ ', '').replace('ℹ ', '')}
+                {t(cfg.shortKey)}
               </span>
             </button>
           )
@@ -100,6 +102,7 @@ function CompareResults({ results, emission, weight, panelRef }) {
 }
 
 function CompareResultRow({ result }) {
+  const { t } = useSettings()
   const cfg = RELIABILITY_CONFIG[result.reliability]
   const hasPenalty = (result.specific_penalty_amount || 0) > 0
 
@@ -111,7 +114,7 @@ function CompareResultRow({ result }) {
           <div>
             <div className="text-sm font-bold text-white">{result.country.name}</div>
             <div className="text-[11px] text-slate-400 leading-snug">{result.tax_name}</div>
-            <div className="text-[11px] font-semibold" style={{ color: cfg.color }}>{cfg.label}</div>
+            <div className="text-[11px] font-semibold" style={{ color: cfg.color }}>{t(cfg.labelKey)}</div>
           </div>
         </div>
         <div

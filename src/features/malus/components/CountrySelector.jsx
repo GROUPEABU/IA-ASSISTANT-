@@ -1,4 +1,5 @@
 import { RELIABILITY_CONFIG } from '@/utils/malusWorld'
+import { useSettings } from '@/contexts/SettingsContext'
 
 /**
  * Country search + reliability filter + clickable country grid.
@@ -41,11 +42,12 @@ export default function CountrySelector({
 }
 
 function ReliabilityFilter({ value, onChange }) {
+  const { t } = useSettings()
   const options = [
-    { k: 'all',        l: 'Tous' },
-    { k: 'official',   l: '✓ Officiel' },
-    { k: 'indicative', l: '~ Indicatif' },
-    { k: 'info',       l: 'ℹ Info' },
+    { k: 'all',        l: t('co2_filter_all') },
+    { k: 'official',   l: t('malus_reliability_official_label') },
+    { k: 'indicative', l: t('malus_reliability_indicative_label') },
+    { k: 'info',       l: t('malus_reliability_info_label') },
   ]
   return (
     <div
@@ -75,6 +77,7 @@ function ReliabilityFilter({ value, onChange }) {
 }
 
 function CountryGrid({ countries, selectedCountry, onSelect }) {
+  const { t } = useSettings()
   return (
     <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1.5 mb-3">
       {countries.map(c => {
@@ -94,7 +97,7 @@ function CountryGrid({ countries, selectedCountry, onSelect }) {
             <span className="text-xl">{c.flag}</span>
             <span className="text-[10px] text-slate-400 leading-tight">{c.name}</span>
             <span className="text-[9px] font-bold tracking-wide" style={{ color: cfg.color }}>
-              {cfg.label.replace('✓ ', '').replace('~ ', '').replace('ℹ ', '')}
+              {t(cfg.shortKey)}
             </span>
           </button>
         )

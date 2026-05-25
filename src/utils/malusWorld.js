@@ -2342,21 +2342,27 @@ const COUNTRIES = [
   reliability: "official"
 }];
 const CUSTOM_EMISSIONS = [0, 95, 113, 120, 143, 150, 175, 200];
+// Reliability config exposes i18n keys instead of literal strings so
+// consumers can translate via SettingsContext.t(). Use `getReliabilityCopy`
+// in a component to resolve label/desc/short.
 const RELIABILITY_CONFIG = {
   official: {
-    label: "✓ OFFICIEL",
     color: "#50E5E5",
-    desc: "Source gouvernementale vérifiée"
+    labelKey: "malus_reliability_official_label",
+    shortKey: "malus_reliability_official_short",
+    descKey:  "malus_reliability_official_desc",
   },
   indicative: {
-    label: "~ INDICATIF",
     color: "#facc15",
-    desc: "Système complexe — estimation"
+    labelKey: "malus_reliability_indicative_label",
+    shortKey: "malus_reliability_indicative_short",
+    descKey:  "malus_reliability_indicative_desc",
   },
   info: {
-    label: "ℹ INFO",
     color: "#94a3b8",
-    desc: "Pas de malus CO₂ direct"
+    labelKey: "malus_reliability_info_label",
+    shortKey: "malus_reliability_info_short",
+    descKey:  "malus_reliability_info_desc",
   }
 };
 

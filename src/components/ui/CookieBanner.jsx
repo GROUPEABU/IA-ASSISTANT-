@@ -26,7 +26,7 @@ export default function CookieBanner() {
     <div
       role="dialog"
       aria-label={t('cookie_title')}
-      className="fixed bottom-0 inset-x-0 z-50 p-3 animate-slide-up"
+      className="fixed bottom-0 right-0 left-0 md:left-60 z-50 p-3 animate-slide-up"
       style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
     >
       <div

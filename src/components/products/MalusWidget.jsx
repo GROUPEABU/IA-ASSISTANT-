@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { getMalus, getMalusColor, getMalusLabel } from '@/utils/malus'
 import { formatNumber } from '@/utils/formatters'
+import { useSettings } from '@/contexts/SettingsContext'
 import { AlertTriangle, CheckCircle, Info } from 'lucide-react'
 
 const COUNTRIES_FR = [
@@ -19,6 +20,7 @@ function estimateForeignMalus(co2, country) {
 }
 
 export default function MalusWidget({ product }) {
+  const { t } = useSettings()
   const [prix, setPrix] = useState(product.prix.base)
   const co2 = product.specs.co2_wltp
   const malus = getMalus(co2, prix)
@@ -76,7 +78,7 @@ export default function MalusWidget({ product }) {
 
         <div className="mb-4">
           <div className="flex justify-between items-center mb-2">
-            <label className="text-xs text-slate-400">Prix de vente TTC</label>
+            <label className="text-xs text-slate-400">{t('malus_price_ttc')}</label>
             <span className="text-sm font-bold text-white">{formatNumber(prix)} €</span>
           </div>
           <input
@@ -96,15 +98,15 @@ export default function MalusWidget({ product }) {
 
         <div className="space-y-2 pt-3 border-t border-navy-700/50">
           <div className="flex justify-between text-sm">
-            <span className="text-slate-400">Prix véhicule</span>
+            <span className="text-slate-400">{t('malus_vehicle_price')}</span>
             <span className="text-white font-medium">{formatNumber(prix)} €</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-slate-400">Malus écologique</span>
+            <span className="text-slate-400">{t('malus_eco_label')}</span>
             <span className={`font-medium ${colorClass}`}>+{formatNumber(malus)} €</span>
           </div>
           <div className="flex justify-between text-sm pt-2 border-t border-navy-700/30">
-            <span className="text-white font-semibold">Budget total acheteur</span>
+            <span className="text-white font-semibold">{t('malus_total_buyer')}</span>
             <span className="text-cyan-400 font-bold text-base">{formatNumber(totalAcheteur)} €</span>
           </div>
         </div>

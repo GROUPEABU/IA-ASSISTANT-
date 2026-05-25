@@ -2,6 +2,7 @@ import {
   getImportDecote, getImportDecoteNL, getImportDecotePT,
   getImportDecoteDE, getImportDecoteES, getImportDecoteBE, getImportDecoteIE,
 } from '@/utils/malusWorld'
+import { useSettings } from '@/contexts/SettingsContext'
 import SegButton from './SegButton'
 
 /**
@@ -24,6 +25,7 @@ export default function AdvancedParams({
   dateImmat,
   formatCurrency,
 }) {
+  const { t } = useSettings()
   return (
     <div className="mb-2">
       <button
@@ -36,7 +38,7 @@ export default function AdvancedParams({
           color:       show ? '#50E5E5' : '#94a3b8',
         }}
       >
-        <span>Paramètres avancés</span>
+        <span>{t('malus_advanced_params')}</span>
         <span
           className="text-[11px] px-2 py-0.5 rounded-md"
           style={{
@@ -45,7 +47,7 @@ export default function AdvancedParams({
             color: show ? '#50E5E5' : '#64748b',
           }}
         >
-          {show ? '▲ Masquer' : '▼ Afficher'}
+          {show ? t('malus_hide') : t('malus_show')}
         </span>
       </button>
 

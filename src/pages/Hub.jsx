@@ -17,13 +17,13 @@ export default function Hub() {
   const { t } = useSettings()
 
   const tools = [
-    { to: '/products',   icon: BookOpen,      color: 'cyan',   titleKey: 'tool_products_title', descKey: 'tool_products_desc',   badge: 'Rapports IA' },
-    { to: '/co2-malus',  icon: Gauge,         color: 'emerald',titleKey: 'tool_co2_title',      descKey: 'tool_co2_desc',        badge: '40 pays' },
-    { to: '/price-watch',icon: Bell,          color: 'amber',  titleKey: 'tool_price_title',    descKey: 'tool_price_desc',      badge: 'VO · VN' },
-    { to: '/objections', icon: ShieldCheck,   color: 'rose',   titleKey: 'tool_objections_title',descKey: 'tool_objections_desc', badge: 'BtoB · BtoC' },
-    { to: '/tco',        icon: Calculator,    color: 'teal',   titleKey: 'tool_tco_title',      descKey: 'tool_tco_desc',        badge: '3–5 ans' },
-    { to: '/pitch',      icon: Mic,           color: 'indigo', titleKey: 'tool_pitch_title',    descKey: 'tool_pitch_desc',      badge: 'IA' },
-    { to: '/chat',       icon: MessageSquare, color: 'violet', titleKey: 'tool_chat_title',     descKey: 'tool_chat_desc',       badge: 'IA' },
+    { to: '/products',   icon: BookOpen,      color: 'cyan',   titleKey: 'tool_products_title',  descKey: 'tool_products_desc',   badgeKey: 'hub_badge_ai_reports' },
+    { to: '/co2-malus',  icon: Gauge,         color: 'emerald',titleKey: 'tool_co2_title',       descKey: 'tool_co2_desc',        badgeKey: 'hub_badge_40_countries' },
+    { to: '/price-watch',icon: Bell,          color: 'amber',  titleKey: 'tool_price_title',     descKey: 'tool_price_desc',      badgeKey: 'hub_badge_used_new' },
+    { to: '/objections', icon: ShieldCheck,   color: 'rose',   titleKey: 'tool_objections_title',descKey: 'tool_objections_desc', badgeKey: 'hub_badge_btob_btoc' },
+    { to: '/tco',        icon: Calculator,    color: 'teal',   titleKey: 'tool_tco_title',       descKey: 'tool_tco_desc',        badgeKey: 'hub_badge_3_5_years' },
+    { to: '/pitch',      icon: Mic,           color: 'indigo', titleKey: 'tool_pitch_title',     descKey: 'tool_pitch_desc',      badgeKey: 'hub_badge_ai' },
+    { to: '/chat',       icon: MessageSquare, color: 'violet', titleKey: 'tool_chat_title',      descKey: 'tool_chat_desc',       badgeKey: 'hub_badge_ai' },
   ]
 
   const stats = [
@@ -70,7 +70,7 @@ export default function Hub() {
 
       {/* ── Tools grid ───────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {tools.map(({ to, icon: Icon, color, titleKey, descKey, badge }) => {
+        {tools.map(({ to, icon: Icon, color, titleKey, descKey, badgeKey }) => {
           const c = colorMap[color]
           return (
             <button
@@ -86,7 +86,7 @@ export default function Hub() {
                   <Icon size={18} className={c.icon} />
                 </div>
                 <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${c.badge}`}>
-                  {badge}
+                  {t(badgeKey)}
                 </span>
               </div>
 
