@@ -11,15 +11,10 @@ import ProductSheetPrint from '@/components/products/ProductSheetPrint'
 import MarketAnalysis from '@/components/products/MarketAnalysis'
 import MalusWidget from '@/components/products/MalusWidget'
 import SalesReport from '@/components/products/SalesReport'
-
-const TABS = [
-  { id: 'sheet', label: 'Fiche produit', icon: FileText },
-  { id: 'market', label: 'Analyse marché', icon: TrendingUp },
-  { id: 'malus', label: 'CO₂ & Malus', icon: Gauge },
-  { id: 'sales', label: 'Rapport ventes', icon: Users },
-]
+import { useSettings } from '@/contexts/SettingsContext'
 
 export default function ProductDetail() {
+  const { t } = useSettings()
   const { id } = useParams()
   const navigate = useNavigate()
   const [tab, setTab] = useState('sheet')
@@ -27,12 +22,19 @@ export default function ProductDetail() {
   const { generated } = useGeneratedProducts()
   const product = getProduct(id) ?? generated.find((p) => p.id === id)
 
+  const TABS = [
+    { id: 'sheet', label: t('tab_sheet'), icon: FileText },
+    { id: 'market', label: t('tab_market'), icon: TrendingUp },
+    { id: 'malus', label: t('tab_malus'), icon: Gauge },
+    { id: 'sales', label: t('tab_sales'), icon: Users },
+  ]
+
   if (!product) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-slate-400">Produit introuvable.</p>
+        <p className="text-slate-400">{t('product_not_found')}</p>
         <Button variant="ghost" size="sm" onClick={() => navigate('/products')}>
-          <ArrowLeft size={14} /> Retour
+          <ArrowLeft size={14} /> {t('back')}
         </Button>
       </div>
     )

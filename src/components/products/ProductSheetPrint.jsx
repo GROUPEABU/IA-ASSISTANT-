@@ -2,6 +2,7 @@ import { forwardRef } from 'react'
 import { Car, Fuel, Gauge, Maximize, Package, CheckCircle2 } from 'lucide-react'
 import { formatNumber } from '@/utils/formatters'
 import Badge from '@/components/ui/Badge'
+import { useSettings } from '@/contexts/SettingsContext'
 
 const Spec = ({ label, value }) => (
   <div className="flex justify-between items-center py-2 border-b border-navy-700/30 last:border-0">
@@ -18,6 +19,7 @@ const Section = ({ title, children }) => (
 )
 
 const ProductSheetPrint = forwardRef(({ product, malus, malusColor }, ref) => {
+  const { t } = useSettings()
   return (
     <div ref={ref} className="space-y-4">
       {/* Identité produit */}
@@ -65,9 +67,9 @@ const ProductSheetPrint = forwardRef(({ product, malus, malusColor }, ref) => {
               </div>
             </div>
             <div className="text-right flex-shrink-0">
-              <p className="text-xs text-slate-500">À partir de</p>
+              <p className="text-xs text-slate-500">{t('product_from')}</p>
               <p className="text-xl font-bold text-white">{formatNumber(product.prix.base)} €</p>
-              <p className="text-xs text-slate-500">jusqu'à {formatNumber(product.prix.haut)} €</p>
+              <p className="text-xs text-slate-500">{t('product_up_to')} {formatNumber(product.prix.haut)} €</p>
               {malus > 0 && (
                 <p className={`text-xs font-semibold mt-1 ${malusColor === 'danger' ? 'text-red-400' : 'text-amber-400'}`}>
                   + Malus {formatNumber(malus)} €
@@ -80,29 +82,29 @@ const ProductSheetPrint = forwardRef(({ product, malus, malusColor }, ref) => {
 
       {/* Specs grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Section title="Motorisation & Performances">
-          <Spec label="Motorisation" value={product.specs.motorisation} />
-          <Spec label="Puissance" value={product.specs.puissance} />
-          <Spec label="Couple" value={product.specs.couple} />
-          <Spec label="Transmission" value={product.specs.transmission} />
-          <Spec label="Traction" value={product.specs.traction} />
-          <Spec label="Consommation WLTP" value={product.specs.consommation} />
+        <Section title={t('product_section_motor')}>
+          <Spec label={t('product_spec_motorisation')} value={product.specs.motorisation} />
+          <Spec label={t('product_spec_power')} value={product.specs.puissance} />
+          <Spec label={t('product_spec_torque')} value={product.specs.couple} />
+          <Spec label={t('product_spec_transmission')} value={product.specs.transmission} />
+          <Spec label={t('product_spec_drive')} value={product.specs.traction} />
+          <Spec label={t('product_spec_consumption')} value={product.specs.consommation} />
           <Spec label="CO₂ WLTP" value={`${product.specs.co2_wltp} g/km`} />
         </Section>
 
-        <Section title="Dimensions & Volumes">
-          <Spec label="Longueur" value={`${product.specs.longueur} mm`} />
-          <Spec label="Largeur" value={`${product.specs.largeur} mm`} />
-          <Spec label="Hauteur" value={`${product.specs.hauteur} mm`} />
-          <Spec label="Empattement" value={`${product.specs.empattement} mm`} />
-          <Spec label="Volume coffre" value={`${product.specs.coffre} L`} />
-          <Spec label="Réservoir" value={`${product.specs.reservoir} L`} />
-          <Spec label="Poids à vide" value={`${product.specs.poids} kg`} />
+        <Section title={t('product_section_dims')}>
+          <Spec label={t('product_spec_length')} value={`${product.specs.longueur} mm`} />
+          <Spec label={t('product_spec_width')} value={`${product.specs.largeur} mm`} />
+          <Spec label={t('product_spec_height')} value={`${product.specs.hauteur} mm`} />
+          <Spec label={t('product_spec_wheelbase')} value={`${product.specs.empattement} mm`} />
+          <Spec label={t('product_spec_trunk')} value={`${product.specs.coffre} L`} />
+          <Spec label={t('product_spec_tank')} value={`${product.specs.reservoir} L`} />
+          <Spec label={t('product_spec_weight')} value={`${product.specs.poids} kg`} />
         </Section>
       </div>
 
       {/* Équipements */}
-      <Section title="Équipements de série (finitions principales)">
+      <Section title={t('product_section_equipment')}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
           {product.equipements.map((eq) => (
             <div key={eq} className="flex items-start gap-2 py-1">
@@ -114,7 +116,7 @@ const ProductSheetPrint = forwardRef(({ product, malus, malusColor }, ref) => {
       </Section>
 
       {/* Concurrents */}
-      <Section title="Positionnement concurrentiel">
+      <Section title={t('product_section_competitors')}>
         <div className="space-y-2">
           {product.concurrents.map((c) => {
             const gap = product.prix.base - c.prix

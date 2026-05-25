@@ -3,13 +3,15 @@ import { Building2, Users, Download, CheckCircle2, XCircle, RefreshCw } from 'lu
 import { sendMessage } from '@/services/claude'
 import { formatNumber } from '@/utils/formatters'
 import { getMalus } from '@/utils/malus'
+import { useSettings } from '@/contexts/SettingsContext'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
 
-function SegmentBlock({ icon: Icon, color, title, cibles, atouts, objections, extra }) {
+function SegmentBlock({ icon: Icon, color, title, targets, strengths, objections, extra }) {
+  const { t } = useSettings()
   return (
     <div className="glass-card p-5 space-y-4">
-      <div className={`flex items-center gap-2`}>
+      <div className="flex items-center gap-2">
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
           <Icon size={16} />
         </div>
@@ -17,9 +19,9 @@ function SegmentBlock({ icon: Icon, color, title, cibles, atouts, objections, ex
       </div>
 
       <div>
-        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Cibles prioritaires</p>
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t('sales_targets')}</p>
         <div className="flex flex-wrap gap-1.5">
-          {cibles.map((c) => (
+          {targets.map((c) => (
             <span key={c} className="text-xs bg-navy-700/60 border border-navy-600/50 text-slate-300 px-2 py-0.5 rounded-full">
               {c}
             </span>
@@ -28,9 +30,9 @@ function SegmentBlock({ icon: Icon, color, title, cibles, atouts, objections, ex
       </div>
 
       <div>
-        <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-2">Arguments clés</p>
+        <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-2">{t('sales_strengths')}</p>
         <div className="space-y-1.5">
-          {atouts.map((a) => (
+          {strengths.map((a) => (
             <div key={a} className="flex items-start gap-2">
               <CheckCircle2 size={13} className="text-emerald-400 flex-shrink-0 mt-0.5" />
               <span className="text-xs text-slate-300">{a}</span>
@@ -40,7 +42,7 @@ function SegmentBlock({ icon: Icon, color, title, cibles, atouts, objections, ex
       </div>
 
       <div>
-        <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-2">Objections à traiter</p>
+        <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-2">{t('sales_objections')}</p>
         <div className="space-y-1.5">
           {objections.map((o) => (
             <div key={o} className="flex items-start gap-2">
@@ -61,6 +63,7 @@ function SegmentBlock({ icon: Icon, color, title, cibles, atouts, objections, ex
 }
 
 export default function SalesReport({ product }) {
+  const { t } = useSettings()
   const [pitch, setPitch] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -96,13 +99,13 @@ Sois percutant, concret et adapté au marché français.`
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Résumé chiffré */}
+      {/* Key figures */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Prix base', value: `${formatNumber(product.prix.base)} €` },
-          { label: 'Prix max', value: `${formatNumber(product.prix.haut)} €` },
-          { label: 'Malus France', value: malus > 0 ? `+${formatNumber(malus)} €` : 'Exonéré' },
-          { label: 'Remise BtoB cible', value: product.btob.remise_cible },
+          { label: t('sales_price_base'), value: `${formatNumber(product.prix.base)} €` },
+          { label: t('sales_price_max'),  value: `${formatNumber(product.prix.haut)} €` },
+          { label: t('sales_malus_fr'),   value: malus > 0 ? `+${formatNumber(malus)} €` : t('sales_exempt') },
+          { label: t('sales_btob_discount'), value: product.btob.remise_cible },
         ].map(({ label, value }) => (
           <div key={label} className="glass-card px-4 py-3 text-center">
             <p className="text-sm font-bold text-cyan-400">{value}</p>
@@ -116,54 +119,54 @@ Sois percutant, concret et adapté au marché français.`
         <SegmentBlock
           icon={Building2}
           color="bg-cyan-400/10 text-cyan-400"
-          title="Segment BtoB — Entreprises & Flottes"
-          cibles={product.btob.cibles}
-          atouts={product.btob.atouts}
+          title={t('sales_btob_title')}
+          targets={product.btob.cibles}
+          strengths={product.btob.atouts}
           objections={product.btob.objections}
           extra={
             <p className="text-xs text-slate-400">
-              <span className="font-semibold text-cyan-400">Remise cible :</span> {product.btob.remise_cible} sur volume
+              <span className="font-semibold text-cyan-400">{t('sales_target_discount')} :</span> {product.btob.remise_cible} {t('sales_on_volume')}
             </p>
           }
         />
         <SegmentBlock
           icon={Users}
           color="bg-violet-400/10 text-violet-400"
-          title="Segment BtoC — Particuliers"
-          cibles={product.btoc.cibles}
-          atouts={product.btoc.atouts}
+          title={t('sales_btoc_title')}
+          targets={product.btoc.cibles}
+          strengths={product.btoc.atouts}
           objections={product.btoc.objections}
           extra={
             <p className="text-xs text-slate-400">
-              <span className="font-semibold text-violet-400">Argument prix :</span> {product.btoc.argument_prix}
+              <span className="font-semibold text-violet-400">{t('sales_price_arg')} :</span> {product.btoc.argument_prix}
             </p>
           }
         />
       </div>
 
-      {/* Pitch IA */}
+      {/* AI Pitch */}
       <div className="glass-card p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-sm font-semibold text-white">Pitch de vente IA</h3>
-            <p className="text-xs text-slate-500">Généré par IA · Prêt à l'emploi</p>
+            <h3 className="text-sm font-semibold text-white">{t('sales_pitch_title')}</h3>
+            <p className="text-xs text-slate-500">{t('sales_pitch_subtitle')}</p>
           </div>
           <Button size="sm" variant={pitch ? 'ghost' : 'primary'} onClick={generatePitch} disabled={loading}>
             {loading ? <Spinner size="sm" /> : <RefreshCw size={13} />}
-            {pitch ? 'Actualiser' : 'Générer le pitch'}
+            {pitch ? t('sales_pitch_refresh') : t('sales_pitch_generate')}
           </Button>
         </div>
 
         {!pitch && !loading && !error && (
           <div className="text-center py-8">
-            <p className="text-sm text-slate-500">Générez un pitch de vente prêt à l'emploi<br />pour vos équipes commerciales.</p>
+            <p className="text-sm text-slate-500">{t('sales_pitch_cta')}</p>
           </div>
         )}
 
         {loading && (
           <div className="flex flex-col items-center gap-3 py-8">
             <Spinner size="md" />
-            <p className="text-xs text-slate-500">Rédaction du pitch en cours...</p>
+            <p className="text-xs text-slate-500">{t('sales_pitch_loading')}</p>
           </div>
         )}
 
@@ -173,18 +176,9 @@ Sois percutant, concret et adapté au marché français.`
           </div>
         )}
 
-        {pitch && !loading && (
-          <div className="space-y-1">
-            {pitch.split('\n').map((line, i) => {
-              if (line.startsWith('**') && line.endsWith('**')) {
-                return <h4 key={i} className="text-sm font-bold text-cyan-400 mt-4 mb-2">{line.replace(/\*\*/g, '')}</h4>
-              }
-              if (line.startsWith('- ') || line.startsWith('• ')) {
-                return <p key={i} className="text-sm text-slate-300 pl-3 border-l-2 border-navy-700 my-1">{line.slice(2)}</p>
-              }
-              if (line.trim() === '') return <br key={i} />
-              return <p key={i} className="text-sm text-slate-300 leading-relaxed">{line}</p>
-            })}
+        {pitch && (
+          <div className="prose prose-sm prose-invert max-w-none">
+            <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{pitch}</div>
           </div>
         )}
       </div>

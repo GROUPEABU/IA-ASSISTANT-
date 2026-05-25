@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { COUNTRIES, CUSTOM_EMISSIONS, RELIABILITY_CONFIG } from '@/utils/malusWorld'
+import { getCountryName } from '@/utils/malusLabels'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useMalusCalculation } from '@/features/malus/hooks/useMalusCalculation'
 import SliderSection      from '@/features/malus/components/SliderSection'
@@ -42,7 +43,7 @@ function scrollIntoView(element) {
 }
 
 export default function CO2Malus() {
-  const { t, formatCurrency } = useSettings()
+  const { t, lang, formatCurrency } = useSettings()
   const malus = useMalusCalculation()
 
   const [search, setSearch]                   = useState('')
@@ -53,10 +54,14 @@ export default function CO2Malus() {
   const resultRef        = useRef(null)
   const compareResultRef = useRef(null)
 
-  const filteredCountries = COUNTRIES.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) &&
-    (reliabilityFilter === 'all' || c.reliability === reliabilityFilter)
-  )
+  const filteredCountries = COUNTRIES.filter(c => {
+    const localName = getCountryName(c.code, lang) || ''
+    const q = search.toLowerCase()
+    return (
+      (c.name.toLowerCase().includes(q) || localName.toLowerCase().includes(q)) &&
+      (reliabilityFilter === 'all' || c.reliability === reliabilityFilter)
+    )
+  })
 
   // Auto-scroll to results when they appear
   useEffect(() => {

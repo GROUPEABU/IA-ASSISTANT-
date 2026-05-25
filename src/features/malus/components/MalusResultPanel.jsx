@@ -57,7 +57,7 @@ function CountryHeader({ result }) {
       <div className="flex items-center gap-3 mb-3">
         <span className="text-3xl">{result.country.flag}</span>
         <div>
-          <div className="text-xl font-bold text-white">{result.country.name}</div>
+          <div className="text-xl font-bold text-white">{result.country.localizedName || result.country.name}</div>
           <div className="text-[11px] text-slate-400 leading-snug">{result.tax_name}</div>
           <div className="text-[11px] mt-0.5" style={{ color: cfg.color }}>
             {t(cfg.labelKey)} ·{' '}

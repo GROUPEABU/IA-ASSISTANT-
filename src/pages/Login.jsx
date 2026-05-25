@@ -96,7 +96,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-navy-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-[100dvh] bg-navy-900 login-page-bg flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <Background />
 
       <div className="w-full max-w-sm relative">

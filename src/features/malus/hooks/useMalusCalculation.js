@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { buildCountryData } from '@/utils/malusWorld'
+import { localizeResult } from '@/utils/malusLabels'
+import { useSettings } from '@/contexts/SettingsContext'
 
 /**
  * Hook encapsulating all malus calculation logic.
@@ -14,6 +16,8 @@ import { buildCountryData } from '@/utils/malusWorld'
  * heavy `buildCountryData` calls are isolated here.
  */
 export function useMalusCalculation() {
+  const { lang } = useSettings()
+
   // ── Input state ─────────────────────────────────────────────────────────
   const [emission, setEmission]           = useState(143)
   const [weight, setWeight]               = useState(1450)
@@ -45,8 +49,9 @@ export function useMalusCalculation() {
   useEffect(() => {
     if (!selectedCountry) return
     const data = buildCountryData(selectedCountry.code, emission, weight, fuelType, dateImmat, isImported, extra)
-    setResult(data ? { ...data, country: selectedCountry } : null)
-  }, [emission, weight, fuelType, dateImmat, isImported, selectedCountry, extra])
+    const raw = data ? { ...data, country: selectedCountry } : null
+    setResult(raw ? localizeResult(raw, lang) : null)
+  }, [emission, weight, fuelType, dateImmat, isImported, selectedCountry, extra, lang])
 
   // Recompute compare results whenever inputs or selection change
   useEffect(() => {
@@ -54,11 +59,11 @@ export function useMalusCalculation() {
     const next = selectedForCompare
       .map(c => {
         const d = buildCountryData(c.code, emission, weight, fuelType, dateImmat, isImported, extra)
-        return d ? { ...d, country: c } : null
+        return d ? localizeResult({ ...d, country: c }, lang) : null
       })
       .filter(Boolean)
     setCompareResults(next)
-  }, [emission, weight, fuelType, dateImmat, isImported, selectedForCompare, extra])
+  }, [emission, weight, fuelType, dateImmat, isImported, selectedForCompare, extra, lang])
 
   const selectCountry = useCallback((country) => {
     setSelectedCountry(country)
@@ -77,11 +82,11 @@ export function useMalusCalculation() {
     const next = selectedForCompare
       .map(c => {
         const d = buildCountryData(c.code, emission, weight, fuelType, dateImmat, isImported, extra)
-        return d ? { ...d, country: c } : null
+        return d ? localizeResult({ ...d, country: c }, lang) : null
       })
       .filter(Boolean)
     setCompareResults(next)
-  }, [emission, weight, fuelType, dateImmat, isImported, selectedForCompare, extra])
+  }, [emission, weight, fuelType, dateImmat, isImported, selectedForCompare, extra, lang])
 
   return {
     // input state + setters

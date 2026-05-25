@@ -55,7 +55,7 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
             <Sparkles size={16} className="text-cyan-400" />
             <div>
               <p className="text-sm font-semibold text-white">{t('modal_generate_sheet')}</p>
-              <p className="text-xs text-slate-500">L'IA recherche les vraies données du véhicule</p>
+              <p className="text-xs text-slate-500">{t('modal_ai_subtitle')}</p>
             </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-white transition">
@@ -88,7 +88,7 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
                          disabled:opacity-40 disabled:pointer-events-none flex items-center gap-2 flex-shrink-0"
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              {loading ? 'Génération...' : 'Générer'}
+              {loading ? t('modal_generating') : t('modal_generate_btn')}
             </button>
           </div>
 
@@ -98,9 +98,9 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
               <div className="flex items-center gap-3">
                 <Loader2 size={16} className="text-cyan-400 animate-spin flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-white">Analyse en cours…</p>
+                  <p className="text-sm font-medium text-white">{t('modal_analyzing')}</p>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Recherche des specs, prix, CO₂ et données marché pour "{query}"
+                    {t('modal_analyzing_detail')} "{query}"
                   </p>
                 </div>
               </div>
@@ -122,7 +122,7 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
           {!loading && (
             <div className="mt-4">
               <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">
-                Suggestions
+                {t('modal_suggestions')}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {SUGGESTIONS.map((s) => (
@@ -140,8 +140,7 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
           )}
 
           <p className="text-[10px] text-slate-600 mt-4 text-center">
-            Les données sont générées par IA depuis les spécifications officielles connues.
-            Vérifiez les chiffres avant diffusion commerciale.
+            {t('modal_disclaimer')}
           </p>
         </div>
       </div>

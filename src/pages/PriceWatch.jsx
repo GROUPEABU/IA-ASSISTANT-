@@ -30,34 +30,6 @@ const MAKES = [
   { label: 'Volkswagen', code: 'VOLKSWAGEN' }, { label: 'Volvo', code: 'VOLVO' },
 ]
 
-const FUELS = [
-  { label: 'Tous carburants', code: '' },
-  { label: 'Essence', code: 'ES' },
-  { label: 'Diesel', code: 'GO' },
-  { label: 'Électrique', code: 'EL' },
-  { label: 'Hybride', code: 'HY' },
-  { label: 'Hybride rechargeable', code: 'GH' },
-  { label: 'GPL', code: 'GP' },
-]
-
-const GEARBOXES = [
-  { label: 'Toutes boîtes', code: '' },
-  { label: 'Manuelle', code: 'M' },
-  { label: 'Automatique', code: 'A' },
-]
-
-const MILEAGE_OPTS = [
-  { label: 'Kilométrage — sans limite', value: '' },
-  { label: '< 10 000 km', value: '10000' },
-  { label: '< 20 000 km', value: '20000' },
-  { label: '< 30 000 km', value: '30000' },
-  { label: '< 50 000 km', value: '50000' },
-  { label: '< 80 000 km', value: '80000' },
-  { label: '< 100 000 km', value: '100000' },
-  { label: '< 150 000 km', value: '150000' },
-  { label: '< 200 000 km', value: '200000' },
-]
-
 const YEARS = Array.from({ length: 26 }, (_, i) => 2025 - i)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -70,7 +42,7 @@ async function fetchPrices(filters) {
   return res.json()
 }
 
-async function analyzePrices(filters, sourcesData) {
+async function analyzePrices(filters, sourcesData, fuels, gearboxes) {
   const context = sourcesData.map(s => `=== ${s.name} ===\n${s.content}`).join('\n\n')
   const vehicleDesc = [
     filters.make, filters.model,
@@ -78,8 +50,8 @@ async function analyzePrices(filters, sourcesData) {
       : filters.yearMin ? `à partir de ${filters.yearMin}`
       : filters.yearMax ? `jusqu'en ${filters.yearMax}` : '',
     filters.mileageMax ? `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km` : '',
-    filters.fuel ? FUELS.find(f => f.code === filters.fuel)?.label : '',
-    filters.gearbox ? GEARBOXES.find(g => g.code === filters.gearbox)?.label : '',
+    filters.fuel ? fuels.find(f => f.code === filters.fuel)?.label : '',
+    filters.gearbox ? gearboxes.find(g => g.code === filters.gearbox)?.label : '',
   ].filter(Boolean).join(' · ')
 
   const prompt = `Tu es expert en cote automobile pour Autobuyunion.
@@ -142,6 +114,35 @@ function KpiCard({ label, value, highlight, sub }) {
 // ── Page principale ───────────────────────────────────────────────────────────
 export default function PriceWatch() {
   const { t } = useSettings()
+
+  const FUELS = [
+    { label: t('price_fuel_all'), code: '' },
+    { label: t('price_fuel_petrol'), code: 'ES' },
+    { label: t('price_fuel_diesel'), code: 'GO' },
+    { label: t('price_fuel_electric'), code: 'EL' },
+    { label: t('price_fuel_hybrid'), code: 'HY' },
+    { label: t('price_fuel_phev'), code: 'GH' },
+    { label: t('price_fuel_lpg'), code: 'GP' },
+  ]
+
+  const GEARBOXES = [
+    { label: t('price_gearbox_all'), code: '' },
+    { label: t('price_gearbox_manual'), code: 'M' },
+    { label: t('price_gearbox_auto'), code: 'A' },
+  ]
+
+  const MILEAGE_OPTS = [
+    { label: t('price_mileage_all'), value: '' },
+    { label: '< 10 000 km', value: '10000' },
+    { label: '< 20 000 km', value: '20000' },
+    { label: '< 30 000 km', value: '30000' },
+    { label: '< 50 000 km', value: '50000' },
+    { label: '< 80 000 km', value: '80000' },
+    { label: '< 100 000 km', value: '100000' },
+    { label: '< 150 000 km', value: '150000' },
+    { label: '< 200 000 km', value: '200000' },
+  ]
+
   const [type, setType]           = useState('vo')
   const [make, setMake]           = useState('')
   const [model, setModel]         = useState('')
@@ -184,7 +185,7 @@ export default function PriceWatch() {
       setCentraleUrl(raw.centraleUrl || '')
 
       setStep('Calcul des prix moyens du marché…')
-      const analysis = await analyzePrices(filters, raw.sources || [])
+      const analysis = await analyzePrices(filters, raw.sources || [], FUELS, GEARBOXES)
       setResult({ ...analysis, sources: raw.sources })
     } catch (err) {
       setError(err.message)
@@ -197,7 +198,7 @@ export default function PriceWatch() {
   const TrendIcon   = result?.tendance === 'hausse' ? TrendingUp : result?.tendance === 'baisse' ? TrendingDown : Minus
   const trendColor  = result?.tendance === 'hausse' ? 'text-red-400' : result?.tendance === 'baisse' ? 'text-emerald-400' : 'text-slate-400'
   const trendBg     = result?.tendance === 'hausse' ? 'bg-red-400/10' : result?.tendance === 'baisse' ? 'bg-emerald-400/10' : 'bg-slate-700/40'
-  const trendLabel  = result?.tendance === 'hausse' ? 'Marché en hausse' : result?.tendance === 'baisse' ? 'Marché en baisse' : 'Marché stable'
+  const trendLabel  = result?.tendance === 'hausse' ? t('market_up') : result?.tendance === 'baisse' ? t('market_down') : t('market_stable')
 
   const fmtEur = (v) => v ? `${formatNumber(v)} €` : 'N/D'
 
@@ -278,16 +279,16 @@ export default function PriceWatch() {
         {/* Ligne 2 : Km max (VO only) + Carburant + Boîte */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
           {type === 'vo' && (
-            <FilterSelect label="Kilométrage max" value={mileageMax} onChange={setMileageMax}>
+            <FilterSelect label={t('km_max')} value={mileageMax} onChange={setMileageMax}>
               {MILEAGE_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </FilterSelect>
           )}
 
-          <FilterSelect label="Carburant" value={fuel} onChange={setFuel}>
+          <FilterSelect label={t('fuel_label')} value={fuel} onChange={setFuel}>
             {FUELS.map(f => <option key={f.code} value={f.code}>{f.label}</option>)}
           </FilterSelect>
 
-          <FilterSelect label="Boîte de vitesses" value={gearbox} onChange={setGearbox}>
+          <FilterSelect label={t('gearbox_label')} value={gearbox} onChange={setGearbox}>
             {GEARBOXES.map(g => <option key={g.code} value={g.code}>{g.label}</option>)}
           </FilterSelect>
         </div>
@@ -345,7 +346,7 @@ export default function PriceWatch() {
               <div className="flex items-center gap-2 mt-0.5">
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   type === 'vo' ? 'bg-amber-400/10 text-amber-400' : 'bg-emerald-400/10 text-emerald-400'
-                }`}>{type === 'vo' ? 'Occasion' : 'Neuf'}</span>
+                }`}>{type === 'vo' ? t('used_vehicle') : t('new_vehicle')}</span>
                 {fetchedAt && (
                   <div className="flex items-center gap-1">
                     <Clock size={10} className="text-slate-600" />
@@ -359,7 +360,7 @@ export default function PriceWatch() {
               className="flex items-center gap-1.5 text-xs text-cyan-400 border border-cyan-400/30
                          px-3 py-2 rounded-lg hover:bg-cyan-400/10 transition"
             >
-              <RefreshCw size={12} /> Actualiser
+              <RefreshCw size={12} /> {t('analyze_btn')}
             </button>
           </div>
 
@@ -377,7 +378,7 @@ export default function PriceWatch() {
               label={t('avg_price')}
               value={fmtEur(result.prix_moyen)}
               highlight
-              sub="hors aberrants"
+              sub={t('excl_outliers')}
             />
             <KpiCard
               label={t('median_price')}
@@ -388,10 +389,10 @@ export default function PriceWatch() {
               value={result.prix_q1 && result.prix_q3
                 ? `${formatNumber(result.prix_q1)} – ${formatNumber(result.prix_q3)} €`
                 : 'N/D'}
-              sub="25e–75e percentile"
+              sub={t('percentile')}
             />
             <KpiCard
-              label="Annonces estimées"
+              label={t('listings_est')}
               value={result.nb_annonces_estim ? `~${result.nb_annonces_estim}` : 'N/D'}
             />
           </div>
