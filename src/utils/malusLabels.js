@@ -15,6 +15,42 @@ export function getCountryName(code, lang) {
   }
 }
 
+// ─── Bracket label translation map ───────────────────────────────────────────
+const BRACKET_LABEL_MAP = {
+  'CO₂ exempté':                  { en: 'CO₂ Exempt',              de: 'CO₂ Befreit',               it: 'CO₂ Esente',                es: 'CO₂ Exento' },
+  'CO₂ basse':                    { en: 'CO₂ Low',                 de: 'CO₂ Niedrig',               it: 'CO₂ Basso',                 es: 'CO₂ Bajo' },
+  'CO₂ intermédiaire':            { en: 'CO₂ Intermediate',        de: 'CO₂ Mittel',                it: 'CO₂ Intermedio',            es: 'CO₂ Intermedio' },
+  'CO₂ haute':                    { en: 'CO₂ High',                de: 'CO₂ Hoch',                  it: 'CO₂ Alto',                  es: 'CO₂ Alto' },
+  'CO₂ maximale':                 { en: 'CO₂ Maximum',             de: 'CO₂ Maximum',               it: 'CO₂ Massimo',               es: 'CO₂ Máximo' },
+  'Tranche unique':               { en: 'Single Band',             de: 'Einheitsband',              it: 'Fascia Unica',              es: 'Tramo Único' },
+  'Tranche 1':                    { en: 'Band 1',                  de: 'Band 1',                    it: 'Fascia 1',                  es: 'Tramo 1' },
+  'Tranche 2':                    { en: 'Band 2',                  de: 'Band 2',                    it: 'Fascia 2',                  es: 'Tramo 2' },
+  'Tranche 3':                    { en: 'Band 3',                  de: 'Band 3',                    it: 'Fascia 3',                  es: 'Tramo 3' },
+  'Tranche 4':                    { en: 'Band 4',                  de: 'Band 4',                    it: 'Fascia 4',                  es: 'Tramo 4' },
+  'EV exempté':                   { en: 'EV Exempt',               de: 'EV Befreit',                it: 'EV Esente',                 es: 'EV Exento' },
+  'EV (plus exempt depuis 2025)': { en: 'EV (no longer exempt since 2025)', de: 'EV (seit 2025 nicht mehr befreit)', it: 'EV (non più esente dal 2025)', es: 'EV (ya no exento desde 2025)' },
+  'EV / très faible':             { en: 'EV / Very Low',           de: 'EV / Sehr Niedrig',         it: 'EV / Molto Basso',          es: 'EV / Muy Bajo' },
+  'Exempté':                      { en: 'Exempt',                  de: 'Befreit',                   it: 'Esente',                    es: 'Exento' },
+  'Basse':                        { en: 'Low',                     de: 'Niedrig',                   it: 'Bassa',                     es: 'Baja' },
+  'Haute':                        { en: 'High',                    de: 'Hoch',                      it: 'Alta',                      es: 'Alta' },
+  'Max':                          { en: 'Max',                     de: 'Max',                       it: 'Max',                       es: 'Máx' },
+  'Modérée':                      { en: 'Moderate',                de: 'Moderat',                   it: 'Moderata',                  es: 'Moderada' },
+  'Modéré':                       { en: 'Moderate',                de: 'Moderat',                   it: 'Moderato',                  es: 'Moderado' },
+  'Élevé':                        { en: 'High',                    de: 'Hoch',                      it: 'Elevato',                   es: 'Elevado' },
+  'Taxe immat.':                  { en: 'Reg. Tax',                de: 'Zulassungssteuer',          it: 'Tassa Immat.',              es: 'Tasa Matr.' },
+  'Taxe annuelle':                { en: 'Annual Tax',              de: 'Jahressteuer',              it: 'Tassa Annuale',             es: 'Impuesto Anual' },
+  'EV':                           { en: 'EV',                      de: 'EV',                        it: 'EV',                        es: 'EV' },
+  'A–F':                          { en: 'A–F',                     de: 'A–F',                       it: 'A–F',                       es: 'A–F' },
+  'G–I':                          { en: 'G–I',                     de: 'G–I',                       it: 'G–I',                       es: 'G–I' },
+  'J max':                        { en: 'J max',                   de: 'J max',                     it: 'J max',                     es: 'J máx' },
+  'Aucune taxe':                  { en: 'No tax',                  de: 'Keine Steuer',              it: 'Nessuna tassa',             es: 'Sin impuesto' },
+}
+
+function translateBracketLabel(label, lang) {
+  if (!label || lang === 'fr') return label
+  return BRACKET_LABEL_MAP[label]?.[lang] || BRACKET_LABEL_MAP[label]?.en || label
+}
+
 // ─── Translations ──────────────────────────────────────────────────────────────
 // For EU countries with fully calculated strings (FR, DE, GB, ES…), only the
 // static / predictable fields are overridden. Dynamic computed strings remain
@@ -27,6 +63,7 @@ const COUNTRY_LABELS = {
   FR: {
     en: {
       tax_name_prefix: 'CO₂ + Weight Malus (TMOM)',
+      system_description: 'Dual registration malus: CO₂ + Weight (TMOM). Rate depends on first registration date (ref. art. L421-58 to L421-81-1 CIBS). Cumulative cap applies.',
       exemptions_2026_27: [
         'Hydrogen',
         'Disability card (CMI)',
@@ -42,6 +79,7 @@ const COUNTRY_LABELS = {
     },
     de: {
       tax_name_prefix: 'CO₂ + Gewichtsabgabe (TMOM)',
+      system_description: 'Doppelter Zulassungsmalus: CO₂ + Gewicht (TMOM). Tarif abhängig vom Erstzulassungsdatum (Ref. Art. L421-58 bis L421-81-1 CIBS). Kumulativer Höchstbetrag gilt.',
       exemptions_2026_27: [
         'Wasserstoff',
         'Behindertenausweis (CMI)',
@@ -57,6 +95,7 @@ const COUNTRY_LABELS = {
     },
     it: {
       tax_name_prefix: 'Malus CO₂ + Peso (TMOM)',
+      system_description: 'Doppio malus all\'immatricolazione: CO₂ + Peso (TMOM). Aliquota in base alla data di prima immatricolazione (rif. artt. L421-58–L421-81-1 CIBS). Si applica un massimale cumulativo.',
       exemptions_2026_27: [
         'Idrogeno',
         'Carta d\'invalidità (CMI)',
@@ -72,6 +111,7 @@ const COUNTRY_LABELS = {
     },
     es: {
       tax_name_prefix: 'Malus CO₂ + Peso (TMOM)',
+      system_description: 'Doble malus de matriculación: CO₂ + Peso (TMOM). Tarifa según fecha de primera matriculación (ref. arts. L421-58 a L421-81-1 CIBS). Se aplica un tope acumulativo.',
       exemptions_2026_27: [
         'Hidrógeno',
         'Tarjeta de discapacidad (CMI)',
@@ -951,6 +991,19 @@ export function localizeResult(result, lang) {
 
   if (labels.notes || enLabels.notes) {
     merged.notes = labels.notes || enLabels.notes
+  }
+
+  // Translate bracket labels
+  if (merged.brackets) {
+    merged.brackets = merged.brackets.map(b => ({ ...b, label: translateBracketLabel(b.label, lang) }))
+  }
+  if (merged.weight_brackets) {
+    merged.weight_brackets = merged.weight_brackets.map(b => ({ ...b, label: translateBracketLabel(b.label, lang) }))
+  }
+
+  // Translate specific_penalty when it's a static "no tax" string
+  if (merged.specific_penalty === 'Aucune taxe') {
+    merged.specific_penalty = translateBracketLabel('Aucune taxe', lang)
   }
 
   // Always add localized country name

@@ -40,7 +40,7 @@ export default function SliderSection({
             onChange={handleInputChange}
             aria-label={`Valeur ${label}`}
             className="w-20 text-3xl font-bold text-center bg-transparent border-0 outline-none leading-none"
-            style={{ fontFamily: 'inherit', MozAppearance: 'textfield', WebkitAppearance: 'none', color }}
+            style={{ fontFamily: 'inherit', MozAppearance: 'textfield', WebkitAppearance: 'none', color, background: 'transparent' }}
           />
           <span className="text-sm font-semibold" style={{ color, opacity: 0.6 }}>{unit}</span>
         </div>
