@@ -654,5 +654,8 @@ export default {
   // RegionMap + SalesChart
   sales_chart_title: 'Sales volume',
   sales_chart_subtitle: 'Last 12 months',
-  // TCO
+  // TCO,
+  date_day: 'Day',
+  date_month: 'Month',
+  date_year: 'Year',
 }

@@ -654,5 +654,8 @@ export default {
   // Compare page
   // Reports
   // RegionMap + SalesChart
-  // TCO
+  // TCO,
+  date_day: 'Día',
+  date_month: 'Mes',
+  date_year: 'Año',
 }

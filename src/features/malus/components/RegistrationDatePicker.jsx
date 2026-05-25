@@ -75,36 +75,50 @@ export default function RegistrationDatePicker({ value, onChange }) {
         <span className="text-xs font-semibold text-amber-400">{formatDateFR(value)}</span>
       </div>
       <div className="grid grid-cols-3 gap-2 mb-2.5">
-        <select
-          value={day}
-          onChange={setDay}
-          aria-label="Jour d'immatriculation"
-          className="w-full px-2 py-2 rounded-lg border outline-none text-sm font-medium"
-          style={SELECT_STYLE}
-        >
-          {Array.from({ length: daysInMonth }, (_, i) => {
-            const d = String(i + 1).padStart(2, '0')
-            return <option key={d} value={d}>{i + 1}</option>
-          })}
-        </select>
-        <select
-          value={month}
-          onChange={setMonth}
-          aria-label="Mois d'immatriculation"
-          className="w-full px-2 py-2 rounded-lg border outline-none text-sm font-medium"
-          style={SELECT_STYLE}
-        >
-          {localizedMonths.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
-        </select>
-        <select
-          value={year}
-          onChange={setYear}
-          aria-label="Année d'immatriculation"
-          className="w-full px-2 py-2 rounded-lg border outline-none text-sm font-medium"
-          style={SELECT_STYLE}
-        >
-          {DATE_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
+        {/* Day */}
+        <div className="flex flex-col items-center gap-1">
+          <select
+            value={day}
+            onChange={setDay}
+            aria-label="Jour d'immatriculation"
+            className="w-full px-1 py-2.5 rounded-xl border outline-none text-sm font-semibold text-center"
+            style={{ ...SELECT_STYLE, textAlignLast: 'center' }}
+          >
+            {Array.from({ length: daysInMonth }, (_, i) => {
+              const d = String(i + 1).padStart(2, '0')
+              return <option key={d} value={d}>{String(i + 1).padStart(2, '0')}</option>
+            })}
+          </select>
+          <span className="text-[10px] text-slate-600 font-medium tracking-wider uppercase">{t('date_day')}</span>
+        </div>
+
+        {/* Month */}
+        <div className="flex flex-col items-center gap-1">
+          <select
+            value={month}
+            onChange={setMonth}
+            aria-label="Mois d'immatriculation"
+            className="w-full px-1 py-2.5 rounded-xl border outline-none text-sm font-semibold text-center"
+            style={{ ...SELECT_STYLE, textAlignLast: 'center' }}
+          >
+            {localizedMonths.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
+          </select>
+          <span className="text-[10px] text-slate-600 font-medium tracking-wider uppercase">{t('date_month')}</span>
+        </div>
+
+        {/* Year */}
+        <div className="flex flex-col items-center gap-1">
+          <select
+            value={year}
+            onChange={setYear}
+            aria-label="Année d'immatriculation"
+            className="w-full px-1 py-2.5 rounded-xl border outline-none text-sm font-semibold text-center"
+            style={{ ...SELECT_STYLE, textAlignLast: 'center' }}
+          >
+            {DATE_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+          <span className="text-[10px] text-slate-600 font-medium tracking-wider uppercase">{t('date_year')}</span>
+        </div>
       </div>
       <div className="grid grid-cols-4 gap-1">
         {localizedPresets.map(p => {
