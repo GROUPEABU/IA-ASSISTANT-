@@ -15,7 +15,7 @@ const PROFILES = [
 ]
 
 export default function PitchGenerator() {
-  const { t } = useSettings()
+  const { t, lang } = useSettings()
   const [vehicleId, setVehicleId] = useState('')
   const [customVehicle, setCustomVehicle] = useState('')
   const [profileId, setProfileId] = useState('btoc_famille')
@@ -76,7 +76,7 @@ Réponds UNIQUEMENT en JSON valide :
   "closing": "Phrase de closing engageante avec appel à l'action"
 }`
 
-      const raw = await sendMessage([{ role: 'user', content: prompt }])
+      const raw = await sendMessage([{ role: 'user', content: prompt }], { lang })
       const data = extractJSON(raw, 'object')
       setPitch(data)
       setGeneratedFor(`${vehicleName} · ${t(profile.subKey)} ${t(profile.labelKey)}`)

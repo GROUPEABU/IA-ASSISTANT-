@@ -3,9 +3,11 @@ import ReportCard from '@/components/reports/ReportCard'
 import ReportTable from '@/components/reports/ReportTable'
 import Button from '@/components/ui/Button'
 import { useSalesData } from '@/hooks/useSalesData'
+import { useSettings } from '@/contexts/SettingsContext'
 
 export default function Reports() {
   const { reportList, tableRows } = useSalesData()
+  const { t } = useSettings()
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -15,11 +17,11 @@ export default function Reports() {
         <div className="flex gap-2">
           <Button variant="ghost" size="sm">
             <Filter size={14} />
-            Filtrer
+            {t('reports_filter')}
           </Button>
           <Button size="sm">
             <Plus size={14} />
-            Nouveau rapport
+            {t('reports_new')}
           </Button>
         </div>
       </div>
@@ -34,8 +36,8 @@ export default function Reports() {
       {/* Detailed table */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-white">Données détaillées — Mai 2026</h2>
-          <span className="text-xs text-slate-500">{tableRows.length} modèles</span>
+          <h2 className="text-sm font-semibold text-white">{t('reports_detailed_title')}</h2>
+          <span className="text-xs text-slate-500">{tableRows.length} {t('reports_models_count')}</span>
         </div>
         <ReportTable rows={tableRows} />
       </div>

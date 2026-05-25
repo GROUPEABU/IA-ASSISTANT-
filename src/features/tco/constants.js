@@ -3,16 +3,16 @@
  */
 
 export const MAINT_TIERS = [
-  { k: 'low',     l: 'Low-cost / Chinois', thermique: 800,  hybride: 900,  phev: 1000, ev: 600  },
-  { k: 'mid',     l: 'Généraliste',        thermique: 1200, hybride: 1400, phev: 1500, ev: 800  },
-  { k: 'premium', l: 'Premium',            thermique: 2000, hybride: 2200, phev: 2400, ev: 1400 },
+  { k: 'low',     labelKey: 'tco_tier_low',     thermique: 800,  hybride: 900,  phev: 1000, ev: 600  },
+  { k: 'mid',     labelKey: 'tco_tier_mid',     thermique: 1200, hybride: 1400, phev: 1500, ev: 800  },
+  { k: 'premium', labelKey: 'tco_tier_premium', thermique: 2000, hybride: 2200, phev: 2400, ev: 1400 },
 ]
 
-export const FUEL_LABELS = {
-  thermique: 'Thermique',
-  hybride:   'Hybride',
-  phev:      'PHEV',
-  ev:        'Électrique',
+export const FUEL_LABEL_KEYS = {
+  thermique: 'malus_fuel_thermal',
+  hybride:   'malus_fuel_hybrid',
+  phev:      'malus_fuel_phev',
+  ev:        'malus_fuel_ev',
 }
 
 export const COLORS = ['#50E5E5', '#7DD3FC', '#a78bfa', '#fb923c']

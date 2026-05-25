@@ -2,15 +2,16 @@ import { useState } from 'react'
 import { getMalus, getMalusColor, getMalusLabel } from '@/utils/malus'
 import { formatNumber } from '@/utils/formatters'
 import { useSettings } from '@/contexts/SettingsContext'
+import { getCountryName } from '@/utils/malusLabels'
 import { AlertTriangle, CheckCircle, Info } from 'lucide-react'
 
-const COUNTRIES_FR = [
-  { code: 'FR', name: 'France', flag: '🇫🇷', note: 'Barème 2025 WLTP' },
-  { code: 'BE', name: 'Belgique', flag: '🇧🇪', note: 'Taxe CO₂ régionale' },
-  { code: 'ES', name: 'Espagne', flag: '🇪🇸', note: 'Impuesto matriculación' },
-  { code: 'DE', name: 'Allemagne', flag: '🇩🇪', note: 'KFZ-Steuer' },
-  { code: 'IT', name: 'Italie', flag: '🇮🇹', note: 'Ecotassa' },
-  { code: 'NL', name: 'Pays-Bas', flag: '🇳🇱', note: 'BPM CO₂' },
+const COUNTRIES_WIDGET = [
+  { code: 'FR', flag: '🇫🇷', note: 'Barème 2025 WLTP' },
+  { code: 'BE', flag: '🇧🇪', note: 'Taxe CO₂ régionale' },
+  { code: 'ES', flag: '🇪🇸', note: 'Impuesto matriculación' },
+  { code: 'DE', flag: '🇩🇪', note: 'KFZ-Steuer' },
+  { code: 'IT', flag: '🇮🇹', note: 'Ecotassa' },
+  { code: 'NL', flag: '🇳🇱', note: 'BPM CO₂' },
 ]
 
 function estimateForeignMalus(co2, country) {
@@ -20,7 +21,7 @@ function estimateForeignMalus(co2, country) {
 }
 
 export default function MalusWidget({ product }) {
-  const { t } = useSettings()
+  const { t, lang } = useSettings()
   const [prix, setPrix] = useState(product.prix.base)
   const co2 = product.specs.co2_wltp
   const malus = getMalus(co2, prix)
@@ -48,7 +49,7 @@ export default function MalusWidget({ product }) {
       <div className={`glass-card p-5 border ${bgClass}`}>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs text-slate-500 mb-1">Émissions CO₂ (WLTP)</p>
+            <p className="text-xs text-slate-500 mb-1">{t('malus_co2_wltp_label')}</p>
             <div className="flex items-baseline gap-2">
               <span className={`text-4xl font-bold ${colorClass}`}>{co2}</span>
               <span className="text-lg text-slate-400">g/km</span>
@@ -61,11 +62,11 @@ export default function MalusWidget({ product }) {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs text-slate-500 mb-1">Malus France 2025</p>
+            <p className="text-xs text-slate-500 mb-1">{t('malus_fr_2025_label')}</p>
             <p className={`text-2xl font-bold ${colorClass}`}>
-              {malus > 0 ? `+${formatNumber(malus)} €` : 'Exonéré'}
+              {malus > 0 ? `+${formatNumber(malus)} €` : t('malus_exempt_label')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">Plafond 60% du prix TTC</p>
+            <p className="text-xs text-slate-500 mt-1">{t('malus_cap_60_label')}</p>
           </div>
         </div>
       </div>
@@ -73,7 +74,7 @@ export default function MalusWidget({ product }) {
       {/* Simulateur prix */}
       <div className="glass-card p-5">
         <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-4">
-          Simulateur — Budget acheteur
+          {t('malus_simulator_title')}
         </h3>
 
         <div className="mb-4">
@@ -114,8 +115,7 @@ export default function MalusWidget({ product }) {
         <div className="mt-4 p-3 rounded-lg bg-navy-900/40 flex gap-2">
           <Info size={13} className="text-slate-500 flex-shrink-0 mt-0.5" />
           <p className="text-[11px] text-slate-500 leading-relaxed">
-            Le malus est plafonné à 60% du prix TTC du véhicule. Ces valeurs sont indicatives —
-            vérifiez sur le simulateur officiel impots.gouv.fr avant signature.
+            {t('malus_cap_note')}
           </p>
         </div>
       </div>
@@ -124,7 +124,7 @@ export default function MalusWidget({ product }) {
       <div className="glass-card p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-            Estimation fiscalité européenne
+            {t('malus_eu_tax_title')}
           </h3>
           <a
             href="https://co2-malus.vercel.app"
@@ -132,12 +132,13 @@ export default function MalusWidget({ product }) {
             rel="noopener noreferrer"
             className="text-xs text-cyan-400 hover:underline"
           >
-            Voir détail 40 pays →
+            {t('malus_see_countries_link')}
           </a>
         </div>
 
         <div className="space-y-2">
-          {COUNTRIES_FR.map(({ code, name, flag, note }) => {
+          {COUNTRIES_WIDGET.map(({ code, flag, note }) => {
+            const name = getCountryName(code, lang) || code
             const m = estimateForeignMalus(co2, code)
             return (
               <div key={code} className="flex items-center gap-3">
@@ -147,14 +148,14 @@ export default function MalusWidget({ product }) {
                   <p className="text-[10px] text-slate-600">{note}</p>
                 </div>
                 <span className={`text-xs font-bold ${m > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                  {m > 0 ? `~${formatNumber(m)} €` : 'Exonéré'}
+                  {m > 0 ? `~${formatNumber(m)} €` : t('malus_exempt_label')}
                 </span>
               </div>
             )
           })}
         </div>
         <p className="text-[10px] text-slate-600 mt-3">
-          * Estimations approximatives. Consultez co2-malus.vercel.app pour les barèmes exacts.
+          {t('malus_approx_note')}
         </p>
       </div>
     </div>

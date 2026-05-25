@@ -63,7 +63,7 @@ function SegmentBlock({ icon: Icon, color, title, targets, strengths, objections
 }
 
 export default function SalesReport({ product }) {
-  const { t } = useSettings()
+  const { t, lang } = useSettings()
   const [pitch, setPitch] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -88,7 +88,7 @@ Avantage prix vs concurrence : -${formatNumber(Math.round(product.concurrents.re
 
 Sois percutant, concret et adapté au marché français.`
 
-      const result = await sendMessage([{ role: 'user', content: prompt }])
+      const result = await sendMessage([{ role: 'user', content: prompt }], { lang })
       setPitch(result)
     } catch (err) {
       setError(err.message)

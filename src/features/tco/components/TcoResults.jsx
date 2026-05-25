@@ -20,7 +20,7 @@ export default function TcoResults({ results, years, kmYear }) {
     <div className="glass-card overflow-hidden animate-fade-in">
       <div className="px-4 py-3 border-b border-white/7">
         <div className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">
-          TCO sur {years} {t('years_unit')} · {(kmYear / 1000).toFixed(0)}k km/an
+          {t('tco_on_years').replace('{n}', years)} · {(kmYear / 1000).toFixed(0)}k {t('tco_km_year')}
         </div>
       </div>
 
@@ -46,6 +46,7 @@ export default function TcoResults({ results, years, kmYear }) {
 }
 
 function ResultsChart({ results, formatCurrency }) {
+  const { t } = useSettings()
   return (
     <div className="px-2 pt-4 pb-2" style={{ height: 200 + results.length * 40 }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -53,12 +54,12 @@ function ResultsChart({ results, formatCurrency }) {
           <XAxis type="number" hide />
           <YAxis type="category" dataKey="nom" width={110} tick={{ fill: '#94a3b8', fontSize: 11 }} tickLine={false} axisLine={false} />
           <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-          <Bar dataKey="prix" name="Prix" stackId="a" fill="#334155" radius={[0, 0, 0, 0]}>
+          <Bar dataKey="prix" name={t('tco_bar_price')} stackId="a" fill="#334155" radius={[0, 0, 0, 0]}>
             {results.map((r, i) => <Cell key={i} fill={i === 0 ? `${r.color}cc` : '#334155'} />)}
           </Bar>
-          <Bar dataKey="malus"      name="Malus"     stackId="a" fill="#f87171" />
-          <Bar dataKey="totalFuel"  name="Carburant" stackId="a" fill="#fbbf24" />
-          <Bar dataKey="totalMaint" name="Entretien" stackId="a" fill="#64748b" radius={[0, 4, 4, 0]}>
+          <Bar dataKey="malus"      name="Malus"                   stackId="a" fill="#f87171" />
+          <Bar dataKey="totalFuel"  name={t('tco_bar_fuel')}       stackId="a" fill="#fbbf24" />
+          <Bar dataKey="totalMaint" name={t('tco_bar_maint')}      stackId="a" fill="#64748b" radius={[0, 4, 4, 0]}>
             <LabelList
               dataKey="total"
               position="right"
@@ -94,14 +95,15 @@ function ChartTooltip({ active, payload, label }) {
 }
 
 function SavingsCallout({ best, worst, years, kmYear, formatCurrency }) {
+  const { t } = useSettings()
   const savings = Math.round(worst.total - best.total)
   return (
     <div className="mx-4 mb-4 px-4 py-3 rounded-xl bg-emerald-400/8 border border-emerald-400/20">
       <div className="text-xs font-semibold text-emerald-400">
-        💰 {best.nom} — économie de {formatCurrency(savings)} vs {worst.nom}
+        {`💰 ${best.nom} — ${t('tco_savings_label').replace('{amount}', formatCurrency(savings)).replace('{other}', worst.nom)}`}
       </div>
       <div className="text-[11px] text-slate-500 mt-0.5">
-        Sur {years} ans · {(kmYear / 1000).toFixed(0)} 000 km/an
+        {`${t('tco_over_years').replace('{n}', years)} · ${(kmYear / 1000).toFixed(0)} 000 ${t('tco_km_year')}`}
       </div>
     </div>
   )

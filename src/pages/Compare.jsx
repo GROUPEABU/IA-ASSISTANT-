@@ -6,21 +6,7 @@ import { getMalus } from '@/utils/malus'
 import { formatNumber } from '@/utils/formatters'
 import { sendMessage } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
-
-const ROWS = [
-  { key: 'prix_base', label: 'Prix de base', format: (p) => `${formatNumber(p.prix.base)} €`, better: 'min' },
-  { key: 'prix_haut', label: 'Prix max', format: (p) => `${formatNumber(p.prix.haut)} €`, better: 'min' },
-  { key: 'malus', label: 'Malus France 2025', format: (p) => { const m = getMalus(p.specs.co2_wltp, p.prix.haut); return m > 0 ? `+${formatNumber(m)} €` : 'Exonéré' }, rawVal: (p) => getMalus(p.specs.co2_wltp, p.prix.haut), better: 'min' },
-  { key: 'budget_total', label: 'Budget total TTC', format: (p) => `${formatNumber(p.prix.base + getMalus(p.specs.co2_wltp, p.prix.haut))} €`, rawVal: (p) => p.prix.base + getMalus(p.specs.co2_wltp, p.prix.haut), better: 'min' },
-  { key: 'co2', label: 'CO₂ WLTP', format: (p) => `${p.specs.co2_wltp} g/km`, rawVal: (p) => p.specs.co2_wltp, better: 'min' },
-  { key: 'puissance', label: 'Puissance', format: (p) => p.specs.puissance, rawVal: (p) => parseInt(p.specs.puissance), better: 'max' },
-  { key: 'couple', label: 'Couple', format: (p) => p.specs.couple, rawVal: (p) => parseInt(p.specs.couple), better: 'max' },
-  { key: 'coffre', label: 'Volume coffre', format: (p) => `${p.specs.coffre} L`, rawVal: (p) => p.specs.coffre, better: 'max' },
-  { key: 'conso', label: 'Consommation', format: (p) => p.specs.consommation, rawVal: (p) => parseFloat(p.specs.consommation), better: 'min' },
-  { key: 'longueur', label: 'Longueur', format: (p) => `${p.specs.longueur} mm`, rawVal: (p) => p.specs.longueur, better: null },
-  { key: 'segment', label: 'Segment', format: (p) => p.segment, better: null },
-  { key: 'origine', label: 'Origine', format: (p) => p.origin, better: null },
-]
+import { useSettings } from '@/contexts/SettingsContext'
 
 function getBestIndex(row, products) {
   if (!row.rawVal || !row.better) return -1
@@ -31,12 +17,28 @@ function getBestIndex(row, products) {
 }
 
 export default function Compare() {
+  const { t, lang } = useSettings()
   const [selected, setSelected] = useState([null, null])
   const [verdict, setVerdict] = useState('')
   const [loadingVerdict, setLoadingVerdict] = useState(false)
   const [error, setError] = useState(null)
   const { generated } = useGeneratedProducts()
   const allProducts = [...PRODUCTS, ...generated]
+
+  const ROWS = [
+    { key: 'prix_base', label: t('compare_row_prix_base'), format: (p) => `${formatNumber(p.prix.base)} €`, better: 'min' },
+    { key: 'prix_haut', label: t('compare_row_prix_max'), format: (p) => `${formatNumber(p.prix.haut)} €`, better: 'min' },
+    { key: 'malus', label: t('compare_row_malus'), format: (p) => { const m = getMalus(p.specs.co2_wltp, p.prix.haut); return m > 0 ? `+${formatNumber(m)} €` : t('compare_malus_exempt') }, rawVal: (p) => getMalus(p.specs.co2_wltp, p.prix.haut), better: 'min' },
+    { key: 'budget_total', label: t('compare_row_budget'), format: (p) => `${formatNumber(p.prix.base + getMalus(p.specs.co2_wltp, p.prix.haut))} €`, rawVal: (p) => p.prix.base + getMalus(p.specs.co2_wltp, p.prix.haut), better: 'min' },
+    { key: 'co2', label: 'CO₂ WLTP', format: (p) => `${p.specs.co2_wltp} g/km`, rawVal: (p) => p.specs.co2_wltp, better: 'min' },
+    { key: 'puissance', label: t('compare_row_power'), format: (p) => p.specs.puissance, rawVal: (p) => parseInt(p.specs.puissance), better: 'max' },
+    { key: 'couple', label: t('compare_row_torque'), format: (p) => p.specs.couple, rawVal: (p) => parseInt(p.specs.couple), better: 'max' },
+    { key: 'coffre', label: t('compare_row_trunk'), format: (p) => `${p.specs.coffre} L`, rawVal: (p) => p.specs.coffre, better: 'max' },
+    { key: 'conso', label: t('compare_row_conso'), format: (p) => p.specs.consommation, rawVal: (p) => parseFloat(p.specs.consommation), better: 'min' },
+    { key: 'longueur', label: t('compare_row_length'), format: (p) => `${p.specs.longueur} mm`, rawVal: (p) => p.specs.longueur, better: null },
+    { key: 'segment', label: t('compare_row_segment'), format: (p) => p.segment, better: null },
+    { key: 'origine', label: t('compare_row_origin'), format: (p) => p.origin, better: null },
+  ]
 
   const addSlot = () => { if (selected.length < 3) setSelected([...selected, null]) }
   const removeSlot = (i) => setSelected(selected.filter((_, idx) => idx !== i))
@@ -68,7 +70,7 @@ Rédige un verdict comparatif en 3 parties :
 
 Sois direct et argumenté.`
 
-      const result = await sendMessage([{ role: 'user', content: prompt }])
+      const result = await sendMessage([{ role: 'user', content: prompt }], { lang })
       setVerdict(result)
     } catch (err) {
       setError(err.message)
@@ -83,8 +85,8 @@ Sois direct et argumenté.`
       <div className="glass-card p-4 md:p-5">
         <div className="flex items-center gap-2 mb-4">
           <GitCompare size={16} className="text-cyan-400" />
-          <h2 className="text-sm font-semibold text-white">Comparateur de modèles</h2>
-          <span className="text-xs text-slate-500">2 ou 3 véhicules côte à côte</span>
+          <h2 className="text-sm font-semibold text-white">{t('compare_title')}</h2>
+          <span className="text-xs text-slate-500">{t('compare_subtitle')}</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -96,7 +98,7 @@ Sois direct et argumenté.`
                 className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
                            text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition pr-8"
               >
-                <option value="">-- Véhicule {i + 1} --</option>
+                <option value="">{`-- ${t('compare_vehicle_n').replace('{n}', i + 1)} --`}</option>
                 {allProducts
                   .filter((p) => !selected.includes(p.id) || p.id === id)
                   .map((p) => (
@@ -116,7 +118,7 @@ Sois direct et argumenté.`
             <button onClick={addSlot}
               className="flex items-center justify-center gap-2 border border-dashed border-navy-600/60
                          rounded-xl py-2.5 text-sm text-slate-600 hover:text-cyan-400 hover:border-cyan-400/30 transition">
-              <Plus size={14} /> Ajouter un 3ème
+              <Plus size={14} /> {t('compare_add_third')}
             </button>
           )}
         </div>
@@ -130,7 +132,7 @@ Sois direct et argumenté.`
                        disabled:opacity-40 disabled:pointer-events-none"
           >
             {loadingVerdict ? <Spinner size="sm" /> : <Trophy size={14} />}
-            {loadingVerdict ? 'Analyse…' : 'Verdict IA'}
+            {loadingVerdict ? t('compare_analyzing') : t('compare_verdict_btn')}
           </button>
         )}
       </div>
@@ -181,13 +183,13 @@ Sois direct et argumenté.`
         <div className="glass-card p-5">
           <div className="flex items-center gap-2 mb-4">
             <Trophy size={15} className="text-amber-400" />
-            <h3 className="text-sm font-semibold text-white">Verdict IA</h3>
+            <h3 className="text-sm font-semibold text-white">{t('compare_verdict_title')}</h3>
           </div>
 
           {loadingVerdict && (
             <div className="flex items-center gap-3 py-4">
               <Spinner size="sm" />
-              <p className="text-sm text-slate-400">Analyse comparative en cours…</p>
+              <p className="text-sm text-slate-400">{t('compare_analyzing_progress')}</p>
             </div>
           )}
 
@@ -209,7 +211,7 @@ Sois direct et argumenté.`
               })}
               <button onClick={generateVerdict}
                 className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition mt-3">
-                <RefreshCw size={11} /> Régénérer le verdict
+                <RefreshCw size={11} /> {t('compare_regenerate')}
               </button>
             </div>
           )}
@@ -220,8 +222,8 @@ Sois direct et argumenté.`
       {!canCompare && (
         <div className="glass-card p-10 text-center">
           <GitCompare size={36} className="text-slate-700 mx-auto mb-3" />
-          <p className="text-sm text-slate-400 mb-1">Sélectionnez au moins 2 véhicules</p>
-          <p className="text-xs text-slate-600">depuis votre catalogue ou en générant une fiche IA</p>
+          <p className="text-sm text-slate-400 mb-1">{t('compare_empty_hint1')}</p>
+          <p className="text-xs text-slate-600">{t('compare_empty_hint2')}</p>
         </div>
       )}
     </div>

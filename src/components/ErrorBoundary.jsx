@@ -41,15 +41,15 @@ export default class ErrorBoundary extends Component {
             <AlertTriangle size={24} className="text-red-400" aria-hidden="true" />
           </div>
           <h1 className="text-lg font-semibold text-white mb-2">
-            Une erreur inattendue s'est produite
+            An unexpected error occurred
           </h1>
           <p className="text-sm text-slate-400 mb-6 leading-relaxed">
-            Le portail a rencontré un problème. Vous pouvez recharger la page.
-            Si le problème persiste, contactez votre administrateur.
+            The portal encountered an error. You can reload the page.
+            If the problem persists, contact your administrator.
           </p>
           <details className="text-left text-[11px] text-slate-500 bg-navy-900/60 rounded-lg p-3 mb-4">
             <summary className="cursor-pointer text-slate-400 hover:text-white">
-              Détails techniques
+              Technical details
             </summary>
             <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words">
               {this.state.error?.message ?? String(this.state.error)}
@@ -62,7 +62,7 @@ export default class ErrorBoundary extends Component {
                        hover:bg-cyan-300 active:scale-95 transition"
           >
             <RefreshCw size={14} />
-            Recharger l'application
+            Reload application
           </button>
         </div>
       </div>

@@ -1,26 +1,29 @@
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
+import { useSettings } from '@/contexts/SettingsContext'
 
 const CustomTooltip = ({ active, payload, label }) => {
+  const { t } = useSettings()
   if (!active || !payload?.length) return null
   return (
     <div className="bg-navy-800 border border-navy-700/50 rounded-lg px-3 py-2 shadow-xl">
       <p className="text-xs text-slate-400 mb-1">{label}</p>
       <p className="text-sm font-semibold text-cyan-400">
-        {payload[0].value.toLocaleString('fr-FR')} véhicules
+        {`${payload[0].value.toLocaleString()} ${t('sales_chart_vehicles')}`}
       </p>
     </div>
   )
 }
 
 export default function SalesChart({ data }) {
+  const { t } = useSettings()
   return (
     <div className="glass-card p-5">
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h3 className="text-sm font-semibold text-white">Volume de ventes</h3>
-          <p className="text-xs text-slate-500">12 derniers mois</p>
+          <h3 className="text-sm font-semibold text-white">{t('sales_chart_title')}</h3>
+          <p className="text-xs text-slate-500">{t('sales_chart_subtitle')}</p>
         </div>
       </div>
 

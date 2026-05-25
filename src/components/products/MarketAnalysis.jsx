@@ -5,6 +5,7 @@ import { fetchMarketData, buildMarketPrompt } from '@/services/marketSearch'
 import Spinner from '@/components/ui/Spinner'
 import Button from '@/components/ui/Button'
 import { formatNumber } from '@/utils/formatters'
+import { useSettings } from '@/contexts/SettingsContext'
 
 function StatCard({ label, value, sub, trend }) {
   return (
@@ -76,6 +77,7 @@ function AnalysisText({ text }) {
 }
 
 export default function MarketAnalysis({ product }) {
+  const { t, lang } = useSettings()
   const [analysis, setAnalysis] = useState('')
   const [snippets, setSnippets] = useState([])
   const [loading, setLoading] = useState(false)
@@ -103,8 +105,8 @@ export default function MarketAnalysis({ product }) {
       }
 
       // Étape 2 : analyse IA
-      const prompt = buildMarketPrompt(product.fullName, webData.snippets || [], product)
-      const result = await sendMessage([{ role: 'user', content: prompt }])
+      const prompt = buildMarketPrompt(product.fullName, webData.snippets || [], product, lang)
+      const result = await sendMessage([{ role: 'user', content: prompt }], { lang })
       setAnalysis(result)
     } catch (err) {
       setError(err.message)
@@ -114,22 +116,27 @@ export default function MarketAnalysis({ product }) {
     }
   }
 
+  const localeDateString = (ts) => {
+    const locale = lang === 'fr' ? 'fr-FR' : lang === 'de' ? 'de-DE' : lang === 'it' ? 'it-IT' : lang === 'es' ? 'es-ES' : 'en-GB'
+    return new Date(ts).toLocaleString(locale)
+  }
+
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Stats produit */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="PDM cible" value={product.marche.part_marche_cible} sub="sur segment" />
+        <StatCard label={t('market_pdm_label')} value={product.marche.part_marche_cible} sub={t('market_on_segment')} />
         <StatCard
-          label="Croissance segment"
+          label={t('market_segment_growth')}
           value={product.marche.croissance_segment.split(' ')[0]}
           sub={product.marche.croissance_segment.split(' ').slice(1).join(' ')}
           trend={8.4}
         />
-        <StatCard label="Prix de base" value={`${formatNumber(product.prix.base)} €`} sub="hors malus" />
+        <StatCard label={t('market_base_price_label')} value={`${formatNumber(product.prix.base)} €`} sub={t('market_excl_malus')} />
         <StatCard
-          label="Avantage prix moy."
+          label={t('market_price_advantage')}
           value={`-${formatNumber(Math.round(product.concurrents.reduce((a, c) => a + c.prix, 0) / product.concurrents.length - product.prix.base))} €`}
-          sub="vs concurrence"
+          sub={t('market_vs_competition')}
         />
       </div>
 
@@ -138,7 +145,7 @@ export default function MarketAnalysis({ product }) {
         <div className="glass-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <Lightbulb size={15} className="text-emerald-400" />
-            <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Opportunités</h3>
+            <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">{t('market_opportunities')}</h3>
           </div>
           <p className="text-sm text-slate-300 leading-relaxed">{product.marche.opportunites}</p>
           <p className="text-xs text-slate-500 mt-2 italic">{product.marche.tendance}</p>
@@ -146,7 +153,7 @@ export default function MarketAnalysis({ product }) {
         <div className="glass-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <AlertTriangle size={15} className="text-amber-400" />
-            <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider">Risques</h3>
+            <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider">{t('market_risks')}</h3>
           </div>
           <p className="text-sm text-slate-300 leading-relaxed">{product.marche.risques}</p>
         </div>
@@ -158,7 +165,7 @@ export default function MarketAnalysis({ product }) {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <Globe size={14} className="text-cyan-400 flex-shrink-0" />
-              <h3 className="text-sm font-semibold text-white">Analyse marché temps réel</h3>
+              <h3 className="text-sm font-semibold text-white">{t('market_realtime_title')}</h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
               L'Argus · La Centrale · Le Bon Coin
@@ -166,7 +173,7 @@ export default function MarketAnalysis({ product }) {
             {snippets.length > 0 && <SourceBadges snippets={snippets} />}
             {fetchedAt && (
               <p className="text-[10px] text-slate-600 mt-1">
-                Actualisé le {new Date(fetchedAt).toLocaleString('fr-FR')}
+                {`${t('market_updated_at')} ${localeDateString(fetchedAt)}`}
               </p>
             )}
           </div>
@@ -178,7 +185,7 @@ export default function MarketAnalysis({ product }) {
             className="flex-shrink-0"
           >
             {loading ? <Spinner size="sm" /> : <RefreshCw size={13} />}
-            {loading ? 'En cours…' : analysis ? 'Actualiser' : 'Analyser'}
+            {loading ? t('market_loading') : analysis ? t('market_refresh') : t('market_analyze')}
           </Button>
         </div>
 
@@ -205,12 +212,12 @@ export default function MarketAnalysis({ product }) {
         {!analysis && !loading && !error && (
           <div className="text-center py-10">
             <Globe size={32} className="text-slate-700 mx-auto mb-3" />
-            <p className="text-sm text-slate-400 mb-1 font-medium">Analyse VN & VO en temps réel</p>
+            <p className="text-sm text-slate-400 mb-1 font-medium">{t('market_empty_title')}</p>
             <p className="text-xs text-slate-600 mb-4">
-              Lit L'Argus, La Centrale et Le Bon Coin<br />
-              puis génère une analyse complète
+              {t('market_empty_desc_1')}<br />
+              {t('market_empty_desc_2')}
             </p>
-            <p className="text-[11px] text-cyan-400/60">Gratuit · Sans inscription · Sans carte bancaire</p>
+            <p className="text-[11px] text-cyan-400/60">{t('market_free_note')}</p>
           </div>
         )}
 
@@ -223,7 +230,7 @@ export default function MarketAnalysis({ product }) {
         <div className="flex gap-2 p-3 rounded-xl bg-navy-900/40">
           <Info size={12} className="text-slate-600 flex-shrink-0 mt-0.5" />
           <p className="text-[10px] text-slate-600 leading-relaxed">
-            Analyse générée automatiquement à partir de sources publiques. Vérifiez les données chiffrées avant utilisation commerciale.
+            {t('market_disclaimer')}
           </p>
         </div>
       )}

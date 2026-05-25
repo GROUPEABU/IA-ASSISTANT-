@@ -1,10 +1,12 @@
 import { useState, useCallback } from 'react'
 import { sendMessage } from '@/services/claude'
+import { useSettings } from '@/contexts/SettingsContext'
 
 let msgId = 0
 const newId = () => `msg-${++msgId}`
 
 export function useChat() {
+  const { lang } = useSettings()
   const [messages, setMessages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -17,7 +19,7 @@ export function useChat() {
 
     try {
       const history = [...messages, userMsg]
-      const reply = await sendMessage(history)
+      const reply = await sendMessage(history, { lang })
       setMessages((prev) => [...prev, { id: newId(), role: 'assistant', content: reply }])
     } catch (err) {
       setError(err.message)

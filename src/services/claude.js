@@ -16,11 +16,12 @@ const API_VERSION  = '2023-06-01'
 const MAX_TOKENS   = 1024
 const STORAGE_KEY  = 'abu_api_key'
 
-const SYSTEM_PROMPT = `Tu es un assistant IA expert en analyse des ventes automobiles pour Autobuyunion,
-le premier groupement européen d'achat automobile. Tu aides les équipes commerciales à analyser
-leurs données de ventes, identifier des tendances, comparer des performances régionales,
-et générer des insights actionnables. Réponds toujours en français, de façon précise et professionnelle.
-Formate tes réponses avec des listes et chiffres quand c'est pertinent.`
+const LANG_NAMES = { fr: 'French', en: 'English', de: 'German', it: 'Italian', es: 'Spanish' }
+
+function buildSystemPrompt(lang = 'fr') {
+  const langName = LANG_NAMES[lang] || 'French'
+  return `You are an AI assistant expert in automotive sales analysis for Autobuyunion, Europe's leading automotive purchasing group. You help sales teams analyze their sales data, identify trends, compare regional performance, and generate actionable insights. Always respond in ${langName}, precisely and professionally. Format your responses with lists and figures when relevant.`
+}
 
 /**
  * @typedef {object} Attachment
@@ -80,10 +81,10 @@ function buildContent(text, attachment) {
  * @returns {Promise<string>}  the assistant's text response
  * @throws  {Error} if no API key is configured, or if the API rejects the request
  */
-export async function sendMessage(messages) {
+export async function sendMessage(messages, { lang = 'fr' } = {}) {
   const apiKey = resolveApiKey()
   if (!apiKey) {
-    throw new Error('Clé API Anthropic manquante. Renseignez votre clé dans Paramètres.')
+    throw new Error('Anthropic API key missing. Please add your key in Settings.')
   }
 
   const apiMessages = messages.map(({ role, content, attachment }) => ({
@@ -102,7 +103,7 @@ export async function sendMessage(messages) {
     body: JSON.stringify({
       model:      MODEL,
       max_tokens: MAX_TOKENS,
-      system:     SYSTEM_PROMPT,
+      system:     buildSystemPrompt(lang),
       messages:   apiMessages,
     }),
   })
@@ -115,7 +116,7 @@ export async function sendMessage(messages) {
   const payload = await response.json()
   const text = payload.content?.[0]?.text
   if (typeof text !== 'string') {
-    throw new Error('Réponse API inattendue (pas de contenu textuel).')
+    throw new Error('Unexpected API response (no text content).')
   }
   return text
 }
@@ -132,10 +133,10 @@ export async function sendMessage(messages) {
 export function extractJSON(raw, kind = 'object') {
   const pattern = kind === 'array' ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/
   const match = raw.match(pattern)
-  if (!match) throw new Error('Réponse IA invalide : aucun JSON détecté.')
+  if (!match) throw new Error('Invalid AI response: no JSON detected.')
   try {
     return JSON.parse(match[0])
   } catch {
-    throw new Error('Réponse IA invalide : JSON malformé.')
+    throw new Error('Invalid AI response: malformed JSON.')
   }
 }

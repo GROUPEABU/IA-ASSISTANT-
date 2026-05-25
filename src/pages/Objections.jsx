@@ -67,7 +67,7 @@ function ObjectionCard({ item, index, isOpen, onToggle }) {
 }
 
 export default function Objections() {
-  const { t } = useSettings()
+  const { t, lang } = useSettings()
   const [vehicleId, setVehicleId] = useState('')
   const [customVehicle, setCustomVehicle] = useState('')
   const [segment, setSegment] = useState('both')
@@ -115,7 +115,7 @@ Réponds UNIQUEMENT en JSON valide :
 
 Les objections doivent être réalistes, variées, couvrir : prix, marque inconnue, fiabilité, valeur de revente, malus, financement, SAV, concurrence.`
 
-      const raw = await sendMessage([{ role: 'user', content: prompt }])
+      const raw = await sendMessage([{ role: 'user', content: prompt }], { lang })
       const data = extractJSON(raw, 'array')
       setObjections(data)
       setGeneratedFor(`${vehicleName} · ${segLabel}`)

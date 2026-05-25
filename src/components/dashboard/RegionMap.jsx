@@ -1,20 +1,23 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { useSettings } from '@/contexts/SettingsContext'
 
 const CustomTooltip = ({ active, payload }) => {
+  const { t } = useSettings()
   if (!active || !payload?.length) return null
   return (
     <div className="bg-navy-800 border border-navy-700/50 rounded-lg px-3 py-2 shadow-xl">
       <p className="text-xs text-slate-400">{payload[0].payload.region}</p>
-      <p className="text-sm font-semibold text-cyan-400">{payload[0].value.toLocaleString('fr-FR')} ventes</p>
+      <p className="text-sm font-semibold text-cyan-400">{`${payload[0].value.toLocaleString()} ${t('region_map_sales')}`}</p>
     </div>
   )
 }
 
 export default function RegionMap({ data }) {
+  const { t } = useSettings()
   return (
     <div className="glass-card p-5">
-      <h3 className="text-sm font-semibold text-white mb-1">Ventes par région</h3>
-      <p className="text-xs text-slate-500 mb-4">Comparaison Europe</p>
+      <h3 className="text-sm font-semibold text-white mb-1">{t('region_map_title')}</h3>
+      <p className="text-xs text-slate-500 mb-4">{t('region_map_subtitle')}</p>
 
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: -20 }} barSize={28}>

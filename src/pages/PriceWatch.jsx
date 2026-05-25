@@ -42,7 +42,7 @@ async function fetchPrices(filters) {
   return res.json()
 }
 
-async function analyzePrices(filters, sourcesData, fuels, gearboxes) {
+async function analyzePrices(filters, sourcesData, fuels, gearboxes, lang = 'fr') {
   const context = sourcesData.map(s => `=== ${s.name} ===\n${s.content}`).join('\n\n')
   const vehicleDesc = [
     filters.make, filters.model,
@@ -82,7 +82,7 @@ Réponds UNIQUEMENT en JSON strict :
   "conseil_vente": "conseil concret et chiffré pour vendre rapidement au bon prix"
 }`
 
-  const raw = await sendMessage([{ role: 'user', content: prompt }])
+  const raw = await sendMessage([{ role: 'user', content: prompt }], { lang })
   return extractJSON(raw, 'object')
 }
 
@@ -113,7 +113,7 @@ function KpiCard({ label, value, highlight, sub }) {
 
 // ── Page principale ───────────────────────────────────────────────────────────
 export default function PriceWatch() {
-  const { t } = useSettings()
+  const { t, lang } = useSettings()
 
   const FUELS = [
     { label: t('price_fuel_all'), code: '' },
@@ -185,7 +185,7 @@ export default function PriceWatch() {
       setCentraleUrl(raw.centraleUrl || '')
 
       setStep('Calcul des prix moyens du marché…')
-      const analysis = await analyzePrices(filters, raw.sources || [], FUELS, GEARBOXES)
+      const analysis = await analyzePrices(filters, raw.sources || [], FUELS, GEARBOXES, lang)
       setResult({ ...analysis, sources: raw.sources })
     } catch (err) {
       setError(err.message)

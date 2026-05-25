@@ -1,6 +1,6 @@
 import { COUNTRIES, RELIABILITY_CONFIG } from '@/utils/malusWorld'
 import { useSettings } from '@/contexts/SettingsContext'
-import { sevColor, sevLabel } from '../constants'
+import { sevColor } from '../constants'
 
 /**
  * Compare-mode view: select up to 6 countries, run the comparison, see ranked results.
@@ -9,6 +9,7 @@ export default function CompareView({
   selectedForCompare, onToggleCountry, onRunCompare,
   compareResults, emission, weight, panelRef,
 }) {
+  const { t } = useSettings()
   return (
     <>
       <CountryCheckboxGrid
@@ -19,7 +20,7 @@ export default function CompareView({
       {selectedForCompare.length >= 2 && (
         <div className="flex items-center justify-between gap-3 px-1 mb-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">{selectedForCompare.length} pays :</span>
+            <span className="text-xs text-slate-400">{selectedForCompare.length} {t('malus_compare_countries_label')} :</span>
             <div className="flex gap-0.5">
               {selectedForCompare.map(c => (
                 <span key={c.code} className="text-lg leading-none">{c.flag}</span>
@@ -31,7 +32,7 @@ export default function CompareView({
             className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border border-cyan-400/40 text-cyan-400 active:scale-95 transition"
             style={{ background: 'rgba(80,229,229,0.06)' }}
           >
-            ⚖️ Comparer
+            {t('malus_compare_btn')}
           </button>
         </div>
       )}
@@ -53,7 +54,7 @@ function CountryCheckboxGrid({ selected, onToggle }) {
   return (
     <div className="glass-card p-4 mb-2">
       <div className="flex justify-between items-center mb-3">
-        <span className="text-sm font-semibold text-white">Sélectionnez les pays</span>
+        <span className="text-sm font-semibold text-white">{t('malus_compare_select_countries')}</span>
         <span className="text-xs text-slate-500">{selected.length}/6</span>
       </div>
       <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
@@ -85,13 +86,14 @@ function CountryCheckboxGrid({ selected, onToggle }) {
 }
 
 function CompareResults({ results, emission, weight, panelRef }) {
+  const { t } = useSettings()
   const sorted = [...results].sort((a, b) => (a.specific_penalty_amount || 0) - (b.specific_penalty_amount || 0))
 
   return (
     <div ref={panelRef} className="glass-card overflow-hidden animate-fade-in">
       <div className="px-4 py-3 border-b border-white/7">
         <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-          Résultats pour {emission} g/km · {weight} kg
+          {t('malus_compare_results').replace('{e}', emission).replace('{w}', weight)}
         </div>
       </div>
       <div className="divide-y divide-white/5">
@@ -112,7 +114,7 @@ function CompareResultRow({ result }) {
         <div className="flex items-center gap-3">
           <span className="text-2xl">{result.country.flag}</span>
           <div>
-            <div className="text-sm font-bold text-white">{result.country.name}</div>
+            <div className="text-sm font-bold text-white">{result.country.localizedName || result.country.name}</div>
             <div className="text-[11px] text-slate-400 leading-snug">{result.tax_name}</div>
             <div className="text-[11px] font-semibold" style={{ color: cfg.color }}>{t(cfg.labelKey)}</div>
           </div>
@@ -121,9 +123,9 @@ function CompareResultRow({ result }) {
           className="rounded-lg px-3 py-1.5 text-center flex-shrink-0"
           style={{ background: `${sevColor(result.severity)}18`, border: `1px solid ${sevColor(result.severity)}33` }}
         >
-          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Sévérité</div>
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">{t('co2_severity')}</div>
           <div className="text-xs font-semibold" style={{ color: sevColor(result.severity) }}>
-            {sevLabel(result.severity)}
+            {t(`co2_severity_${result.severity}`)}
           </div>
         </div>
       </div>

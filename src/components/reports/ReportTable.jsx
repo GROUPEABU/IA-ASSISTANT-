@@ -1,14 +1,16 @@
 import Badge from '@/components/ui/Badge'
 import { formatNumber, formatPercent } from '@/utils/formatters'
+import { useSettings } from '@/contexts/SettingsContext'
 
 export default function ReportTable({ rows }) {
+  const { t } = useSettings()
   return (
     <div className="glass-card overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-navy-700/50">
-              {['Modèle', 'Marque', 'Ventes', 'CA (€)', 'Évolution', 'Région'].map((h) => (
+              {[t('report_col_model'), t('report_col_brand'), t('report_col_units'), t('report_col_revenue'), t('report_col_delta'), t('report_col_region')].map((h) => (
                 <th
                   key={h}
                   className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider"

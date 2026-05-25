@@ -1,10 +1,13 @@
 export async function fetchMarketData(vehicle) {
   const res = await fetch(`/api/market-data?vehicle=${encodeURIComponent(vehicle)}`)
-  if (!res.ok) throw new Error(`Erreur serveur: ${res.status}`)
+  if (!res.ok) throw new Error(`Server error: ${res.status}`)
   return res.json()
 }
 
-export function buildMarketPrompt(vehicle, snippets, product) {
+export function buildMarketPrompt(vehicle, snippets, product, lang = 'fr') {
+  const LANG_NAMES = { fr: 'French', en: 'English', de: 'German', it: 'Italian', es: 'Spanish' }
+  const langName = LANG_NAMES[lang] || 'French'
+  const langInstruction = lang !== 'fr' ? `\n\nIMPORTANT: Write your entire response in ${langName}.` : ''
   const webContext = snippets.length > 0
     ? `\n\nDONNÉES COLLECTÉES EN TEMPS RÉEL (${snippets.map(s => s.source).join(', ')}) :\n\n` +
       snippets.map((s) => `=== ${s.source} ===\n${s.content}`).join('\n\n')
@@ -37,5 +40,5 @@ Actualité du modèle, évolutions gamme, impact ZFE, électrification du segmen
 **5. RECOMMANDATIONS AUTOBUYUNION**
 Actions concrètes : timing optimal d'achat, leviers de négociation, cibles BtoB/BtoC prioritaires, argument prix.
 
-Sois précis, chiffré, et directement utilisable par nos équipes commerciales.`
+Sois précis, chiffré, et directement utilisable par nos équipes commerciales.${langInstruction}`
 }

@@ -69,16 +69,17 @@ export default function AdvancedParams({
 // ── Sub-sections ─────────────────────────────────────────────────────────────
 
 function DisplacementSection({ value, onChange }) {
+  const { t } = useSettings()
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-semibold text-slate-200">Cylindrée</span>
+        <span className="text-sm font-semibold text-slate-200">{t('malus_displacement_label')}</span>
         <span className="text-sm font-bold text-cyan-400">{value.toLocaleString('fr-FR')} cm³</span>
       </div>
       <input
         type="range" min={600} max={5000} step={100} value={value}
         onChange={e => onChange(Number(e.target.value))}
-        aria-label="Cylindrée"
+        aria-label={t('malus_displacement_label')}
         className="w-full h-1 mb-2"
         style={{ accentColor: '#50E5E5' }}
       />
@@ -104,15 +105,16 @@ function DisplacementSection({ value, onChange }) {
 }
 
 function FuelKindSection({ value, onChange }) {
+  const { t } = useSettings()
   return (
     <div className="p-4">
-      <div className="text-sm font-semibold text-slate-200 mb-2">Carburant</div>
+      <div className="text-sm font-semibold text-slate-200 mb-2">{t('malus_fuel_kind_label')}</div>
       <SegButton
         value={value}
         setValue={onChange}
         options={[
-          { k: 'petrol', l: 'Essence' },
-          { k: 'diesel', l: 'Diesel' },
+          { k: 'petrol', l: t('malus_petrol') },
+          { k: 'diesel', l: t('malus_diesel') },
         ]}
       />
       <div className="mt-2 text-[11px] text-slate-600">🇩🇪 DE · 🇵🇹 PT · 🇳🇱 NL</div>
@@ -121,16 +123,17 @@ function FuelKindSection({ value, onChange }) {
 }
 
 function VehiclePriceSection({ value, onChange, formatCurrency }) {
+  const { t } = useSettings()
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-semibold text-slate-200">Prix HT du véhicule</span>
+        <span className="text-sm font-semibold text-slate-200">{t('malus_vehicle_price_ht')}</span>
         <span className="text-sm font-bold text-cyan-400">{formatCurrency(value)}</span>
       </div>
       <input
         type="range" min={5000} max={150000} step={1000} value={value}
         onChange={e => onChange(Number(e.target.value))}
-        aria-label="Prix du véhicule"
+        aria-label={t('malus_vehicle_price_ht')}
         className="w-full h-1 mb-2"
         style={{ accentColor: '#50E5E5' }}
       />
@@ -154,9 +157,10 @@ function VehiclePriceSection({ value, onChange, formatCurrency }) {
 }
 
 function BeRegionSection({ value, onChange }) {
+  const { t } = useSettings()
   return (
     <div className="p-4">
-      <div className="text-sm font-semibold text-slate-200 mb-2">🇧🇪 Région Belgique</div>
+      <div className="text-sm font-semibold text-slate-200 mb-2">{t('malus_be_region_label')}</div>
       <SegButton
         cols={3}
         value={value}
@@ -172,15 +176,16 @@ function BeRegionSection({ value, onChange }) {
 }
 
 function EsRegionSection({ value, onChange }) {
+  const { t } = useSettings()
   return (
     <div className="p-4">
-      <div className="text-sm font-semibold text-slate-200 mb-2">🇪🇸 Région Espagne</div>
+      <div className="text-sm font-semibold text-slate-200 mb-2">{t('malus_es_region_label')}</div>
       <SegButton
         cols={2}
         value={value}
         setValue={onChange}
         options={[
-          { k: 'standard', l: 'Péninsule' },
+          { k: 'standard', l: t('malus_es_peninsula') },
           { k: 'canarias', l: 'Canaries −50%' },
           { k: 'navarra',  l: 'Navarra' },
           { k: 'ceuta',    l: 'Ceuta / Melilla' },
@@ -191,10 +196,11 @@ function EsRegionSection({ value, onChange }) {
 }
 
 function ChildrenSection({ value, onChange }) {
+  const { t } = useSettings()
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-semibold text-slate-200">Enfants à charge</span>
+        <span className="text-sm font-semibold text-slate-200">{t('malus_children_label')}</span>
         <span className="text-[11px] text-slate-600">🇫🇷 ≥3 : −20 g/km</span>
       </div>
       <SegButton
@@ -205,7 +211,7 @@ function ChildrenSection({ value, onChange }) {
       />
       {value >= 3 && (
         <div className="mt-2 text-xs text-cyan-400 bg-cyan-400/7 rounded-lg px-3 py-2 text-center">
-          Famille nombreuse : −{value * 20} g/km (art. L421-70 CIBS)
+          {t('malus_large_family').replace('{n}', value * 20)}
         </div>
       )}
     </div>
@@ -213,6 +219,7 @@ function ChildrenSection({ value, onChange }) {
 }
 
 function ImportedSection({ value, onChange, dateImmat }) {
+  const { t } = useSettings()
   return (
     <div className="p-4">
       <label className="flex items-start gap-3 cursor-pointer">
@@ -223,9 +230,9 @@ function ImportedSection({ value, onChange, dateImmat }) {
           className="mt-0.5 w-5 h-5 accent-cyan-400 cursor-pointer flex-shrink-0"
         />
         <div>
-          <div className="text-sm font-semibold text-slate-200">🚗 Véhicule importé d'occasion</div>
+          <div className="text-sm font-semibold text-slate-200">{t('malus_imported_label')}</div>
           <div className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-            Décote selon ancienneté — 🇫🇷 · 🇳🇱 · 🇵🇹 · 🇩🇪 · 🇪🇸 · 🇧🇪 · 🇮🇪
+            {t('malus_imported_note')} — 🇫🇷 · 🇳🇱 · 🇵🇹 · 🇩🇪 · 🇪🇸 · 🇧🇪 · 🇮🇪
           </div>
           {value && (
             <div className="mt-2 text-xs text-cyan-400 bg-cyan-400/7 rounded-lg px-3 py-2 leading-relaxed">

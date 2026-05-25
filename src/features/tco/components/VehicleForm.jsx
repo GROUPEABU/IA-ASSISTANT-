@@ -1,7 +1,7 @@
 import { Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 import { formatNumber } from '@/utils/formatters'
-import { FUEL_LABELS, MAINT_TIERS, getMaintDefault } from '../constants'
+import { FUEL_LABEL_KEYS, MAINT_TIERS, getMaintDefault } from '../constants'
 
 const CONSUMPTION_PLACEHOLDERS = {
   ev:        '17',
@@ -97,6 +97,7 @@ export default function VehicleForm({ vehicle, index, color, canRemove, onUpdate
 }
 
 function VehicleHeader({ vehicle, index, color, canRemove, onToggleOpen, onRemove }) {
+  const { t } = useSettings()
   const v = vehicle
   return (
     <div className="flex items-center gap-3 px-4 py-3 cursor-pointer" onClick={onToggleOpen}>
@@ -110,7 +111,7 @@ function VehicleHeader({ vehicle, index, color, canRemove, onToggleOpen, onRemov
         className="flex-1 text-sm font-medium truncate"
         style={{ color: v.nom ? '#E0E1E1' : '#475569' }}
       >
-        {v.nom || `Véhicule ${index}`}
+        {v.nom || `${t('tco_vehicle_label')} ${index}`}
       </span>
       {v.nom && Number(v.prix) > 0 && (
         <span className="text-xs text-slate-500">{formatNumber(Number(v.prix))} €</span>
@@ -119,7 +120,7 @@ function VehicleHeader({ vehicle, index, color, canRemove, onToggleOpen, onRemov
         {canRemove && (
           <button
             onClick={e => { e.stopPropagation(); onRemove() }}
-            aria-label={`Supprimer ${v.nom || `véhicule ${index}`}`}
+            aria-label={`${t('tco_remove_label')} ${v.nom || `${t('tco_vehicle_label').toLowerCase()} ${index}`}`}
             className="w-6 h-6 flex items-center justify-center text-slate-600 hover:text-red-400 transition rounded"
           >
             <Trash2 size={13} />
@@ -151,11 +152,12 @@ function NumberField({ label, value, onChange, placeholder }) {
 }
 
 function FuelTypeSelector({ value, onChange, label }) {
+  const { t } = useSettings()
   return (
     <div>
       <label className="text-[11px] text-slate-500 uppercase tracking-wider">{label}</label>
       <div role="radiogroup" className="grid grid-cols-4 gap-0 bg-navy-900/50 rounded-xl p-1 mt-1">
-        {Object.entries(FUEL_LABELS).map(([k, l]) => {
+        {Object.entries(FUEL_LABEL_KEYS).map(([k, labelKey]) => {
           const isActive = value === k
           return (
             <button
@@ -168,7 +170,7 @@ function FuelTypeSelector({ value, onChange, label }) {
                 background: isActive ? 'rgba(80,229,229,0.16)' : 'transparent',
                 color:      isActive ? '#50E5E5' : '#64748b',
               }}
-            >{l}</button>
+            >{t(labelKey)}</button>
           )
         })}
       </div>
@@ -184,7 +186,7 @@ function MaintenanceField({ vehicle, onUpdate }) {
         <label className="text-[11px] text-slate-500 uppercase tracking-wider">
           {t('maintenance_label')}
         </label>
-        <span className="text-[10px] text-slate-600">modifiable</span>
+        <span className="text-[10px] text-slate-600">{t('tco_editable')}</span>
       </div>
       <div role="radiogroup" className="grid grid-cols-3 gap-0 bg-navy-900/50 rounded-xl p-1 mb-2">
         {MAINT_TIERS.map(tier => {
@@ -204,7 +206,7 @@ function MaintenanceField({ vehicle, onUpdate }) {
                 background: isActive ? 'rgba(80,229,229,0.16)' : 'transparent',
                 color:      isActive ? '#50E5E5' : '#64748b',
               }}
-            >{tier.l}</button>
+            >{t(tier.labelKey)}</button>
           )
         })}
       </div>
@@ -217,14 +219,14 @@ function MaintenanceField({ vehicle, onUpdate }) {
             onUpdate('maint', e.target.value)
             onUpdate('maintManual', true)
           }}
-          aria-label="Entretien annuel"
+          aria-label={t('tco_annual_maint_label')}
           className="flex-1 px-3 py-2 rounded-lg text-sm text-amber-400 font-semibold border border-amber-400/20 bg-amber-400/5 outline-none text-center"
           style={{ fontFamily: 'inherit', MozAppearance: 'textfield' }}
         />
         <span className="text-xs text-slate-500">€/an</span>
       </div>
       <p className="text-[10px] text-slate-600 mt-1">
-        Entretien + réparations estimés · ajustez selon votre expérience
+        {t('tco_maint_note')}
       </p>
     </div>
   )
