@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { Menu, LogOut } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -51,11 +51,16 @@ export default function Header({ onMenuToggle }) {
             {user.name}
           </span>
         )}
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
-                        flex items-center justify-center text-navy-900 text-xs font-bold
-                        shadow-sm shadow-cyan-400/30 flex-shrink-0">
+        <Link
+          to="/settings"
+          title={t('nav_settings')}
+          className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
+                     flex items-center justify-center text-navy-900 text-xs font-bold
+                     shadow-sm shadow-cyan-400/30 flex-shrink-0
+                     hover:scale-105 hover:shadow-md hover:shadow-cyan-400/40 transition-all"
+        >
           {user?.initials ?? 'AB'}
-        </div>
+        </Link>
         <button
           onClick={handleLogout}
           title={t('logout')}
