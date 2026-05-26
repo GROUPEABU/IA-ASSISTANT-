@@ -14,7 +14,7 @@ const MAX_VEHICLES = 4
  * @param {object} globals { years, kmYear, fuelPrice, elecPrice }
  */
 export function useTcoVehicles(globals) {
-  const [vehicles, setVehicles] = useState(() => [emptyVehicle(1), emptyVehicle(2)])
+  const [vehicles, setVehicles] = useState(() => [emptyVehicle(1)])
 
   const update = useCallback((id, field, value) => {
     setVehicles(prev => prev.map(v => {

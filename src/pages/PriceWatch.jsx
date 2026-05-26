@@ -30,7 +30,7 @@ const MAKES = [
   { label: 'Volkswagen', code: 'VOLKSWAGEN' }, { label: 'Volvo', code: 'VOLVO' },
 ]
 
-const YEARS = Array.from({ length: 26 }, (_, i) => 2025 - i)
+const YEARS = Array.from({ length: 27 }, (_, i) => 2026 - i)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 async function fetchPrices(filters) {

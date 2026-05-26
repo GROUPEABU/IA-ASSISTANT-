@@ -726,6 +726,7 @@ export default {
   tco_tier_low: 'Low-cost / Chinois',
   tco_tier_mid: 'Généraliste',
   tco_tier_premium: 'Premium',
+  tco_calculate_btn: 'Calculer le TCO',
 
   // Advanced malus params
   // CompareView

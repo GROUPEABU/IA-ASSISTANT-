@@ -611,6 +611,39 @@ html.light .login-page-bg .text-slate-500 { color: #334155 !important; }
 html.light .login-page-bg .text-slate-600 { color: #475569 !important; }
 html.light .login-page-bg .text-white     { color: #0f172a !important; }
 
+/* ── TCO: preset buttons + custom inputs ─────────────────────────────────── */
+.tco-preset-btn {
+  border-color: rgba(255, 255, 255, 0.10);
+  background:   transparent;
+  color:        #64748b;
+}
+.tco-preset-btn[aria-pressed="true"] {
+  border-color: #50E5E5;
+  background:   rgba(80, 229, 229, 0.12);
+  color:        #50E5E5;
+}
+.tco-custom-input {
+  border-color: rgba(255, 255, 255, 0.15);
+  background:   rgba(255, 255, 255, 0.04);
+  color:        #94a3b8;
+}
+
+html.light .tco-preset-btn {
+  border-color: rgba(15, 23, 42, 0.12) !important;
+  background:   rgba(15, 23, 42, 0.03) !important;
+  color:        #475569 !important;
+}
+html.light .tco-preset-btn[aria-pressed="true"] {
+  border-color: rgba(8, 145, 178, 0.40) !important;
+  background:   rgba(8, 145, 178, 0.10) !important;
+  color:        var(--accent-primary) !important;
+}
+html.light .tco-custom-input {
+  border-color: rgba(15, 23, 42, 0.16) !important;
+  background:   rgba(15, 23, 42, 0.04) !important;
+  color:        #334155 !important;
+}
+
 /* ── Desktop scaling — slightly larger base on lg+ screens ───────────────── */
 @media (min-width: 1024px) {
   main .text-xs  { font-size: 0.8rem; }
