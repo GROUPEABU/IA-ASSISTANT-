@@ -61,16 +61,23 @@
 
 @layer components {
   .glass-card {
-    @apply bg-navy-800/60 backdrop-blur-sm border border-navy-700/50 rounded-xl;
+    @apply backdrop-blur-sm rounded-xl;
+    background: rgba(30, 41, 59, 0.88);
+    border: 1px solid rgba(255,255,255,0.09);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.05) inset;
     transition: border-color 160ms ease, box-shadow 160ms ease;
   }
 
   .glass-card-glow {
-    @apply glass-card;
+    @apply backdrop-blur-sm rounded-xl;
+    background: rgba(30, 41, 59, 0.88);
+    border: 1px solid rgba(255,255,255,0.09);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.05) inset;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
   }
   .glass-card-glow:hover {
-    @apply border-navy-600/80;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.25), 0 0 0 1px rgba(80,229,229,0.06);
+    border-color: rgba(255,255,255,0.14);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(80,229,229,0.08), 0 1px 0 rgba(255,255,255,0.06) inset;
   }
 
   .cyan-glow {
@@ -276,15 +283,35 @@ html.light body {
 /* ── Cards — primary surface with refined shadow + border ────────────────── */
 html.light .glass-card {
   background:    var(--surface-card) !important;
-  border-color:  var(--border-default) !important;
-  box-shadow:    var(--shadow-sm) !important;
+  border-color:  var(--border-strong) !important;
+  box-shadow:    0 2px 12px rgba(15,23,42,0.08), 0 1px 3px rgba(15,23,42,0.05) !important;
   backdrop-filter: none !important;
 }
 
 html.light .glass-card-glow:hover {
   border-color: var(--accent-ring) !important;
-  box-shadow:   var(--shadow-md), 0 0 0 1px var(--accent-soft) !important;
+  box-shadow:   0 4px 20px rgba(15,23,42,0.12), 0 0 0 1px var(--accent-soft) !important;
   transform:    translateY(-1px);
+}
+
+/* ── Light mode: slider value boxes use inline rgba — override here ───────── */
+html.light .slider-value-box {
+  background: rgba(8, 145, 178, 0.08) !important;
+  border-color: rgba(8, 145, 178, 0.25) !important;
+}
+html.light .slider-preset-btn {
+  border-color: rgba(15,23,42,0.10) !important;
+}
+html.light .slider-preset-btn:not([data-active="true"]) {
+  background: rgba(15,23,42,0.03) !important;
+}
+html.light .advanced-toggle {
+  background: rgba(8,145,178,0.06) !important;
+  border-color: rgba(8,145,178,0.18) !important;
+}
+html.light .advanced-toggle[aria-expanded="true"] {
+  background: rgba(8,145,178,0.10) !important;
+  border-color: rgba(8,145,178,0.28) !important;
 }
 
 /* ── Header — frosted with subtle shadow ─────────────────────────────────── */

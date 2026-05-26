@@ -79,102 +79,95 @@ export default function CO2Malus() {
   }, [malus.compareResults])
 
   return (
-    <div className="animate-fade-in lg:grid lg:grid-cols-[380px_1fr] lg:gap-5 lg:items-start flex flex-col gap-3">
+    <div className="flex flex-col gap-3 animate-fade-in">
+      <Header t={t} />
+      <ReliabilityLegend />
 
-      {/* ── Left column: all inputs ────────────────────────────── */}
-      <div className="flex flex-col gap-3">
-        <Header t={t} />
-        <ReliabilityLegend />
+      <SliderSection
+        label={t('malus_emissions_label')}
+        value={malus.emission}
+        setValue={malus.setEmission}
+        min={0} max={400}
+        unit="g/km" color="#50E5E5"
+        presets={CUSTOM_EMISSIONS}
+      />
 
-        <SliderSection
-          label={t('malus_emissions_label')}
-          value={malus.emission}
-          setValue={malus.setEmission}
-          min={0} max={400}
-          unit="g/km" color="#50E5E5"
-          presets={CUSTOM_EMISSIONS}
-        />
+      <WeightSlider value={malus.weight} onChange={malus.setWeight} />
 
-        <WeightSlider value={malus.weight} onChange={malus.setWeight} />
-
-        <div className="glass-card p-3">
-          <div className="flex justify-between items-center mb-2.5">
-            <span className="text-[11px] text-slate-500 font-medium tracking-widest uppercase">{t('malus_motorisation')}</span>
-            <span className="text-xs font-semibold text-cyan-400">{t(FUEL_LABEL_KEY[malus.fuelType])}</span>
-          </div>
-          <SegButton
-            cols={2}
-            value={malus.fuelType}
-            setValue={malus.setFuelType}
-            options={FUEL_OPTIONS.map(o => ({
-              k: o.k,
-              l: t(o.labelKey),
-              note: o.noteKey ? t(o.noteKey) : '',
-            }))}
-          />
+      <div className="glass-card p-3 mb-2">
+        <div className="flex justify-between items-center mb-2.5">
+          <span className="text-[11px] text-slate-500 font-medium tracking-widest uppercase">{t('malus_motorisation')}</span>
+          <span className="text-xs font-semibold text-cyan-400">{t(FUEL_LABEL_KEY[malus.fuelType])}</span>
         </div>
-
-        <RegistrationDatePicker value={malus.dateImmat} onChange={malus.setDateImmat} />
-
-        <AdvancedParams
-          show={showAdvanced}
-          onToggle={() => setShowAdvanced(v => !v)}
-          displacement={malus.displacement}   setDisplacement={malus.setDisplacement}
-          fuelKind={malus.fuelKind}           setFuelKind={malus.setFuelKind}
-          vehiclePrice={malus.vehiclePrice}   setVehiclePrice={malus.setVehiclePrice}
-          beRegion={malus.beRegion}           setBeRegion={malus.setBeRegion}
-          esRegion={malus.esRegion}           setEsRegion={malus.setEsRegion}
-          childrenCount={malus.childrenCount} setChildrenCount={malus.setChildrenCount}
-          isImported={malus.isImported}       setIsImported={malus.setIsImported}
-          dateImmat={malus.dateImmat}
-          formatCurrency={formatCurrency}
+        <SegButton
+          cols={2}
+          value={malus.fuelType}
+          setValue={malus.setFuelType}
+          options={FUEL_OPTIONS.map(o => ({
+            k: o.k,
+            l: t(o.labelKey),
+            note: o.noteKey ? t(o.noteKey) : '',
+          }))}
         />
       </div>
 
-      {/* ── Right column: tabs + country + results ─────────────── */}
-      <div className="flex flex-col gap-3">
-        <ModeTabs value={mode} onChange={setMode} />
+      <RegistrationDatePicker value={malus.dateImmat} onChange={malus.setDateImmat} />
 
-        {mode === 'country' && (
-          <>
-            <CountrySelector
-              countries={filteredCountries}
-              search={search}
-              onSearchChange={setSearch}
-              reliabilityFilter={reliabilityFilter}
-              onReliabilityChange={setReliabilityFilter}
-              selectedCountry={malus.selectedCountry}
-              onSelect={malus.selectCountry}
-            />
-            {malus.result && (
-              <MalusResultPanel
-                result={malus.result}
-                dateImmat={malus.dateImmat}
-                isImported={malus.isImported}
-                emission={malus.emission}
-                weight={malus.weight}
-                fuelType={malus.fuelType}
-                formatCurrency={formatCurrency}
-                panelRef={resultRef}
-              />
-            )}
-          </>
-        )}
+      <AdvancedParams
+        show={showAdvanced}
+        onToggle={() => setShowAdvanced(v => !v)}
+        displacement={malus.displacement}   setDisplacement={malus.setDisplacement}
+        fuelKind={malus.fuelKind}           setFuelKind={malus.setFuelKind}
+        vehiclePrice={malus.vehiclePrice}   setVehiclePrice={malus.setVehiclePrice}
+        beRegion={malus.beRegion}           setBeRegion={malus.setBeRegion}
+        esRegion={malus.esRegion}           setEsRegion={malus.setEsRegion}
+        childrenCount={malus.childrenCount} setChildrenCount={malus.setChildrenCount}
+        isImported={malus.isImported}       setIsImported={malus.setIsImported}
+        dateImmat={malus.dateImmat}
+        formatCurrency={formatCurrency}
+      />
 
-        {mode === 'compare' && (
-          <CompareView
-            selectedForCompare={malus.selectedForCompare}
-            onToggleCountry={malus.toggleCompareCountry}
-            onRunCompare={malus.runManualCompare}
-            compareResults={malus.compareResults}
-            emission={malus.emission}
-            weight={malus.weight}
-            panelRef={compareResultRef}
+      <ModeTabs value={mode} onChange={setMode} />
+
+      {mode === 'country' && (
+        <>
+          <CountrySelector
+            countries={filteredCountries}
+            search={search}
+            onSearchChange={setSearch}
+            reliabilityFilter={reliabilityFilter}
+            onReliabilityChange={setReliabilityFilter}
+            selectedCountry={malus.selectedCountry}
+            onSelect={malus.selectCountry}
           />
-        )}
+          {malus.result && (
+            <MalusResultPanel
+              result={malus.result}
+              dateImmat={malus.dateImmat}
+              isImported={malus.isImported}
+              emission={malus.emission}
+              weight={malus.weight}
+              fuelType={malus.fuelType}
+              formatCurrency={formatCurrency}
+              panelRef={resultRef}
+            />
+          )}
+        </>
+      )}
 
-        <Disclaimer t={t} />
-      </div>
+      {mode === 'compare' && (
+        <CompareView
+          selectedForCompare={malus.selectedForCompare}
+          onToggleCountry={malus.toggleCompareCountry}
+          onRunCompare={malus.runManualCompare}
+          compareResults={malus.compareResults}
+          emission={malus.emission}
+          weight={malus.weight}
+          panelRef={compareResultRef}
+        />
+      )}
+
+      <Disclaimer t={t} />
     </div>
   )
 }

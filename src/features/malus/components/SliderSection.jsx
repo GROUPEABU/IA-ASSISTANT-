@@ -28,7 +28,7 @@ export default function SliderSection({
 
         {/* Value box */}
         <div
-          className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5"
+          className="slider-value-box flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5"
           style={{ background: `${color}12`, border: `1.5px solid ${color}30` }}
         >
           <input
@@ -73,7 +73,7 @@ export default function SliderSection({
           <button
             key={v}
             onClick={() => setValue(v)}
-            className="py-2 rounded-xl text-[12px] font-semibold transition border active:scale-95 text-center"
+            className="slider-preset-btn py-2 rounded-xl text-[12px] font-semibold transition border active:scale-95 text-center"
             style={{
               borderColor: value === v ? color : 'rgba(255,255,255,0.07)',
               background:  value === v ? `${color}18` : 'rgba(255,255,255,0.02)',

@@ -1,3 +1,4 @@
+import { ChevronDown } from 'lucide-react'
 import {
   getImportDecote, getImportDecoteNL, getImportDecotePT,
   getImportDecoteDE, getImportDecoteES, getImportDecoteBE, getImportDecoteIE,
@@ -31,24 +32,33 @@ export default function AdvancedParams({
       <button
         onClick={onToggle}
         aria-expanded={show}
-        className="w-full px-4 py-2.5 rounded-xl text-sm font-medium flex justify-between items-center transition border active:scale-[0.99]"
+        className="advanced-toggle w-full px-4 py-3.5 rounded-xl text-sm font-semibold flex justify-between items-center transition-all border-2 active:scale-[0.99] gap-3"
         style={{
-          background:  show ? 'rgba(80,229,229,0.07)' : 'rgba(255,255,255,0.02)',
-          borderColor: show ? 'rgba(80,229,229,0.3)' : 'rgba(255,255,255,0.08)',
+          background:  show ? 'rgba(80,229,229,0.10)' : 'rgba(80,229,229,0.04)',
+          borderColor: show ? 'rgba(80,229,229,0.45)' : 'rgba(80,229,229,0.20)',
           color:       show ? '#50E5E5' : '#94a3b8',
+          boxShadow:   show ? '0 0 16px rgba(80,229,229,0.08)' : 'none',
         }}
       >
-        <span>{t('malus_advanced_params')}</span>
-        <span
-          className="text-[11px] px-2 py-0.5 rounded-md"
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: show ? '#50E5E5' : '#64748b',
-          }}
-        >
-          {show ? t('malus_hide') : t('malus_show')}
-        </span>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span
+            className="flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold"
+            style={{ background: show ? 'rgba(80,229,229,0.2)' : 'rgba(80,229,229,0.08)', color: '#50E5E5' }}
+          >⚙</span>
+          <span className="truncate">{t('malus_advanced_params')}</span>
+          <span
+            className="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full"
+            style={{
+              background: 'rgba(80,229,229,0.12)',
+              border:     '1px solid rgba(80,229,229,0.25)',
+              color:      '#50E5E5',
+            }}
+          >7 {t('malus_show')}</span>
+        </div>
+        <ChevronDown
+          size={16}
+          style={{ color: '#50E5E5', transition: 'transform 200ms', transform: show ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}
+        />
       </button>
 
       {show && (

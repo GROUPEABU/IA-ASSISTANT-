@@ -31,7 +31,7 @@ export default function WeightSlider({ value, onChange }) {
         >−</button>
 
         <div
-          className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5"
+          className="slider-value-box flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5"
           style={{ background: 'rgba(125,211,252,0.08)', border: '1.5px solid rgba(125,211,252,0.25)' }}
         >
           <input
@@ -76,7 +76,7 @@ export default function WeightSlider({ value, onChange }) {
           <button
             key={v}
             onClick={() => onChange(v)}
-            className="py-2 rounded-xl text-[12px] font-semibold transition border active:scale-95 text-center"
+            className="slider-preset-btn py-2 rounded-xl text-[12px] font-semibold transition border active:scale-95 text-center"
             style={{
               borderColor: value === v ? COLOR : 'rgba(255,255,255,0.07)',
               background:  value === v ? 'rgba(125,211,252,0.14)' : 'rgba(255,255,255,0.02)',
