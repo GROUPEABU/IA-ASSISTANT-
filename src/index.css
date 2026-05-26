@@ -549,32 +549,67 @@ html.light .bg-amber-400\/10, html.light .bg-amber-400\/6 { background-color: rg
 html.light .border-amber-400\/20, html.light .border-amber-400\/25 { border-color: rgba(217, 119, 6, 0.25) !important; }
 html.light .text-amber-400 { color: #d97706 !important; }
 
-/* ── Login page — distinctive background so card stands out clearly ────────── */
+/* ── Login page — blue gradient bg so the white card pops ─────────────────── */
+/* NOTE: use background-color + background-image separately; the shorthand +
+   background-image:none combo would cancel the gradient due to !important order. */
 html.light .login-page-bg {
-  background: linear-gradient(150deg, #bdd0e6 0%, #cfe0f0 40%, #c5d8ea 100%) !important;
-  background-image: none !important;
+  background-color:  #c8dded !important;
+  background-image:  linear-gradient(150deg, #bdd0e6 0%, #cfe0f0 40%, #c5d8ea 100%) !important;
 }
+
+/* Card: white surface with a deep shadow against the blue bg */
 html.light .login-page-bg .glass-card {
   background: #ffffff !important;
-  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  border: 1px solid rgba(15, 23, 42, 0.12) !important;
   box-shadow:
-    0 8px 32px rgba(15, 23, 42, 0.14),
-    0 1px 4px rgba(15, 23, 42, 0.1) !important;
+    0 16px 48px rgba(15, 23, 42, 0.22),
+    0 4px 12px rgba(15, 23, 42, 0.12),
+    0 1px 3px rgba(15, 23, 42, 0.06) !important;
+  backdrop-filter: none !important;
 }
-/* Badge + logo area — ensure contrast on the blue-tinted bg */
+
+/* Inputs: white background + clearly visible border inside the card */
+html.light .login-page-bg input:not([type="range"]) {
+  background:   #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.18) !important;
+  color:        #0f172a !important;
+  box-shadow:   0 1px 3px rgba(15, 23, 42, 0.05), inset 0 1px 2px rgba(15,23,42,0.03) !important;
+}
+html.light .login-page-bg input:focus:not([type="range"]) {
+  border-color: var(--accent-primary) !important;
+  box-shadow:   0 0 0 3px var(--accent-ring), 0 1px 3px rgba(15,23,42,0.05) !important;
+}
+html.light .login-page-bg input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Checkbox (unchecked): white bg + visible border */
+html.light .login-page-bg .bg-navy-900\/80 {
+  background-color: #ffffff !important;
+}
+html.light .login-page-bg .border-navy-700\/60 {
+  border-color: rgba(15, 23, 42, 0.22) !important;
+}
+
+/* Badge ("PORTAIL MEMBRES") — stronger cyan tint on blue gradient bg */
 html.light .login-page-bg .bg-cyan-400\/10 {
-  background-color: rgba(8, 145, 178, 0.20) !important;
+  background-color: rgba(8, 145, 178, 0.18) !important;
 }
 html.light .login-page-bg .border-cyan-400\/20 {
-  border-color: rgba(8, 145, 178, 0.40) !important;
+  border-color: rgba(8, 145, 178, 0.42) !important;
 }
-html.light .login-page-bg .text-cyan-400 {
-  color: #0369a1 !important;
+
+/* Logo glow orb behind the ∞ mark */
+html.light .login-page-bg .bg-cyan-400\/15 {
+  background-color: rgba(8, 145, 178, 0.22) !important;
 }
-html.light .login-page-bg .text-slate-500,
-html.light .login-page-bg .text-slate-600 {
-  color: #334155 !important;
-}
+
+/* All text inside the login page bg: dark enough against blue gradient */
+html.light .login-page-bg .text-cyan-400  { color: #0369a1 !important; }
+html.light .login-page-bg .text-slate-400 { color: #334155 !important; }
+html.light .login-page-bg .text-slate-500 { color: #334155 !important; }
+html.light .login-page-bg .text-slate-600 { color: #475569 !important; }
+html.light .login-page-bg .text-white     { color: #0f172a !important; }
 
 /* ── Desktop scaling — slightly larger base on lg+ screens ───────────────── */
 @media (min-width: 1024px) {
