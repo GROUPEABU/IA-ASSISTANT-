@@ -1,5 +1,6 @@
 import { COUNTRIES, RELIABILITY_CONFIG } from '@/utils/malusWorld'
 import { useSettings } from '@/contexts/SettingsContext'
+import { getCountryName } from '@/utils/malusLabels'
 import { sevColor } from '../constants'
 
 /**
@@ -50,17 +51,18 @@ export default function CompareView({
 }
 
 function CountryCheckboxGrid({ selected, onToggle }) {
-  const { t } = useSettings()
+  const { t, lang } = useSettings()
   return (
     <div className="glass-card p-4 mb-2">
       <div className="flex justify-between items-center mb-3">
         <span className="text-sm font-semibold text-white">{t('malus_compare_select_countries')}</span>
         <span className="text-xs text-slate-500">{selected.length}/6</span>
       </div>
-      <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
+      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1.5">
         {COUNTRIES.map(c => {
           const cfg = RELIABILITY_CONFIG[c.reliability]
           const isSelected = selected.some(x => x.code === c.code)
+          const displayName = getCountryName(c.code, lang) || c.name
           return (
             <button
               key={c.code}
@@ -73,7 +75,7 @@ function CountryCheckboxGrid({ selected, onToggle }) {
               }}
             >
               <span className="text-xl">{c.flag}</span>
-              <span className="text-[10px] text-slate-400 leading-tight">{c.name}</span>
+              <span className="text-[10px] text-slate-400 leading-tight">{displayName}</span>
               <span className="text-[9px] font-bold" style={{ color: cfg.color }}>
                 {t(cfg.shortKey)}
               </span>

@@ -64,128 +64,138 @@ export default function Settings() {
   }
 
   return (
-    <div className="max-w-2xl space-y-4 animate-fade-in">
-
+    <div className="w-full max-w-5xl animate-fade-in">
+      {/* Row 1: API — full width */}
       <Section icon={Key} title={t('settings_api_section')}>
-        <Field label={t('settings_api_key_label')} description={t('settings_api_key_desc')}>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={e => setApiKey(e.target.value)}
-            placeholder="sk-ant-..."
-            className="w-full sm:w-64 bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-                       text-sm text-slate-300 placeholder-slate-600
-                       focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/10 transition"
-          />
-        </Field>
-        <Field label={t('settings_api_power_label')} description={t('settings_api_power_desc')}>
-          <select className="w-full sm:w-48 bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-                             text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition">
-            <option value="standard">{t('settings_standard')}</option>
-            <option value="performance">{t('settings_performance')}</option>
-            <option value="ultra">{t('settings_ultra')}</option>
-          </select>
-        </Field>
-        <div className="flex justify-end pt-1">
-          <button
-            onClick={handleSave}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold
-                       bg-gradient-to-r from-cyan-400 to-cyan-500 text-navy-900
-                       hover:from-cyan-300 hover:to-cyan-400 active:scale-95 transition-all"
-          >
-            {saved ? <><Check size={14} /> {t('settings_saved')}</> : t('settings_save')}
-          </button>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <Field label={t('settings_api_key_label')} description={t('settings_api_key_desc')}>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={e => setApiKey(e.target.value)}
+              placeholder="sk-ant-..."
+              className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+                         text-sm text-slate-300 placeholder-slate-600
+                         focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/10 transition"
+            />
+          </Field>
+          <Field label={t('settings_api_power_label')} description={t('settings_api_power_desc')}>
+            <select className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+                               text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition">
+              <option value="standard">{t('settings_standard')}</option>
+              <option value="performance">{t('settings_performance')}</option>
+              <option value="ultra">{t('settings_ultra')}</option>
+            </select>
+          </Field>
+          <div className="flex items-end justify-start lg:justify-end pb-0.5">
+            <button
+              onClick={handleSave}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold
+                         bg-gradient-to-r from-cyan-400 to-cyan-500 text-navy-900
+                         hover:from-cyan-300 hover:to-cyan-400 active:scale-95 transition-all"
+            >
+              {saved ? <><Check size={14} /> {t('settings_saved')}</> : t('settings_save')}
+            </button>
+          </div>
         </div>
       </Section>
 
-      <Section icon={Palette} title={t('settings_appearance')}>
-        <Field label={t('settings_theme_label')} description={t('settings_theme_desc')}>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleTheme('dark')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
-                theme === 'dark'
-                  ? 'bg-cyan-400/10 border-cyan-400/30 text-cyan-400'
-                  : 'border-navy-600/50 text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              <Monitor size={13} /> {t('settings_dark')}
-            </button>
-            <button
-              onClick={() => handleTheme('light')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
-                theme === 'light'
-                  ? 'bg-cyan-400/10 border-cyan-400/30 text-cyan-400'
-                  : 'border-navy-600/50 text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              <Sun size={13} /> {t('settings_light')}
-            </button>
-          </div>
-        </Field>
-        <Field label={t('settings_density_label')} description={t('settings_density_desc')}>
-          <div className="flex gap-1 p-1 bg-navy-900/60 rounded-xl border border-navy-700/40">
-            {DENSITY_OPTIONS.map(({ key }) => (
+      {/* Row 2: Appearance + Data side by side on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+        <Section icon={Palette} title={t('settings_appearance')}>
+          <Field label={t('settings_theme_label')} description={t('settings_theme_desc')}>
+            <div className="flex gap-2">
               <button
-                key={key}
-                onClick={() => changeDensity(key)}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition ${
-                  density === key
-                    ? 'bg-cyan-400/15 text-cyan-400'
-                    : 'text-slate-500 hover:text-slate-300'
+                onClick={() => handleTheme('dark')}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                  theme === 'dark'
+                    ? 'bg-cyan-400/10 border-cyan-400/30 text-cyan-400'
+                    : 'border-navy-600/50 text-slate-500 hover:text-slate-300'
                 }`}
               >
-                {t(`settings_${key}`)}
+                <Monitor size={13} /> {t('settings_dark')}
               </button>
+              <button
+                onClick={() => handleTheme('light')}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                  theme === 'light'
+                    ? 'bg-cyan-400/10 border-cyan-400/30 text-cyan-400'
+                    : 'border-navy-600/50 text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <Sun size={13} /> {t('settings_light')}
+              </button>
+            </div>
+          </Field>
+          <Field label={t('settings_density_label')} description={t('settings_density_desc')}>
+            <div className="flex gap-1 p-1 bg-navy-900/60 rounded-xl border border-navy-700/40">
+              {DENSITY_OPTIONS.map(({ key }) => (
+                <button
+                  key={key}
+                  onClick={() => changeDensity(key)}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition ${
+                    density === key
+                      ? 'bg-cyan-400/15 text-cyan-400'
+                      : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  {t(`settings_${key}`)}
+                </button>
+              ))}
+            </div>
+          </Field>
+        </Section>
+
+        <Section icon={Globe} title={t('settings_data')}>
+          <Field label={t('settings_currency_label')} description={t('settings_currency_desc')}>
+            <select
+              value={currency}
+              onChange={e => changeCurrency(e.target.value)}
+              className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+                         text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition"
+            >
+              <option value="EUR">EUR (€)</option>
+            </select>
+          </Field>
+          <Field label={t('settings_language_label')} description={t('settings_language_desc')}>
+            <select
+              value={language}
+              onChange={e => changeLanguage(e.target.value)}
+              className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+                         text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition"
+            >
+              <option value="fr">Français</option>
+              <option value="en">English</option>
+            </select>
+          </Field>
+        </Section>
+      </div>
+
+      {/* Row 3: Legal — full width */}
+      <div className="mt-4">
+        <Section icon={Scale} title={t('settings_legal_section')}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
+            {[
+              { to: '/mentions-legales',          labelKey: 'legal_mentions',  descKey: 'settings_legal_mentions_desc' },
+              { to: '/politique-confidentialite',  labelKey: 'legal_privacy',   descKey: 'settings_legal_privacy_desc' },
+              { to: '/conditions-utilisation',     labelKey: 'legal_cgu',       descKey: 'settings_legal_cgu_desc' },
+            ].map(({ to, labelKey, descKey }) => (
+              <Link
+                key={to}
+                to={to}
+                className="flex items-center justify-between gap-3 py-3 px-3 rounded-xl
+                           border border-white/5 hover:border-cyan-400/20 hover:bg-white/3 transition group"
+              >
+                <div>
+                  <p className="text-sm font-medium text-slate-200 group-hover:text-white transition">{t(labelKey)}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{t(descKey)}</p>
+                </div>
+                <ChevronRight size={14} className="text-slate-600 group-hover:text-cyan-400 transition flex-shrink-0" />
+              </Link>
             ))}
           </div>
-        </Field>
-      </Section>
-
-      <Section icon={Globe} title={t('settings_data')}>
-        <Field label={t('settings_currency_label')} description={t('settings_currency_desc')}>
-          <select
-            value={currency}
-            onChange={e => changeCurrency(e.target.value)}
-            className="w-full sm:w-36 bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-                       text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition"
-          >
-            <option value="EUR">EUR (€)</option>
-          </select>
-        </Field>
-        <Field label={t('settings_language_label')} description={t('settings_language_desc')}>
-          <select
-            value={language}
-            onChange={e => changeLanguage(e.target.value)}
-            className="w-full sm:w-36 bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-                       text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition"
-          >
-            <option value="fr">Français</option>
-            <option value="en">English</option>
-          </select>
-        </Field>
-      </Section>
-
-      <Section icon={Scale} title={t('settings_legal_section')}>
-        {[
-          { to: '/mentions-legales',          labelKey: 'legal_mentions',  descKey: 'settings_legal_mentions_desc' },
-          { to: '/politique-confidentialite',  labelKey: 'legal_privacy',   descKey: 'settings_legal_privacy_desc' },
-          { to: '/conditions-utilisation',     labelKey: 'legal_cgu',       descKey: 'settings_legal_cgu_desc' },
-        ].map(({ to, labelKey, descKey }) => (
-          <Link
-            key={to}
-            to={to}
-            className="flex items-center justify-between gap-3 py-2.5 px-1 rounded-xl
-                       hover:bg-white/4 transition group -mx-1"
-          >
-            <div>
-              <p className="text-sm font-medium text-slate-200 group-hover:text-white transition">{t(labelKey)}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{t(descKey)}</p>
-            </div>
-            <ChevronRight size={14} className="text-slate-600 group-hover:text-cyan-400 transition flex-shrink-0" />
-          </Link>
-        ))}
-      </Section>
+        </Section>
+      </div>
     </div>
   )
 }

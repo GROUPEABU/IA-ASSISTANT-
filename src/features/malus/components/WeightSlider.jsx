@@ -43,7 +43,7 @@ export default function WeightSlider({ value, onChange }) {
             inputMode="numeric"
             onChange={handleInputChange}
             aria-label={t('weight_input_label')}
-            className="w-20 text-3xl font-bold text-center border-0 outline-none leading-none"
+            className="w-24 text-3xl font-bold text-center border-0 outline-none leading-none"
             style={{ fontFamily: 'inherit', MozAppearance: 'textfield', WebkitAppearance: 'none', color: COLOR, background: 'transparent' }}
           />
           <span className="text-sm font-semibold" style={{ color: COLOR, opacity: 0.6 }}>{t('weight_unit')}</span>
