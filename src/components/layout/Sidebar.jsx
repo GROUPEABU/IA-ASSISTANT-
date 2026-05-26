@@ -52,7 +52,7 @@ export default function Sidebar({ isOpen, onClose }) {
   return (
     <aside className={clsx(
       'flex-shrink-0 bg-navy-800/98 border-r border-navy-700/50 flex flex-col z-30 transition-transform duration-300',
-      'md:relative md:translate-x-0 md:w-60',
+      'md:relative md:translate-x-0 md:w-60 lg:w-68',
       'fixed inset-y-0 left-0 w-72',
       isOpen ? 'translate-x-0' : '-translate-x-full',
     )}>
