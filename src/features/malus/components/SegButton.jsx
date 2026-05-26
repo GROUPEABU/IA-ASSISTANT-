@@ -6,7 +6,7 @@ export default function SegButton({ options, value, setValue, cols = 2 }) {
   return (
     <div
       role="radiogroup"
-      className="grid gap-0 bg-navy-900/50 rounded-xl p-1"
+      className="seg-group grid gap-0 bg-navy-900/50 rounded-xl p-1"
       style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
     >
       {options.map(o => {
@@ -17,7 +17,7 @@ export default function SegButton({ options, value, setValue, cols = 2 }) {
             role="radio"
             aria-checked={isActive}
             onClick={() => setValue(o.k)}
-            className="py-2 rounded-[9px] text-xs font-medium transition flex flex-col items-center gap-0.5 active:scale-95"
+            className="seg-btn py-2 rounded-[9px] text-xs font-medium transition flex flex-col items-center gap-0.5 active:scale-95"
             style={{
               background: isActive ? 'rgba(80,229,229,0.16)' : 'transparent',
               color: isActive ? '#50E5E5' : '#64748b',

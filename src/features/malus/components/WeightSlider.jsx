@@ -26,7 +26,7 @@ export default function WeightSlider({ value, onChange }) {
         <button
           onClick={() => onChange(Math.max(MIN_WEIGHT, value - STEP))}
           aria-label={t('weight_dec_label')}
-          className="w-11 h-11 rounded-xl flex items-center justify-center text-xl font-light transition active:scale-95 flex-shrink-0"
+          className="slider-ctrl-btn w-11 h-11 rounded-xl flex items-center justify-center text-xl font-light transition active:scale-95 flex-shrink-0"
           style={{ border: '1.5px solid rgba(125,211,252,0.35)', background: 'rgba(125,211,252,0.08)', color: COLOR }}
         >−</button>
 
@@ -43,16 +43,16 @@ export default function WeightSlider({ value, onChange }) {
             inputMode="numeric"
             onChange={handleInputChange}
             aria-label={t('weight_input_label')}
-            className="w-24 text-3xl font-bold text-center border-0 outline-none leading-none"
+            className="slider-value-input w-24 text-3xl font-bold text-center border-0 outline-none leading-none"
             style={{ fontFamily: 'inherit', MozAppearance: 'textfield', WebkitAppearance: 'none', color: COLOR, background: 'transparent' }}
           />
-          <span className="text-sm font-semibold" style={{ color: COLOR, opacity: 0.6 }}>{t('weight_unit')}</span>
+          <span className="slider-unit text-sm font-semibold" style={{ color: COLOR, opacity: 0.6 }}>{t('weight_unit')}</span>
         </div>
 
         <button
           onClick={() => onChange(Math.min(MAX_WEIGHT, value + STEP))}
           aria-label={t('weight_inc_label')}
-          className="w-11 h-11 rounded-xl flex items-center justify-center text-xl font-light transition active:scale-95 flex-shrink-0"
+          className="slider-ctrl-btn w-11 h-11 rounded-xl flex items-center justify-center text-xl font-light transition active:scale-95 flex-shrink-0"
           style={{ border: '1.5px solid rgba(125,211,252,0.35)', background: 'rgba(125,211,252,0.08)', color: COLOR }}
         >+</button>
       </div>

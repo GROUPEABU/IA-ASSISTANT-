@@ -294,24 +294,89 @@ html.light .glass-card-glow:hover {
   transform:    translateY(-1px);
 }
 
-/* ── Light mode: slider value boxes use inline rgba — override here ───────── */
+/* ══ Light mode — inline-style overrides ══════════════════════════════════════
+   Many components use inline rgba() tuned for dark backgrounds.
+   These CSS classes + attribute selectors patch them for light mode.
+   ============================================================================ */
+
+/* Slider: value box (the centered number container) */
 html.light .slider-value-box {
-  background: rgba(8, 145, 178, 0.08) !important;
-  border-color: rgba(8, 145, 178, 0.25) !important;
+  background: rgba(8, 145, 178, 0.07) !important;
+  border: 1.5px solid rgba(8, 145, 178, 0.30) !important;
+  box-shadow: 0 1px 4px rgba(8,145,178,0.06) inset !important;
 }
+
+/* Slider: the big number input and unit label */
+html.light .slider-value-input { color: #0369a1 !important; }
+html.light .slider-unit        { color: #0369a1 !important; opacity: 0.7 !important; }
+
+/* Slider: +/- control buttons */
+html.light .slider-ctrl-btn {
+  background:   rgba(8, 145, 178, 0.08) !important;
+  border-color: rgba(8, 145, 178, 0.28) !important;
+  color:        #0369a1 !important;
+}
+html.light .slider-ctrl-btn:hover {
+  background:   rgba(8, 145, 178, 0.15) !important;
+}
+
+/* Slider: preset buttons (inactive) */
 html.light .slider-preset-btn {
+  background:   rgba(15,23,42,0.04) !important;
   border-color: rgba(15,23,42,0.10) !important;
+  color:        var(--text-muted) !important;
 }
-html.light .slider-preset-btn:not([data-active="true"]) {
-  background: rgba(15,23,42,0.03) !important;
+
+/* SegButton: track and buttons */
+html.light .seg-group {
+  background: var(--surface-muted) !important;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06) inset !important;
 }
+html.light .seg-btn[aria-checked="false"] {
+  color: var(--text-muted) !important;
+}
+html.light .seg-btn[aria-checked="true"] {
+  background: rgba(8, 145, 178, 0.14) !important;
+  color:      var(--accent-primary) !important;
+  box-shadow: 0 1px 4px rgba(8,145,178,0.12) !important;
+}
+
+/* Advanced params toggle */
 html.light .advanced-toggle {
-  background: rgba(8,145,178,0.06) !important;
-  border-color: rgba(8,145,178,0.18) !important;
+  background:   rgba(8,145,178,0.05) !important;
+  border-color: rgba(8,145,178,0.22) !important;
+  color:        var(--text-muted) !important;
 }
 html.light .advanced-toggle[aria-expanded="true"] {
-  background: rgba(8,145,178,0.10) !important;
-  border-color: rgba(8,145,178,0.28) !important;
+  background:   rgba(8,145,178,0.10) !important;
+  border-color: rgba(8,145,178,0.35) !important;
+  color:        var(--accent-primary) !important;
+}
+
+/* Country grid: selected country button */
+html.light button[aria-pressed="true"] {
+  border-color: rgba(8, 145, 178, 0.45) !important;
+  background:   rgba(8, 145, 178, 0.08) !important;
+}
+html.light button[aria-pressed="false"]:hover {
+  border-color: rgba(8, 145, 178, 0.20) !important;
+  background:   rgba(8, 145, 178, 0.04) !important;
+}
+
+/* RegistrationDatePicker preset buttons */
+html.light .glass-card button:not(.slider-ctrl-btn):not(.seg-btn):not([aria-pressed]) {
+  color: var(--text-muted);
+}
+
+/* Reliability filter tabs (inside CountrySelector) */
+html.light [role="radiogroup"] .seg-btn,
+html.light [role="radiogroup"] button {
+  color: var(--text-muted) !important;
+}
+html.light [role="radiogroup"] button[aria-checked="true"],
+html.light [role="radiogroup"] .seg-btn[aria-checked="true"] {
+  background: rgba(8, 145, 178, 0.12) !important;
+  color: var(--accent-primary) !important;
 }
 
 /* ── Header — frosted with subtle shadow ─────────────────────────────────── */

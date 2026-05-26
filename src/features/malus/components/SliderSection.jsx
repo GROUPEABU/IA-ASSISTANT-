@@ -22,7 +22,7 @@ export default function SliderSection({
         <button
           onClick={decrement}
           aria-label={`Diminuer ${label}`}
-          className="w-11 h-11 rounded-xl flex items-center justify-center text-xl font-light transition active:scale-95 flex-shrink-0"
+          className="slider-ctrl-btn w-11 h-11 rounded-xl flex items-center justify-center text-xl font-light transition active:scale-95 flex-shrink-0"
           style={{ borderColor: `${color}40`, border: `1.5px solid ${color}40`, background: `${color}10`, color }}
         >−</button>
 
@@ -39,17 +39,17 @@ export default function SliderSection({
             inputMode="numeric"
             onChange={handleInputChange}
             aria-label={`Valeur ${label}`}
-            className="w-24 text-3xl font-bold text-center bg-transparent border-0 outline-none leading-none"
+            className="slider-value-input w-24 text-3xl font-bold text-center bg-transparent border-0 outline-none leading-none"
             style={{ fontFamily: 'inherit', MozAppearance: 'textfield', WebkitAppearance: 'none', color, background: 'transparent' }}
           />
-          <span className="text-sm font-semibold" style={{ color, opacity: 0.6 }}>{unit}</span>
+          <span className="slider-unit text-sm font-semibold" style={{ color, opacity: 0.6 }}>{unit}</span>
         </div>
 
         {/* Increment */}
         <button
           onClick={increment}
           aria-label={`Augmenter ${label}`}
-          className="w-11 h-11 rounded-xl flex items-center justify-center text-xl font-light transition active:scale-95 flex-shrink-0"
+          className="slider-ctrl-btn w-11 h-11 rounded-xl flex items-center justify-center text-xl font-light transition active:scale-95 flex-shrink-0"
           style={{ borderColor: `${color}40`, border: `1.5px solid ${color}40`, background: `${color}10`, color }}
         >+</button>
       </div>
