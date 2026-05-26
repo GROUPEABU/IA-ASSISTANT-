@@ -10,10 +10,6 @@
       <stop offset="0%"   stop-color="#38bdf8"/>
       <stop offset="100%" stop-color="#50E5E5"/>
     </linearGradient>
-    <filter id="glow" x="-25%" y="-25%" width="150%" height="150%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
   </defs>
 
   <!-- ∞ r=7, centered at (16,16) — x=2–30, y=9–23, 2px margin each side -->
@@ -22,5 +18,5 @@
   <path d="M 2 16 a 7 7 0 1 0 14 0 a 7 7 0 1 0 14 0 a 7 7 0 1 0 -14 0 a 7 7 0 1 0 -14 0"
         stroke="url(#rg)" stroke-width="2.2"
         stroke-linecap="round" stroke-linejoin="round"
-        fill="none" filter="url(#glow)"/>
+        fill="none"/>
 </svg>
