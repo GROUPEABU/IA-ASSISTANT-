@@ -11,11 +11,9 @@
       <stop offset="100%" stop-color="#50E5E5"/>
     </linearGradient>
   </defs>
-  <!-- ∞ centered in 32×32, scaled to fit -->
-  <g transform="translate(1,10) scale(0.375)">
-    <path d="M 14 18 a 9 9 0 1 0 18 0 a 9 9 0 1 0 18 0 a 9 9 0 1 0 -18 0 a 9 9 0 1 0 -18 0"
-          fill="url(#rf)" stroke="none"/>
-    <path d="M 14 18 a 9 9 0 1 0 18 0 a 9 9 0 1 0 18 0 a 9 9 0 1 0 -18 0 a 9 9 0 1 0 -18 0"
-          stroke="url(#rg)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  </g>
+  <!-- ∞ centered at (16,16), radius 6.5, spans x=3–29, y=9.5–22.5 -->
+  <path d="M 3 16 a 6.5 6.5 0 1 0 13 0 a 6.5 6.5 0 1 0 13 0 a 6.5 6.5 0 1 0 -13 0 a 6.5 6.5 0 1 0 -13 0"
+        fill="url(#rf)" stroke="none"/>
+  <path d="M 3 16 a 6.5 6.5 0 1 0 13 0 a 6.5 6.5 0 1 0 13 0 a 6.5 6.5 0 1 0 -13 0 a 6.5 6.5 0 1 0 -13 0"
+        stroke="url(#rg)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>
