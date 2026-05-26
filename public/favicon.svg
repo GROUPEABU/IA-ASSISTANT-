@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none">
-  <rect width="200" height="40" rx="9" fill="#0D273C"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="7" fill="#0D273C"/>
   <defs>
     <radialGradient id="rf" cx="50%" cy="50%" r="65%" gradientUnits="objectBoundingBox">
       <stop offset="0%"   stop-color="#93c5fd" stop-opacity="0.55"/>
@@ -11,16 +11,11 @@
       <stop offset="100%" stop-color="#50E5E5"/>
     </linearGradient>
   </defs>
-  <!-- ∞ symbol — same path as Logo.jsx, scaled 0.5×, centered vertically -->
-  <g transform="translate(4,11) scale(0.5)">
+  <!-- ∞ centered in 32×32, scaled to fit -->
+  <g transform="translate(1,10) scale(0.375)">
     <path d="M 14 18 a 9 9 0 1 0 18 0 a 9 9 0 1 0 18 0 a 9 9 0 1 0 -18 0 a 9 9 0 1 0 -18 0"
           fill="url(#rf)" stroke="none"/>
     <path d="M 14 18 a 9 9 0 1 0 18 0 a 9 9 0 1 0 18 0 a 9 9 0 1 0 -18 0 a 9 9 0 1 0 -18 0"
-          stroke="url(#rg)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          stroke="url(#rg)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
   </g>
-  <!-- "Autobuyunion" wordmark -->
-  <text x="34" y="27"
-        font-family="Poppins,'Segoe UI',system-ui,sans-serif"
-        font-size="18" font-weight="600"
-        fill="#E0E1E1" letter-spacing="-0.4">Autobuyunion</text>
 </svg>
