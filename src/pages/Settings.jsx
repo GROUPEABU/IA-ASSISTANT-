@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Key, Palette, Globe, Check, Monitor, Sun, Scale, ChevronRight } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
+import { useAuth } from '@/contexts/AuthContext'
+import { ukey } from '@/utils/userStorage'
 
 const Section = ({ icon: Icon, title, children }) => (
   <div className="glass-card overflow-hidden">
@@ -33,31 +35,30 @@ const DENSITY_OPTIONS = [
   { key: 'large',   label: 'Large' },
 ]
 
-function applyTheme(theme) {
-  if (theme === 'light') {
-    document.documentElement.classList.add('light')
-  } else {
-    document.documentElement.classList.remove('light')
-  }
-  localStorage.setItem('theme', theme)
-}
-
 export default function Settings() {
   const [saved, setSaved] = useState(false)
   const { language, currency, density, changeLanguage, changeCurrency, changeDensity, t } = useSettings()
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('abu_api_key') || '')
+  const { user } = useAuth()
+  const themeKey  = ukey(user?.id ?? null, 'theme')
+  const apiKeyKey = ukey(user?.id ?? null, 'api_key')
+  const [theme, setTheme] = useState(() => localStorage.getItem(themeKey) || 'dark')
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem(apiKeyKey) || '')
 
   const handleTheme = (v) => {
     setTheme(v)
-    applyTheme(v)
+    if (v === 'light') {
+      document.documentElement.classList.add('light')
+    } else {
+      document.documentElement.classList.remove('light')
+    }
+    localStorage.setItem(themeKey, v)
   }
 
   const handleSave = () => {
     if (apiKey.trim()) {
-      localStorage.setItem('abu_api_key', apiKey.trim())
+      localStorage.setItem(apiKeyKey, apiKey.trim())
     } else {
-      localStorage.removeItem('abu_api_key')
+      localStorage.removeItem(apiKeyKey)
     }
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)

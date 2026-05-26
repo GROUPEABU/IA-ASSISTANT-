@@ -1,11 +1,16 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { SettingsProvider } from '@/contexts/SettingsContext'
+import { getSessionUserId } from '@/utils/userStorage'
 
-// Apply saved theme immediately (before first render)
-if (localStorage.getItem('theme') === 'light') {
-  document.documentElement.classList.add('light')
-}
+// Apply saved theme immediately (before first render), using user-scoped key
+;(() => {
+  try {
+    const uid = getSessionUserId()
+    const key = uid != null ? `abu_u${uid}_theme` : 'theme'
+    if (localStorage.getItem(key) === 'light') document.documentElement.classList.add('light')
+  } catch {}
+})()
 
 import Layout from '@/components/layout/Layout'
 import CookieBanner from '@/components/ui/CookieBanner'
@@ -44,49 +49,61 @@ function AppRoutes() {
     <>
       <Routes>
         {/* Public auth routes */}
-        <Route path="/login" element={isAuthenticated ? <Navigate to="/hub" replace /> : <Login />} />
+        <Route path="/login"           element={isAuthenticated ? <Navigate to="/hub" replace /> : <Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password"  element={<ResetPassword />} />
 
         {/* Public legal routes */}
-        <Route path="/mentions-legales"            element={<MentionsLegales />} />
-        <Route path="/politique-confidentialite"   element={<PolitiqueConfidentialite />} />
-        <Route path="/conditions-utilisation"      element={<ConditionsUtilisation />} />
+        <Route path="/mentions-legales"           element={<MentionsLegales />} />
+        <Route path="/politique-confidentialite"  element={<PolitiqueConfidentialite />} />
+        <Route path="/conditions-utilisation"     element={<ConditionsUtilisation />} />
 
         {/* Protected app routes */}
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Navigate to="/hub" replace />} />
-          <Route path="hub"           element={<Hub />} />
-          <Route path="products"      element={<Products />} />
-          <Route path="products/:id"  element={<ProductDetail />} />
-          <Route path="co2-malus"     element={<CO2Malus />} />
-          <Route path="chat"          element={<Chat />} />
-          <Route path="price-watch"   element={<PriceWatch />} />
-          <Route path="objections"    element={<Objections />} />
-          <Route path="pitch"         element={<PitchGenerator />} />
-          <Route path="tco"           element={<Tco />} />
-          <Route path="settings"      element={<Settings />} />
+          <Route path="hub"          element={<Hub />} />
+          <Route path="products"     element={<Products />} />
+          <Route path="products/:id" element={<ProductDetail />} />
+          <Route path="co2-malus"    element={<CO2Malus />} />
+          <Route path="chat"         element={<Chat />} />
+          <Route path="price-watch"  element={<PriceWatch />} />
+          <Route path="objections"   element={<Objections />} />
+          <Route path="pitch"        element={<PitchGenerator />} />
+          <Route path="tco"          element={<Tco />} />
+          <Route path="settings"     element={<Settings />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/hub" replace />} />
       </Routes>
 
-      {/* Global cookie consent banner */}
       <CookieBanner />
     </>
+  )
+}
+
+/**
+ * Bridge: reads the authenticated user from AuthContext and passes
+ * their ID down to SettingsProvider so prefs are scoped per user.
+ */
+function SettingsShell({ children }) {
+  const { user } = useAuth()
+  return (
+    <SettingsProvider userId={user?.id ?? null}>
+      {children}
+    </SettingsProvider>
   )
 }
 
 export default function App() {
   return (
     <ErrorBoundary>
-      <SettingsProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <SettingsShell>
           <BrowserRouter>
             <AppRoutes />
           </BrowserRouter>
-        </AuthProvider>
-      </SettingsProvider>
+        </SettingsShell>
+      </AuthProvider>
     </ErrorBoundary>
   )
 }

@@ -14,7 +14,17 @@ const ENDPOINT     = 'https://api.anthropic.com/v1/messages'
 const MODEL        = 'claude-sonnet-4-6'
 const API_VERSION  = '2023-06-01'
 const MAX_TOKENS   = 1024
-const STORAGE_KEY  = 'abu_api_key'
+
+import { getSessionUserId, ukey } from '@/utils/userStorage'
+
+function getApiKey() {
+  try {
+    const uid = getSessionUserId()
+    return localStorage.getItem(ukey(uid, 'api_key')) || import.meta.env.VITE_ANTHROPIC_API_KEY || ''
+  } catch {
+    return import.meta.env.VITE_ANTHROPIC_API_KEY || ''
+  }
+}
 
 const LANG_NAMES = { fr: 'French', en: 'English', de: 'German', it: 'Italian', es: 'Spanish' }
 
@@ -35,13 +45,6 @@ function buildSystemPrompt(lang = 'fr') {
  * @property {Attachment?} [attachment]
  */
 
-/**
- * Resolves the API key from build-time env or localStorage.
- * @returns {string|null}
- */
-function resolveApiKey() {
-  return import.meta.env.VITE_ANTHROPIC_API_KEY || localStorage.getItem(STORAGE_KEY) || null
-}
 
 /**
  * Builds a single message's content payload, with optional file attachment.
@@ -82,7 +85,7 @@ function buildContent(text, attachment) {
  * @throws  {Error} if no API key is configured, or if the API rejects the request
  */
 export async function sendMessage(messages, { lang = 'fr' } = {}) {
-  const apiKey = resolveApiKey()
+  const apiKey = getApiKey()
   if (!apiKey) {
     throw new Error('Anthropic API key missing. Please add your key in Settings.')
   }

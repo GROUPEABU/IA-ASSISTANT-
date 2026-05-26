@@ -1,33 +1,35 @@
-import { useState, useEffect } from 'react'
-
-const STORAGE_KEY = 'abu_generated_products'
-
-function load() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') } catch { return [] }
-}
-
-function save(products) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(products))
-}
+import { useState, useEffect, useCallback } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { ukey } from '@/utils/userStorage'
 
 export function useGeneratedProducts() {
+  const { user } = useAuth()
+  const storageKey = ukey(user?.id ?? null, 'generated_products')
+
+  const load = useCallback(() => {
+    try { return JSON.parse(localStorage.getItem(storageKey) || '[]') } catch { return [] }
+  }, [storageKey])
+
   const [generated, setGenerated] = useState(load)
 
-  const add = (product) => {
+  // Reload when the active user changes (login / logout)
+  useEffect(() => { setGenerated(load()) }, [load])
+
+  const add = useCallback((product) => {
     setGenerated((prev) => {
       const next = [product, ...prev.filter((p) => p.id !== product.id)]
-      save(next)
+      localStorage.setItem(storageKey, JSON.stringify(next))
       return next
     })
-  }
+  }, [storageKey])
 
-  const remove = (id) => {
+  const remove = useCallback((id) => {
     setGenerated((prev) => {
       const next = prev.filter((p) => p.id !== id)
-      save(next)
+      localStorage.setItem(storageKey, JSON.stringify(next))
       return next
     })
-  }
+  }, [storageKey])
 
   return { generated, add, remove }
 }
