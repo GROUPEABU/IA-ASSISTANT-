@@ -7,34 +7,58 @@ export default function Logo({ size = 'md', className = '' }) {
   }
   const c = configs[size] ?? configs.md
   const totalW = c.iconW + c.gap + c.fontSize * 7.6
+  const h = Math.max(c.iconH, c.fontSize)
+  const uid = `logo-${size}`
 
   return (
     <svg
-      viewBox={`0 0 ${totalW} ${Math.max(c.iconH, c.fontSize)}`}
+      viewBox={`0 0 ${totalW} ${h}`}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ width: totalW, height: Math.max(c.iconH, c.fontSize) }}
-      className={className}
+      style={{ width: totalW, height: h }}
+      className={`logo-svg ${className}`}
     >
-      {/* Double-circle "∞" icon — exact path from co2-malus.vercel.app */}
-      <g transform={`scale(${c.iconW / 80}, ${c.iconH / 36}) translate(0, ${(36 - 36) / 2})`}>
+      <defs>
+        {/* Radial gradient — blue interior fill of the ∞ */}
+        <radialGradient id={`${uid}-fill`} cx="50%" cy="50%" r="65%" gradientUnits="objectBoundingBox">
+          <stop offset="0%"   stopColor="var(--logo-fill-inner, #93c5fd)" stopOpacity="0.55" />
+          <stop offset="60%"  stopColor="var(--logo-fill-mid,   #38bdf8)" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="var(--logo-fill-outer, #0891b2)" stopOpacity="0.05" />
+        </radialGradient>
+        {/* Linear gradient — stroke cyan→blue */}
+        <linearGradient id={`${uid}-stroke`} x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stopColor="var(--logo-stroke-a, #38bdf8)" />
+          <stop offset="100%" stopColor="var(--logo-stroke-b, #50E5E5)" />
+        </linearGradient>
+      </defs>
+
+      <g transform={`scale(${c.iconW / 80}, ${c.iconH / 36})`}>
+        {/* Blue interior fill layer */}
         <path
           d="M 14 18 a 9 9 0 1 0 18 0 a 9 9 0 1 0 18 0 a 9 9 0 1 0 -18 0 a 9 9 0 1 0 -18 0"
-          stroke="#50E5E5"
-          strokeWidth="4"
+          fill={`url(#${uid}-fill)`}
+          stroke="none"
+        />
+        {/* Stroked outline with glow */}
+        <path
+          d="M 14 18 a 9 9 0 1 0 18 0 a 9 9 0 1 0 18 0 a 9 9 0 1 0 -18 0 a 9 9 0 1 0 -18 0"
+          stroke={`url(#${uid}-stroke)`}
+          strokeWidth="3.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          style={{ filter: 'drop-shadow(0 0 6px rgba(80,229,229,0.6))' }}
+          fill="none"
+          style={{ filter: 'drop-shadow(0 0 5px var(--logo-glow, rgba(80,229,229,0.65)))' }}
         />
       </g>
+
       {/* "Autobuyunion" text */}
       <text
         x={c.iconW + c.gap}
-        y={Math.max(c.iconH, c.fontSize) * 0.82}
+        y={h * 0.82}
         fontFamily="'Poppins', system-ui, sans-serif"
         fontSize={c.fontSize}
-        fontWeight="500"
-        fill="rgba(224,225,225,0.9)"
+        fontWeight="600"
+        fill="var(--logo-text, rgba(224,225,225,0.92))"
         letterSpacing={c.letterSpacing}
       >
         Autobuyunion

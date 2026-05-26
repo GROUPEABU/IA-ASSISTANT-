@@ -237,6 +237,15 @@
 html.light {
   color-scheme: light;
 
+  /* ── Logo tokens — blue fill + dark text in light mode ── */
+  --logo-text:         #0a1628;
+  --logo-stroke-a:     #0284c7;
+  --logo-stroke-b:     #0891b2;
+  --logo-fill-inner:   #bae6fd;
+  --logo-fill-mid:     #38bdf8;
+  --logo-fill-outer:   #0284c7;
+  --logo-glow:         rgba(2, 132, 199, 0.40);
+
   /* Canvas layers — tinted, never pure white */
   --surface-canvas:    #f6f8fb;  /* page background */
   --surface-card:      #ffffff;  /* primary cards */
