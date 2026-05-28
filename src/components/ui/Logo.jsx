@@ -19,10 +19,10 @@ export default function Logo({ size = 'md', className = '' }) {
     >
       {/* Icon — circular official logo, scales uniformly */}
       <g transform={`translate(0, ${(h - c.iconS) / 2}) scale(${c.iconS / 100})`}>
-        <circle cx="50" cy="50" r="50" fill="#383C47"/>
+        <circle cx="50" cy="50" r="50" fill="#393F4A"/>
         <path
           d="M 14 50 a 18 18 0 1 0 36 0 a 18 18 0 1 0 36 0 a 18 18 0 1 0 -36 0 a 18 18 0 1 0 -36 0"
-          stroke="#00D4E8"
+          stroke="#50E5E5"
           strokeWidth="11"
           strokeLinecap="round"
           strokeLinejoin="round"
