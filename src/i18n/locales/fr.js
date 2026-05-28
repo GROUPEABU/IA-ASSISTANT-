@@ -275,6 +275,7 @@ export default {
     settings_theme_desc: "Mode d\'affichage de l\'interface",
     settings_dark: 'Sombre',
     settings_light: 'Clair',
+    settings_system: 'Système',
     settings_density_label: "Densité d\'affichage",
     settings_density_desc: "Espacement et taille des éléments de l\'interface",
     settings_compact: 'Compact',

@@ -259,6 +259,7 @@ export default {
     settings_theme_desc: 'Interface display mode',
     settings_dark: 'Dark',
     settings_light: 'Light',
+    settings_system: 'System',
     settings_density_label: 'Display density',
     settings_density_desc: 'Spacing and size of interface elements',
     settings_compact: 'Compact',

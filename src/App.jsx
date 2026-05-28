@@ -8,7 +8,12 @@ import { getSessionUserId } from '@/utils/userStorage'
   try {
     const uid = getSessionUserId()
     const key = uid != null ? `abu_u${uid}_theme` : 'theme'
-    if (localStorage.getItem(key) === 'light') document.documentElement.classList.add('light')
+    const saved = localStorage.getItem(key) || 'dark'
+    if (saved === 'light') {
+      document.documentElement.classList.add('light')
+    } else if (saved === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.classList.add('light')
+    }
   } catch {}
 })()
 

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Key, Palette, Globe, Check, Monitor, Sun, Scale, ChevronRight } from 'lucide-react'
+import { Key, Palette, Globe, Check, Monitor, Sun, Laptop, Scale, ChevronRight } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { ukey } from '@/utils/userStorage'
@@ -44,15 +44,33 @@ export default function Settings() {
   const [theme, setTheme] = useState(() => localStorage.getItem(themeKey) || 'dark')
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(apiKeyKey) || '')
 
-  const handleTheme = (v) => {
-    setTheme(v)
+  function applyThemeValue(v) {
     if (v === 'light') {
       document.documentElement.classList.add('light')
-    } else {
+    } else if (v === 'dark') {
       document.documentElement.classList.remove('light')
+    } else {
+      // system
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      if (prefersDark) document.documentElement.classList.remove('light')
+      else document.documentElement.classList.add('light')
     }
+  }
+
+  const handleTheme = (v) => {
+    setTheme(v)
+    applyThemeValue(v)
     localStorage.setItem(themeKey, v)
   }
+
+  // Follow OS changes when theme = 'system'
+  useEffect(() => {
+    if (theme !== 'system') return
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = () => applyThemeValue('system')
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [theme])
 
   const handleSave = () => {
     if (apiKey.trim()) {
@@ -106,26 +124,23 @@ export default function Settings() {
         <Section icon={Palette} title={t('settings_appearance')}>
           <Field label={t('settings_theme_label')} description={t('settings_theme_desc')}>
             <div className="flex gap-2">
-              <button
-                onClick={() => handleTheme('dark')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
-                  theme === 'dark'
-                    ? 'bg-cyan-400/10 border-cyan-400/30 text-cyan-400'
-                    : 'border-navy-600/50 text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                <Monitor size={13} /> {t('settings_dark')}
-              </button>
-              <button
-                onClick={() => handleTheme('light')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
-                  theme === 'light'
-                    ? 'bg-cyan-400/10 border-cyan-400/30 text-cyan-400'
-                    : 'border-navy-600/50 text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                <Sun size={13} /> {t('settings_light')}
-              </button>
+              {[
+                { value: 'dark',   icon: Monitor, labelKey: 'settings_dark' },
+                { value: 'light',  icon: Sun,     labelKey: 'settings_light' },
+                { value: 'system', icon: Laptop,  labelKey: 'settings_system' },
+              ].map(({ value, icon: Icon, labelKey }) => (
+                <button
+                  key={value}
+                  onClick={() => handleTheme(value)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                    theme === value
+                      ? 'bg-cyan-400/10 border-cyan-400/30 text-cyan-400'
+                      : 'border-navy-600/50 text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  <Icon size={13} /> {t(labelKey)}
+                </button>
+              ))}
             </div>
           </Field>
           <Field label={t('settings_density_label')} description={t('settings_density_desc')}>
