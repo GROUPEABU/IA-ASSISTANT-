@@ -57,7 +57,7 @@ export default function Sidebar({ isOpen, onClose }) {
       isOpen ? 'translate-x-0' : '-translate-x-full',
     )}>
       {/* Logo — clicking anywhere on the logo returns to Hub */}
-      <div className="px-4 py-4 border-b border-navy-700/50 flex items-center justify-between">
+      <div className="px-4 h-14 md:h-16 border-b border-navy-700/50 flex items-center justify-between flex-shrink-0">
         <Link to="/hub" onClick={onClose} className="flex items-center hover:opacity-80 transition-opacity">
           <Logo size="sm" />
         </Link>
