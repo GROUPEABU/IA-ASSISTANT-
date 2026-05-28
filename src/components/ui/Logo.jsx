@@ -49,7 +49,6 @@ export default function Logo({ size = 'md', className = '' }) {
         fontWeight="600"
         fill={`url(#${uid}-wm)`}
         letterSpacing={c.letterSpacing}
-        style={{ filter: 'drop-shadow(8px 0 12px rgba(80,229,229,0.5))' }}
       >
         Autobuyunion
       </text>
