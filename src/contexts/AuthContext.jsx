@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react'
-import { findUserByUsername, validateCredentials } from '@/data/users'
+import { findUserByUsername, validateCredentials, isExpired } from '@/data/users'
 
 // ── localStorage keys ────────────────────────────────────────────────────────
 const SESSION_KEY    = 'abu_session'
@@ -28,7 +28,15 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem(SESSION_KEY)
-      return saved ? JSON.parse(saved) : null
+      if (!saved) return null
+      const parsed = JSON.parse(saved)
+      // Kick expired demo sessions on restore
+      const full = findUserByUsername(parsed.username)
+      if (isExpired(full)) {
+        localStorage.removeItem(SESSION_KEY)
+        return null
+      }
+      return parsed
     } catch { return null }
   })
 
