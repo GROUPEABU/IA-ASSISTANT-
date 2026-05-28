@@ -1,0 +1,17 @@
+{
+  "name": "Autobuyunion",
+  "short_name": "Autobuyunion",
+  "description": "Assistant IA Ventes Automobiles",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D273C",
+  "theme_color": "#0D273C",
+  "icons": [
+    {
+      "src": "/favicon.svg?v=3",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
