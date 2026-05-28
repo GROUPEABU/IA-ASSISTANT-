@@ -8,46 +8,45 @@ export default function Logo({ size = 'md', className = '' }) {
   const c = configs[size] ?? configs.md
   const totalW = c.iconS + c.gap + c.fontSize * 7.6
   const h = Math.max(c.iconS, c.fontSize)
-  const uid = `logo-${size}`
+  const textX = c.iconS + c.gap
+  const glowR = c.fontSize * 1.6
 
   return (
     <svg
       viewBox={`0 0 ${totalW} ${h}`}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ width: totalW, height: h }}
+      style={{ width: totalW, height: h, overflow: 'visible' }}
       className={`logo-svg ${className}`}
     >
-      <defs>
-        {/* Crystal white → subtle cyan toward end of wordmark */}
-        <linearGradient id={`${uid}-wm`} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stopColor="#ffffff" stopOpacity="1" />
-          <stop offset="60%"  stopColor="#ffffff" stopOpacity="0.97" />
-          <stop offset="100%" stopColor="#a5f3fc" stopOpacity="0.88" />
-        </linearGradient>
-      </defs>
-
-      {/* Icon — circular official logo */}
+      {/* Icon — official circular logo */}
       <g transform={`translate(0, ${(h - c.iconS) / 2}) scale(${c.iconS / 100})`}>
         <circle cx="50" cy="50" r="50" fill="#393F4A"/>
         <path
           d="M 14 50 a 18 18 0 1 0 36 0 a 18 18 0 1 0 36 0 a 18 18 0 1 0 -36 0 a 18 18 0 1 0 -36 0"
-          stroke="#50E5E5"
-          strokeWidth="11"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
+          stroke="#50E5E5" strokeWidth="11"
+          strokeLinecap="round" strokeLinejoin="round" fill="none"
         />
       </g>
 
-      {/* "Autobuyunion" wordmark — crystal white, glow toward end */}
+      {/* Glow blob at end of word only */}
+      <ellipse
+        cx={totalW - glowR * 0.3}
+        cy={h * 0.45}
+        rx={glowR}
+        ry={glowR * 0.55}
+        fill="rgba(80,229,229,0.22)"
+        style={{ filter: `blur(${c.fontSize * 0.55}px)` }}
+      />
+
+      {/* Wordmark — solid white, no filter */}
       <text
-        x={c.iconS + c.gap}
+        x={textX}
         y={h * 0.82}
         fontFamily="'Poppins', system-ui, sans-serif"
         fontSize={c.fontSize}
         fontWeight="600"
-        fill={`url(#${uid}-wm)`}
+        fill="rgba(255,255,255,0.95)"
         letterSpacing={c.letterSpacing}
       >
         Autobuyunion
