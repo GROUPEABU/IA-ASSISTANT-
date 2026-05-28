@@ -8,8 +8,6 @@ export default function Logo({ size = 'md', className = '' }) {
   const c = configs[size] ?? configs.md
   const totalW = c.iconS + c.gap + c.fontSize * 7.6
   const h = Math.max(c.iconS, c.fontSize)
-  const textX = c.iconS + c.gap
-  const uid = `logo-${size}`
 
   return (
     <svg
@@ -19,16 +17,6 @@ export default function Logo({ size = 'md', className = '' }) {
       style={{ width: totalW, height: h }}
       className={`logo-svg ${className}`}
     >
-      <defs>
-        {/* Shine: dim white at start → pure bright white at end */}
-        <linearGradient id={`${uid}-shine`} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stopColor="rgba(200,215,225,0.82)" />
-          <stop offset="55%"  stopColor="rgba(230,238,242,0.90)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,1.00)" />
-        </linearGradient>
-      </defs>
-
-      {/* Icon — official circular logo */}
       <g transform={`translate(0, ${(h - c.iconS) / 2}) scale(${c.iconS / 100})`}>
         <circle cx="50" cy="50" r="50" fill="#393F4A"/>
         <path
@@ -37,15 +25,13 @@ export default function Logo({ size = 'md', className = '' }) {
           strokeLinecap="round" strokeLinejoin="round" fill="none"
         />
       </g>
-
-      {/* Wordmark — solid white, no filter */}
       <text
-        x={textX}
+        x={c.iconS + c.gap}
         y={h * 0.82}
         fontFamily="'Poppins', system-ui, sans-serif"
         fontSize={c.fontSize}
         fontWeight="600"
-        fill={`url(#${uid}-shine)`}
+        fill="var(--logo-text, #ffffff)"
         letterSpacing={c.letterSpacing}
       >
         Autobuyunion

@@ -87,6 +87,9 @@
   .gradient-text {
     color: #50E5E5;
   }
+  html.light .gradient-text {
+    color: #0891b2;
+  }
 
   .btn-primary {
     @apply bg-cyan-400 text-navy-900 font-semibold px-4 py-2 rounded-xl
