@@ -78,6 +78,24 @@ export function useMalusCalculation() {
     })
   }, [])
 
+  const reset = useCallback(() => {
+    setEmission(143)
+    setWeight(1450)
+    setFuelType('thermique')
+    setDateImmat('2025-03-12')
+    setIsImported(false)
+    setDisplacement(1300)
+    setVehiclePrice(30000)
+    setFuelKind('petrol')
+    setBeRegion('wallonie')
+    setEsRegion('standard')
+    setChildrenCount(0)
+    setSelectedCountry(null)
+    setResult(null)
+    setSelectedForCompare([])
+    setCompareResults([])
+  }, [])
+
   const runManualCompare = useCallback(() => {
     const next = selectedForCompare
       .map(c => {
@@ -101,6 +119,7 @@ export function useMalusCalculation() {
     beRegion, setBeRegion,
     esRegion, setEsRegion,
     childrenCount, setChildrenCount,
+    reset,
     // results
     selectedCountry, selectCountry,
     result,

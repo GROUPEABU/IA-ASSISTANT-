@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { RotateCcw } from 'lucide-react'
 import { COUNTRIES, CUSTOM_EMISSIONS, RELIABILITY_CONFIG } from '@/utils/malusWorld'
 import { getCountryName } from '@/utils/malusLabels'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -51,6 +52,14 @@ export default function CO2Malus() {
   const [reliabilityFilter, setReliabilityFilter] = useState('all')
   const [showAdvanced, setShowAdvanced]       = useState(false)
 
+  const handleReset = useCallback(() => {
+    malus.reset()
+    setSearch('')
+    setMode('country')
+    setReliabilityFilter('all')
+    setShowAdvanced(false)
+  }, [malus])
+
   const resultRef        = useRef(null)
   const compareResultRef = useRef(null)
 
@@ -80,7 +89,7 @@ export default function CO2Malus() {
 
   return (
     <div className="flex flex-col gap-3 animate-fade-in">
-      <Header t={t} />
+      <Header t={t} onReset={handleReset} />
       <ReliabilityLegend />
 
       <SliderSection
@@ -174,14 +183,26 @@ export default function CO2Malus() {
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 
-function Header({ t }) {
+function Header({ t, onReset }) {
   return (
-    <div className="flex-shrink-0">
-      <h2 className="text-sm font-semibold text-white">{t('malus_page_title')}</h2>
-      <p className="text-xs text-slate-500">{t('malus_page_subtitle')}</p>
-      <p className="text-[11px] text-slate-500 mt-0.5">
-        {t('malus_page_intro_disclaimer')}
-      </p>
+    <div className="flex items-start justify-between flex-shrink-0">
+      <div>
+        <h2 className="text-sm font-semibold text-white">{t('malus_page_title')}</h2>
+        <p className="text-xs text-slate-500">{t('malus_page_subtitle')}</p>
+        <p className="text-[11px] text-slate-500 mt-0.5">
+          {t('malus_page_intro_disclaimer')}
+        </p>
+      </div>
+      <button
+        onClick={onReset}
+        title={t('malus_reset')}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-navy-600/50
+                   text-xs font-medium text-slate-400 hover:text-cyan-400 hover:border-cyan-400/40
+                   hover:bg-cyan-400/5 active:scale-95 transition-all flex-shrink-0 ml-3"
+      >
+        <RotateCcw size={13} />
+        {t('malus_reset')}
+      </button>
     </div>
   )
 }

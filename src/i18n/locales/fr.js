@@ -383,6 +383,7 @@ export default {
     malus_advanced_params: 'Paramètres avancés',
     malus_show: '▼ Afficher',
     malus_hide: '▲ Masquer',
+    malus_reset: 'Réinitialiser',
     malus_page_title: 'CO₂ & Malus Mondial',
     malus_page_subtitle: 'Calculateur sur 40 pays · Autobuyunion',
     malus_page_intro_disclaimer: 'Estimation indicative · Consultez les autorités fiscales avant tout achat',

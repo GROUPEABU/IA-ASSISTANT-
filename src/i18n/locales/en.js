@@ -359,6 +359,7 @@ export default {
     malus_advanced_params: 'Advanced parameters',
     malus_show: '▼ Show',
     malus_hide: '▲ Hide',
+    malus_reset: 'Reset',
     malus_page_title: 'CO₂ & Worldwide Duty',
     malus_page_subtitle: 'Calculator across 40 countries · Autobuyunion',
     malus_page_intro_disclaimer: 'Indicative estimate · Check with fiscal authorities before any purchase',
