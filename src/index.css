@@ -87,7 +87,6 @@
   .gradient-text {
     @apply text-transparent bg-clip-text;
     background-image: linear-gradient(to right, #ffffff 0%, #a5f3fc 55%, rgba(80,229,229,0.75) 100%);
-    filter: drop-shadow(10px 0 16px rgba(80, 229, 229, 0.55));
   }
 
   .btn-primary {
