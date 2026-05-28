@@ -85,8 +85,7 @@
   }
 
   .gradient-text {
-    @apply text-transparent bg-clip-text;
-    background-image: linear-gradient(to right, #38bdf8 0%, #50E5E5 55%, #cffafe 100%);
+    color: #50E5E5;
   }
 
   .btn-primary {
