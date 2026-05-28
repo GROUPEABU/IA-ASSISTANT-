@@ -9,7 +9,10 @@ export default function Logo({ size = 'md', className = '' }) {
   const totalW = c.iconS + c.gap + c.fontSize * 7.6
   const h = Math.max(c.iconS, c.fontSize)
   const textX = c.iconS + c.gap
-  const glowR = c.fontSize * 1.6
+  // "Autobuyu" = 8 chars × ~0.57em → "nion" starts near end; center glow on "union" (last 5 chars)
+  const unionCx = textX + c.fontSize * 5.5
+  const unionRx = c.fontSize * 1.55
+  const unionRy = c.fontSize * 0.65
 
   return (
     <svg
@@ -29,14 +32,14 @@ export default function Logo({ size = 'md', className = '' }) {
         />
       </g>
 
-      {/* Glow blob at end of word only */}
+      {/* Glow on "union" only */}
       <ellipse
-        cx={totalW - glowR * 0.3}
+        cx={unionCx}
         cy={h * 0.45}
-        rx={glowR}
-        ry={glowR * 0.55}
-        fill="rgba(80,229,229,0.22)"
-        style={{ filter: `blur(${c.fontSize * 0.55}px)` }}
+        rx={unionRx}
+        ry={unionRy}
+        fill="rgba(80,229,229,0.28)"
+        style={{ filter: `blur(${c.fontSize * 0.5}px)` }}
       />
 
       {/* Wordmark — solid white, no filter */}
