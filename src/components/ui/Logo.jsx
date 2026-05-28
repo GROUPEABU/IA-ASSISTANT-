@@ -9,19 +9,25 @@ export default function Logo({ size = 'md', className = '' }) {
   const totalW = c.iconS + c.gap + c.fontSize * 7.6
   const h = Math.max(c.iconS, c.fontSize)
   const textX = c.iconS + c.gap
-  // "Autobuyu" = 8 chars × ~0.57em → "nion" starts near end; center glow on "union" (last 5 chars)
-  const unionCx = textX + c.fontSize * 5.5
-  const unionRx = c.fontSize * 1.55
-  const unionRy = c.fontSize * 0.65
+  const uid = `logo-${size}`
 
   return (
     <svg
       viewBox={`0 0 ${totalW} ${h}`}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ width: totalW, height: h, overflow: 'visible' }}
+      style={{ width: totalW, height: h }}
       className={`logo-svg ${className}`}
     >
+      <defs>
+        {/* Shine: dim white at start → pure bright white at end */}
+        <linearGradient id={`${uid}-shine`} x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stopColor="rgba(200,215,225,0.82)" />
+          <stop offset="55%"  stopColor="rgba(230,238,242,0.90)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,1.00)" />
+        </linearGradient>
+      </defs>
+
       {/* Icon — official circular logo */}
       <g transform={`translate(0, ${(h - c.iconS) / 2}) scale(${c.iconS / 100})`}>
         <circle cx="50" cy="50" r="50" fill="#393F4A"/>
@@ -32,16 +38,6 @@ export default function Logo({ size = 'md', className = '' }) {
         />
       </g>
 
-      {/* Glow on "union" only */}
-      <ellipse
-        cx={unionCx}
-        cy={h * 0.45}
-        rx={unionRx}
-        ry={unionRy}
-        fill="rgba(80,229,229,0.28)"
-        style={{ filter: `blur(${c.fontSize * 0.5}px)` }}
-      />
-
       {/* Wordmark — solid white, no filter */}
       <text
         x={textX}
@@ -49,7 +45,7 @@ export default function Logo({ size = 'md', className = '' }) {
         fontFamily="'Poppins', system-ui, sans-serif"
         fontSize={c.fontSize}
         fontWeight="600"
-        fill="rgba(255,255,255,0.95)"
+        fill={`url(#${uid}-shine)`}
         letterSpacing={c.letterSpacing}
       >
         Autobuyunion

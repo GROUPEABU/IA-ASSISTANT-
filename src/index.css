@@ -85,19 +85,8 @@
   }
 
   .gradient-text {
-    color: #50E5E5;
-    position: relative;
-    display: inline-block;
-  }
-  .gradient-text::after {
-    content: '';
-    position: absolute;
-    right: -0.1em;
-    top: -0.2em;
-    bottom: -0.2em;
-    width: 2.8em;
-    background: radial-gradient(ellipse at right center, rgba(80,229,229,0.45) 0%, transparent 75%);
-    pointer-events: none;
+    @apply text-transparent bg-clip-text;
+    background-image: linear-gradient(to right, #38bdf8 0%, #50E5E5 55%, #cffafe 100%);
   }
 
   .btn-primary {
