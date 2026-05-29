@@ -76,18 +76,19 @@ export default function PitchGenerator() {
 
     try {
       const productContext = selectedProduct
-        ? `
-DONNÉES PRODUIT :
-- Prix : ${selectedProduct.prix.base.toLocaleString('fr-FR')}€ – ${selectedProduct.prix.haut.toLocaleString('fr-FR')}€
-- Segment : ${selectedProduct.segment}
-- Motorisation : ${selectedProduct.specs.motorisation}
-- Consommation WLTP : ${selectedProduct.specs.consommation}
-- CO₂ : ${selectedProduct.specs.co2_wltp} g/km
-- Autonomie : ${selectedProduct.specs.autonomie_wltp} km
-- Garantie : ${selectedProduct.garantie.vehicule}
-- Atouts ${profile.segment === 'btob' ? 'BtoB' : 'BtoC'} : ${selectedProduct[profile.segment].atouts.join(' | ')}
-- Argument prix : ${selectedProduct[profile.segment].argument_prix || selectedProduct.btoc.argument_prix || ''}
-- Objections courantes : ${selectedProduct[profile.segment].objections.join(' | ')}`
+        ? [
+            'DONNÉES PRODUIT :',
+            `- Prix : ${selectedProduct.prix.base.toLocaleString('fr-FR')}€ – ${selectedProduct.prix.haut.toLocaleString('fr-FR')}€`,
+            `- Segment : ${selectedProduct.segment}`,
+            selectedProduct.specs?.motorisation && `- Motorisation : ${selectedProduct.specs.motorisation}`,
+            selectedProduct.specs?.consommation && `- Consommation WLTP : ${selectedProduct.specs.consommation}`,
+            `- CO₂ : ${selectedProduct.specs.co2_wltp} g/km`,
+            selectedProduct.specs?.autonomie_wltp ? `- Autonomie : ${selectedProduct.specs.autonomie_wltp} km` : null,
+            selectedProduct.garantie?.vehicule && `- Garantie : ${selectedProduct.garantie.vehicule}`,
+            selectedProduct[profile.segment]?.atouts && `- Atouts ${profile.segment === 'btob' ? 'BtoB' : 'BtoC'} : ${selectedProduct[profile.segment].atouts.join(' | ')}`,
+            `- Argument prix : ${selectedProduct[profile.segment]?.argument_prix || selectedProduct.btoc?.argument_prix || ''}`,
+            selectedProduct[profile.segment]?.objections && `- Objections courantes : ${selectedProduct[profile.segment].objections.join(' | ')}`,
+          ].filter(Boolean).join('\n')
         : ''
 
       const prompt = `Tu es un expert commercial automobile pour Autobuyunion.
@@ -111,7 +112,7 @@ Réponds UNIQUEMENT en JSON valide :
   "closing": "Phrase de closing engageante avec appel à l'action"
 }`
 
-      const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 1500 })
+      const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 1500, expert: true })
       const data = extractJSON(raw, 'object')
       const label = `${vehicleName} · ${t(profile.subKey)} ${t(profile.labelKey)}`
       setPitch(data)

@@ -90,7 +90,7 @@ Réponds UNIQUEMENT en JSON strict (sans texte avant/après) :
   "conseil_vente": "conseil chiffré et actionnable pour vendre rapidement"
 }`
 
-  const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 1500 })
+  const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 1500, expert: true })
   return extractJSON(raw, 'object')
 }
 

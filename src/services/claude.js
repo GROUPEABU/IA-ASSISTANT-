@@ -43,9 +43,28 @@ function getModel() {
 
 const LANG_NAMES = { fr: 'French', en: 'English', de: 'German', it: 'Italian', es: 'Spanish' }
 
-function buildSystemPrompt(lang = 'fr') {
+function buildSystemPrompt(lang = 'fr', expert = false) {
   const langName = LANG_NAMES[lang] || 'French'
-  return `You are an AI assistant expert in automotive sales for Autobuyunion, Europe's leading automotive purchasing group. You help sales teams with vehicle analysis, pricing, objections, and commercial strategy. Always respond in ${langName}. Be concise and direct: maximum 5-6 lines per response, use bullet points, no long paragraphs. Give precise figures and actionable advice.`
+
+  if (expert) {
+    // Mode expert — analyses, fiches, pitchs, objections, comparateur, veille prix.
+    // Pas de limite de longueur : on veut du détail chiffré et pertinent.
+    return `You are a senior automotive market analyst and sales strategist for Autobuyunion, a European automotive purchasing group. You serve professional sales teams; your output must be expert-grade, precise and directly usable.
+
+Core expertise:
+- VN (véhicules neufs): manufacturer catalog prices France 2024/2025, trim/finition hierarchy and factory options, dealer discounts & promotions actually practised, delivery lead times, WLTP homologation, CO₂ and malus écologique 2025.
+- VO (véhicules d'occasion): Argus & La Centrale ratings, realistic market prices by year / mileage / finition, depreciation curves at 1/2/3/5 years, supply-demand tension, adjustments for mileage, condition, options and region.
+- Commercial strategy: BtoB (flottes, TCO, fiscalité, récupération TVA) and BtoC (financement, valeur résiduelle, garantie, malus).
+
+Rules:
+- Always give concrete, realistic figures (€, %, g/km, km) grounded in the real French market. Never invent implausible numbers; if uncertain, give a credible range and say it is an estimate.
+- Explicitly distinguish VN vs VO whenever it changes the answer (pricing, décote, négociation).
+- Be specific to the exact model AND finition requested — never generalise across other variants.
+- Respond entirely in ${langName}.`
+  }
+
+  // Mode chat — réponses courtes et actionnables.
+  return `You are an AI assistant expert in automotive sales for Autobuyunion, Europe's leading automotive purchasing group. You help sales teams with vehicle analysis, pricing, objections, and commercial strategy. You master both VN (new) and VO (used) markets: catalog prices, dealer discounts, Argus/La Centrale ratings, depreciation, CO₂/malus, TCO. Always respond in ${langName}. Be concise and direct: maximum 5-6 lines per response, use bullet points, no long paragraphs. Give precise figures and actionable advice.`
 }
 
 /**
@@ -99,7 +118,7 @@ function buildContent(text, attachment) {
  * @returns {Promise<string>}  the assistant's text response
  * @throws  {Error} if no API key is configured, or if the API rejects the request
  */
-export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS } = {}) {
+export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false } = {}) {
   const apiKey = getApiKey()
   if (!apiKey) {
     throw new Error('Anthropic API key missing. Please add your key in Settings.')
@@ -121,7 +140,7 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
     body: JSON.stringify({
       model:      getModel(),
       max_tokens: maxTokens,
-      system:     buildSystemPrompt(lang),
+      system:     buildSystemPrompt(lang, expert),
       messages:   apiMessages,
     }),
   })

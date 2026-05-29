@@ -88,7 +88,7 @@ Avantage prix vs concurrence : -${formatNumber(Math.round(product.concurrents.re
 
 Sois percutant, concret et adapté au marché français.`
 
-      const result = await sendMessage([{ role: 'user', content: prompt }], { lang })
+      const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 1500, expert: true })
       setPitch(result)
     } catch (err) {
       setError(err.message)

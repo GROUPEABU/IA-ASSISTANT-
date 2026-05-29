@@ -18,6 +18,7 @@ const SCHEMA = `{
     "traction": "ex: Traction avant",
     "co2_wltp": 125,
     "consommation": "5.5 L/100km",
+    "autonomie_wltp": 0,
     "longueur": 4200,
     "largeur": 1780,
     "hauteur": 1520,
@@ -27,6 +28,12 @@ const SCHEMA = `{
     "poids": 1250
   },
   "prix": { "base": 25000, "haut": 32000, "devise": "EUR" },
+  "garantie": {
+    "vehicule": "ex: 5 ans ou 100 000 km",
+    "peinture": "ex: 3 ans",
+    "anticorrosion": "ex: 12 ans",
+    "assistance": "ex: 3 ans Europe"
+  },
   "equipements": ["équipement 1", "équipement 2", "équipement 3"],
   "concurrents": [
     { "nom": "Concurrent 1", "prix": 26000, "co2": 120 },
@@ -74,9 +81,11 @@ Règles importantes :
 - équipements : liste des 8-12 équipements de série principaux
 - id : format "generated-<marque>-<modele>-<annee>" en minuscules sans espaces
 - Toutes les valeurs numériques sont des nombres (pas de chaînes)
+- autonomie_wltp : autonomie totale WLTP en km (électrique/hybride = autonomie réelle ; thermique = 0)
+- garantie : durées constructeur officielles réelles de la marque
 - Pour les versions multiples (ex: essence + hybride), prendre la version essence de base`
 
-  const raw = await sendMessage([{ role: 'user', content: prompt }], { maxTokens: 2500 })
+  const raw = await sendMessage([{ role: 'user', content: prompt }], { maxTokens: 2500, expert: true })
 
   // Extraire le JSON de la réponse
   const match = raw.match(/\{[\s\S]*\}/)

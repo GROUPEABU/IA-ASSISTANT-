@@ -106,7 +106,7 @@ export default function MarketAnalysis({ product }) {
 
       // Étape 2 : analyse IA
       const prompt = buildMarketPrompt(product.fullName, webData.snippets || [], product, lang)
-      const result = await sendMessage([{ role: 'user', content: prompt }], { lang })
+      const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 2000, expert: true })
       setAnalysis(result)
     } catch (err) {
       setError(err.message)

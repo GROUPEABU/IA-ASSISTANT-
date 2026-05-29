@@ -65,14 +65,16 @@ ${activeProducts.map((p, i) => `${i + 1}. ${p.fullName}
    - Puissance : ${p.specs.puissance} · Coffre : ${p.specs.coffre}L
    - Segment : ${p.segment}`).join('\n\n')}
 
-Rédige un verdict comparatif en 3 parties :
-**Gagnant global** : lequel recommander et pourquoi (2 phrases)
-**BtoB** : lequel est le meilleur choix pour les flottes et entreprises
-**BtoC** : lequel est le meilleur choix pour les particuliers
+Rédige un verdict comparatif expert et chiffré :
+**Gagnant global** : lequel recommander et pourquoi (2-3 phrases, avec chiffres)
+**Rapport qualité-prix** : positionnement prix VN vs prestations, et coût réel malus inclus
+**Valeur résiduelle / VO** : lequel décote le moins à 3 ans (estimation % de la valeur conservée), tension du marché de l'occasion
+**BtoB** : meilleur choix pour flottes/entreprises (TCO, fiscalité, récupération TVA)
+**BtoC** : meilleur choix pour particuliers (budget, financement, malus, garantie)
 
-Sois direct et argumenté.`
+Sois direct, argumenté et chiffré.`
 
-      const result = await sendMessage([{ role: 'user', content: prompt }], { lang })
+      const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 1200, expert: true })
       setVerdict(result)
     } catch (err) {
       setError(err.message)
