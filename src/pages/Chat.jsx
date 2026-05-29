@@ -21,10 +21,15 @@ export default function Chat() {
       {/* Toolbar — desktop only (header already names the page on mobile) */}
       <div className="hidden md:flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-slow flex-shrink-0" />
           <div className="flex flex-col leading-tight">
-            <span className="text-xs font-bold text-white">IA ABU</span>
-            <span className="text-[10px] font-semibold text-emerald-400">{t('connected_label')}</span>
+            <span className="text-xs font-bold"
+                  style={{ background: 'linear-gradient(90deg, #50E5E5, #34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Autobuyunion
+            </span>
+            <div className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-slow flex-shrink-0" />
+              <span className="text-[10px] font-medium text-emerald-400/80">{t('connected_label')}</span>
+            </div>
           </div>
         </div>
         {messages.length > 0 && (

@@ -94,15 +94,22 @@ export default function Sidebar({ isOpen, onClose }) {
       {/* Footer */}
       <div className="px-3 pb-4 pt-3 border-t border-navy-700/50 space-y-2">
         {hasApiKey ? (
-          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-emerald-400/8 border border-emerald-400/15">
-            <div className="w-6 h-6 rounded-lg bg-emerald-400/20 flex items-center justify-center flex-shrink-0">
-              <Zap size={13} className="text-emerald-400" />
+          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border"
+               style={{ background: 'linear-gradient(135deg, rgba(80,229,229,0.07) 0%, rgba(52,211,153,0.07) 100%)', borderColor: 'rgba(52,211,153,0.20)' }}>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                 style={{ background: 'linear-gradient(135deg, rgba(80,229,229,0.20) 0%, rgba(52,211,153,0.20) 100%)' }}>
+              <Zap size={14} className="text-emerald-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-bold text-white leading-tight">IA ABU</p>
-              <p className="text-[10px] font-semibold text-emerald-400 leading-tight">{t('connected_label')}</p>
+              <p className="text-xs font-bold leading-tight"
+                 style={{ background: 'linear-gradient(90deg, #50E5E5, #34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                Autobuyunion
+              </p>
+              <div className="flex items-center gap-1 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-slow flex-shrink-0" />
+                <p className="text-[10px] font-medium text-emerald-400/80 leading-tight">{t('connected_label')}</p>
+              </div>
             </div>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-slow flex-shrink-0" />
           </div>
         ) : (
           <Link to="/settings" onClick={onClose}
