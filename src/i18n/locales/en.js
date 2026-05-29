@@ -24,6 +24,7 @@ export default {
     bn_chat: 'AI Chat',
     ai_operational: 'AI Operational',
     connected_ready: 'Connected · Ready',
+    connected_label: 'Connected',
     ai_inactive: 'AI Inactive',
     ai_inactive_sub: 'API key missing',
     logout: 'Log out',

@@ -94,15 +94,12 @@ export default function Sidebar({ isOpen, onClose }) {
       {/* Footer */}
       <div className="px-3 pb-4 pt-3 border-t border-navy-700/50 space-y-2">
         {hasApiKey ? (
-          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-cyan-400/8 border border-cyan-400/15">
-            <div className="w-6 h-6 rounded-lg bg-cyan-400/20 flex items-center justify-center flex-shrink-0">
-              <Zap size={13} className="text-cyan-400" />
+          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-emerald-400/8 border border-emerald-400/15">
+            <div className="w-6 h-6 rounded-lg bg-emerald-400/20 flex items-center justify-center flex-shrink-0">
+              <Zap size={13} className="text-emerald-400" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-semibold text-cyan-400 leading-tight">{t('ai_operational')}</p>
-              <p className="text-[10px] text-cyan-400/60">{t('connected_ready')}</p>
-            </div>
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse-slow flex-shrink-0" />
+            <p className="text-[11px] font-semibold text-emerald-400 flex-1">{t('connected_label')}</p>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-slow flex-shrink-0" />
           </div>
         ) : (
           <Link to="/settings" onClick={onClose}
