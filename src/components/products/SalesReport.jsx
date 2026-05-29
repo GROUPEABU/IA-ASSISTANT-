@@ -73,6 +73,17 @@ export default function SalesReport({ product }) {
     setLoading(true)
     setError(null)
     try {
+      const concurrents = product.concurrents || []
+      const avgConc = concurrents.length
+        ? Math.round(concurrents.reduce((a, c) => a + (c.prix || 0), 0) / concurrents.length)
+        : null
+      const priceAdvantageLine = avgConc != null
+        ? `\nAvantage prix vs concurrence : -${formatNumber(Math.max(0, avgConc - product.prix.base))}€ en moyenne`
+        : ''
+      const stockLine = product._importStats
+        ? `\nStock interne : ${product._importStats.count} véhicule(s) · prix ${product._importStats.priceBasis} ${formatNumber(product._importStats.prixMin)}–${formatNumber(product._importStats.prixMax)}€`
+        : ''
+
       const prompt = `Tu es un expert commercial automobile chez Autobuyunion.
 Rédige un pitch de vente complet et percutant pour le ${product.fullName} destiné aux équipes commerciales.
 
@@ -83,8 +94,7 @@ Inclus :
 4. **Réponses aux 3 objections principales** (marque inconnue, malus, valeur résiduelle)
 5. **Closing** — phrase de signature
 
-Prix : ${formatNumber(product.prix.base)}€ · Malus : ${malus > 0 ? `+${formatNumber(malus)}€` : 'Exonéré'} · CO₂ : ${product.specs.co2_wltp}g/km
-Avantage prix vs concurrence : -${formatNumber(Math.round(product.concurrents.reduce((a, c) => a + c.prix, 0) / product.concurrents.length - product.prix.base))}€ en moyenne
+Prix : ${formatNumber(product.prix.base)}€ · Malus : ${malus > 0 ? `+${formatNumber(malus)}€` : 'Exonéré'} · CO₂ : ${product.specs.co2_wltp}g/km${priceAdvantageLine}${stockLine}
 
 Sois percutant, concret et adapté au marché français.`
 

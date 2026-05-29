@@ -138,19 +138,19 @@ Segment : ${selectedProduct.segment}`
 Génère exactement 10 objections clients fréquentes pour le ${vehicleName}, segment ${segLabel}.
 ${productContext}
 
-Réponds UNIQUEMENT en JSON valide :
+Réponds UNIQUEMENT avec un tableau JSON valide, sans aucun texte ni balise markdown avant ou après :
 [
   {
     "objection": "Texte de l'objection telle que la dit le client",
     "categorie": "prix|marque|qualité|financement|après-vente|revente|malus|concurrence",
-    "reponse": "Réponse commerciale percutante, concrète, avec chiffres si possible (3-5 phrases)",
+    "reponse": "Réponse commerciale percutante et chiffrée (2-3 phrases max)",
     "argument_cle": "L'argument massue en une phrase"
   }
 ]
 
-Les objections doivent être réalistes, variées, couvrir : prix, marque inconnue, fiabilité, valeur de revente, malus, financement, SAV, concurrence.`
+Les objections doivent être réalistes, variées, couvrir : prix, marque inconnue, fiabilité, valeur de revente, malus, financement, SAV, concurrence. Sois concis pour que le JSON reste complet.`
 
-      const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 2500, expert: true })
+      const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 4000, expert: true })
       const data = extractJSON(raw, 'array')
       const label = `${vehicleName} · ${segLabel}`
       setObjections(data)

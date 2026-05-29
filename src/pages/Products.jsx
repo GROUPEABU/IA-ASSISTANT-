@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Plus, Car, Sparkles, Trash2, Clock } from 'lucide-react'
+import { ArrowRight, Plus, Car, Sparkles, Trash2, Clock, FileSpreadsheet, RotateCcw } from 'lucide-react'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
+import { useHiddenProducts } from '@/hooks/useHiddenProducts'
 import { getMalus, getMalusColor } from '@/utils/malus'
 import Badge from '@/components/ui/Badge'
 import { formatNumber } from '@/utils/formatters'
 import { interpolate } from '@/utils/interpolate'
 import VehicleSearchModal from '@/components/products/VehicleSearchModal'
+import ImportModal from '@/components/products/ImportModal'
 import { useSettings } from '@/contexts/SettingsContext'
 
 const statusVariant = { new: 'cyan', soon: 'warning', available: 'success' }
@@ -26,7 +28,9 @@ function ProductCard({ product, onDelete, navigate, t, formatCurrency }) {
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            {product._generated
+            {product._imported
+              ? <Badge variant="success">{t('product_imported')}</Badge>
+              : product._generated
               ? <Badge variant="cyan">{t('product_generated')}</Badge>
               : <Badge variant={statusVariant[product.status]}>{t(`product_${product.status}`)}</Badge>}
             <span className="text-xs text-slate-500">{product.year}</span>
@@ -62,11 +66,11 @@ function ProductCard({ product, onDelete, navigate, t, formatCurrency }) {
           <p className="text-[10px] text-slate-500 mt-1">g/km CO₂</p>
         </div>
         <div className="bg-navy-900/40 rounded-lg p-2 text-center">
-          <p className="text-sm font-bold text-white leading-none">{product.specs.puissance.split(' ')[0]}</p>
+          <p className="text-sm font-bold text-white leading-none">{(product.specs.puissance || '—').split(' ')[0]}</p>
           <p className="text-[10px] text-slate-500 mt-1">ch</p>
         </div>
         <div className="bg-navy-900/40 rounded-lg p-2 text-center">
-          <p className="text-sm font-bold text-white leading-none">{product.specs.coffre}</p>
+          <p className="text-sm font-bold text-white leading-none">{product.specs.coffre ?? '—'}</p>
           <p className="text-[10px] text-slate-500 mt-1">{t('products_trunk_unit')}</p>
         </div>
       </div>
@@ -96,23 +100,38 @@ export default function Products() {
   const navigate = useNavigate()
   const { t, formatCurrency } = useSettings()
   const [showSearch, setShowSearch] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const { generated, add, remove } = useGeneratedProducts()
+  const { hidden, hide, restore } = useHiddenProducts()
 
-  const allProducts = [...PRODUCTS, ...generated]
+  const visibleStatic = PRODUCTS.filter((p) => !hidden.includes(p.id))
+  const importedProds = generated.filter((p) => p._imported)
+  const aiProds = generated.filter((p) => !p._imported)
+  const allProducts = [...visibleStatic, ...generated]
 
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <p className="text-xs text-slate-500">{interpolate(t('products_count'), { n: allProducts.length })}</p>
-        <button
-          onClick={() => setShowSearch(true)}
-          className="flex items-center gap-2 text-xs font-bold text-navy-900 bg-cyan-400
-                     px-3 py-2 rounded-lg hover:bg-cyan-300 active:scale-95 transition-all"
-        >
-          <Sparkles size={13} />
-          {t('generate_sheet')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-2 text-xs font-bold text-cyan-400 border border-cyan-400/30
+                       px-3 py-2 rounded-lg hover:bg-cyan-400/10 active:scale-95 transition-all"
+          >
+            <FileSpreadsheet size={13} />
+            {t('import_btn')}
+          </button>
+          <button
+            onClick={() => setShowSearch(true)}
+            className="flex items-center gap-2 text-xs font-bold text-navy-900 bg-cyan-400
+                       px-3 py-2 rounded-lg hover:bg-cyan-300 active:scale-95 transition-all"
+          >
+            <Sparkles size={13} />
+            {t('generate_sheet')}
+          </button>
+        </div>
       </div>
 
       {/* IA info banner */}
@@ -124,20 +143,56 @@ export default function Products() {
         </p>
       </div>
 
-      {/* Fiches statiques */}
-      {PRODUCTS.length > 0 && (
+      {/* Fiches statiques (catalogue) — suppression persistante */}
+      {visibleStatic.length > 0 && (
         <div>
-          <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">{t('products_builtin_sheets')}</p>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{t('products_builtin_sheets')}</p>
+            {hidden.length > 0 && (
+              <button
+                onClick={() => restore()}
+                className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-cyan-400 transition"
+              >
+                <RotateCcw size={10} /> {interpolate(t('products_restore_hidden'), { n: hidden.length })}
+              </button>
+            )}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {PRODUCTS.map((product) => (
-              <ProductCard key={product.id} product={product} navigate={navigate} t={t} formatCurrency={formatCurrency} />
+            {visibleStatic.map((product) => (
+              <ProductCard key={product.id} product={product} navigate={navigate} onDelete={hide} t={t} formatCurrency={formatCurrency} />
             ))}
           </div>
         </div>
       )}
 
-      {/* Fiches générées */}
-      {generated.length > 0 && (
+      {/* Restauration quand tout le catalogue est masqué */}
+      {visibleStatic.length === 0 && hidden.length > 0 && (
+        <button
+          onClick={() => restore()}
+          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition"
+        >
+          <RotateCcw size={12} /> {interpolate(t('products_restore_hidden'), { n: hidden.length })}
+        </button>
+      )}
+
+      {/* Fiches importées (fichier de stock) */}
+      {importedProds.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <FileSpreadsheet size={11} className="text-emerald-400" />
+            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{t('products_imported')}</p>
+            <span className="text-[10px] text-slate-600">{t('products_saved_locally')}</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {importedProds.map((product) => (
+              <ProductCard key={product.id} product={product} navigate={navigate} onDelete={remove} t={t} formatCurrency={formatCurrency} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Fiches générées par IA */}
+      {aiProds.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-2">
             <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{t('products_ai_generated')}</p>
@@ -145,7 +200,7 @@ export default function Products() {
             <span className="text-[10px] text-slate-600">{t('products_saved_locally')}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {generated.map((product) => (
+            {aiProds.map((product) => (
               <ProductCard key={product.id} product={product} navigate={navigate} onDelete={remove} t={t} formatCurrency={formatCurrency} />
             ))}
           </div>
@@ -163,11 +218,17 @@ export default function Products() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modals */}
       {showSearch && (
         <VehicleSearchModal
           onGenerated={add}
           onClose={() => setShowSearch(false)}
+        />
+      )}
+      {showImport && (
+        <ImportModal
+          onImported={add}
+          onClose={() => setShowImport(false)}
         />
       )}
     </div>

@@ -167,13 +167,45 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
  * @returns {unknown}
  * @throws  {Error} if no valid JSON is found
  */
-export function extractJSON(raw, kind = 'object') {
-  const pattern = kind === 'array' ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/
-  const match = raw.match(pattern)
-  if (!match) throw new Error('Invalid AI response: no JSON detected.')
-  try {
-    return JSON.parse(match[0])
-  } catch {
-    throw new Error('Invalid AI response: malformed JSON.')
+export function extractJSON(raw, kind = 'array') {
+  if (typeof raw !== 'string') throw new Error('Invalid AI response: no JSON detected.')
+
+  // 1) Nettoyage : retire les fences markdown ```json … ```
+  let s = raw.replace(/```json/gi, '').replace(/```/g, '').trim()
+
+  const open = kind === 'array' ? '[' : '{'
+  const close = kind === 'array' ? ']' : '}'
+  const start = s.indexOf(open)
+  if (start < 0) throw new Error('Invalid AI response: no JSON detected.')
+  s = s.slice(start)
+
+  // 2) Tentative directe
+  try { return JSON.parse(s) } catch { /* continue */ }
+
+  // 3) Plus longue correspondance équilibrée (du 1er ouvrant au dernier fermant)
+  const lastClose = s.lastIndexOf(close)
+  if (lastClose > 0) {
+    try { return JSON.parse(s.slice(0, lastClose + 1)) } catch { /* continue */ }
   }
+
+  // 4) Réparation d'une réponse tronquée (max_tokens atteint) :
+  //    on coupe au dernier élément complet puis on referme les structures.
+  let repaired = s
+  if (kind === 'array') {
+    const lastObj = s.lastIndexOf('}')
+    if (lastObj > 0) repaired = s.slice(0, lastObj + 1) + ']'
+  } else {
+    // objet : on coupe après la dernière valeur complète (" , } ])
+    const lastSafe = Math.max(s.lastIndexOf('"'), s.lastIndexOf('}'), s.lastIndexOf(']'))
+    if (lastSafe > 0) {
+      repaired = s.slice(0, lastSafe + 1).replace(/,\s*$/, '')
+      // referme les accolades/crochets ouverts non fermés
+      const opens = (repaired.match(/\{/g) || []).length + (repaired.match(/\[/g) || []).length
+      const closes = (repaired.match(/\}/g) || []).length + (repaired.match(/\]/g) || []).length
+      repaired += '}'.repeat(Math.max(0, opens - closes))
+    }
+  }
+  try { return JSON.parse(repaired) } catch { /* continue */ }
+
+  throw new Error('Invalid AI response: malformed JSON.')
 }

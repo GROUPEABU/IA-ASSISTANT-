@@ -11,6 +11,8 @@ import ProductSheetPrint from '@/components/products/ProductSheetPrint'
 import MarketAnalysis from '@/components/products/MarketAnalysis'
 import MalusWidget from '@/components/products/MalusWidget'
 import SalesReport from '@/components/products/SalesReport'
+import ImportedStockPanel from '@/components/products/ImportedStockPanel'
+import { normalizeProduct } from '@/utils/productShape'
 import { useSettings } from '@/contexts/SettingsContext'
 
 export default function ProductDetail() {
@@ -20,7 +22,8 @@ export default function ProductDetail() {
   const [tab, setTab] = useState('sheet')
   const printRef = useRef(null)
   const { generated } = useGeneratedProducts()
-  const product = getProduct(id) ?? generated.find((p) => p.id === id)
+  const rawProduct = getProduct(id) ?? generated.find((p) => p.id === id)
+  const product = rawProduct ? normalizeProduct(rawProduct) : null
 
   const TABS = [
     { id: 'sheet', label: t('tab_sheet'), icon: FileText },
@@ -104,6 +107,9 @@ export default function ProductDetail() {
           </button>
         ))}
       </div>
+
+      {/* Stock importé + veille prix interne */}
+      {product._imported && <ImportedStockPanel product={product} />}
 
       {/* Tab content */}
       <div>

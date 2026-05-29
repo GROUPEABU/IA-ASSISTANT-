@@ -33,30 +33,29 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ error: 'make ou model requis' }), { status: 400 })
   }
 
-  // Build La Centrale URL — précision maximale
+  // Build La Centrale URL — format réel : makesModelsCommercialNames=MARQUE::MODELE
+  // (double deux-points ; le nom commercial garde ses espaces, encodés en %20)
+  // ex: CITROEN::C5 AIRCROSS  →  CITROEN%3A%3AC5%20AIRCROSS
   const makeCode  = normCode(make)
   const modelCode = normCode(model)
-  const finitionCode = finition ? normCode(finition) : ''
+  const mileageMin = searchParams.get('mileageMin') || ''
 
-  // 3-level commercial name: MAKE:MODEL:FINITION (finition optionnelle)
-  const makesParam = makeCode && modelCode && finitionCode
-    ? `${makeCode}:${modelCode}:${finitionCode}`
-    : makeCode && modelCode
-    ? `${makeCode}:${modelCode}`
+  const makesParam = makeCode && modelCode
+    ? `${makeCode}::${modelCode}`
     : makeCode || modelCode
 
-  const cp = new URLSearchParams()
-  cp.set('makesModelsCommercialNames', makesParam)
-  if (type === 'vn') cp.set('isNew', 'true')
-  if (yearMin)     cp.set('yearMin', yearMin)
-  if (yearMax)     cp.set('yearMax', yearMax)
-  if (mileageMax)  cp.set('mileageMax', mileageMax)
-  if (fuel)        cp.set('energies', fuel)
-  if (gearbox)     cp.set('gearbox', gearbox)
-  if (carrosserie) cp.set('carTypes', carrosserie)
-  cp.set('sortBy', 'relevance')
+  // Construction manuelle pour encoder les espaces en %20 (et non +)
+  const cParams = [`makesModelsCommercialNames=${encodeURIComponent(makesParam)}`]
+  if (type === 'vn') cParams.push('isNew=true')
+  if (yearMin)     cParams.push(`yearMin=${encodeURIComponent(yearMin)}`)
+  if (yearMax)     cParams.push(`yearMax=${encodeURIComponent(yearMax)}`)
+  if (mileageMin)  cParams.push(`mileageMin=${encodeURIComponent(mileageMin)}`)
+  if (mileageMax)  cParams.push(`mileageMax=${encodeURIComponent(mileageMax)}`)
+  if (fuel)        cParams.push(`energies=${encodeURIComponent(fuel)}`)
+  if (gearbox)     cParams.push(`gearbox=${encodeURIComponent(gearbox)}`)
+  if (carrosserie) cParams.push(`carTypes=${encodeURIComponent(carrosserie)}`)
 
-  const centraleUrl = `https://www.lacentrale.fr/listing?${cp.toString()}`
+  const centraleUrl = `https://www.lacentrale.fr/listing?${cParams.join('&')}`
 
   // LBC : modèle exact entre guillemets + finition si précisée
   const lbcParts = [make, model ? `"${model}"` : '', finition ? `"${finition}"` : '', yearMin || ''].filter(Boolean).join(' ')
