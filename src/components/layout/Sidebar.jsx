@@ -98,7 +98,10 @@ export default function Sidebar({ isOpen, onClose }) {
             <div className="w-6 h-6 rounded-lg bg-emerald-400/20 flex items-center justify-center flex-shrink-0">
               <Zap size={13} className="text-emerald-400" />
             </div>
-            <p className="text-[11px] font-semibold text-emerald-400 flex-1">{t('connected_label')}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-bold text-white leading-tight">IA ABU</p>
+              <p className="text-[10px] font-semibold text-emerald-400 leading-tight">{t('connected_label')}</p>
+            </div>
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-slow flex-shrink-0" />
           </div>
         ) : (
