@@ -665,6 +665,29 @@ html.light .tco-custom-input {
   color:        #334155 !important;
 }
 
+/* ── Minimum readable size: 12px ────────────────────────────────────────── */
+.text-\[9px\]  { font-size: 0.75rem !important; }
+.text-\[10px\] { font-size: 0.75rem !important; }
+
+/* ── Light-mode: selected preset buttons ────────────────────────────────── */
+html.light .slider-preset-btn[aria-pressed="true"] {
+  border-color: rgba(8, 145, 178, 0.65) !important;
+  background:   rgba(8, 145, 178, 0.13) !important;
+  color:        var(--accent-primary) !important;
+  font-weight:  700 !important;
+}
+html.light button[aria-pressed="true"] {
+  border-color: rgba(8, 145, 178, 0.65) !important;
+  background:   rgba(8, 145, 178, 0.13) !important;
+  color:        var(--accent-primary) !important;
+}
+html.light .tco-preset-btn[aria-pressed="true"] {
+  border-color: rgba(8, 145, 178, 0.65) !important;
+  background:   rgba(8, 145, 178, 0.13) !important;
+  color:        var(--accent-primary) !important;
+  font-weight:  700 !important;
+}
+
 /* ── Desktop scaling — slightly larger base on lg+ screens ───────────────── */
 @media (min-width: 1024px) {
   main .text-xs  { font-size: 0.8rem; }

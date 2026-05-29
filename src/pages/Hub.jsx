@@ -63,7 +63,7 @@ export default function Hub() {
               <Icon size={13} style={{ color }} />
             </div>
             <p className="text-base font-bold leading-none" style={{ color }}>{value}</p>
-            <p className="text-[9px] text-slate-500 leading-tight">{sub}</p>
+            <p className="text-xs text-slate-500 leading-tight">{sub}</p>
           </div>
         ))}
       </div>

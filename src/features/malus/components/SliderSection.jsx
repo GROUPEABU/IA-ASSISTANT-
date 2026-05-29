@@ -73,7 +73,8 @@ export default function SliderSection({
           <button
             key={v}
             onClick={() => setValue(v)}
-            className="slider-preset-btn py-2 rounded-xl text-[12px] font-semibold transition border active:scale-95 text-center"
+            aria-pressed={value === v}
+            className="slider-preset-btn py-2 rounded-xl text-xs font-semibold transition border active:scale-95 text-center"
             style={{
               borderColor: value === v ? color : 'rgba(255,255,255,0.07)',
               background:  value === v ? `${color}18` : 'rgba(255,255,255,0.02)',

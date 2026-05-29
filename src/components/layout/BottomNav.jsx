@@ -27,7 +27,7 @@ export default function BottomNav() {
           to={to}
           className={({ isActive }) =>
             clsx(
-              'flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[9px] font-semibold transition-all duration-150',
+              'flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-xs font-semibold transition-all duration-150',
               isActive ? 'text-cyan-400' : 'text-slate-400',
             )
           }
