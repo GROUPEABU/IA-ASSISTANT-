@@ -527,6 +527,7 @@ export default function PriceWatch() {
                 </a>
               )}
             </div>
+          </div>
           </div>{/* end resultRef */}
         </>
       )}
