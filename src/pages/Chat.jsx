@@ -21,8 +21,8 @@ export default function Chat() {
       {/* Toolbar — desktop only (header already names the page on mobile) */}
       <div className="hidden md:flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse-slow flex-shrink-0" />
-          <span className="text-xs text-slate-500">{t('chat_status_assistant')} · {t('ai_operational')}</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-slow flex-shrink-0" />
+          <span className="text-xs text-emerald-400/80">{t('connected_label')}</span>
         </div>
         {messages.length > 0 && (
           <button

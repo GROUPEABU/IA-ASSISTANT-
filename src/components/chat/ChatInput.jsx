@@ -27,12 +27,15 @@ export default function ChatInput({ onSend, disabled }) {
     e.target.value = ''
   }
 
+  const textareaRef = useRef(null)
+
   const handleSubmit = (e) => {
     e.preventDefault()
     if ((!value.trim() && !attachment) || disabled) return
     onSend(value.trim(), attachment || null)
     setValue('')
     setAttachment(null)
+    if (textareaRef.current) textareaRef.current.style.height = '48px'
   }
 
   const handleKeyDown = (e) => {
@@ -40,6 +43,12 @@ export default function ChatInput({ onSend, disabled }) {
       e.preventDefault()
       handleSubmit(e)
     }
+  }
+
+  const autoResize = (e) => {
+    const el = e.target
+    el.style.height = '48px'
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px'
   }
 
   const isImage = attachment?.type?.startsWith('image/')
@@ -60,8 +69,9 @@ export default function ChatInput({ onSend, disabled }) {
       <form onSubmit={handleSubmit} className="flex items-center gap-2">
         <div className="flex-1 relative">
           <textarea
+            ref={textareaRef}
             value={value}
-            onChange={(e) => setValue(e.target.value)}
+            onChange={(e) => { setValue(e.target.value); autoResize(e) }}
             onKeyDown={handleKeyDown}
             placeholder={t('chat_placeholder')}
             rows={1}
@@ -69,8 +79,8 @@ export default function ChatInput({ onSend, disabled }) {
             className="w-full bg-navy-800/80 border border-navy-700/50 rounded-xl px-4 pr-12
                        text-sm text-slate-200 placeholder-slate-600 resize-none
                        focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/20
-                       disabled:opacity-50 transition"
-            style={{ height: '48px', maxHeight: '120px', paddingTop: '14px', paddingBottom: '14px', lineHeight: '1.25' }}
+                       disabled:opacity-50 transition-all"
+            style={{ height: '48px', maxHeight: '160px', paddingTop: '14px', paddingBottom: '14px', lineHeight: '1.5', overflowY: 'auto' }}
           />
           <button
             type="button"
