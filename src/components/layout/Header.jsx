@@ -44,10 +44,10 @@ export default function Header({ onMenuToggle }) {
         to="/settings"
         title={t('nav_settings')}
         className={({ isActive }) =>
-          `w-9 h-9 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${
+          `w-9 h-9 rounded-xl flex items-center justify-center transition-all flex-shrink-0 border ${
             isActive
-              ? 'bg-cyan-400/15 text-cyan-400 border border-cyan-400/30'
-              : 'text-slate-400 hover:text-white hover:bg-navy-700/50 border border-transparent'
+              ? 'bg-cyan-400/15 text-cyan-400 border-cyan-400/30'
+              : 'text-slate-300 border-navy-600/60 bg-navy-800/60 hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/8'
           }`
         }
       >
