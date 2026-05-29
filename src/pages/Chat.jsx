@@ -18,8 +18,8 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col gap-3 animate-fade-in flex-1 min-h-0">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between flex-shrink-0">
+      {/* Toolbar — desktop only (header already names the page on mobile) */}
+      <div className="hidden md:flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse-slow flex-shrink-0" />
           <span className="text-xs text-slate-500">{t('chat_status_assistant')} · {t('ai_operational')}</span>
@@ -30,17 +30,30 @@ export default function Chat() {
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-400 transition px-2.5 py-1.5 rounded-lg hover:bg-red-400/10"
           >
             <Trash2 size={13} />
-            <span className="hidden sm:inline">{t('chat_clear')}</span>
+            <span>{t('chat_clear')}</span>
           </button>
         )}
       </div>
+
+      {/* Clear button mobile — icon-only, shown only when there are messages */}
+      {messages.length > 0 && (
+        <div className="md:hidden flex justify-end flex-shrink-0">
+          <button
+            onClick={clear}
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-400 transition px-2.5 py-1.5 rounded-lg hover:bg-red-400/10"
+          >
+            <Trash2 size={13} />
+            <span>{t('chat_clear')}</span>
+          </button>
+        </div>
+      )}
 
       {/* Chat area */}
       <div className="glass-card flex-1 flex flex-col overflow-hidden min-h-0">
 
         {/* Welcome state */}
         {isEmpty && !isLoading && (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 gap-5 overflow-y-auto">
+          <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6 gap-3 md:gap-5 overflow-y-auto">
             <div className="relative">
               <div className="absolute inset-0 rounded-full bg-cyan-400/20 blur-xl scale-150" />
               <div className="relative w-14 h-14 rounded-2xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center">

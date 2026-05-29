@@ -40,7 +40,7 @@ export default function Layout() {
         <main
           id="main-content"
           tabIndex={-1}
-          className="layout-scroll-main flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 flex flex-col"
+          className="layout-scroll-main flex-1 overflow-y-auto p-4 pb-24 md:p-6 md:pb-6 lg:p-8 flex flex-col"
         >
           <Outlet />
         </main>
