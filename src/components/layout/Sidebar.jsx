@@ -49,7 +49,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
   return (
     <aside className={clsx(
-      'flex-shrink-0 bg-navy-800/98 border-r border-navy-700/50 flex flex-col z-30 transition-transform duration-300',
+      'flex-shrink-0 bg-navy-900 border-r border-navy-700/60 flex flex-col z-30 transition-transform duration-300',
       'md:relative md:translate-x-0 md:w-60 lg:w-68',
       'fixed inset-y-0 left-0 w-72',
       isOpen ? 'translate-x-0' : '-translate-x-full',
@@ -71,7 +71,7 @@ export default function Sidebar({ isOpen, onClose }) {
       <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
         {navGroups.map((group) => (
           <div key={group.labelKey}>
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest px-2 mb-2">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 mb-2">
               {t(group.labelKey)}
             </p>
             <div className="space-y-0.5">

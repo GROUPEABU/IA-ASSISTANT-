@@ -132,7 +132,8 @@
 
 /* ── Dark mode — sidebar & header depth ──────────────────────────────────── */
 aside {
-  box-shadow: 2px 0 20px rgba(0,0,0,0.35);
+  background: #0D273C;
+  box-shadow: 2px 0 28px rgba(0,0,0,0.55);
 }
 
 header {
