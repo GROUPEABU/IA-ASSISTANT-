@@ -1,6 +1,6 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import {
-  MessageSquare, Settings, Zap, X, Home, BookOpen, Gauge, Bell, ShieldCheck, Mic, LogOut, Calculator,
+  MessageSquare, Zap, X, Home, BookOpen, Gauge, Bell, ShieldCheck, Mic, LogOut, Calculator,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '@/contexts/AuthContext'
@@ -34,12 +34,6 @@ export default function Sidebar({ isOpen, onClose }) {
       labelKey: 'nav_ai',
       items: [
         { to: '/chat', icon: MessageSquare, labelKey: 'nav_chat' },
-      ],
-    },
-    {
-      labelKey: 'nav_account',
-      items: [
-        { to: '/settings', icon: Settings, labelKey: 'nav_settings' },
       ],
     },
   ]
@@ -116,19 +110,26 @@ export default function Sidebar({ isOpen, onClose }) {
 
         {user && (
           <div className="flex items-center gap-2.5 px-2 py-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
-                            flex items-center justify-center text-navy-900 text-[11px] font-bold flex-shrink-0
-                            shadow-sm shadow-cyan-400/30">
-              {user.initials}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-white truncate leading-tight">{user.name}</p>
-              <p className="text-[10px] text-slate-500 capitalize">{user.role}</p>
-            </div>
+            <Link
+              to="/settings"
+              onClick={onClose}
+              className="flex items-center gap-2.5 flex-1 min-w-0 group"
+              title={t('nav_settings')}
+            >
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
+                              flex items-center justify-center text-navy-900 text-[11px] font-bold flex-shrink-0
+                              shadow-sm shadow-cyan-400/30 group-hover:scale-105 transition-transform">
+                {user.initials}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-white truncate leading-tight group-hover:text-cyan-400 transition-colors">{user.name}</p>
+                <p className="text-[10px] text-slate-500 capitalize">{user.role}</p>
+              </div>
+            </Link>
             <button
               onClick={handleLogout}
               title={t('logout')}
-              className="text-slate-500 hover:text-red-400 transition p-1.5 rounded-lg hover:bg-red-400/10"
+              className="text-slate-500 hover:text-red-400 transition p-1.5 rounded-lg hover:bg-red-400/10 flex-shrink-0"
             >
               <LogOut size={14} />
             </button>

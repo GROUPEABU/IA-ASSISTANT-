@@ -1,10 +1,12 @@
-import { useLocation, useNavigate } from 'react-router-dom'
-import { Menu } from 'lucide-react'
+import { useLocation, useNavigate, Link, NavLink } from 'react-router-dom'
+import { Menu, Settings } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Header({ onMenuToggle }) {
   const { pathname } = useLocation()
   const { t } = useSettings()
+  const { user } = useAuth()
 
   const pageMap = {
     '/hub':         { titleKey: 'page_hub_title',        subKey: 'page_hub_sub' },
@@ -20,6 +22,7 @@ export default function Header({ onMenuToggle }) {
 
   const base = '/' + pathname.split('/')[1]
   const page = pageMap[base] ?? { titleKey: '', subKey: '' }
+  const isSettings = base === '/settings'
 
   return (
     <header className="h-14 md:h-16 flex-shrink-0 border-b border-navy-700/50 flex items-center px-4 md:px-6 gap-3"
@@ -36,6 +39,20 @@ export default function Header({ onMenuToggle }) {
         <h1 className="text-sm md:text-base font-semibold text-white truncate leading-tight">{t(page.titleKey)}</h1>
         <p className="text-[10px] md:text-xs text-slate-400 hidden sm:block leading-tight">{t(page.subKey)}</p>
       </div>
+
+      <NavLink
+        to="/settings"
+        title={t('nav_settings')}
+        className={({ isActive }) =>
+          `w-9 h-9 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${
+            isActive
+              ? 'bg-cyan-400/15 text-cyan-400 border border-cyan-400/30'
+              : 'text-slate-400 hover:text-white hover:bg-navy-700/50 border border-transparent'
+          }`
+        }
+      >
+        <Settings size={17} aria-hidden="true" />
+      </NavLink>
     </header>
   )
 }
