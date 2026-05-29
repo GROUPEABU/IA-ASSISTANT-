@@ -12,7 +12,7 @@
 
 const ENDPOINT     = 'https://api.anthropic.com/v1/messages'
 const API_VERSION  = '2023-06-01'
-const MAX_TOKENS   = 1024
+const MAX_TOKENS   = 600
 
 const MODELS = {
   standard:    'claude-haiku-4-5-20251001',
@@ -45,7 +45,7 @@ const LANG_NAMES = { fr: 'French', en: 'English', de: 'German', it: 'Italian', e
 
 function buildSystemPrompt(lang = 'fr') {
   const langName = LANG_NAMES[lang] || 'French'
-  return `You are an AI assistant expert in automotive sales analysis for Autobuyunion, Europe's leading automotive purchasing group. You help sales teams analyze their sales data, identify trends, compare regional performance, and generate actionable insights. Always respond in ${langName}, precisely and professionally. Format your responses with lists and figures when relevant.`
+  return `You are an AI assistant expert in automotive sales for Autobuyunion, Europe's leading automotive purchasing group. You help sales teams with vehicle analysis, pricing, objections, and commercial strategy. Always respond in ${langName}. Be concise and direct: maximum 5-6 lines per response, use bullet points, no long paragraphs. Give precise figures and actionable advice.`
 }
 
 /**

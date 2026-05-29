@@ -1,5 +1,14 @@
 import clsx from 'clsx'
-import { Bot, User, FileText, Image } from 'lucide-react'
+import { User, FileText, Image } from 'lucide-react'
+
+function AbuLogo() {
+  return (
+    <svg viewBox="0 0 100 100" width="18" height="18" fill="none">
+      <path d="M 14 50 a 18 18 0 1 0 36 0 a 18 18 0 1 0 36 0 a 18 18 0 1 0 -36 0 a 18 18 0 1 0 -36 0"
+        stroke="#50E5E5" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  )
+}
 
 export default function ChatMessage({ message }) {
   const isAssistant = message.role === 'assistant'
@@ -14,7 +23,7 @@ export default function ChatMessage({ message }) {
           ? 'bg-cyan-400/10 border border-cyan-400/30 text-cyan-400'
           : 'bg-navy-700 border border-navy-600 text-slate-300',
       )}>
-        {isAssistant ? <Bot size={16} /> : <User size={16} />}
+        {isAssistant ? <AbuLogo /> : <User size={16} />}
       </div>
 
       {/* Bubble */}
