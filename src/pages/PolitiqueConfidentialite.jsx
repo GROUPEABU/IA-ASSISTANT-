@@ -62,9 +62,7 @@ export default function PolitiqueConfidentialite() {
           <p className="text-sm text-slate-400 leading-relaxed">{t('privacy_storage_p1')}</p>
           <p className="text-sm text-slate-400 leading-relaxed mt-3">
             {t('privacy_storage_p2_prefix')}{' '}
-            <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">
-              {t('privacy_storage_anthropic_link')}
-            </a>
+            {t('privacy_storage_anthropic_link')}
             {t('privacy_storage_p2_suffix')}
           </p>
         </Section>

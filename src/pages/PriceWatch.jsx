@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import {
-  Bell, Search, RefreshCw, TrendingUp, TrendingDown, Minus,
+  Bell, Search, RefreshCw, RotateCcw, TrendingUp, TrendingDown, Minus,
   AlertCircle, ExternalLink, Clock, SlidersHorizontal, Download, History, Trash2,
 } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
@@ -254,6 +254,8 @@ export default function PriceWatch() {
     }
   }
 
+  const reset = () => { setResult(null); setMake(''); setModel(''); setYearMin(''); setYearMax(''); setMileageMax(''); setFuel(''); setGearbox(''); setSearchLabel(''); setCentraleUrl(''); setFetchedAt(null) }
+
   const restore = (item) => {
     setResult(item.result)
     setSearchLabel(item.searchLabel)
@@ -431,6 +433,12 @@ export default function PriceWatch() {
                            px-3 py-2 rounded-lg hover:bg-cyan-400/10 transition"
               >
                 <RefreshCw size={12} /> {t('analyze_btn')}
+              </button>
+              <button
+                onClick={reset}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30"
+              >
+                <RotateCcw size={11} /> {t('new_analysis_btn')}
               </button>
             </div>
           </div>

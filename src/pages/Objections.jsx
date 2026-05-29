@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { ShieldCheck, RefreshCw, ChevronDown, ChevronUp, Download, AlertCircle, History, Trash2 } from 'lucide-react'
+import { ShieldCheck, RefreshCw, RotateCcw, ChevronDown, ChevronUp, Download, AlertCircle, History, Trash2 } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import { PRODUCTS } from '@/services/products'
@@ -173,6 +173,8 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
     }
   }
 
+  const reset = () => { setObjections([]); setVehicleId(''); setCustomVehicle(''); setGeneratedFor('') }
+
   const restore = (item) => {
     setObjections(item.objections)
     setGeneratedFor(item.generatedFor)
@@ -294,6 +296,12 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
               <button onClick={generate}
                 className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition">
                 <RefreshCw size={11} /> {t('regenerate')}
+              </button>
+              <button
+                onClick={reset}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30"
+              >
+                <RotateCcw size={11} /> {t('new_analysis_btn')}
               </button>
             </div>
           </div>

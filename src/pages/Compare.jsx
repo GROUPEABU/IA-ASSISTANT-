@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GitCompare, Plus, X, Trophy, RefreshCw, AlertCircle } from 'lucide-react'
+import { GitCompare, Plus, X, Trophy, RefreshCw, RotateCcw, AlertCircle } from 'lucide-react'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { getMalus } from '@/utils/malus'
@@ -39,6 +39,8 @@ export default function Compare() {
     { key: 'segment', label: t('compare_row_segment'), format: (p) => p.segment, better: null },
     { key: 'origine', label: t('compare_row_origin'), format: (p) => p.origin, better: null },
   ]
+
+  const reset = () => { setVerdict(''); setSelected([null, null]); setError(null) }
 
   const addSlot = () => { if (selected.length < 3) setSelected([...selected, null]) }
   const removeSlot = (i) => setSelected(selected.filter((_, idx) => idx !== i))
@@ -209,10 +211,18 @@ Sois direct et argumenté.`
                 if (line.trim() === '') return <div key={i} className="h-1" />
                 return <p key={i} className="text-sm text-slate-300 leading-relaxed">{line}</p>
               })}
-              <button onClick={generateVerdict}
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition mt-3">
-                <RefreshCw size={11} /> {t('compare_regenerate')}
-              </button>
+              <div className="flex items-center gap-2 mt-3">
+                <button onClick={generateVerdict}
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition">
+                  <RefreshCw size={11} /> {t('compare_regenerate')}
+                </button>
+                <button
+                  onClick={reset}
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30"
+                >
+                  <RotateCcw size={11} /> {t('new_analysis_btn')}
+                </button>
+              </div>
             </div>
           )}
         </div>

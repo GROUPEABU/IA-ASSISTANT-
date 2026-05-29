@@ -29,6 +29,10 @@
 
   body {
     background-color: #0D273C;
+    background-image:
+      radial-gradient(ellipse 100% 50% at 50% -5%, rgba(80, 229, 229, 0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 70% 40% at 0% 100%, rgba(2, 132, 199, 0.05) 0%, transparent 50%);
+    background-attachment: fixed;
     color: #edf2f7;
     min-height: 100dvh;
     padding-bottom: env(safe-area-inset-bottom);
@@ -50,7 +54,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #1a4468;
+    background: rgba(80, 229, 229, 0.2);
     border-radius: 3px;
   }
 
@@ -62,22 +66,22 @@
 @layer components {
   .glass-card {
     @apply backdrop-blur-sm rounded-xl;
-    background: rgba(26, 38, 57, 0.94);
-    border: 1px solid rgba(255,255,255,0.13);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.07) inset;
+    background: rgba(22, 36, 54, 0.96);
+    border: 1px solid rgba(255,255,255,0.11);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.09) inset, 0 -1px 0 rgba(0,0,0,0.25) inset;
     transition: border-color 160ms ease, box-shadow 160ms ease;
   }
 
   .glass-card-glow {
     @apply backdrop-blur-sm rounded-xl;
-    background: rgba(26, 38, 57, 0.94);
-    border: 1px solid rgba(255,255,255,0.13);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.07) inset;
+    background: rgba(22, 36, 54, 0.96);
+    border: 1px solid rgba(255,255,255,0.11);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.09) inset, 0 -1px 0 rgba(0,0,0,0.25) inset;
     transition: border-color 160ms ease, box-shadow 160ms ease;
   }
   .glass-card-glow:hover {
     border-color: rgba(255,255,255,0.14);
-    box-shadow: 0 6px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(80,229,229,0.08), 0 1px 0 rgba(255,255,255,0.06) inset;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(80,229,229,0.12), 0 1px 0 rgba(255,255,255,0.08) inset;
   }
 
   .cyan-glow {
@@ -124,6 +128,15 @@
   .pb-safe {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
+}
+
+/* ── Dark mode — sidebar & header depth ──────────────────────────────────── */
+aside {
+  box-shadow: 2px 0 20px rgba(0,0,0,0.35);
+}
+
+header {
+  box-shadow: 0 2px 16px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.05) inset;
 }
 
 /* Subtle dot-grid texture for hero sections */
@@ -301,7 +314,7 @@ html.light body {
 html.light .glass-card {
   background:    var(--surface-card) !important;
   border-color:  var(--border-strong) !important;
-  box-shadow:    0 2px 12px rgba(15,23,42,0.08), 0 1px 3px rgba(15,23,42,0.05) !important;
+  box-shadow:    0 1px 3px rgba(15,23,42,0.04), 0 4px 16px rgba(15,23,42,0.08), 0 1px 0 rgba(255,255,255,0.9) inset !important;
   backdrop-filter: none !important;
 }
 
@@ -464,7 +477,7 @@ html.light textarea::placeholder {
 /* ── Nav items — refined hover and active states ─────────────────────────── */
 html.light .nav-item        { color: var(--text-subtle) !important; }
 html.light .nav-item:hover  { background: var(--accent-soft) !important; color: var(--text-strong) !important; }
-html.light .nav-item-active { color: var(--accent-primary) !important; background: var(--accent-soft) !important; }
+html.light .nav-item-active { color: var(--accent-primary) !important; background: var(--accent-soft) !important; border-left: 2px solid var(--accent-primary) !important; }
 
 /* ── Borders — using tokens ──────────────────────────────────────────────── */
 html.light [class*="border-navy"],
@@ -537,7 +550,7 @@ html.light .bg-cyan-400\/6,
 html.light .bg-cyan-400\/7 { background-color: var(--accent-soft) !important; }
 
 /* Cyan button (primary CTA) — keep vibrant, accessible */
-html.light .bg-cyan-400 { background-color: var(--accent-primary) !important; color: #ffffff !important; }
+html.light .bg-cyan-400 { background-color: var(--accent-primary) !important; color: #ffffff !important; box-shadow: 0 2px 8px rgba(8,145,178,0.35) !important; }
 html.light .bg-cyan-500 { background-color: var(--accent-hover) !important; color: #ffffff !important; }
 html.light .from-cyan-400 { --tw-gradient-from: var(--accent-primary) !important; }
 html.light .to-cyan-500   { --tw-gradient-to:   var(--accent-hover) !important; }

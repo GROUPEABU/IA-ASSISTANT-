@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Mic, Copy, Check, RefreshCw, AlertCircle, ChevronRight, Users, Car, Wrench, Building2, Briefcase, Download, History, Trash2 } from 'lucide-react'
+import { Mic, Copy, Check, RefreshCw, RotateCcw, AlertCircle, ChevronRight, Users, Car, Wrench, Building2, Briefcase, Download, History, Trash2 } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import { PRODUCTS } from '@/services/products'
@@ -147,6 +147,8 @@ Réponds UNIQUEMENT en JSON valide :
       setExporting(false)
     }
   }
+
+  const reset = () => { setPitch(null); setVehicleId(''); setCustomVehicle(''); setContext(''); setGeneratedFor('') }
 
   const restore = (item) => {
     setPitch(item.pitch)
@@ -299,6 +301,12 @@ Réponds UNIQUEMENT en JSON valide :
               </button>
               <button onClick={generate} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition px-2.5 py-1.5 rounded-lg hover:bg-cyan-400/5">
                 <RefreshCw size={11} /> {t('regenerate')}
+              </button>
+              <button
+                onClick={reset}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30"
+              >
+                <RotateCcw size={11} /> {t('new_analysis_btn')}
               </button>
             </div>
           </div>
