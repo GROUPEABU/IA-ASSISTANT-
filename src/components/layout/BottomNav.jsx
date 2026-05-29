@@ -28,7 +28,7 @@ export default function BottomNav() {
           className={({ isActive }) =>
             clsx(
               'flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[9px] font-semibold transition-all duration-150',
-              isActive ? 'text-cyan-400' : 'text-slate-600',
+              isActive ? 'text-cyan-400' : 'text-slate-400',
             )
           }
         >
@@ -40,7 +40,7 @@ export default function BottomNav() {
               )}>
                 <Icon size={16} aria-hidden="true" />
               </span>
-              <span className={clsx('leading-none', isActive ? 'text-cyan-400' : 'text-slate-600')}>
+              <span className={clsx('leading-none', isActive ? 'text-cyan-400' : 'text-slate-400')}>
                 {t(labelKey)}
               </span>
             </>
