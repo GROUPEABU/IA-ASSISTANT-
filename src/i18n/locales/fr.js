@@ -52,7 +52,7 @@ export default {
     page_settings_sub: 'Configuration de votre compte',
     // Login
     login_portal_badge: 'Portail Membres',
-    login_tagline: "1er Groupe Européen d\'Achats Automobiles",
+    login_tagline: "Groupe Européen d\'Achats Automobiles",
     login_heading: 'Connexion à votre espace',
     login_subtitle: 'Accès réservé aux membres Autobuyunion',
     login_username: 'Identifiant',

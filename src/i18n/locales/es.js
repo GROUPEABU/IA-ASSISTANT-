@@ -44,7 +44,7 @@ export default {
     page_settings_title: 'Configuración',
     page_settings_sub: 'Configuración de tu cuenta',
     login_portal_badge: 'Portal Miembros',
-    login_tagline: '1er Grupo Europeo de Compras de Automóviles',
+    login_tagline: 'Grupo Europeo de Compras de Automóviles',
     login_heading: 'Inicia sesión en tu espacio',
     login_subtitle: 'Acceso reservado a miembros de Autobuyunion',
     login_username: 'Usuario',

@@ -46,7 +46,7 @@ export default {
     page_settings_title: 'Settings',
     page_settings_sub: 'Account configuration',
     login_portal_badge: 'Member Portal',
-    login_tagline: "Europe\'s #1 Automotive Purchasing Group",
+    login_tagline: "European Automotive Purchasing Group",
     login_heading: 'Sign in to your space',
     login_subtitle: 'Access reserved for Autobuyunion members',
     login_username: 'Username',
