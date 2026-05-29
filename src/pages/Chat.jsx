@@ -53,11 +53,12 @@ export default function Chat() {
 
         {/* Welcome state */}
         {isEmpty && !isLoading && (
-          <div className="flex-1 flex flex-col items-center justify-start pt-6 md:justify-center md:pt-6 p-4 md:p-6 gap-3 md:gap-5 overflow-y-auto">
+          <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6 gap-4 overflow-y-auto">
             <div className="relative">
               <div className="absolute inset-0 rounded-full bg-cyan-400/20 blur-xl scale-150" />
-              <div className="relative w-14 h-14 rounded-2xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center">
-                <MessageSquare size={24} className="text-cyan-400" />
+              <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center">
+                <MessageSquare size={20} className="text-cyan-400 md:hidden" />
+                <MessageSquare size={24} className="text-cyan-400 hidden md:block" />
               </div>
             </div>
             <div className="text-center">
@@ -67,18 +68,18 @@ export default function Chat() {
               </p>
             </div>
             <div className="w-full max-w-md space-y-2">
-              <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest text-center mb-3">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-3">
                 {t('suggestions_label')}
               </p>
-              {suggestions.map((q) => (
+              {suggestions.map((q, i) => (
                 <button
                   key={q}
                   onClick={() => send(q)}
-                  className="w-full text-left text-xs text-slate-400 px-4 py-3 rounded-xl
+                  className={`w-full text-left text-xs text-slate-400 px-4 py-3 rounded-xl
                              border border-navy-700/40 bg-navy-900/20
                              active:bg-cyan-400/8 active:border-cyan-400/25
                              transition-colors duration-100 flex items-start gap-2.5
-                             focus:outline-none"
+                             focus:outline-none${i >= 2 ? ' hidden md:flex' : ''}`}
                 >
                   <Sparkles size={12} className="text-cyan-400/60 flex-shrink-0 mt-0.5" />
                   {q}
