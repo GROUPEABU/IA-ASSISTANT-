@@ -25,6 +25,8 @@ export default {
     // Sidebar footer
     ai_operational: 'IA Opérationnelle',
     connected_ready: 'Connecté · Prêt',
+    ai_inactive: 'IA Non Activée',
+    ai_inactive_sub: 'Clé API manquante',
     logout: 'Se déconnecter',
     // Header page titles & subtitles
     page_hub_title: 'Portail Membres',

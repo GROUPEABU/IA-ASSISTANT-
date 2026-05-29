@@ -21,6 +21,8 @@ export default {
     bn_chat: 'AI Chat',
     ai_operational: 'AI Operational',
     connected_ready: 'Connected · Ready',
+    ai_inactive: 'AI Inactive',
+    ai_inactive_sub: 'API key missing',
     logout: 'Log out',
     page_hub_title: 'Member Portal',
     page_hub_sub: 'Welcome to your Autobuyunion space',

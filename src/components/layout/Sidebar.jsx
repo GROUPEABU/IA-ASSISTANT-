@@ -1,16 +1,18 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import {
-  MessageSquare, Zap, X, Home, BookOpen, Gauge, Bell, ShieldCheck, Mic, LogOut, Calculator,
+  MessageSquare, Zap, X, Home, BookOpen, Gauge, Bell, ShieldCheck, Mic, LogOut, Calculator, AlertCircle,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
+import { ukey } from '@/utils/userStorage'
 import Logo from '@/components/ui/Logo'
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth()
   const { t } = useSettings()
   const navigate = useNavigate()
+  const hasApiKey = !!(user && localStorage.getItem(ukey(user.id, 'api_key')))
 
   const navGroups = [
     {
@@ -89,16 +91,29 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Footer */}
       <div className="px-3 pb-4 pt-3 border-t border-navy-700/50 space-y-2">
-        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-cyan-400/5 border border-cyan-400/10">
-          <div className="w-6 h-6 rounded-lg bg-cyan-400/15 flex items-center justify-center flex-shrink-0">
-            <Zap size={13} className="text-cyan-400" />
+        {hasApiKey ? (
+          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-cyan-400/8 border border-cyan-400/15">
+            <div className="w-6 h-6 rounded-lg bg-cyan-400/20 flex items-center justify-center flex-shrink-0">
+              <Zap size={13} className="text-cyan-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-semibold text-cyan-400 leading-tight">{t('ai_operational')}</p>
+              <p className="text-[10px] text-cyan-400/60">{t('connected_ready')}</p>
+            </div>
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse-slow flex-shrink-0" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold text-cyan-400 leading-tight">{t('ai_operational')}</p>
-            <p className="text-[10px] text-slate-500">{t('connected_ready')}</p>
-          </div>
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse-slow flex-shrink-0" />
-        </div>
+        ) : (
+          <Link to="/settings" onClick={onClose}
+            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-amber-400/6 border border-amber-400/20 hover:border-amber-400/35 transition group">
+            <div className="w-6 h-6 rounded-lg bg-amber-400/15 flex items-center justify-center flex-shrink-0">
+              <AlertCircle size={13} className="text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-semibold text-amber-400 leading-tight">{t('ai_inactive')}</p>
+              <p className="text-[10px] text-amber-400/60 group-hover:text-amber-400/80 transition">{t('ai_inactive_sub')}</p>
+            </div>
+          </Link>
+        )}
 
 {user && (
           <div className="flex items-center gap-2.5 px-2 py-2">

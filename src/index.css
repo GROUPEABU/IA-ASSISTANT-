@@ -132,6 +132,11 @@
   background-size: 28px 28px;
 }
 
+/* ── Dark mode contrast boosts ──────────────────────────────────────────── */
+/* Nudge very dim text to pass WCAG AA on dark backgrounds                   */
+:not(html.light) .text-slate-500 { color: rgb(148 163 184); }
+:not(html.light) .text-slate-600 { color: rgb(120 136 156); }
+
 /* ── Light Mode — see full ruleset at bottom of file ──────────────────── */
 
 /* ── Density ─────────────────────────────────────────────────────────────── */
