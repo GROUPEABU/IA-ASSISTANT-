@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import {
   Bell, Search, RefreshCw, TrendingUp, TrendingDown, Minus,
-  AlertCircle, ExternalLink, Clock, SlidersHorizontal,
+  AlertCircle, ExternalLink, Clock, SlidersHorizontal, Download, History, Trash2,
 } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import { formatNumber } from '@/utils/formatters'
 import { useSettings } from '@/contexts/SettingsContext'
+import { useHistory } from '@/hooks/useHistory'
+import { exportToPdf } from '@/utils/exportPdf'
 
 // ── Données filtres ────────────────────────────────────────────────────────────
 const MAKES = [
@@ -111,9 +113,46 @@ function KpiCard({ label, value, highlight, sub }) {
   )
 }
 
+// ── HistoryPanel ──────────────────────────────────────────────────────────────
+function HistoryPanel({ history, onRestore, onClear, t }) {
+  if (history.length === 0) return null
+  return (
+    <div className="glass-card p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <History size={13} className="text-slate-500" />
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('history_title')} ({history.length})</span>
+        </div>
+        <button onClick={onClear} className="flex items-center gap-1 text-[10px] text-slate-600 hover:text-red-400 transition">
+          <Trash2 size={10} /> {t('history_clear')}
+        </button>
+      </div>
+      <div className="space-y-1.5">
+        {history.map((item, i) => (
+          <button
+            key={i}
+            onClick={() => onRestore(item)}
+            className="w-full text-left px-3 py-2 rounded-xl bg-navy-900/40 border border-navy-700/30
+                       hover:border-cyan-400/30 hover:bg-cyan-400/5 transition group"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-slate-300 group-hover:text-cyan-300 truncate">{item.searchLabel}</p>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${
+                item.type === 'vo' ? 'bg-amber-400/10 text-amber-400' : 'bg-emerald-400/10 text-emerald-400'
+              }`}>{item.type?.toUpperCase()}</span>
+            </div>
+            <p className="text-[10px] text-slate-600">{new Date(item.savedAt).toLocaleString()}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── Page principale ───────────────────────────────────────────────────────────
 export default function PriceWatch() {
   const { t, lang } = useSettings()
+  const resultRef = useRef(null)
 
   const FUELS = [
     { label: t('price_fuel_all'), code: '' },
@@ -158,6 +197,8 @@ export default function PriceWatch() {
   const [error, setError]         = useState(null)
   const [centraleUrl, setCentraleUrl] = useState('')
   const [searchLabel, setSearchLabel] = useState('')
+  const [exporting, setExporting] = useState(false)
+  const { history, add: addHistory, clear: clearHistory } = useHistory('pricewatch')
 
   const canSearch = make.trim() || model.trim()
 
@@ -186,7 +227,9 @@ export default function PriceWatch() {
 
       setStep(t('price_step_calculating'))
       const analysis = await analyzePrices(filters, raw.sources || [], FUELS, GEARBOXES, lang)
-      setResult({ ...analysis, sources: raw.sources })
+      const finalResult = { ...analysis, sources: raw.sources }
+      setResult(finalResult)
+      addHistory({ searchLabel: label, type: filters.type, result: finalResult })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -201,6 +244,23 @@ export default function PriceWatch() {
   const trendLabel  = result?.tendance === 'hausse' ? t('market_up') : result?.tendance === 'baisse' ? t('market_down') : t('market_stable')
 
   const fmtEur = (v) => v ? `${formatNumber(v)} €` : 'N/D'
+
+  const handlePdf = async () => {
+    setExporting(true)
+    try {
+      await exportToPdf(resultRef, `veille_prix_${searchLabel.replace(/ /g, '_')}.pdf`)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const restore = (item) => {
+    setResult(item.result)
+    setSearchLabel(item.searchLabel)
+    setType(item.type)
+    setFetchedAt(null)
+    setCentraleUrl('')
+  }
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -355,15 +415,27 @@ export default function PriceWatch() {
                 )}
               </div>
             </div>
-            <button
-              onClick={() => search()}
-              className="flex items-center gap-1.5 text-xs text-cyan-400 border border-cyan-400/30
-                         px-3 py-2 rounded-lg hover:bg-cyan-400/10 transition"
-            >
-              <RefreshCw size={12} /> {t('analyze_btn')}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePdf}
+                disabled={exporting}
+                className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                           px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition"
+              >
+                {exporting ? <Spinner size="sm" /> : <Download size={12} />}
+                {t('download_pdf')}
+              </button>
+              <button
+                onClick={() => search()}
+                className="flex items-center gap-1.5 text-xs text-cyan-400 border border-cyan-400/30
+                           px-3 py-2 rounded-lg hover:bg-cyan-400/10 transition"
+              >
+                <RefreshCw size={12} /> {t('analyze_btn')}
+              </button>
+            </div>
           </div>
 
+          <div ref={resultRef} className="space-y-3">
           {/* Alerte */}
           {result.alerte && (
             <div className="flex gap-2 p-3 rounded-xl bg-amber-400/10 border border-amber-400/20">
@@ -447,7 +519,7 @@ export default function PriceWatch() {
                 </a>
               )}
             </div>
-          </div>
+          </div>{/* end resultRef */}
         </>
       )}
 
@@ -459,6 +531,8 @@ export default function PriceWatch() {
           <p className="text-xs text-slate-600">{t('refine_filters')}</p>
         </div>
       )}
+
+      <HistoryPanel history={history} onRestore={restore} onClear={clearHistory} t={t} />
     </div>
   )
 }

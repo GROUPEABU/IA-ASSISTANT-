@@ -1,10 +1,12 @@
-import { useState } from 'react'
-import { ShieldCheck, RefreshCw, ChevronDown, ChevronUp, Download, AlertCircle } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { ShieldCheck, RefreshCw, ChevronDown, ChevronUp, Download, AlertCircle, History, Trash2 } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
+import { useHistory } from '@/hooks/useHistory'
+import { exportToPdf } from '@/utils/exportPdf'
 
 const SEGMENTS = [
   { id: 'btoc', labelKey: 'btoc', subKey: 'btoc_sub' },
@@ -66,8 +68,39 @@ function ObjectionCard({ item, index, isOpen, onToggle }) {
   )
 }
 
+function HistoryPanel({ history, onRestore, onClear, t }) {
+  if (history.length === 0) return null
+  return (
+    <div className="glass-card p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <History size={13} className="text-slate-500" />
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('history_title')} ({history.length})</span>
+        </div>
+        <button onClick={onClear} className="flex items-center gap-1 text-[10px] text-slate-600 hover:text-red-400 transition">
+          <Trash2 size={10} /> {t('history_clear')}
+        </button>
+      </div>
+      <div className="space-y-1.5">
+        {history.map((item, i) => (
+          <button
+            key={i}
+            onClick={() => onRestore(item)}
+            className="w-full text-left px-3 py-2 rounded-xl bg-navy-900/40 border border-navy-700/30
+                       hover:border-cyan-400/30 hover:bg-cyan-400/5 transition group"
+          >
+            <p className="text-xs font-semibold text-slate-300 group-hover:text-cyan-300 truncate">{item.generatedFor}</p>
+            <p className="text-[10px] text-slate-600">{new Date(item.savedAt).toLocaleString()}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Objections() {
   const { t, lang } = useSettings()
+  const objRef = useRef(null)
   const [vehicleId, setVehicleId] = useState('')
   const [customVehicle, setCustomVehicle] = useState('')
   const [segment, setSegment] = useState('both')
@@ -76,7 +109,9 @@ export default function Objections() {
   const [openIndex, setOpenIndex] = useState(0)
   const [error, setError] = useState(null)
   const [generatedFor, setGeneratedFor] = useState('')
+  const [exporting, setExporting] = useState(false)
   const { generated } = useGeneratedProducts()
+  const { history, add: addHistory, clear: clearHistory } = useHistory('objections')
 
   const allProducts = [...PRODUCTS, ...generated]
   const selectedProduct = allProducts.find((p) => p.id === vehicleId)
@@ -117,9 +152,11 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
 
       const raw = await sendMessage([{ role: 'user', content: prompt }], { lang })
       const data = extractJSON(raw, 'array')
+      const label = `${vehicleName} · ${segLabel}`
       setObjections(data)
-      setGeneratedFor(`${vehicleName} · ${segLabel}`)
+      setGeneratedFor(label)
       setOpenIndex(0)
+      addHistory({ generatedFor: label, objections: data })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -127,7 +164,20 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
     }
   }
 
-  const handlePrint = () => window.print()
+  const handlePdf = async () => {
+    setExporting(true)
+    try {
+      await exportToPdf(objRef, `objections_${vehicleName.replace(/ /g, '_')}.pdf`)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const restore = (item) => {
+    setObjections(item.objections)
+    setGeneratedFor(item.generatedFor)
+    setOpenIndex(0)
+  }
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -138,7 +188,6 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
           <h2 className="text-sm font-semibold text-white">{t('page_objections_title')}</h2>
         </div>
 
-        {/* Véhicule — saisie libre principale */}
         <div className="mb-3">
           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
             {t('vehicle_label')}
@@ -155,7 +204,6 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
           />
         </div>
 
-        {/* Raccourcis catalogue */}
         {allProducts.length > 0 && (
           <div className="mb-4">
             <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">{t('catalog_shortcuts')}</p>
@@ -177,7 +225,6 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
           </div>
         )}
 
-        {/* Segment */}
         <div className="mb-4">
           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
             {t('segment_label')}
@@ -200,29 +247,19 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            onClick={generate}
-            disabled={!vehicleName.trim() || loading}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5
-                       bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
-                       hover:bg-cyan-300 active:scale-95 transition-all
-                       disabled:opacity-40 disabled:pointer-events-none"
-          >
-            {loading ? <Spinner size="sm" /> : <ShieldCheck size={14} />}
-            {loading ? t('generating') : t('generate_obj_btn')}
-          </button>
-          {objections.length > 0 && (
-            <button onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-cyan-400
-                         border border-cyan-400/30 rounded-xl hover:bg-cyan-400/10 transition">
-              <Download size={14} /> {t('print_btn')}
-            </button>
-          )}
-        </div>
+        <button
+          onClick={generate}
+          disabled={!vehicleName.trim() || loading}
+          className="flex items-center justify-center gap-2 px-5 py-2.5
+                     bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
+                     hover:bg-cyan-300 active:scale-95 transition-all
+                     disabled:opacity-40 disabled:pointer-events-none"
+        >
+          {loading ? <Spinner size="sm" /> : <ShieldCheck size={14} />}
+          {loading ? t('generating') : t('generate_obj_btn')}
+        </button>
       </div>
 
-      {/* Error */}
       {error && (
         <div className="glass-card p-4 flex gap-2">
           <AlertCircle size={15} className="text-red-400 flex-shrink-0 mt-0.5" />
@@ -230,7 +267,6 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
         </div>
       )}
 
-      {/* Loading */}
       {loading && (
         <div className="glass-card p-8 flex flex-col items-center gap-3">
           <Spinner size="lg" />
@@ -238,7 +274,6 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
         </div>
       )}
 
-      {/* Results */}
       {objections.length > 0 && !loading && (
         <>
           <div className="flex items-center justify-between">
@@ -246,13 +281,24 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
               <p className="text-sm font-semibold text-white">{generatedFor}</p>
               <p className="text-xs text-slate-500">{objections.length} {t('obj_count_hint')}</p>
             </div>
-            <button onClick={generate}
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition">
-              <RefreshCw size={11} /> {t('regenerate')}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePdf}
+                disabled={exporting}
+                className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                           px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition"
+              >
+                {exporting ? <Spinner size="sm" /> : <Download size={12} />}
+                {t('download_pdf')}
+              </button>
+              <button onClick={generate}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition">
+                <RefreshCw size={11} /> {t('regenerate')}
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-2">
+          <div ref={objRef} className="space-y-2">
             {objections.map((item, i) => (
               <ObjectionCard
                 key={i}
@@ -265,6 +311,8 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
           </div>
         </>
       )}
+
+      <HistoryPanel history={history} onRestore={restore} onClear={clearHistory} t={t} />
     </div>
   )
 }

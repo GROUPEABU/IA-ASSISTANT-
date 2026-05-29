@@ -169,6 +169,8 @@ export default {
     closing_label: 'Closing',
     copy_pitch: 'Copy full pitch',
     copied: 'Copied!',
+    history_title: 'Recent history',
+    history_clear: 'Clear',
     tco_description: 'Total cost of ownership · Compare up to 4 vehicles',
     params_label: 'Parameters',
     duration_label: 'Duration',

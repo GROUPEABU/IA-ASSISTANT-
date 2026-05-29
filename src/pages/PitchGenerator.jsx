@@ -1,10 +1,12 @@
-import { useState } from 'react'
-import { Mic, Copy, Check, RefreshCw, AlertCircle, ChevronRight, Users, Car, Wrench, Building2, Briefcase } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Mic, Copy, Check, RefreshCw, AlertCircle, ChevronRight, Users, Car, Wrench, Building2, Briefcase, Download, History, Trash2 } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
+import { useHistory } from '@/hooks/useHistory'
+import { exportToPdf } from '@/utils/exportPdf'
 
 const PROFILES = [
   { id: 'btoc_famille', labelKey: 'profile_family', subKey: 'profile_family_sub', icon: Users,     segment: 'btoc', color: '#50E5E5' },
@@ -14,8 +16,39 @@ const PROFILES = [
   { id: 'btob_cadre',   labelKey: 'profile_exec',   subKey: 'profile_exec_sub',   icon: Briefcase, segment: 'btob', color: '#a78bfa' },
 ]
 
+function HistoryPanel({ history, onRestore, onClear, t }) {
+  if (history.length === 0) return null
+  return (
+    <div className="glass-card p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <History size={13} className="text-slate-500" />
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('history_title')} ({history.length})</span>
+        </div>
+        <button onClick={onClear} className="flex items-center gap-1 text-[10px] text-slate-600 hover:text-red-400 transition">
+          <Trash2 size={10} /> {t('history_clear')}
+        </button>
+      </div>
+      <div className="space-y-1.5">
+        {history.map((item, i) => (
+          <button
+            key={i}
+            onClick={() => onRestore(item)}
+            className="w-full text-left px-3 py-2 rounded-xl bg-navy-900/40 border border-navy-700/30
+                       hover:border-cyan-400/30 hover:bg-cyan-400/5 transition group"
+          >
+            <p className="text-xs font-semibold text-slate-300 group-hover:text-cyan-300 truncate">{item.generatedFor}</p>
+            <p className="text-[10px] text-slate-600">{new Date(item.savedAt).toLocaleString()}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function PitchGenerator() {
   const { t, lang } = useSettings()
+  const pitchRef = useRef(null)
   const [vehicleId, setVehicleId] = useState('')
   const [customVehicle, setCustomVehicle] = useState('')
   const [profileId, setProfileId] = useState('btoc_famille')
@@ -25,9 +58,11 @@ export default function PitchGenerator() {
   const [error, setError] = useState(null)
   const [copied, setCopied] = useState(false)
   const [generatedFor, setGeneratedFor] = useState('')
+  const [exporting, setExporting] = useState(false)
 
   const { generated } = useGeneratedProducts()
   const allProducts = [...PRODUCTS, ...generated]
+  const { history, add: addHistory, clear: clearHistory } = useHistory('pitch')
 
   const selectedProduct = allProducts.find((p) => p.id === vehicleId)
   const vehicleName = selectedProduct?.fullName || customVehicle
@@ -78,8 +113,10 @@ Réponds UNIQUEMENT en JSON valide :
 
       const raw = await sendMessage([{ role: 'user', content: prompt }], { lang })
       const data = extractJSON(raw, 'object')
+      const label = `${vehicleName} · ${t(profile.subKey)} ${t(profile.labelKey)}`
       setPitch(data)
-      setGeneratedFor(`${vehicleName} · ${t(profile.subKey)} ${t(profile.labelKey)}`)
+      setGeneratedFor(label)
+      addHistory({ generatedFor: label, pitch: data })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -100,6 +137,20 @@ Réponds UNIQUEMENT en JSON valide :
     navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handlePdf = async () => {
+    setExporting(true)
+    try {
+      await exportToPdf(pitchRef, `pitch_${vehicleName.replace(/ /g, '_')}.pdf`)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const restore = (item) => {
+    setPitch(item.pitch)
+    setGeneratedFor(item.generatedFor)
   }
 
   return (
@@ -236,83 +287,97 @@ Réponds UNIQUEMENT en JSON valide :
               <p className="text-sm font-semibold text-white">{generatedFor}</p>
               <p className="text-xs text-slate-500">{t('pitch_ready')}</p>
             </div>
-            <button onClick={generate} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition px-2.5 py-1.5 rounded-lg hover:bg-cyan-400/5">
-              <RefreshCw size={11} /> {t('regenerate')}
-            </button>
-          </div>
-
-          {/* Accroche */}
-          <div className="glass-card p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-emerald-400/15 flex items-center justify-center">
-                  <span className="text-emerald-400 text-xs font-bold leading-none">1</span>
-                </div>
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">{t('hook_label')}</span>
-              </div>
-              <button onClick={() => copySection(pitch.accroche)} className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-emerald-400/10 transition">
-                <Copy size={12} />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePdf}
+                disabled={exporting}
+                className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                           px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition"
+              >
+                {exporting ? <Spinner size="sm" /> : <Download size={12} />}
+                {t('download_pdf')}
+              </button>
+              <button onClick={generate} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition px-2.5 py-1.5 rounded-lg hover:bg-cyan-400/5">
+                <RefreshCw size={11} /> {t('regenerate')}
               </button>
             </div>
-            <div className="bg-emerald-400/5 border border-emerald-400/15 rounded-xl p-4">
-              <p className="text-sm text-slate-200 leading-relaxed">{pitch.accroche}</p>
-            </div>
           </div>
 
-          {/* Arguments */}
-          <div className="glass-card p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-lg bg-cyan-400/15 flex items-center justify-center">
-                <span className="text-cyan-400 text-xs font-bold leading-none">2</span>
-              </div>
-              <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">{t('key_args')}</span>
-            </div>
-            <div className="space-y-2">
-              {pitch.arguments.map((arg, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-navy-900/30">
-                  <span className="text-[10px] font-bold text-cyan-400/60 flex-shrink-0 mt-0.5 w-4">{i + 1}</span>
-                  <p className="text-sm text-slate-300 leading-snug">{arg}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Objections */}
-          <div className="glass-card p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-lg bg-amber-400/15 flex items-center justify-center">
-                <span className="text-amber-400 text-xs font-bold leading-none">3</span>
-              </div>
-              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">{t('obj_responses')}</span>
-            </div>
-            <div className="space-y-2.5">
-              {pitch.objections.map((obj, i) => (
-                <div key={i} className="bg-amber-400/5 border border-amber-400/10 rounded-xl p-3.5">
-                  <p className="text-sm font-semibold text-slate-300 mb-2">"{obj.question}"</p>
-                  <div className="flex items-start gap-2">
-                    <ChevronRight size={13} className="text-amber-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-slate-400 leading-relaxed">{obj.reponse}</p>
+          {/* PDF capture zone */}
+          <div ref={pitchRef} className="space-y-3">
+            {/* Accroche */}
+            <div className="glass-card p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-400/15 flex items-center justify-center">
+                    <span className="text-emerald-400 text-xs font-bold leading-none">1</span>
                   </div>
+                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">{t('hook_label')}</span>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Closing */}
-          <div className="glass-card p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-violet-400/15 flex items-center justify-center">
-                  <span className="text-violet-400 text-xs font-bold leading-none">4</span>
-                </div>
-                <span className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">{t('closing_label')}</span>
+                <button onClick={() => copySection(pitch.accroche)} className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-emerald-400/10 transition">
+                  <Copy size={12} />
+                </button>
               </div>
-              <button onClick={() => copySection(pitch.closing)} className="p-1.5 rounded-lg text-slate-500 hover:text-violet-400 hover:bg-violet-400/10 transition">
-                <Copy size={12} />
-              </button>
+              <div className="bg-emerald-400/5 border border-emerald-400/15 rounded-xl p-4">
+                <p className="text-sm text-slate-200 leading-relaxed">{pitch.accroche}</p>
+              </div>
             </div>
-            <div className="bg-violet-400/5 border border-violet-400/15 rounded-xl p-4">
-              <p className="text-sm text-slate-200 leading-relaxed">{pitch.closing}</p>
+
+            {/* Arguments */}
+            <div className="glass-card p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-lg bg-cyan-400/15 flex items-center justify-center">
+                  <span className="text-cyan-400 text-xs font-bold leading-none">2</span>
+                </div>
+                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">{t('key_args')}</span>
+              </div>
+              <div className="space-y-2">
+                {pitch.arguments.map((arg, i) => (
+                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-navy-900/30">
+                    <span className="text-[10px] font-bold text-cyan-400/60 flex-shrink-0 mt-0.5 w-4">{i + 1}</span>
+                    <p className="text-sm text-slate-300 leading-snug">{arg}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Objections */}
+            <div className="glass-card p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-lg bg-amber-400/15 flex items-center justify-center">
+                  <span className="text-amber-400 text-xs font-bold leading-none">3</span>
+                </div>
+                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">{t('obj_responses')}</span>
+              </div>
+              <div className="space-y-2.5">
+                {pitch.objections.map((obj, i) => (
+                  <div key={i} className="bg-amber-400/5 border border-amber-400/10 rounded-xl p-3.5">
+                    <p className="text-sm font-semibold text-slate-300 mb-2">"{obj.question}"</p>
+                    <div className="flex items-start gap-2">
+                      <ChevronRight size={13} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-slate-400 leading-relaxed">{obj.reponse}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Closing */}
+            <div className="glass-card p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-violet-400/15 flex items-center justify-center">
+                    <span className="text-violet-400 text-xs font-bold leading-none">4</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">{t('closing_label')}</span>
+                </div>
+                <button onClick={() => copySection(pitch.closing)} className="p-1.5 rounded-lg text-slate-500 hover:text-violet-400 hover:bg-violet-400/10 transition">
+                  <Copy size={12} />
+                </button>
+              </div>
+              <div className="bg-violet-400/5 border border-violet-400/15 rounded-xl p-4">
+                <p className="text-sm text-slate-200 leading-relaxed">{pitch.closing}</p>
+              </div>
             </div>
           </div>
 
@@ -332,6 +397,8 @@ Réponds UNIQUEMENT en JSON valide :
           </button>
         </div>
       )}
+
+      <HistoryPanel history={history} onRestore={restore} onClear={clearHistory} t={t} />
     </div>
   )
 }

@@ -181,6 +181,8 @@ export default {
     closing_label: 'Closing',
     copy_pitch: 'Copier le pitch complet',
     copied: 'Copié !',
+    history_title: 'Historique récent',
+    history_clear: 'Effacer',
     // TCO
     tco_description: "Coût total de possession · Comparez jusqu\'à 4 véhicules",
     params_label: 'Paramètres',
