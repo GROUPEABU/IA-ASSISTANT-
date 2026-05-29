@@ -47,11 +47,15 @@ const Compare        = lazy(() => import('@/pages/Compare'))
 const Reports        = lazy(() => import('@/pages/Reports'))
 const Dashboard      = lazy(() => import('@/pages/Dashboard'))
 
-function PageLoader() {
+function S({ children }) {
   return (
-    <div className="flex-1 flex items-center justify-center">
-      <div className="w-6 h-6 border-2 border-navy-700 border-t-cyan-400 rounded-full animate-spin" />
-    </div>
+    <Suspense fallback={
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-navy-700 border-t-cyan-400 rounded-full animate-spin" />
+      </div>
+    }>
+      {children}
+    </Suspense>
   )
 }
 
@@ -78,21 +82,19 @@ function AppRoutes() {
         {/* Protected app routes */}
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Navigate to="/hub" replace />} />
-          <Suspense fallback={<PageLoader />}>
-            <Route path="hub"          element={<Hub />} />
-            <Route path="products"     element={<Products />} />
-            <Route path="products/:id" element={<ProductDetail />} />
-            <Route path="co2-malus"    element={<CO2Malus />} />
-            <Route path="chat"         element={<Chat />} />
-            <Route path="price-watch"  element={<PriceWatch />} />
-            <Route path="objections"   element={<Objections />} />
-            <Route path="pitch"        element={<PitchGenerator />} />
-            <Route path="tco"          element={<Tco />} />
-            <Route path="compare"      element={<Compare />} />
-            <Route path="reports"      element={<Reports />} />
-            <Route path="dashboard"    element={<Dashboard />} />
-            <Route path="settings"     element={<Settings />} />
-          </Suspense>
+          <Route path="hub"          element={<S><Hub /></S>} />
+          <Route path="products"     element={<S><Products /></S>} />
+          <Route path="products/:id" element={<S><ProductDetail /></S>} />
+          <Route path="co2-malus"    element={<S><CO2Malus /></S>} />
+          <Route path="chat"         element={<S><Chat /></S>} />
+          <Route path="price-watch"  element={<S><PriceWatch /></S>} />
+          <Route path="objections"   element={<S><Objections /></S>} />
+          <Route path="pitch"        element={<S><PitchGenerator /></S>} />
+          <Route path="tco"          element={<S><Tco /></S>} />
+          <Route path="compare"      element={<S><Compare /></S>} />
+          <Route path="reports"      element={<S><Reports /></S>} />
+          <Route path="dashboard"    element={<S><Dashboard /></S>} />
+          <Route path="settings"     element={<S><Settings /></S>} />
         </Route>
 
         <Route path="*" element={<Navigate to="/hub" replace />} />
