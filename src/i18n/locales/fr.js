@@ -15,7 +15,7 @@ export default {
     nav_tco: 'Calculateur TCO',
     nav_chat: 'Assistant IA',
     nav_compare: 'Comparateur',
-    nav_reports: 'Rapports',
+  
     nav_dashboard: 'Dashboard',
     nav_settings: 'Paramètres',
     // Bottom nav
@@ -702,17 +702,6 @@ export default {
   compare_row_length: 'Longueur',
   compare_row_segment: 'Segment',
   compare_row_origin: 'Origine',
-  // Reports
-  reports_filter: 'Filtrer',
-  reports_new: 'Nouveau rapport',
-  reports_detailed_title: 'Données détaillées — Mai 2026',
-  reports_models_count: 'modèles',
-  report_col_model: 'Modèle',
-  report_col_brand: 'Marque',
-  report_col_units: 'Ventes',
-  report_col_revenue: 'CA (€)',
-  report_col_delta: 'Évolution',
-  report_col_region: 'Région',
   // RegionMap + SalesChart
   region_map_title: 'Ventes par région',
   region_map_subtitle: 'Comparaison Europe',

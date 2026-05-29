@@ -13,7 +13,7 @@ export default {
     nav_tco: 'TCO Calculator',
     nav_chat: 'AI Assistant',
     nav_compare: 'Comparator',
-    nav_reports: 'Reports',
+  
     nav_dashboard: 'Dashboard',
     nav_settings: 'Settings',
     bn_hub: 'Hub',
@@ -674,17 +674,6 @@ export default {
   compare_row_length: 'Length',
   compare_row_segment: 'Segment',
   compare_row_origin: 'Origin',
-  // Reports
-  reports_filter: 'Filter',
-  reports_new: 'New report',
-  reports_detailed_title: 'Detailed data — May 2026',
-  reports_models_count: 'models',
-  report_col_model: 'Model',
-  report_col_brand: 'Brand',
-  report_col_units: 'Sales',
-  report_col_revenue: 'Revenue (€)',
-  report_col_delta: 'Change',
-  report_col_region: 'Region',
   // RegionMap + SalesChart
   region_map_title: 'Sales by region',
   region_map_subtitle: 'European comparison',
