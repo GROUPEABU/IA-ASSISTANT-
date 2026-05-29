@@ -41,7 +41,7 @@ export default function ChatMessage({ message }) {
             <span className="truncate max-w-[140px]">{attachment.name}</span>
           </div>
         )}
-        {message.content && (
+        {(message.content || message.streaming) && (
           <div className={clsx(
             'px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap',
             isAssistant
@@ -49,6 +49,9 @@ export default function ChatMessage({ message }) {
               : 'bg-cyan-400/10 border border-cyan-400/20 text-cyan-100 rounded-tr-sm',
           )}>
             {message.content}
+            {message.streaming && (
+              <span className="inline-block w-0.5 h-[1em] bg-cyan-400 animate-pulse align-middle ml-0.5 opacity-80" />
+            )}
           </div>
         )}
       </div>

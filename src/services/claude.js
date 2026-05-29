@@ -115,14 +115,11 @@ function buildContent(text, attachment) {
  * Sends a list of chat messages to Claude and returns the assistant text.
  *
  * @param {ChatMessage[]} messages
- * @returns {Promise<string>}  the assistant's text response
- * @throws  {Error} if no API key is configured, or if the API rejects the request
+ * @returns {Promise<string>}
  */
 export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false } = {}) {
   const apiKey = getApiKey()
-  if (!apiKey) {
-    throw new Error('Anthropic API key missing. Please add your key in Settings.')
-  }
+  if (!apiKey) throw new Error('Anthropic API key missing. Please add your key in Settings.')
 
   const apiMessages = messages.map(({ role, content, attachment }) => ({
     role,
@@ -132,10 +129,10 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
   const response = await fetch(ENDPOINT, {
     method:  'POST',
     headers: {
-      'x-api-key':                                   apiKey,
-      'anthropic-version':                           API_VERSION,
-      'content-type':                                'application/json',
-      'anthropic-dangerous-direct-browser-access':   'true',
+      'x-api-key':                                 apiKey,
+      'anthropic-version':                         API_VERSION,
+      'content-type':                              'application/json',
+      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model:      getModel(),
@@ -152,10 +149,77 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
 
   const payload = await response.json()
   const text = payload.content?.[0]?.text
-  if (typeof text !== 'string') {
-    throw new Error('Unexpected API response (no text content).')
-  }
+  if (typeof text !== 'string') throw new Error('Unexpected API response (no text content).')
   return text
+}
+
+/**
+ * Streams a chat response from Claude, calling onChunk with the accumulated
+ * text after each token so the UI can update in real time.
+ *
+ * @param {ChatMessage[]} messages
+ * @param {{ lang?: string, onChunk?: (text: string) => void }} opts
+ * @returns {Promise<string>}  the complete assistant text
+ */
+export async function streamMessage(messages, { lang = 'fr', onChunk } = {}) {
+  const apiKey = getApiKey()
+  if (!apiKey) throw new Error('Anthropic API key missing. Please add your key in Settings.')
+
+  const apiMessages = messages.map(({ role, content, attachment }) => ({
+    role,
+    content: buildContent(content, attachment),
+  }))
+
+  const response = await fetch(ENDPOINT, {
+    method:  'POST',
+    headers: {
+      'x-api-key':                                 apiKey,
+      'anthropic-version':                         API_VERSION,
+      'content-type':                              'application/json',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model:      getModel(),
+      max_tokens: MAX_TOKENS,
+      system:     buildSystemPrompt(lang),
+      messages:   apiMessages,
+      stream:     true,
+    }),
+  })
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error?.message ?? `Erreur API Anthropic (${response.status})`)
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let fullText = ''
+  let buffer = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop() ?? ''
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue
+      const data = line.slice(6).trim()
+      if (!data || data === '[DONE]') continue
+      try {
+        const evt = JSON.parse(data)
+        if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+          fullText += evt.delta.text
+          onChunk?.(fullText)
+        }
+      } catch { /* skip malformed SSE events */ }
+    }
+  }
+
+  return fullText
 }
 
 /**

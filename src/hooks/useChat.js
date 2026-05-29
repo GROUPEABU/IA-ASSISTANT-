@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { sendMessage } from '@/services/claude'
+import { streamMessage } from '@/services/claude'
 import { useSettings } from '@/contexts/SettingsContext'
 
 let msgId = 0
@@ -13,20 +13,46 @@ export function useChat() {
 
   const send = useCallback(async (text, attachment = null) => {
     const userMsg = { id: newId(), role: 'user', content: text, attachment }
-    setMessages((prev) => [...prev, userMsg])
+    setMessages(prev => [...prev, userMsg])
     setIsLoading(true)
     setError(null)
 
+    const assistantId = newId()
+    let firstChunk = true
+
     try {
+      // Snapshot history before state update
       const history = [...messages, userMsg]
-      const reply = await sendMessage(history, { lang })
-      setMessages((prev) => [...prev, { id: newId(), role: 'assistant', content: reply }])
+
+      await streamMessage(history, {
+        lang,
+        onChunk: (fullText) => {
+          if (firstChunk) {
+            firstChunk = false
+            setIsLoading(false)
+            setMessages(prev => [
+              ...prev,
+              { id: assistantId, role: 'assistant', content: fullText, streaming: true },
+            ])
+          } else {
+            setMessages(prev => prev.map(m =>
+              m.id === assistantId ? { ...m, content: fullText } : m
+            ))
+          }
+        },
+      })
+
+      // Finalize: remove streaming cursor
+      setMessages(prev => prev.map(m =>
+        m.id === assistantId ? { ...m, streaming: false } : m
+      ))
     } catch (err) {
+      setMessages(prev => prev.filter(m => m.id !== assistantId))
       setError(err.message)
     } finally {
       setIsLoading(false)
     }
-  }, [messages])
+  }, [messages, lang])
 
   const clear = useCallback(() => {
     setMessages([])
