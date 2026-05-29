@@ -1,7 +1,7 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import {
   MessageSquare, Zap, X, Home, BookOpen, Gauge, Bell, ShieldCheck, Mic, LogOut,
-  Calculator, AlertCircle, GitCompare, BarChart2, LayoutDashboard,
+  Calculator, AlertCircle, GitCompare, LayoutDashboard,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '@/contexts/AuthContext'
@@ -23,7 +23,6 @@ export default function Sidebar({ isOpen, onClose }) {
         { to: '/products',   icon: BookOpen,           labelKey: 'nav_products' },
         { to: '/co2-malus',  icon: Gauge,              labelKey: 'nav_co2' },
         { to: '/dashboard',  icon: LayoutDashboard,    labelKey: 'nav_dashboard' },
-        { to: '/reports',    icon: BarChart2,           labelKey: 'nav_reports' },
       ],
     },
     {

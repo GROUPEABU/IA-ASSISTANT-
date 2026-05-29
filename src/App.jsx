@@ -44,7 +44,6 @@ const Objections     = lazy(() => import('@/pages/Objections'))
 const PitchGenerator = lazy(() => import('@/pages/PitchGenerator'))
 const Tco            = lazy(() => import('@/pages/Tco'))
 const Compare        = lazy(() => import('@/pages/Compare'))
-const Reports        = lazy(() => import('@/pages/Reports'))
 const Dashboard      = lazy(() => import('@/pages/Dashboard'))
 
 function S({ children }) {
@@ -92,7 +91,6 @@ function AppRoutes() {
           <Route path="pitch"        element={<S><PitchGenerator /></S>} />
           <Route path="tco"          element={<S><Tco /></S>} />
           <Route path="compare"      element={<S><Compare /></S>} />
-          <Route path="reports"      element={<S><Reports /></S>} />
           <Route path="dashboard"    element={<S><Dashboard /></S>} />
           <Route path="settings"     element={<S><Settings /></S>} />
         </Route>
