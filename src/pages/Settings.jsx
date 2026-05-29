@@ -44,7 +44,7 @@ export default function Settings() {
   const aiPowerKey  = ukey(user?.id ?? null, 'ai_power')
   const [theme,   setTheme]   = useState(() => localStorage.getItem(themeKey)   || 'dark')
   const [apiKey,  setApiKey]  = useState(() => localStorage.getItem(apiKeyKey)  || '')
-  const [aiPower, setAiPower] = useState(() => localStorage.getItem(aiPowerKey) || 'standard')
+  const [aiPower, setAiPower] = useState(() => localStorage.getItem(aiPowerKey) || 'performance')
 
   function applyThemeValue(v) {
     if (v === 'light') {

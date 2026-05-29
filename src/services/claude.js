@@ -11,9 +11,14 @@
  */
 
 const ENDPOINT     = 'https://api.anthropic.com/v1/messages'
-const MODEL        = 'claude-sonnet-4-6'
 const API_VERSION  = '2023-06-01'
 const MAX_TOKENS   = 1024
+
+const MODELS = {
+  standard:    'claude-haiku-4-5-20251001',
+  performance: 'claude-sonnet-4-6',
+  ultra:       'claude-opus-4-8',
+}
 
 import { getSessionUserId, ukey } from '@/utils/userStorage'
 
@@ -23,6 +28,16 @@ function getApiKey() {
     return localStorage.getItem(ukey(uid, 'api_key')) || import.meta.env.VITE_ANTHROPIC_API_KEY || ''
   } catch {
     return import.meta.env.VITE_ANTHROPIC_API_KEY || ''
+  }
+}
+
+function getModel() {
+  try {
+    const uid = getSessionUserId()
+    const power = localStorage.getItem(ukey(uid, 'ai_power')) || 'performance'
+    return MODELS[power] || MODELS.performance
+  } catch {
+    return MODELS.performance
   }
 }
 
@@ -104,7 +119,7 @@ export async function sendMessage(messages, { lang = 'fr' } = {}) {
       'anthropic-dangerous-direct-browser-access':   'true',
     },
     body: JSON.stringify({
-      model:      MODEL,
+      model:      getModel(),
       max_tokens: MAX_TOKENS,
       system:     buildSystemPrompt(lang),
       messages:   apiMessages,
