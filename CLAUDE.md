@@ -9,13 +9,13 @@ git add <files> && git commit -m "..." && git push -u origin claude/autobuyunion
 curl -s -X POST "https://api.vercel.com/v1/integrations/deploy/prj_YP8dvXcN80m2sZSXoUREuk1E2tQj/TvF3agsGQe"
 ```
 
-## Mandatory verification before every commit
+## ABUVERIF — vérificateur obligatoire avant chaque commit
 
-**Run `npm run build` and confirm `✓ built` before committing or reporting the task done.**
-If the build fails, fix all errors before proceeding. Never skip this step.
+**Toujours exécuter `npm run build` et confirmer `✓ built` avant de commiter ou de reporter une tâche terminée.**
+Si le build échoue, corriger toutes les erreurs avant de continuer. Ne jamais ignorer cette étape.
 
-## Pre-commit hook (auto-enforced)
-A git pre-commit hook runs `npm run build` automatically. Any commit with a broken build is rejected.
+## Hook git pre-commit ABUVERIF (auto-appliqué)
+Le hook ABUVERIF lance `npm run build` automatiquement. Tout commit avec un build cassé est rejeté.
 
 ## Rules
 - Never mention Claude, Anthropic, or AI model names in the UI, commits, or PR descriptions

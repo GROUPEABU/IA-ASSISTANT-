@@ -57,7 +57,7 @@ export default function ChatInput({ onSend, disabled }) {
           </button>
         </div>
       )}
-      <form onSubmit={handleSubmit} className="flex items-end gap-2">
+      <form onSubmit={handleSubmit} className="flex items-center gap-2">
         <div className="flex-1 relative">
           <textarea
             value={value}
@@ -66,11 +66,11 @@ export default function ChatInput({ onSend, disabled }) {
             placeholder={t('chat_placeholder')}
             rows={1}
             disabled={disabled}
-            className="w-full bg-navy-800/80 border border-navy-700/50 rounded-xl px-4 py-3 pr-12
+            className="w-full bg-navy-800/80 border border-navy-700/50 rounded-xl px-4 pr-12
                        text-sm text-slate-200 placeholder-slate-600 resize-none
                        focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/20
                        disabled:opacity-50 transition"
-            style={{ minHeight: '48px', maxHeight: '120px' }}
+            style={{ height: '48px', maxHeight: '120px', paddingTop: '14px', paddingBottom: '14px', lineHeight: '1.25' }}
           />
           <button
             type="button"
