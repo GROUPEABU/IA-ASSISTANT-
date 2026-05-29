@@ -16,7 +16,7 @@ export default {
     nav_chat: 'Assistant IA',
     nav_compare: 'Comparateur',
   
-    nav_dashboard: 'Dashboard',
+
     nav_settings: 'Paramètres',
     // Bottom nav
     bn_hub: 'Hub',
@@ -702,11 +702,6 @@ export default {
   compare_row_length: 'Longueur',
   compare_row_segment: 'Segment',
   compare_row_origin: 'Origine',
-  // RegionMap + SalesChart
-  region_map_title: 'Ventes par région',
-  region_map_subtitle: 'Comparaison Europe',
-  region_map_sales: 'ventes',
-  sales_chart_vehicles: 'véhicules',
   // TCO
   tco_on_years: 'TCO sur {n}',
   tco_km_year: 'km/an',
@@ -724,27 +719,6 @@ export default {
   tco_tier_premium: 'Premium',
   tco_calculate_btn: 'Calculer le TCO',
 
-  // Advanced malus params
-  // CompareView
-  // MalusWidget
-  // MarketAnalysis
-  // Compare page
-  // Reports
-  // RegionMap + SalesChart
-  sales_chart_title: 'Volume de ventes',
-  sales_chart_subtitle: '12 derniers mois',
-  // TCO,
-  date_day: 'Jour',
-  date_month: 'Mois',
-  date_year: 'Année',
-  top_models_title: 'Top modèles',
-  top_models_month: 'Ce mois-ci',
-  dashboard_insight_title: 'Insight IA du jour',
-  dashboard_insight_subtitle: 'Généré automatiquement',
-  dashboard_insight_p1: 'Les ventes en France progressent de',
-  dashboard_insight_p2: 'ce mois, portées par le segment citadines. La Dacia Sandero connaît la plus forte accélération (+14,7 %) tandis que le marché allemand reste sous pression avec un recul de',
-  dashboard_insight_p3: 'sur les compactes premium.',
-  dashboard_insight_analyzed: 'Analysé avec Claude',
   malus_badge_label: 'Malus',
   co2_tab_country: '🔍 Analyse par pays',
   co2_tab_compare: '⚖️ Comparateur',

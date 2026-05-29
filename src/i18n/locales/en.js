@@ -14,7 +14,7 @@ export default {
     nav_chat: 'AI Assistant',
     nav_compare: 'Comparator',
   
-    nav_dashboard: 'Dashboard',
+
     nav_settings: 'Settings',
     bn_hub: 'Hub',
     bn_products: 'Products',
@@ -674,11 +674,6 @@ export default {
   compare_row_length: 'Length',
   compare_row_segment: 'Segment',
   compare_row_origin: 'Origin',
-  // RegionMap + SalesChart
-  region_map_title: 'Sales by region',
-  region_map_subtitle: 'European comparison',
-  region_map_sales: 'sales',
-  sales_chart_vehicles: 'vehicles',
   // TCO
   tco_on_years: 'TCO over {n}',
   tco_km_year: 'km/year',
@@ -696,27 +691,9 @@ export default {
   tco_tier_premium: 'Premium',
   tco_calculate_btn: 'Calculate TCO',
 
-  // Advanced malus params
-  // CompareView
-  // MalusWidget
-  // MarketAnalysis
-  // Compare page
-  // Reports
-  // RegionMap + SalesChart
-  sales_chart_title: 'Sales volume',
-  sales_chart_subtitle: 'Last 12 months',
-  // TCO,
   date_day: 'Day',
   date_month: 'Month',
   date_year: 'Year',
-  top_models_title: 'Top models',
-  top_models_month: 'This month',
-  dashboard_insight_title: 'AI Insight of the day',
-  dashboard_insight_subtitle: 'Auto-generated',
-  dashboard_insight_p1: 'French sales are up',
-  dashboard_insight_p2: 'this month, driven by city cars. The Dacia Sandero shows the strongest growth (+14.7%) while the German market remains under pressure with a drop of',
-  dashboard_insight_p3: 'on premium compacts.',
-  dashboard_insight_analyzed: 'Analysed with Claude',
   malus_badge_label: 'Malus',
   co2_tab_country: '🔍 Country analysis',
   co2_tab_compare: '⚖️ Comparator',
