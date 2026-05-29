@@ -22,7 +22,10 @@ export default function Chat() {
       <div className="hidden md:flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-slow flex-shrink-0" />
-          <span className="text-xs text-emerald-400/80">{t('connected_label')}</span>
+          <div className="flex flex-col leading-tight">
+            <span className="text-xs font-bold text-white">IA ABU</span>
+            <span className="text-[10px] font-semibold text-emerald-400">{t('connected_label')}</span>
+          </div>
         </div>
         {messages.length > 0 && (
           <button
