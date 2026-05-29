@@ -49,9 +49,8 @@ export default function Login() {
     try {
       const saved = localStorage.getItem(REMEMBER_KEY)
       if (!saved) return
-      const { username: u, password: p } = JSON.parse(saved)
+      const { username: u } = JSON.parse(saved)
       setUsername(u || '')
-      setPassword(p || '')
       setRemember(true)
     } catch { /* malformed data — ignore */ }
   }, [])
@@ -88,7 +87,7 @@ export default function Login() {
     }
 
     if (remember) {
-      localStorage.setItem(REMEMBER_KEY, JSON.stringify({ username: username.trim(), password }))
+      localStorage.setItem(REMEMBER_KEY, JSON.stringify({ username: username.trim() }))
     } else {
       localStorage.removeItem(REMEMBER_KEY)
     }

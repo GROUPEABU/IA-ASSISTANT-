@@ -14,6 +14,9 @@ export default {
     nav_pitch: 'Générateur de pitch',
     nav_tco: 'Calculateur TCO',
     nav_chat: 'Assistant IA',
+    nav_compare: 'Comparateur',
+    nav_reports: 'Rapports',
+    nav_dashboard: 'Dashboard',
     nav_settings: 'Paramètres',
     // Bottom nav
     bn_hub: 'Hub',

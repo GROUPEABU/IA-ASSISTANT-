@@ -39,10 +39,12 @@ export default function Settings() {
   const [saved, setSaved] = useState(false)
   const { language, currency, density, changeLanguage, changeCurrency, changeDensity, t } = useSettings()
   const { user } = useAuth()
-  const themeKey  = ukey(user?.id ?? null, 'theme')
-  const apiKeyKey = ukey(user?.id ?? null, 'api_key')
-  const [theme, setTheme] = useState(() => localStorage.getItem(themeKey) || 'dark')
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem(apiKeyKey) || '')
+  const themeKey    = ukey(user?.id ?? null, 'theme')
+  const apiKeyKey   = ukey(user?.id ?? null, 'api_key')
+  const aiPowerKey  = ukey(user?.id ?? null, 'ai_power')
+  const [theme,   setTheme]   = useState(() => localStorage.getItem(themeKey)   || 'dark')
+  const [apiKey,  setApiKey]  = useState(() => localStorage.getItem(apiKeyKey)  || '')
+  const [aiPower, setAiPower] = useState(() => localStorage.getItem(aiPowerKey) || 'standard')
 
   function applyThemeValue(v) {
     if (v === 'light') {
@@ -78,6 +80,7 @@ export default function Settings() {
     } else {
       localStorage.removeItem(apiKeyKey)
     }
+    localStorage.setItem(aiPowerKey, aiPower)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -99,8 +102,11 @@ export default function Settings() {
             />
           </Field>
           <Field label={t('settings_api_power_label')} description={t('settings_api_power_desc')}>
-            <select className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-                               text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition">
+            <select
+              value={aiPower}
+              onChange={e => setAiPower(e.target.value)}
+              className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+                         text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition">
               <option value="standard">{t('settings_standard')}</option>
               <option value="performance">{t('settings_performance')}</option>
               <option value="ultra">{t('settings_ultra')}</option>

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { SettingsProvider } from '@/contexts/SettingsContext'
@@ -21,7 +22,7 @@ import Layout from '@/components/layout/Layout'
 import CookieBanner from '@/components/ui/CookieBanner'
 import ErrorBoundary from '@/components/ErrorBoundary'
 
-// Auth pages (public)
+// Auth pages (public — kept eager for fast login)
 import Login from '@/pages/Login'
 import ForgotPassword from '@/pages/ForgotPassword'
 import ResetPassword from '@/pages/ResetPassword'
@@ -31,17 +32,28 @@ import MentionsLegales from '@/pages/MentionsLegales'
 import PolitiqueConfidentialite from '@/pages/PolitiqueConfidentialite'
 import ConditionsUtilisation from '@/pages/ConditionsUtilisation'
 
-// Protected pages
-import Hub from '@/pages/Hub'
-import Products from '@/pages/Products'
-import ProductDetail from '@/pages/ProductDetail'
-import CO2Malus from '@/pages/CO2Malus'
-import Chat from '@/pages/Chat'
-import Settings from '@/pages/Settings'
-import PriceWatch from '@/pages/PriceWatch'
-import Objections from '@/pages/Objections'
-import PitchGenerator from '@/pages/PitchGenerator'
-import Tco from '@/pages/Tco'
+// Protected pages — lazy loaded to reduce initial bundle
+const Hub            = lazy(() => import('@/pages/Hub'))
+const Products       = lazy(() => import('@/pages/Products'))
+const ProductDetail  = lazy(() => import('@/pages/ProductDetail'))
+const CO2Malus       = lazy(() => import('@/pages/CO2Malus'))
+const Chat           = lazy(() => import('@/pages/Chat'))
+const Settings       = lazy(() => import('@/pages/Settings'))
+const PriceWatch     = lazy(() => import('@/pages/PriceWatch'))
+const Objections     = lazy(() => import('@/pages/Objections'))
+const PitchGenerator = lazy(() => import('@/pages/PitchGenerator'))
+const Tco            = lazy(() => import('@/pages/Tco'))
+const Compare        = lazy(() => import('@/pages/Compare'))
+const Reports        = lazy(() => import('@/pages/Reports'))
+const Dashboard      = lazy(() => import('@/pages/Dashboard'))
+
+function PageLoader() {
+  return (
+    <div className="flex-1 flex items-center justify-center">
+      <div className="w-6 h-6 border-2 border-navy-700 border-t-cyan-400 rounded-full animate-spin" />
+    </div>
+  )
+}
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth()
@@ -66,16 +78,21 @@ function AppRoutes() {
         {/* Protected app routes */}
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Navigate to="/hub" replace />} />
-          <Route path="hub"          element={<Hub />} />
-          <Route path="products"     element={<Products />} />
-          <Route path="products/:id" element={<ProductDetail />} />
-          <Route path="co2-malus"    element={<CO2Malus />} />
-          <Route path="chat"         element={<Chat />} />
-          <Route path="price-watch"  element={<PriceWatch />} />
-          <Route path="objections"   element={<Objections />} />
-          <Route path="pitch"        element={<PitchGenerator />} />
-          <Route path="tco"          element={<Tco />} />
-          <Route path="settings"     element={<Settings />} />
+          <Suspense fallback={<PageLoader />}>
+            <Route path="hub"          element={<Hub />} />
+            <Route path="products"     element={<Products />} />
+            <Route path="products/:id" element={<ProductDetail />} />
+            <Route path="co2-malus"    element={<CO2Malus />} />
+            <Route path="chat"         element={<Chat />} />
+            <Route path="price-watch"  element={<PriceWatch />} />
+            <Route path="objections"   element={<Objections />} />
+            <Route path="pitch"        element={<PitchGenerator />} />
+            <Route path="tco"          element={<Tco />} />
+            <Route path="compare"      element={<Compare />} />
+            <Route path="reports"      element={<Reports />} />
+            <Route path="dashboard"    element={<Dashboard />} />
+            <Route path="settings"     element={<Settings />} />
+          </Suspense>
         </Route>
 
         <Route path="*" element={<Navigate to="/hub" replace />} />
@@ -86,10 +103,6 @@ function AppRoutes() {
   )
 }
 
-/**
- * Bridge: reads the authenticated user from AuthContext and passes
- * their ID down to SettingsProvider so prefs are scoped per user.
- */
 function SettingsShell({ children }) {
   const { user } = useAuth()
   return (
