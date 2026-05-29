@@ -150,7 +150,7 @@ Réponds UNIQUEMENT en JSON valide :
 
 Les objections doivent être réalistes, variées, couvrir : prix, marque inconnue, fiabilité, valeur de revente, malus, financement, SAV, concurrence.`
 
-      const raw = await sendMessage([{ role: 'user', content: prompt }], { lang })
+      const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 2500 })
       const data = extractJSON(raw, 'array')
       const label = `${vehicleName} · ${segLabel}`
       setObjections(data)

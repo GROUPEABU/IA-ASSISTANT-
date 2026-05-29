@@ -44,32 +44,38 @@ async function fetchPrices(filters) {
   return res.json()
 }
 
-async function analyzePrices(filters, sourcesData, fuels, gearboxes, lang = 'fr') {
+async function analyzePrices(filters, sourcesData, fuels, gearboxes, bodies, lang = 'fr') {
   const context = sourcesData.map(s => `=== ${s.name} ===\n${s.content}`).join('\n\n')
   const vehicleDesc = [
     filters.make, filters.model,
+    filters.finition || '',
     filters.yearMin && filters.yearMax ? `${filters.yearMin}–${filters.yearMax}`
       : filters.yearMin ? `à partir de ${filters.yearMin}`
       : filters.yearMax ? `jusqu'en ${filters.yearMax}` : '',
     filters.mileageMax ? `< ${Number(filters.mileageMax).toLocaleString()} km` : '',
     filters.fuel ? fuels.find(f => f.code === filters.fuel)?.label : '',
     filters.gearbox ? gearboxes.find(g => g.code === filters.gearbox)?.label : '',
+    filters.carrosserie ? bodies.find(b => b.code === filters.carrosserie)?.label : '',
   ].filter(Boolean).join(' · ')
 
-  const prompt = `Tu es expert en cote automobile pour Autobuyunion.
+  const finitionFilter = filters.finition
+    ? `\n⚠️ FILTRE FINITION STRICT : Ne prends en compte QUE les annonces mentionnant la finition "${filters.finition}". Ignore toutes les autres finitions/versions.`
+    : ''
 
-Analyse les prix du marché ${filters.type === 'vn' ? 'VN (véhicule neuf)' : 'VO (occasion)'} pour : "${vehicleDesc}"
+  const prompt = `Tu es expert en cote automobile pour Autobuyunion. Analyse STRICTEMENT les annonces ${filters.type === 'vn' ? 'VN (neuf)' : 'VO (occasion)'} pour : "${vehicleDesc}"${finitionFilter}
 
-Données collectées :
+RÈGLE ABSOLUE : N'analyse QUE les annonces qui correspondent EXACTEMENT à "${filters.make} ${filters.model}"${filters.finition ? ` finition "${filters.finition}"` : ''}. Élimine tout ce qui ne correspond pas (autres modèles, autres marques, autres finitions).
+
+Données sources :
 ${context}
 
-MÉTHODE DE CALCUL IMPORTANTE :
-- Extrais TOUTES les valeurs de prix mentionnées dans les données
-- Supprime les 10% les plus bas ET les 10% les plus hauts (prix aberrants)
-- Calcule le prix moyen sur les 80% restants = "prix marché réaliste"
-- Q1 = 25e percentile, Q3 = 75e percentile = fourchette courante
+MÉTHODE :
+- Extrais uniquement les prix des annonces correspondant exactement au véhicule cible
+- Supprime 10% les plus bas et 10% les plus hauts (aberrants)
+- Prix moyen = moyenne des 80% restants
+- Q1/Q3 = 25e/75e percentile
 
-Réponds UNIQUEMENT en JSON strict :
+Réponds UNIQUEMENT en JSON strict (sans texte avant/après) :
 {
   "prix_moyen": 0,
   "prix_median": 0,
@@ -78,13 +84,13 @@ Réponds UNIQUEMENT en JSON strict :
   "nb_annonces_estim": 0,
   "tendance": "hausse|baisse|stable",
   "tendance_pct": 0,
-  "alerte": "texte court si anomalie détectée sinon null",
-  "analyse": "2-3 phrases sur l'état du marché, volumes, état des prix",
-  "conseil_achat": "conseil concret et chiffré pour acheter au meilleur prix",
-  "conseil_vente": "conseil concret et chiffré pour vendre rapidement au bon prix"
+  "alerte": "texte court si données insuffisantes ou anomalie, sinon null",
+  "analyse": "2-3 phrases précises sur le marché pour ce modèle/finition exact",
+  "conseil_achat": "conseil chiffré et actionnable pour acheter au meilleur prix",
+  "conseil_vente": "conseil chiffré et actionnable pour vendre rapidement"
 }`
 
-  const raw = await sendMessage([{ role: 'user', content: prompt }], { lang })
+  const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 1500 })
   return extractJSON(raw, 'object')
 }
 
@@ -170,6 +176,18 @@ export default function PriceWatch() {
     { label: t('price_gearbox_auto'), code: 'A' },
   ]
 
+  const BODIES = [
+    { label: t('price_body_all'), code: '' },
+    { label: t('price_body_berline'), code: 'berline' },
+    { label: t('price_body_break'), code: 'break' },
+    { label: t('price_body_suv'), code: 'suvcrossover' },
+    { label: t('price_body_coupe'), code: 'coupe' },
+    { label: t('price_body_cabriolet'), code: 'cabriolet' },
+    { label: t('price_body_monospace'), code: 'monospace' },
+    { label: t('price_body_citadine'), code: 'citadine' },
+    { label: t('price_body_pickup'), code: 'pickup' },
+  ]
+
   const MILEAGE_OPTS = [
     { label: t('price_mileage_all'), value: '' },
     { label: '< 10 000 km', value: '10000' },
@@ -185,6 +203,8 @@ export default function PriceWatch() {
   const [type, setType]           = useState('vo')
   const [make, setMake]           = useState('')
   const [model, setModel]         = useState('')
+  const [finition, setFinition]   = useState('')
+  const [carrosserie, setCarrosserie] = useState('')
   const [yearMin, setYearMin]     = useState('')
   const [yearMax, setYearMax]     = useState('')
   const [mileageMax, setMileageMax] = useState('')
@@ -208,8 +228,8 @@ export default function PriceWatch() {
     const rawMake = overrides.make ?? make
     const matchedMake = MAKES.find(m => m.label.toLowerCase() === rawMake.toLowerCase())
     const resolvedMake = matchedMake ? matchedMake.code : rawMake
-    const filters = { make: resolvedMake, model, type, yearMin, yearMax, mileageMax, fuel, gearbox, ...overrides }
-    const label = [filters.make, filters.model,
+    const filters = { make: resolvedMake, model, finition, carrosserie, type, yearMin, yearMax, mileageMax, fuel, gearbox, ...overrides }
+    const label = [filters.make, filters.model, filters.finition,
       filters.yearMin && `${filters.yearMin}${filters.yearMax ? '–'+filters.yearMax : '+'}`,
       filters.mileageMax && `< ${Number(filters.mileageMax).toLocaleString()} km`,
     ].filter(Boolean).join(' · ')
@@ -226,7 +246,7 @@ export default function PriceWatch() {
       setCentraleUrl(raw.centraleUrl || '')
 
       setStep(t('price_step_calculating'))
-      const analysis = await analyzePrices(filters, raw.sources || [], FUELS, GEARBOXES, lang)
+      const analysis = await analyzePrices(filters, raw.sources || [], FUELS, GEARBOXES, BODIES, lang)
       const finalResult = { ...analysis, sources: raw.sources }
       setResult(finalResult)
       addHistory({ searchLabel: label, type: filters.type, result: finalResult })
@@ -254,7 +274,7 @@ export default function PriceWatch() {
     }
   }
 
-  const reset = () => { setResult(null); setMake(''); setModel(''); setYearMin(''); setYearMax(''); setMileageMax(''); setFuel(''); setGearbox(''); setSearchLabel(''); setCentraleUrl(''); setFetchedAt(null) }
+  const reset = () => { setResult(null); setMake(''); setModel(''); setFinition(''); setCarrosserie(''); setYearMin(''); setYearMax(''); setMileageMax(''); setFuel(''); setGearbox(''); setSearchLabel(''); setCentraleUrl(''); setFetchedAt(null) }
 
   const restore = (item) => {
     setResult(item.result)
@@ -318,7 +338,7 @@ export default function PriceWatch() {
               value={model}
               onChange={e => setModel(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && search()}
-              placeholder={t('model_ph')}
+              placeholder={t('price_model_ph')}
               className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
                          text-sm text-white placeholder-slate-600
                          focus:outline-none focus:border-cyan-400/50 transition"
@@ -335,6 +355,26 @@ export default function PriceWatch() {
             {YEARS.filter(y => !yearMin || y >= Number(yearMin)).map(y => (
               <option key={y} value={y}>{y}</option>
             ))}
+          </FilterSelect>
+        </div>
+
+        {/* Ligne 1b : Finition + Carrosserie */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+          <div>
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('price_finition_label')}</label>
+            <input
+              type="text"
+              value={finition}
+              onChange={e => setFinition(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && search()}
+              placeholder={t('price_finition_ph')}
+              className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+                         text-sm text-white placeholder-slate-600
+                         focus:outline-none focus:border-cyan-400/50 transition"
+            />
+          </div>
+          <FilterSelect label={t('price_body_label')} value={carrosserie} onChange={setCarrosserie}>
+            {BODIES.map(b => <option key={b.code} value={b.code}>{b.label}</option>)}
           </FilterSelect>
         </div>
 

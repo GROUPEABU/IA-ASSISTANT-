@@ -76,7 +76,7 @@ Règles importantes :
 - Toutes les valeurs numériques sont des nombres (pas de chaînes)
 - Pour les versions multiples (ex: essence + hybride), prendre la version essence de base`
 
-  const raw = await sendMessage([{ role: 'user', content: prompt }])
+  const raw = await sendMessage([{ role: 'user', content: prompt }], { maxTokens: 2500 })
 
   // Extraire le JSON de la réponse
   const match = raw.match(/\{[\s\S]*\}/)

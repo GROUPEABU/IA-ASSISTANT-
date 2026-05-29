@@ -7,7 +7,7 @@ async function jinaFetch(url) {
     signal: AbortSignal.timeout(12000),
   })
   if (!res.ok) throw new Error(`${res.status}`)
-  return (await res.text()).slice(0, 6000)
+  return (await res.text()).slice(0, 8000)
 }
 
 function normCode(str) {
@@ -18,45 +18,53 @@ export default async function handler(req) {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 })
 
   const { searchParams } = new URL(req.url)
-  const make       = searchParams.get('make') || ''
-  const model      = searchParams.get('model') || ''
-  const type       = searchParams.get('type') || 'vo'   // vo | vn
-  const yearMin    = searchParams.get('yearMin') || ''
-  const yearMax    = searchParams.get('yearMax') || ''
-  const mileageMax = searchParams.get('mileageMax') || ''
-  const fuel       = searchParams.get('fuel') || ''     // ES GO EL HY GH
-  const gearbox    = searchParams.get('gearbox') || ''  // M A
+  const make        = searchParams.get('make') || ''
+  const model       = searchParams.get('model') || ''
+  const finition    = searchParams.get('finition') || ''
+  const carrosserie = searchParams.get('carrosserie') || ''
+  const type        = searchParams.get('type') || 'vo'   // vo | vn
+  const yearMin     = searchParams.get('yearMin') || ''
+  const yearMax     = searchParams.get('yearMax') || ''
+  const mileageMax  = searchParams.get('mileageMax') || ''
+  const fuel        = searchParams.get('fuel') || ''     // ES GO EL HY GH
+  const gearbox     = searchParams.get('gearbox') || ''  // M A
 
   if (!make && !model) {
     return new Response(JSON.stringify({ error: 'make ou model requis' }), { status: 400 })
   }
 
-  // Build La Centrale URL avec filtres structurés
+  // Build La Centrale URL — précision maximale
   const makeCode  = normCode(make)
   const modelCode = normCode(model)
-  const makesParam = makeCode && modelCode
+  const finitionCode = finition ? normCode(finition) : ''
+
+  // 3-level commercial name: MAKE:MODEL:FINITION (finition optionnelle)
+  const makesParam = makeCode && modelCode && finitionCode
+    ? `${makeCode}:${modelCode}:${finitionCode}`
+    : makeCode && modelCode
     ? `${makeCode}:${modelCode}`
     : makeCode || modelCode
 
   const cp = new URLSearchParams()
   cp.set('makesModelsCommercialNames', makesParam)
   if (type === 'vn') cp.set('isNew', 'true')
-  if (yearMin)    cp.set('yearMin', yearMin)
-  if (yearMax)    cp.set('yearMax', yearMax)
-  if (mileageMax) cp.set('mileageMax', mileageMax)
-  if (fuel)       cp.set('energies', fuel)
-  if (gearbox)    cp.set('gearbox', gearbox)
+  if (yearMin)     cp.set('yearMin', yearMin)
+  if (yearMax)     cp.set('yearMax', yearMax)
+  if (mileageMax)  cp.set('mileageMax', mileageMax)
+  if (fuel)        cp.set('energies', fuel)
+  if (gearbox)     cp.set('gearbox', gearbox)
+  if (carrosserie) cp.set('carTypes', carrosserie)
   cp.set('sortBy', 'relevance')
 
   const centraleUrl = `https://www.lacentrale.fr/listing?${cp.toString()}`
-  const searchQuery = `${make} ${model} ${yearMin || ''}`.trim()
-  const lbcUrl      = `https://www.leboncoin.fr/recherche?category=2&text=${encodeURIComponent(searchQuery)}&sort=price&order=asc`
-  const argusUrl    = `https://www.largus.fr/recherche/?q=${encodeURIComponent(searchQuery)}`
+
+  // LBC : modèle exact entre guillemets + finition si précisée
+  const lbcParts = [make, model ? `"${model}"` : '', finition ? `"${finition}"` : '', yearMin || ''].filter(Boolean).join(' ')
+  const lbcUrl = `https://www.leboncoin.fr/recherche?category=2&text=${encodeURIComponent(lbcParts)}&sort=price&order=asc`
 
   const sources = [
     { name: 'La Centrale', url: centraleUrl },
     { name: 'Le Bon Coin', url: lbcUrl },
-    { name: "L'Argus",    url: argusUrl },
   ]
 
   const results = await Promise.allSettled(
@@ -72,7 +80,7 @@ export default async function handler(req) {
       sources: data,
       fetchedAt: new Date().toISOString(),
       centraleUrl,
-      filters: { make, model, type, yearMin, yearMax, mileageMax, fuel, gearbox },
+      filters: { make, model, finition, carrosserie, type, yearMin, yearMax, mileageMax, fuel, gearbox },
     }),
     { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
   )

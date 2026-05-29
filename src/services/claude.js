@@ -99,7 +99,7 @@ function buildContent(text, attachment) {
  * @returns {Promise<string>}  the assistant's text response
  * @throws  {Error} if no API key is configured, or if the API rejects the request
  */
-export async function sendMessage(messages, { lang = 'fr' } = {}) {
+export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS } = {}) {
   const apiKey = getApiKey()
   if (!apiKey) {
     throw new Error('Anthropic API key missing. Please add your key in Settings.')
@@ -120,7 +120,7 @@ export async function sendMessage(messages, { lang = 'fr' } = {}) {
     },
     body: JSON.stringify({
       model:      getModel(),
-      max_tokens: MAX_TOKENS,
+      max_tokens: maxTokens,
       system:     buildSystemPrompt(lang),
       messages:   apiMessages,
     }),
