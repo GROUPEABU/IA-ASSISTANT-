@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react'
 import {
   Bell, Search, RefreshCw, RotateCcw, TrendingUp, TrendingDown, Minus,
-  AlertCircle, ExternalLink, Clock, SlidersHorizontal, Download, History, Trash2,
+  AlertCircle, ExternalLink, Clock, SlidersHorizontal, Download, History,
+  Trash2, Sparkles, Wifi, WifiOff, ShieldCheck, Zap, Tag,
 } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
@@ -44,13 +45,16 @@ async function fetchPrices(filters) {
   return res.json()
 }
 
-async function analyzePrices(filters, sourcesData, fuels, gearboxes, bodies, lang = 'fr') {
-  const context = sourcesData.map(s => `=== ${s.name} ===\n${s.content}`).join('\n\n')
+async function analyzePrices(filters, sourcesData, hasLiveData, fuels, gearboxes, bodies, lang = 'fr') {
+  const context = sourcesData.length > 0
+    ? sourcesData.map(s => `=== ${s.name} ===\n${s.content}`).join('\n\n')
+    : ''
+
   const vehicleDesc = [
     filters.make, filters.model,
     filters.finition || '',
     filters.yearMin && filters.yearMax ? `${filters.yearMin}–${filters.yearMax}`
-      : filters.yearMin ? `à partir de ${filters.yearMin}`
+      : filters.yearMin ? `depuis ${filters.yearMin}`
       : filters.yearMax ? `jusqu'en ${filters.yearMax}` : '',
     filters.mileageMax ? `< ${Number(filters.mileageMax).toLocaleString()} km` : '',
     filters.fuel ? fuels.find(f => f.code === filters.fuel)?.label : '',
@@ -59,38 +63,50 @@ async function analyzePrices(filters, sourcesData, fuels, gearboxes, bodies, lan
   ].filter(Boolean).join(' · ')
 
   const finitionFilter = filters.finition
-    ? `\n⚠️ FILTRE FINITION STRICT : Ne prends en compte QUE les annonces mentionnant la finition "${filters.finition}". Ignore toutes les autres finitions/versions.`
+    ? `\n⚠️ FILTRE FINITION STRICT : Analyse UNIQUEMENT la finition/version "${filters.finition}".`
     : ''
 
-  const prompt = `Tu es expert en cote automobile pour Autobuyunion. Analyse STRICTEMENT les annonces ${filters.type === 'vn' ? 'VN (neuf)' : 'VO (occasion)'} pour : "${vehicleDesc}"${finitionFilter}
+  const dataSection = hasLiveData && context
+    ? `Données annonces collectées en temps réel :\n${context}\n\nAnalyse UNIQUEMENT les annonces qui correspondent exactement à "${filters.make} ${filters.model}"${filters.finition ? ` finition "${filters.finition}"` : ''}. Élimine tout ce qui ne correspond pas.`
+    : `⚠️ Les sources web ne sont pas disponibles actuellement. Utilise tes connaissances expertes du marché automobile français (formation sur données de marché réelles) pour fournir une analyse précise et réaliste. Sois aussi précis que possible avec des chiffres réels.`
 
-RÈGLE ABSOLUE : N'analyse QUE les annonces qui correspondent EXACTEMENT à "${filters.make} ${filters.model}"${filters.finition ? ` finition "${filters.finition}"` : ''}. Élimine tout ce qui ne correspond pas (autres modèles, autres marques, autres finitions).
+  const prompt = `Tu es expert en cote et marché automobile ${filters.type === 'vn' ? 'VN (véhicule neuf)' : 'VO (occasion)'} pour Autobuyunion, dealer professionnel en France.
+Véhicule cible : "${vehicleDesc}"${finitionFilter}
 
-Données sources :
-${context}
+${dataSection}
 
-MÉTHODE :
-- Extrais uniquement les prix des annonces correspondant exactement au véhicule cible
-- Supprime 10% les plus bas et 10% les plus hauts (aberrants)
-- Prix moyen = moyenne des 80% restants
-- Q1/Q3 = 25e/75e percentile
+Génère une analyse experte complète de type fiche pro. Tous les prix sont en euros TTC sauf indication HT.
 
-Réponds UNIQUEMENT en JSON strict (sans texte avant/après) :
+Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise markdown) :
 {
-  "prix_moyen": 0,
-  "prix_median": 0,
-  "prix_q1": 0,
-  "prix_q3": 0,
-  "nb_annonces_estim": 0,
+  "prix_moyen": <prix moyen marché TTC>,
+  "prix_median": <prix médian TTC>,
+  "prix_q1": <25e percentile TTC>,
+  "prix_q3": <75e percentile TTC>,
+  "nb_annonces_estim": <nombre annonces estimé sur marché FR>,
   "tendance": "hausse|baisse|stable",
-  "tendance_pct": 0,
-  "alerte": "texte court si données insuffisantes ou anomalie, sinon null",
-  "analyse": "2-3 phrases précises sur le marché pour ce modèle/finition exact",
-  "conseil_achat": "conseil chiffré et actionnable pour acheter au meilleur prix",
-  "conseil_vente": "conseil chiffré et actionnable pour vendre rapidement"
+  "tendance_pct": <variation 3 mois en %, ex: 2.5>,
+  "prix_neuf_catalogue": <PVC neuf TTC catalogue actuel ou à l'époque>,
+  "decote_annuelle_pct": <décote annuelle moyenne en %, ex: 12>,
+  "valeur_residuelle_1an": <valeur estimée dans 1 an TTC>,
+  "valeur_residuelle_3ans": <valeur estimée dans 3 ans TTC>,
+  "fourchette_achat_pro_min": <prix achat pro recommandé minimum HT>,
+  "fourchette_achat_pro_max": <prix achat pro recommandé maximum HT>,
+  "marge_brute_potentielle": <marge brute moyenne potentielle en €>,
+  "cote_argus_min": <cote Argus basse TTC>,
+  "cote_argus_max": <cote Argus haute TTC>,
+  "alerte": <"texte si données insuffisantes ou anomalie" | null>,
+  "source_donnees": "${hasLiveData ? 'live' : 'knowledge'}",
+  "analyse": "<3-4 phrases expertes : positionnement marché, demande, liquidité, points clés>",
+  "conseil_achat": "<conseil d'achat chiffré et actionnable pour obtenir le meilleur prix>",
+  "conseil_vente": "<conseil de vente chiffré et actionnable pour vendre vite au meilleur prix>",
+  "equipements_recherches": ["<équip1 très recherché>", "<équip2>", "<équip3>", "<équip4>"],
+  "arguments_commerciaux": ["<argument fort 1 avec chiffre>", "<argument fort 2>", "<argument fort 3>"],
+  "points_vigilance": ["<point vigilance 1>", "<point vigilance 2>", "<point vigilance 3>"],
+  "annonces_par_source": [{"source": "<nom source>", "prix_min": 0, "prix_moy": 0, "prix_max": 0, "nb": 0}]
 }`
 
-  const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 1500, expert: true })
+  const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 2500, expert: true })
   return extractJSON(raw, 'object')
 }
 
@@ -109,12 +125,21 @@ function FilterSelect({ label, value, onChange, children }) {
   )
 }
 
-function KpiCard({ label, value, highlight, sub }) {
+function KpiCard({ label, value, highlight, sub, small }) {
   return (
     <div className="glass-card p-3 text-center">
-      <p className={`text-lg font-bold ${highlight ? 'text-cyan-400' : 'text-white'}`}>{value}</p>
+      <p className={`font-bold ${small ? 'text-sm' : 'text-lg'} ${highlight ? 'text-cyan-400' : 'text-white'}`}>{value}</p>
       {sub && <p className="text-[10px] text-emerald-400 font-semibold mt-0.5">{sub}</p>}
       <p className="text-[10px] text-slate-500 mt-0.5">{label}</p>
+    </div>
+  )
+}
+
+function SectionTitle({ icon: Icon, label, color = 'text-slate-500' }) {
+  return (
+    <div className="flex items-center gap-1.5 mb-2">
+      {Icon && <Icon size={11} className={color} />}
+      <p className={`text-[10px] font-bold uppercase tracking-wider ${color}`}>{label}</p>
     </div>
   )
 }
@@ -224,7 +249,6 @@ export default function PriceWatch() {
 
   const search = async (overrides = {}) => {
     if (!canSearch && !overrides.make && !overrides.model) return
-    // Résoudre le code La Centrale si l'utilisateur a tapé un label connu
     const rawMake = overrides.make ?? make
     const matchedMake = MAKES.find(m => m.label.toLowerCase() === rawMake.toLowerCase())
     const resolvedMake = matchedMake ? matchedMake.code : rawMake
@@ -246,8 +270,8 @@ export default function PriceWatch() {
       setCentraleUrl(raw.centraleUrl || '')
 
       setStep(t('price_step_calculating'))
-      const analysis = await analyzePrices(filters, raw.sources || [], FUELS, GEARBOXES, BODIES, lang)
-      const finalResult = { ...analysis, sources: raw.sources }
+      const analysis = await analyzePrices(filters, raw.sources || [], raw.hasLiveData || false, FUELS, GEARBOXES, BODIES, lang)
+      const finalResult = { ...analysis, sources: raw.sources, hasLiveData: raw.hasLiveData }
       setResult(finalResult)
       addHistory({ searchLabel: label, type: filters.type, result: finalResult })
     } catch (err) {
@@ -264,6 +288,8 @@ export default function PriceWatch() {
   const trendLabel  = result?.tendance === 'hausse' ? t('market_up') : result?.tendance === 'baisse' ? t('market_down') : t('market_stable')
 
   const fmtEur = (v) => v ? `${formatNumber(v)} €` : 'N/D'
+  const fmtHT  = (v) => v ? `${formatNumber(v)} € HT` : 'N/D'
+  const fmtPct = (v) => v ? `${v}%` : 'N/D'
 
   const handlePdf = async () => {
     setExporting(true)
@@ -274,7 +300,11 @@ export default function PriceWatch() {
     }
   }
 
-  const reset = () => { setResult(null); setMake(''); setModel(''); setFinition(''); setCarrosserie(''); setYearMin(''); setYearMax(''); setMileageMax(''); setFuel(''); setGearbox(''); setSearchLabel(''); setCentraleUrl(''); setFetchedAt(null) }
+  const reset = () => {
+    setResult(null); setMake(''); setModel(''); setFinition(''); setCarrosserie('')
+    setYearMin(''); setYearMax(''); setMileageMax(''); setFuel(''); setGearbox('')
+    setSearchLabel(''); setCentraleUrl(''); setFetchedAt(null)
+  }
 
   const restore = (item) => {
     setResult(item.result)
@@ -302,9 +332,7 @@ export default function PriceWatch() {
               key={tab.id}
               onClick={() => { setType(tab.id); if (tab.id === 'vn') setMileageMax('') }}
               className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                type === tab.id
-                  ? 'bg-cyan-400 text-navy-900'
-                  : 'text-slate-400 hover:text-white'
+                type === tab.id ? 'bg-cyan-400 text-navy-900' : 'text-slate-400 hover:text-white'
               }`}
             >
               {tab.label}
@@ -317,14 +345,10 @@ export default function PriceWatch() {
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('make_label')}</label>
             <input
-              type="text"
-              value={make}
-              onChange={e => setMake(e.target.value)}
-              list="makes-list"
-              placeholder={t('make_ph')}
+              type="text" value={make} onChange={e => setMake(e.target.value)}
+              list="makes-list" placeholder={t('make_ph')}
               className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-                         text-sm text-white placeholder-slate-600
-                         focus:outline-none focus:border-cyan-400/50 transition"
+                         text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition"
             />
             <datalist id="makes-list">
               {MAKES.map(m => <option key={m.code} value={m.label} />)}
@@ -334,14 +358,10 @@ export default function PriceWatch() {
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('model_label')}</label>
             <input
-              type="text"
-              value={model}
-              onChange={e => setModel(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && search()}
-              placeholder={t('price_model_ph')}
+              type="text" value={model} onChange={e => setModel(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && search()} placeholder={t('price_model_ph')}
               className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-                         text-sm text-white placeholder-slate-600
-                         focus:outline-none focus:border-cyan-400/50 transition"
+                         text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition"
             />
           </div>
 
@@ -363,14 +383,10 @@ export default function PriceWatch() {
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('price_finition_label')}</label>
             <input
-              type="text"
-              value={finition}
-              onChange={e => setFinition(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && search()}
-              placeholder={t('price_finition_ph')}
+              type="text" value={finition} onChange={e => setFinition(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && search()} placeholder={t('price_finition_ph')}
               className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-                         text-sm text-white placeholder-slate-600
-                         focus:outline-none focus:border-cyan-400/50 transition"
+                         text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition"
             />
           </div>
           <FilterSelect label={t('price_body_label')} value={carrosserie} onChange={setCarrosserie}>
@@ -385,11 +401,9 @@ export default function PriceWatch() {
               {MILEAGE_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </FilterSelect>
           )}
-
           <FilterSelect label={t('fuel_label')} value={fuel} onChange={setFuel}>
             {FUELS.map(f => <option key={f.code} value={f.code}>{f.label}</option>)}
           </FilterSelect>
-
           <FilterSelect label={t('gearbox_label')} value={gearbox} onChange={setGearbox}>
             {GEARBOXES.map(g => <option key={g.code} value={g.code}>{g.label}</option>)}
           </FilterSelect>
@@ -398,24 +412,18 @@ export default function PriceWatch() {
         {/* Bouton */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => search()}
-            disabled={!canSearch || loading}
+            onClick={() => search()} disabled={!canSearch || loading}
             className="flex items-center gap-2 px-5 py-2.5 bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
-                       hover:bg-cyan-300 active:scale-95 transition-all
-                       disabled:opacity-40 disabled:pointer-events-none"
+                       hover:bg-cyan-300 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
           >
             {loading ? <Spinner size="sm" /> : <Search size={14} />}
             {loading ? t('analyzing') : t('analyze_btn')}
           </button>
 
           {centraleUrl && !loading && (
-            <a
-              href={centraleUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <a href={centraleUrl} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
-                         px-3 py-2.5 rounded-xl hover:text-cyan-400 hover:border-cyan-400/30 transition"
-            >
+                         px-3 py-2.5 rounded-xl hover:text-cyan-400 hover:border-cyan-400/30 transition">
               <ExternalLink size={12} /> {t('price_see_listing')}
             </a>
           )}
@@ -445,10 +453,22 @@ export default function PriceWatch() {
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div>
               <h3 className="text-base font-bold text-white">{searchLabel}</h3>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   type === 'vo' ? 'bg-amber-400/10 text-amber-400' : 'bg-emerald-400/10 text-emerald-400'
                 }`}>{type === 'vo' ? t('used_vehicle') : t('new_vehicle')}</span>
+
+                {/* Data source badge */}
+                {result.source_donnees === 'knowledge' ? (
+                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-400/10 text-violet-400 border border-violet-400/20">
+                    <Sparkles size={9} /> {t('price_knowledge_badge')}
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/10 text-emerald-400 border border-emerald-400/20">
+                    <Wifi size={9} /> {t('price_live_badge')}
+                  </span>
+                )}
+
                 {fetchedAt && (
                   <div className="flex items-center gap-1">
                     <Clock size={10} className="text-slate-600" />
@@ -458,32 +478,26 @@ export default function PriceWatch() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={handlePdf}
-                disabled={exporting}
+              <button onClick={handlePdf} disabled={exporting}
                 className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
-                           px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition"
-              >
+                           px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition">
                 {exporting ? <Spinner size="sm" /> : <Download size={12} />}
                 {t('download_pdf')}
               </button>
-              <button
-                onClick={() => search()}
+              <button onClick={() => search()}
                 className="flex items-center gap-1.5 text-xs text-cyan-400 border border-cyan-400/30
-                           px-3 py-2 rounded-lg hover:bg-cyan-400/10 transition"
-              >
+                           px-3 py-2 rounded-lg hover:bg-cyan-400/10 transition">
                 <RefreshCw size={12} /> {t('analyze_btn')}
               </button>
-              <button
-                onClick={reset}
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30"
-              >
+              <button onClick={reset}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30">
                 <RotateCcw size={11} /> {t('new_analysis_btn')}
               </button>
             </div>
           </div>
 
           <div ref={resultRef} className="space-y-3">
+
           {/* Alerte */}
           {result.alerte && (
             <div className="flex gap-2 p-3 rounded-xl bg-amber-400/10 border border-amber-400/20">
@@ -492,18 +506,10 @@ export default function PriceWatch() {
             </div>
           )}
 
-          {/* KPIs */}
+          {/* KPIs principaux */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <KpiCard
-              label={t('avg_price')}
-              value={fmtEur(result.prix_moyen)}
-              highlight
-              sub={t('excl_outliers')}
-            />
-            <KpiCard
-              label={t('median_price')}
-              value={fmtEur(result.prix_median)}
-            />
+            <KpiCard label={t('avg_price')} value={fmtEur(result.prix_moyen)} highlight sub={t('excl_outliers')} />
+            <KpiCard label={t('median_price')} value={fmtEur(result.prix_median)} />
             <KpiCard
               label={t('price_range')}
               value={result.prix_q1 && result.prix_q3
@@ -511,10 +517,46 @@ export default function PriceWatch() {
                 : 'N/D'}
               sub={t('percentile')}
             />
-            <KpiCard
-              label={t('listings_est')}
-              value={result.nb_annonces_estim ? `~${result.nb_annonces_estim}` : 'N/D'}
-            />
+            <KpiCard label={t('listings_est')} value={result.nb_annonces_estim ? `~${result.nb_annonces_estim}` : 'N/D'} />
+          </div>
+
+          {/* Analyse expert + pro en 2 colonnes */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+            {/* Cotation expert */}
+            <div className="glass-card p-4">
+              <SectionTitle icon={Tag} label={t('price_expert_section')} color="text-cyan-400" />
+              <div className="grid grid-cols-2 gap-2">
+                <KpiCard label={t('price_catalogue_label')} value={fmtEur(result.prix_neuf_catalogue)} small />
+                <KpiCard label={t('price_decote_label')} value={fmtPct(result.decote_annuelle_pct)} small />
+                <KpiCard label={t('price_vr_1an')} value={fmtEur(result.valeur_residuelle_1an)} small />
+                <KpiCard label={t('price_vr_3ans')} value={fmtEur(result.valeur_residuelle_3ans)} small />
+              </div>
+              {(result.cote_argus_min || result.cote_argus_max) && (
+                <div className="mt-2 px-3 py-2 bg-navy-900/40 rounded-lg border border-navy-700/30">
+                  <p className="text-[10px] text-slate-500 mb-0.5">{t('price_argus_range')}</p>
+                  <p className="text-sm font-bold text-white">
+                    {formatNumber(result.cote_argus_min)} – {formatNumber(result.cote_argus_max)} €
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Pricing pro */}
+            <div className="glass-card p-4">
+              <SectionTitle icon={Zap} label={t('price_pro_section')} color="text-emerald-400" />
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <KpiCard
+                  label={t('price_pro_range')}
+                  value={result.fourchette_achat_pro_min && result.fourchette_achat_pro_max
+                    ? `${formatNumber(result.fourchette_achat_pro_min)} – ${formatNumber(result.fourchette_achat_pro_max)} €`
+                    : 'N/D'}
+                  sub="HT" small
+                />
+                <KpiCard label={t('price_margin_label')} value={fmtEur(result.marge_brute_potentielle)} highlight small />
+              </div>
+              <p className="text-[10px] text-slate-500 leading-relaxed">{result.conseil_achat}</p>
+            </div>
           </div>
 
           {/* Tendance */}
@@ -536,16 +578,89 @@ export default function PriceWatch() {
             </div>
           </div>
 
-          {/* Conseils */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Annonces par source */}
+          {result.annonces_par_source?.length > 0 && (
             <div className="glass-card p-4">
-              <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2">{t('buy_advice')}</p>
-              <p className="text-sm text-slate-300 leading-relaxed">{result.conseil_achat}</p>
+              <SectionTitle label={t('price_per_source')} />
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-navy-700/30">
+                      <th className="text-left text-slate-500 font-semibold pb-1.5 pr-3">{t('sources_consulted')}</th>
+                      <th className="text-right text-slate-500 font-semibold pb-1.5 px-2">{t('import_price_min')}</th>
+                      <th className="text-right text-slate-500 font-semibold pb-1.5 px-2">{t('import_price_avg')}</th>
+                      <th className="text-right text-slate-500 font-semibold pb-1.5 px-2">{t('import_price_max')}</th>
+                      <th className="text-right text-slate-500 font-semibold pb-1.5 pl-2">{t('listings_est')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.annonces_par_source.map((s, i) => (
+                      <tr key={i} className="border-b border-navy-700/20 last:border-0">
+                        <td className="py-1.5 pr-3 text-slate-300 font-medium">{s.source}</td>
+                        <td className="py-1.5 px-2 text-right text-slate-400">{s.prix_min ? formatNumber(s.prix_min) + ' €' : '—'}</td>
+                        <td className="py-1.5 px-2 text-right text-cyan-400 font-semibold">{s.prix_moy ? formatNumber(s.prix_moy) + ' €' : '—'}</td>
+                        <td className="py-1.5 px-2 text-right text-slate-400">{s.prix_max ? formatNumber(s.prix_max) + ' €' : '—'}</td>
+                        <td className="py-1.5 pl-2 text-right text-slate-500">{s.nb ? `~${s.nb}` : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div className="glass-card p-4">
-              <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-2">{t('sell_advice')}</p>
-              <p className="text-sm text-slate-300 leading-relaxed">{result.conseil_vente}</p>
-            </div>
+          )}
+
+          {/* Conseil vente */}
+          <div className="glass-card p-4">
+            <SectionTitle label={t('sell_advice')} color="text-cyan-400" />
+            <p className="text-sm text-slate-300 leading-relaxed">{result.conseil_vente}</p>
+          </div>
+
+          {/* Équipements + Arguments + Vigilance en grille */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+
+            {/* Équipements recherchés */}
+            {result.equipements_recherches?.length > 0 && (
+              <div className="glass-card p-4">
+                <SectionTitle icon={Tag} label={t('price_equipements_label')} color="text-violet-400" />
+                <div className="flex flex-wrap gap-1.5">
+                  {result.equipements_recherches.map((eq, i) => (
+                    <span key={i} className="text-[11px] px-2 py-0.5 rounded-full bg-violet-400/10 text-violet-300 border border-violet-400/20">
+                      {eq}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Arguments commerciaux */}
+            {result.arguments_commerciaux?.length > 0 && (
+              <div className="glass-card p-4">
+                <SectionTitle icon={Zap} label={t('price_arguments_label')} color="text-emerald-400" />
+                <ul className="space-y-1.5">
+                  {result.arguments_commerciaux.map((arg, i) => (
+                    <li key={i} className="flex items-start gap-1.5">
+                      <span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span>
+                      <span className="text-xs text-slate-300">{arg}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Points de vigilance */}
+            {result.points_vigilance?.length > 0 && (
+              <div className="glass-card p-4">
+                <SectionTitle icon={ShieldCheck} label={t('price_vigilance_label')} color="text-amber-400" />
+                <ul className="space-y-1.5">
+                  {result.points_vigilance.map((pt, i) => (
+                    <li key={i} className="flex items-start gap-1.5">
+                      <span className="text-amber-400 mt-0.5 flex-shrink-0">⚠</span>
+                      <span className="text-xs text-slate-400">{pt}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* Sources + lien La Centrale */}
@@ -559,6 +674,11 @@ export default function PriceWatch() {
                   {s.name} <ExternalLink size={10} />
                 </a>
               ))}
+              {!result.hasLiveData && (
+                <span className="flex items-center gap-1 text-xs text-violet-400 bg-violet-400/5 border border-violet-400/20 px-2.5 py-1 rounded-lg">
+                  <WifiOff size={10} /> {t('price_knowledge_badge')}
+                </span>
+              )}
               {centraleUrl && (
                 <a href={centraleUrl} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1 text-xs text-cyan-400 bg-cyan-400/5 border border-cyan-400/20
@@ -568,6 +688,7 @@ export default function PriceWatch() {
               )}
             </div>
           </div>
+
           </div>{/* end resultRef */}
         </>
       )}
