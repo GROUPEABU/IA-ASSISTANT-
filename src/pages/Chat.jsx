@@ -53,7 +53,7 @@ export default function Chat() {
 
         {/* Welcome state */}
         {isEmpty && !isLoading && (
-          <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6 gap-3 md:gap-5 overflow-y-auto">
+          <div className="flex-1 flex flex-col items-center justify-start pt-6 md:justify-center md:pt-6 p-4 md:p-6 gap-3 md:gap-5 overflow-y-auto">
             <div className="relative">
               <div className="absolute inset-0 rounded-full bg-cyan-400/20 blur-xl scale-150" />
               <div className="relative w-14 h-14 rounded-2xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center">
