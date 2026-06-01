@@ -94,7 +94,7 @@ export default function CO2Malus() {
 
       <ModeTabs value={mode} onChange={setMode} />
 
-      {/* 1️⃣ Sélection du / des pays en premier — les indices contextuels en dépendent */}
+      {/* 1. Sélection du / des pays en premier — les indices contextuels en dépendent */}
       {mode === 'country' && (
         <CountrySelector
           countries={filteredCountries}
@@ -107,7 +107,7 @@ export default function CO2Malus() {
         />
       )}
 
-      {/* 2️⃣ Paramètres du véhicule */}
+      {/* 2. Paramètres du véhicule */}
       <SliderSection
         label={t('malus_emissions_label')}
         value={malus.emission}
@@ -138,7 +138,7 @@ export default function CO2Malus() {
 
       <RegistrationDatePicker value={malus.dateImmat} onChange={malus.setDateImmat} />
 
-      {/* 3️⃣ Paramètres avancés — indices contextuels selon le pays sélectionné */}
+      {/* 3. Paramètres avancés — indices contextuels selon le pays sélectionné */}
       <AdvancedParams
         show={showAdvanced}
         onToggle={() => setShowAdvanced(v => !v)}
@@ -155,7 +155,7 @@ export default function CO2Malus() {
         activeParams={malus.result?.advanced_params}
       />
 
-      {/* 4️⃣ Résultat */}
+      {/* 4. Résultat */}
       {mode === 'country' && malus.result && (
         <MalusResultPanel
           result={malus.result}

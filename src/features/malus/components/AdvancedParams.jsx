@@ -1,4 +1,4 @@
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, SlidersHorizontal, Check } from 'lucide-react'
 import {
   getImportDecote, getImportDecoteNL, getImportDecotePT,
   getImportDecoteDE, getImportDecoteES, getImportDecoteBE, getImportDecoteIE,
@@ -56,7 +56,8 @@ function CountryHint({ fieldKey, selectedCountry, activeParams }) {
             className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
             style={{ color: '#34d399', background: 'rgba(52,211,153,0.10)', border: '1px solid rgba(52,211,153,0.20)' }}
           >
-            ✓ Actif · {selectedCountry.flag} {selectedCountry.name}
+            <Check size={11} strokeWidth={3} className="flex-shrink-0" />
+            Actif · {selectedCountry.flag} {selectedCountry.name}
           </span>
         </div>
       )
@@ -113,9 +114,11 @@ export default function AdvancedParams({
       >
         <div className="flex items-center gap-2.5 min-w-0">
           <span
-            className="flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold"
+            className="flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center"
             style={{ background: show ? 'rgba(80,229,229,0.2)' : 'rgba(80,229,229,0.08)', color: '#50E5E5' }}
-          >⚙</span>
+          >
+            <SlidersHorizontal size={13} />
+          </span>
           <span className="truncate">{t('malus_advanced_params')}</span>
           <span
             className="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full"
