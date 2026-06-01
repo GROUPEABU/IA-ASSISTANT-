@@ -98,7 +98,7 @@ Prix : ${formatNumber(product.prix.base)}€ · Malus : ${malus > 0 ? `+${format
 
 Sois percutant, concret et adapté au marché français.`
 
-      const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 1500, expert: true, temperature: 0.6 })
+      const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 1500, expert: true, temperature: 0.6, tool: 'rapportcommercial' })
       setPitch(result)
     } catch (err) {
       setError(err.message)
