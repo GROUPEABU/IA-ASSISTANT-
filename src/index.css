@@ -373,6 +373,12 @@ html.light .slider-preset-btn {
   color:        var(--text-muted) !important;
 }
 
+/* CO₂ Malus — mode tabs track (inline dark bg → light surface) */
+html.light .mode-tabs {
+  background:    var(--surface-muted) !important;
+  border-color:  var(--border-strong) !important;
+}
+
 /* SegButton: track and buttons */
 html.light .seg-group {
   background: var(--surface-muted) !important;

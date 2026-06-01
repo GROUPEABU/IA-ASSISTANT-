@@ -253,7 +253,7 @@ export default function CO2Malus() {
 function PageHeader({ t, onReset }) {
   return (
     <div
-      className="rounded-2xl p-5 mb-4 flex flex-col gap-3"
+      className="glass-card rounded-2xl p-5 mb-4 flex flex-col gap-3"
       style={{
         background: 'linear-gradient(135deg, rgba(7,24,40,0.95) 0%, rgba(13,39,60,0.85) 100%)',
         border: '1px solid rgba(80,229,229,0.18)',
@@ -337,7 +337,7 @@ function ModeTabs({ value, onChange }) {
     { k: 'compare', lKey: 'co2_tab_compare', Icon: Scale  },
   ]
   return (
-    <div role="tablist" className="grid grid-cols-2 gap-1 rounded-xl p-1 mb-4 flex-shrink-0"
+    <div role="tablist" className="mode-tabs grid grid-cols-2 gap-1 rounded-xl p-1 mb-4 flex-shrink-0"
          style={{ background: 'rgba(7,24,40,0.8)', border: '1px solid rgba(255,255,255,0.07)' }}>
       {tabs.map(({ k, lKey, Icon }) => {
         const isActive = value === k
