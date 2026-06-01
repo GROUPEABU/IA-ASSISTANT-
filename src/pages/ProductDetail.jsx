@@ -81,16 +81,18 @@ export default function ProductDetail() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-navy-800/60 rounded-xl p-1 overflow-x-auto">
+      <div role="tablist" aria-label={product.fullName} className="flex gap-1 bg-navy-800/60 rounded-xl p-1 overflow-x-auto">
         {TABS.map(({ id: tid, label, icon: Icon }) => (
           <button
             key={tid}
+            role="tab"
+            aria-selected={tab === tid}
             onClick={() => setTab(tid)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium
                         whitespace-nowrap transition-all flex-shrink-0
                         ${tab === tid ? 'bg-cyan-400 text-navy-900' : 'text-slate-400 hover:text-white'}`}
           >
-            <Icon size={13} />
+            <Icon size={13} aria-hidden="true" />
             {label}
           </button>
         ))}

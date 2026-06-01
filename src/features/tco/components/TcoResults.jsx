@@ -1,4 +1,3 @@
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts'
 import { useSettings } from '@/contexts/SettingsContext'
 import { formatNumber } from '@/utils/formatters'
 import { FileText } from 'lucide-react'
@@ -65,50 +64,72 @@ export default function TcoResults({ results, years, kmYear }) {
   )
 }
 
+/**
+ * Lightweight horizontal stacked-bar chart (pure CSS — no charting lib).
+ * Each row = one vehicle; segments are proportional to the largest total so
+ * bars stay comparable. Hovering a segment shows its breakdown via title.
+ */
 function ResultsChart({ results, formatCurrency }) {
   const { t } = useSettings()
-  return (
-    <div className="px-2 pt-4 pb-2" style={{ height: 200 + results.length * 40 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={results} layout="vertical" margin={{ left: 8, right: 60, top: 0, bottom: 0 }}>
-          <XAxis type="number" hide />
-          <YAxis type="category" dataKey="nom" width={110} tick={{ fill: '#94a3b8', fontSize: 11 }} tickLine={false} axisLine={false} />
-          <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-          <Bar dataKey="prix" name={t('tco_bar_price')} stackId="a" fill="#334155" radius={[0, 0, 0, 0]}>
-            {results.map((r, i) => <Cell key={i} fill={i === 0 ? `${r.color}cc` : '#334155'} />)}
-          </Bar>
-          <Bar dataKey="malus"      name="Malus"                   stackId="a" fill="#f87171" />
-          <Bar dataKey="totalFuel"  name={t('tco_bar_fuel')}       stackId="a" fill="#E6B450" />
-          <Bar dataKey="totalMaint" name={t('tco_bar_maint')}      stackId="a" fill="#64748b" radius={[0, 4, 4, 0]}>
-            <LabelList
-              dataKey="total"
-              position="right"
-              formatter={v => formatCurrency(Math.round(v))}
-              style={{ fill: '#94a3b8', fontSize: 11, fontWeight: 600 }}
-            />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
+  const maxTotal = Math.max(...results.map(r => r.total), 1)
+  const segments = [
+    { key: 'prix',       label: t('tco_bar_price') },
+    { key: 'malus',      label: 'Malus',            color: '#f87171' },
+    { key: 'totalFuel',  label: t('tco_bar_fuel'),  color: '#E6B450' },
+    { key: 'totalMaint', label: t('tco_bar_maint'), color: '#64748b' },
+  ]
 
-function ChartTooltip({ active, payload, label }) {
-  const { t } = useSettings()
-  if (!active || !payload?.length) return null
-  const total = payload.reduce((sum, p) => sum + (p.value || 0), 0)
+  const ariaLabel = results
+    .map(r => `${r.nom}: ${formatNumber(Math.round(r.total))} €`)
+    .join(', ')
+
   return (
-    <div className="bg-navy-800 border border-navy-700/50 rounded-xl p-3 text-xs space-y-1 shadow-lg">
-      <p className="font-bold text-white mb-2 truncate max-w-[180px]">{label}</p>
-      {payload.map(p => (
-        <div key={p.name} className="flex justify-between gap-6">
-          <span style={{ color: p.fill }}>{p.name}</span>
-          <span className="text-white font-semibold">{formatNumber(Math.round(p.value))} €</span>
-        </div>
-      ))}
-      <div className="flex justify-between gap-6 border-t border-navy-700/50 pt-1 mt-1">
-        <span className="font-bold text-slate-300">{t('total_tco')}</span>
-        <span className="font-bold text-cyan-400">{formatNumber(Math.round(total))} €</span>
+    <div className="px-4 pt-4 pb-2" role="img" aria-label={`${t('total_tco')} — ${ariaLabel}`}>
+      <div className="flex flex-col gap-3">
+        {results.map((r, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <span className="text-[11px] text-slate-400 w-24 sm:w-28 flex-shrink-0 truncate text-right" title={r.nom}>
+              {r.nom}
+            </span>
+            <div className="flex-1 flex items-center gap-2 min-w-0">
+              <div className="flex-1 flex h-6 rounded-md overflow-hidden bg-white/[0.03] min-w-0">
+                {segments.map(seg => {
+                  const val = r[seg.key] || 0
+                  if (val <= 0) return null
+                  const pct = (val / maxTotal) * 100
+                  // "prix" segment uses the vehicle colour for the best option, slate otherwise
+                  const color = seg.key === 'prix' ? (i === 0 ? `${r.color}cc` : '#334155') : seg.color
+                  return (
+                    <div
+                      key={seg.key}
+                      style={{ width: `${pct}%`, background: color }}
+                      title={`${seg.label} : ${formatNumber(Math.round(val))} €`}
+                    />
+                  )
+                })}
+              </div>
+              <span
+                className="text-[11px] font-semibold w-16 flex-shrink-0 text-right"
+                style={{ color: i === 0 ? r.color : '#94a3b8' }}
+              >
+                {formatCurrency(Math.round(r.total))}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1.5 justify-center mt-4 pt-3 border-t border-white/5">
+        {segments.map(seg => (
+          <div key={seg.key} className="flex items-center gap-1.5 text-[10px] text-slate-500">
+            <span
+              className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+              style={{ background: seg.key === 'prix' ? '#334155' : seg.color }}
+            />
+            {seg.label}
+          </div>
+        ))}
       </div>
     </div>
   )
