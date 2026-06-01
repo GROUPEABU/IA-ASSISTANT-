@@ -44,11 +44,13 @@ export async function exportToPdf(ref, filename, meta = {}) {
   const el = ref.current
   if (!el) return
 
-  // Palette d'impression
-  const NAVY = [13, 39, 60]
-  const CYAN = [8, 145, 178]
-  const GRAY = [100, 116, 139]
-  const LINE = [203, 213, 225]
+  // Palette d'impression — charte AAF Group (fond blanc, logo version Navy)
+  const NAVY = [13, 39, 60]    // #0D273C — primaire (texte, logo sur fond clair)
+  const SLATE = [57, 63, 74]   // #393F4A — secondaire (sous-titres)
+  const CYAN = [80, 229, 229]  // #50E5E5 — accent (filet, cercle accent)
+  const BONE = [224, 225, 225] // #E0E1E1 — neutre (filets séparateurs)
+  // NB : dans le corps, le cyan est assombri (#0891b2) via PRINT_CSS pour
+  // rester lisible sur blanc (le #50E5E5 charte est réservé aux fonds foncés).
 
   // CSS d'impression injecté uniquement dans le clone (page live intacte)
   const PRINT_CSS = `
@@ -105,45 +107,52 @@ export async function exportToPdf(ref, filename, meta = {}) {
   const dateStr  = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
 
   const drawHeader = () => {
-    // Marque
-    pdf.setFillColor(...CYAN)
-    pdf.circle(margin + 1.6, 11, 1.8, 'F')
+    // Logo mark — « deux cercles, un seul mouvement » (charte AAF Group)
+    // Version Navy pour fond clair ; un cercle accent cyan en chevauchement.
+    const cy = 11
+    pdf.setFillColor(...NAVY)
+    pdf.circle(margin + 2.1, cy, 2, 'F')
+    pdf.setDrawColor(...CYAN)
+    pdf.setLineWidth(0.8)
+    pdf.circle(margin + 4.6, cy, 2, 'S')
+
+    // Wordmark + rattachement marque maître
     pdf.setTextColor(...NAVY)
     pdf.setFont('helvetica', 'bold')
     pdf.setFontSize(13)
-    pdf.text('AUTOBUYUNION', margin + 5, 12.5)
+    pdf.text('AUTOBUYUNION', margin + 9.5, 10.5)
     pdf.setFont('helvetica', 'normal')
-    pdf.setFontSize(7.5)
-    pdf.setTextColor(...GRAY)
-    pdf.text('Espace membres', margin + 5, 16.5)
+    pdf.setFontSize(7)
+    pdf.setTextColor(...SLATE)
+    pdf.text('AAF Group · Espace membres', margin + 9.5, 15)
 
     // Bloc droit : titre + date
     pdf.setFont('helvetica', 'bold')
     pdf.setFontSize(10)
     pdf.setTextColor(...NAVY)
-    pdf.text(title, pageW - margin, 11.5, { align: 'right' })
+    pdf.text(title, pageW - margin, 10.5, { align: 'right' })
     pdf.setFont('helvetica', 'normal')
     pdf.setFontSize(8)
-    pdf.setTextColor(...GRAY)
-    pdf.text(dateStr, pageW - margin, 16, { align: 'right' })
+    pdf.setTextColor(...SLATE)
+    pdf.text(dateStr, pageW - margin, 15, { align: 'right' })
 
-    // Filet séparateur + accent cyan
-    pdf.setDrawColor(...LINE)
-    pdf.setLineWidth(0.3)
-    pdf.line(margin, 20, pageW - margin, 20)
+    // Filet séparateur (bone) + accent cyan court
+    pdf.setDrawColor(...BONE)
+    pdf.setLineWidth(0.4)
+    pdf.line(margin, 19.5, pageW - margin, 19.5)
     pdf.setDrawColor(...CYAN)
-    pdf.setLineWidth(1)
-    pdf.line(margin, 20, margin + 28, 20)
+    pdf.setLineWidth(1.3)
+    pdf.line(margin, 19.5, margin + 24, 19.5)
   }
 
   const drawFooter = (page) => {
-    pdf.setDrawColor(...LINE)
-    pdf.setLineWidth(0.3)
+    pdf.setDrawColor(...BONE)
+    pdf.setLineWidth(0.4)
     pdf.line(margin, pageH - footerH + 4, pageW - margin, pageH - footerH + 4)
     pdf.setFont('helvetica', 'normal')
     pdf.setFontSize(7)
-    pdf.setTextColor(...GRAY)
-    const left = subtitle ? `Autobuyunion · ${subtitle}` : 'Autobuyunion · Espace membres'
+    pdf.setTextColor(...SLATE)
+    const left = subtitle ? `AAF Group · ${subtitle}` : 'AAF Group · Autobuyunion'
     pdf.text(left, margin, pageH - 5)
     pdf.text(`Page ${page} / ${totalPages}`, pageW - margin, pageH - 5, { align: 'right' })
   }
