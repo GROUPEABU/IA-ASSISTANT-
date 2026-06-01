@@ -61,7 +61,8 @@ export default function Chat() {
 
         {/* Welcome state */}
         {isEmpty && !isLoading && (
-          <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6 gap-4 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6">
+           <div className="min-h-full flex flex-col items-center justify-center gap-4">
             <div className="relative">
               <div className="absolute inset-0 rounded-full bg-cyan-400/20 blur-xl scale-150" />
               <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center">
@@ -94,6 +95,7 @@ export default function Chat() {
                 </button>
               ))}
             </div>
+           </div>
           </div>
         )}
 
