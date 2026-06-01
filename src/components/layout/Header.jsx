@@ -17,6 +17,7 @@ export default function Header({ onMenuToggle }) {
     '/objections':  { titleKey: 'page_objections_title', subKey: 'page_objections_sub' },
     '/tco':         { titleKey: 'page_tco_title',        subKey: 'page_tco_sub' },
     '/pitch':       { titleKey: 'page_pitch_title',      subKey: 'page_pitch_sub' },
+    '/compare':     { titleKey: 'compare_title',         subKey: 'compare_subtitle' },
     '/settings':    { titleKey: 'page_settings_title',   subKey: 'page_settings_sub' },
   }
 

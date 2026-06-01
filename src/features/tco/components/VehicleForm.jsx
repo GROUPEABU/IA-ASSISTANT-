@@ -48,7 +48,7 @@ export default function VehicleForm({ vehicle, index, color, canRemove, onUpdate
               value={v.nom}
               onChange={e => onUpdate('nom', e.target.value)}
               placeholder={t('vehicle_name_ph')}
-              className="w-full mt-1 px-3 py-2.5 rounded-lg text-sm text-white bg-white/3 border border-white/10 outline-none"
+              className="w-full mt-1 px-3 py-2.5 rounded-lg text-sm text-white bg-navy-900/60 border border-navy-700/50 outline-none focus:border-cyan-400/50"
               style={{ fontFamily: 'inherit' }}
             />
           </div>
@@ -83,7 +83,7 @@ export default function VehicleForm({ vehicle, index, color, canRemove, onUpdate
               value={v.conso}
               onChange={e => onUpdate('conso', e.target.value)}
               placeholder={CONSUMPTION_PLACEHOLDERS[v.fuelType] || CONSUMPTION_PLACEHOLDERS.thermique}
-              className="w-full mt-1 px-3 py-2.5 rounded-lg text-sm text-white bg-white/3 border border-white/10 outline-none"
+              className="w-full mt-1 px-3 py-2.5 rounded-lg text-sm text-white bg-navy-900/60 border border-navy-700/50 outline-none focus:border-cyan-400/50"
               style={{ fontFamily: 'inherit', MozAppearance: 'textfield' }}
             />
           </div>
@@ -144,7 +144,7 @@ function NumberField({ label, value, onChange, placeholder }) {
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full mt-1 px-3 py-2.5 rounded-lg text-sm text-white bg-white/3 border border-white/10 outline-none"
+        className="w-full mt-1 px-3 py-2.5 rounded-lg text-sm text-white bg-navy-900/60 border border-navy-700/50 outline-none focus:border-cyan-400/50"
         style={{ fontFamily: 'inherit', MozAppearance: 'textfield' }}
       />
     </div>
