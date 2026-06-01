@@ -25,7 +25,7 @@ const CATEGORY_COLORS = {
   concurrence: 'bg-slate-400/10 text-slate-400 border-slate-400/20',
 }
 
-function ObjectionCard({ item, index, isOpen, onToggle }) {
+function ObjectionCard({ item, index, isOpen, onToggle, noAnimate }) {
   const { t } = useSettings()
   const catColor = CATEGORY_COLORS[item.categorie?.toLowerCase()] || CATEGORY_COLORS.concurrence
 
@@ -51,7 +51,7 @@ function ObjectionCard({ item, index, isOpen, onToggle }) {
       </button>
 
       {isOpen && (
-        <div className="px-4 pb-4 pl-8 animate-fade-in">
+        <div className={`px-4 pb-4 pl-8 ${noAnimate ? '' : 'animate-fade-in'}`}>
           <div className="bg-emerald-400/5 border border-emerald-400/20 rounded-xl p-3">
             <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2">{t('recommended_answer')}</p>
             <p className="text-sm text-slate-300 leading-relaxed">{item.reponse}</p>
@@ -110,6 +110,7 @@ export default function Objections() {
   const [error, setError] = useState(null)
   const [generatedFor, setGeneratedFor] = useState('')
   const [exporting, setExporting] = useState(false)
+  const [forceOpenAll, setForceOpenAll] = useState(false)
   const { generated } = useGeneratedProducts()
   const { history, add: addHistory, clear: clearHistory } = useHistory('objections')
 
@@ -166,10 +167,16 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
 
   const handlePdf = async () => {
     setExporting(true)
+    // Déplie toutes les objections avant la capture : le PDF doit contenir
+    // chaque réponse, pas seulement la carte ouverte à l'écran.
+    setForceOpenAll(true)
+    // Laisse React rendre l'état déplié avant le snapshot html2canvas.
+    await new Promise((r) => setTimeout(r, 60))
     try {
       await exportToPdf(objRef, pdfFileName(vehicleName), { title: t('page_objections_title'), subtitle: vehicleName })
     } finally {
       setExporting(false)
+      setForceOpenAll(false)
     }
   }
 
@@ -312,7 +319,8 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
                 key={i}
                 item={item}
                 index={i}
-                isOpen={openIndex === i}
+                isOpen={forceOpenAll || openIndex === i}
+                noAnimate={forceOpenAll}
                 onToggle={() => setOpenIndex(openIndex === i ? -1 : i)}
               />
             ))}
