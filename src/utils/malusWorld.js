@@ -1185,11 +1185,14 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
       }
     case "DE":
       {
-        const co2Component = computeDE(g);
+        // EV 100% exonéré de Kfz-Steuer jusqu'au 31/12/2035 (KraftStG §3d) :
+        // ni composante CO₂, ni composante cylindrée (pas de moteur thermique).
+        const isEVde = fuelType === "ev";
+        const co2Component = isEVde ? 0 : computeDE(g);
         // Composante cylindrée : 2€/100cm³ essence, 9,50€/100cm³ diesel
         const isDiesel = fuelKind === "diesel";
         const cylRate = isDiesel ? 9.50 : 2.00;
-        const cylComponent = Math.round(displacement / 100 * cylRate);
+        const cylComponent = isEVde ? 0 : Math.round(displacement / 100 * cylRate);
         const totalBrut = co2Component + cylComponent;
         const decoteDE = isImported ? getImportDecoteDE(dateImmat) : 0;
         const totalAnnual = Math.round(totalBrut * (1 - decoteDE / 100));
@@ -1390,14 +1393,19 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
       }
     case "PT":
       {
-        const co2Brut = computePT(g);
+        // BEV 100% électrique : isento d'ISV (art. 2 nº2 a) CISV) — ni composante
+        // ambiental (CO₂), ni composante cilindrada.
+        const isEVpt = fuelType === "ev";
+        const co2Brut = isEVpt ? 0 : computePT(g);
         // Composante cylindrée Portugal (Tabela A simplifié 2025)
         let cylBrut = 0;
-        if (displacement <= 1000) cylBrut = displacement * 1.09 - 849.04;else if (displacement <= 1250) cylBrut = displacement * 1.18 - 850.69;else cylBrut = displacement * 5.61 - 6194.88;
-        cylBrut = Math.max(0, Math.round(cylBrut));
-        // Diesel : surtaxe
+        if (!isEVpt) {
+          if (displacement <= 1000) cylBrut = displacement * 1.09 - 849.04;else if (displacement <= 1250) cylBrut = displacement * 1.18 - 850.69;else cylBrut = displacement * 5.61 - 6194.88;
+          cylBrut = Math.max(0, Math.round(cylBrut));
+          // Diesel : surtaxe
+          if (fuelKind === "diesel") cylBrut = Math.round(cylBrut * 1.2);
+        }
         const isDieselPT = fuelKind === "diesel";
-        if (isDieselPT) cylBrut = Math.round(cylBrut * 1.2);
         const totalBrut = co2Brut + cylBrut;
         const decotePT = isImported ? getImportDecotePT(dateImmat) : 0;
         const a = Math.round(totalBrut * (1 - decotePT / 100));
@@ -1519,11 +1527,14 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
       {
         // Calcul par région
         let a, label, notes;
+        const isEVbe = fuelType === "ev";
         if (beRegion === "wallonie") {
+          // EV exonéré de TMC en Wallonie (taxe minimale de mise en circulation)
+          if (isEVbe) { a = 0; }
           // Nouvelle formule Wallonie post-juillet 2025
-          if (g <= 60) a = 250;else if (g <= 105) a = 400;else if (g <= 125) a = 700;else if (g <= 155) a = 1200;else if (g <= 195) a = 2000;else a = 3000;
+          else if (g <= 60) a = 250;else if (g <= 105) a = 400;else if (g <= 125) a = 700;else if (g <= 155) a = 1200;else if (g <= 195) a = 2000;else a = 3000;
           label = "Wallonie";
-          notes = "Wallonie (juillet 2025) : éco-malus supprimé, nouvelle formule kW+CO₂+masse+âge.";
+          notes = "Wallonie (juillet 2025) : éco-malus supprimé, nouvelle formule kW+CO₂+masse+âge. EV exonéré.";
         } else if (beRegion === "flandre") {
           // BIV Flandre Vlabel — formule officielle
           // BIV = ((CO2×4,5 + 50)/250) × 4500 × LC + 33,51
@@ -1547,10 +1558,11 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           label = "Flandre (BIV)";
           notes = `Flandre BIV (Vlabel) : (CO₂×4,5+50)/250 × 4500 × LC + 33,51. LC≈0,849 (Euro 6d depuis 09/2018), 1,0 sinon. EV exonéré.`;
         } else {
-          // Bruxelles : basé sur puissance fiscale, estimation
-          if (g <= 100) a = 61;else if (g <= 125) a = 123;else if (g <= 155) a = 495;else if (g <= 200) a = 867;else a = 2478;
+          // Bruxelles : basé sur puissance fiscale, estimation. EV exonéré.
+          if (isEVbe) { a = 0; }
+          else if (g <= 100) a = 61;else if (g <= 125) a = 123;else if (g <= 155) a = 495;else if (g <= 200) a = 867;else a = 2478;
           label = "Bruxelles-Capitale";
-          notes = "Bruxelles : taxe basée sur puissance fiscale (CV), pas directement CO₂.";
+          notes = "Bruxelles : taxe basée sur puissance fiscale (CV), pas directement CO₂. EV exonéré.";
         }
         // Décote import Belgique (dégressivité légale)
         const decoteBE = isImported ? getImportDecoteBE(dateImmat) : 0;
@@ -2109,11 +2121,15 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
     case "IE":
       { const b=[{max:50,r:7},{max:80,r:9},{max:110,r:12.5},{max:130,r:17},{max:155,r:23},{max:190,r:30},{max:230,r:36},{max:999,r:41}];
         const bd=b.find(function(x){return g<=x.max;})||b[b.length-1];
-        const vBrut=Math.round(vehiclePrice*bd.r/100);
+        // BEV : relief VRT (crédit ≤ €5 000, OMSP ≤ €50k) qui ramène le VRT à 0
+        // pour la quasi-totalité des modèles, jusqu'au 31/12/2025. Dès 2026 : 7%.
+        const isEVie = fuelType === "ev";
+        const evReliefIE = isEVie && new Date(dateImmat) < new Date("2026-01-01");
+        let vBrut = evReliefIE ? 0 : Math.round(vehiclePrice*bd.r/100);
         const decoteIE = isImported ? getImportDecoteIE(dateImmat) : 0;
         const v = Math.round(vBrut * (1 - decoteIE / 100));
         const evNote = new Date(dateImmat) >= new Date("2026-01-01") ? "EV : 7% OMSP (relief supprimé au 01/01/2026 — Budget IE 2026)" : "EV : 0% + crédit ≤€5 000 OMSP (immat. avant 01/01/2026)";
-        return {tax_name:"VRT (Vehicle Registration Tax)",threshold_gkm:51,max_penalty_eur:null,currency_symbol:"€",system_description:`Finance Act 1992 Part II + Budget IE 2026. VRT = % OMSP irlandais, 20 bandes CO₂ WLTP (7–41%). Relief EV ≤€50k OMSP supprimé au 01/01/2026.${isImported ? ` Importé : décote ${decoteIE}% (Revenue.ie OMSP table).` : ""}`,brackets:[{min_gkm:0,max_gkm:50,penalty:"7%",label:"EV / très faible"},{min_gkm:51,max_gkm:155,penalty:"7–23%",label:"A–F"},{min_gkm:156,max_gkm:230,penalty:"30–36%",label:"G–I"},{min_gkm:231,max_gkm:999,penalty:"41%",label:"J max"}],exemptions:[evNote],specific_penalty:v===0?"0 €":"~"+v.toLocaleString("fr-FR")+" €"+(isImported?" (−"+decoteIE+"%)":""),specific_penalty_amount:v,has_malus:true,severity:sev(v),notes:`${bd.r}% × ${vehiclePrice.toLocaleString()} €${isImported ? ` − ${decoteIE}% (importé)` : ""} = ${v.toLocaleString()} €. NOx levy en supplément selon émissions.`,source:"Revenue.ie",source_url:"https://www.revenue.ie/en/vrt/calculating-vrt/applying-tax.aspx",legal_ref:"Finance Act 1992 Part II Section 131 · Revenue VRT Manual Chapter 3 · Finance Act 2025 (Budget IE 2026)",reliability:"official"}; }
+        return {tax_name:"VRT (Vehicle Registration Tax)",threshold_gkm:51,max_penalty_eur:null,currency_symbol:"€",system_description:`Finance Act 1992 Part II + Budget IE 2026. VRT = % OMSP irlandais, 20 bandes CO₂ WLTP (7–41%). Relief EV ≤€50k OMSP supprimé au 01/01/2026.${isImported ? ` Importé : décote ${decoteIE}% (Revenue.ie OMSP table).` : ""}`,brackets:[{min_gkm:0,max_gkm:50,penalty:"7%",label:"EV / très faible"},{min_gkm:51,max_gkm:155,penalty:"7–23%",label:"A–F"},{min_gkm:156,max_gkm:230,penalty:"30–36%",label:"G–I"},{min_gkm:231,max_gkm:999,penalty:"41%",label:"J max"}],exemptions:[evNote],specific_penalty:v===0?"0 €":"~"+v.toLocaleString("fr-FR")+" €"+(isImported?" (−"+decoteIE+"%)":""),specific_penalty_amount:v,has_malus:v>0,severity:sev(v),notes:`${bd.r}% × ${vehiclePrice.toLocaleString()} €${isImported ? ` − ${decoteIE}% (importé)` : ""} = ${v.toLocaleString()} €. NOx levy en supplément selon émissions.`,source:"Revenue.ie",source_url:"https://www.revenue.ie/en/vrt/calculating-vrt/applying-tax.aspx",legal_ref:"Finance Act 1992 Part II Section 131 · Revenue VRT Manual Chapter 3 · Finance Act 2025 (Budget IE 2026)",reliability:"official"}; }
     case "LU":
       { const t=g<=90?0:g<=130?Math.round((g-90)*8):g<=175?Math.round(40*8+(g-130)*15):Math.round(40*8+45*15+(g-175)*25);
         return {tax_name:"Taxe d’immatriculation CO₂ (Luxembourg)",threshold_gkm:91,max_penalty_eur:null,currency_symbol:"€",system_description:"Loi 22/12/2006 + RGD 23/12/2016 - Progressive selon CO₂ WLTP. 8 €/g (91–130g), 15 €/g (131–175g), 25 €/g au-delà.",brackets:[{min_gkm:0,max_gkm:90,penalty:"0 €",label:"Exempté"},{min_gkm:91,max_gkm:130,penalty:"8 €/g",label:"Basse"},{min_gkm:131,max_gkm:175,penalty:"15 €/g",label:"Haute"},{min_gkm:176,max_gkm:999,penalty:"25 €/g",label:"Max"}],exemptions:["EV : exempté + bonus €5 000"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" €",specific_penalty_amount:t,has_malus:g>90,severity:sev(t),notes:"Parmi les plus favorables aux EV d’Europe.",source:"Gouvernement du Luxembourg (Administration de l'enregistrement)",source_url:"https://guichet.public.lu/fr/citoyens/transport/vehicules/immatriculation/taxe-immatriculation.html",legal_ref:"Loi du 22/12/2006 (Mémorial A-N° 227) · RGD du 23/12/2016 · CO₂ WLTP depuis 01/01/2020",reliability:"official"}; }
