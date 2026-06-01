@@ -103,6 +103,7 @@ Sois direct, argumenté et chiffré.`
               <select
                 value={id || ''}
                 onChange={(e) => setSlot(i, e.target.value)}
+                aria-label={t('compare_vehicle_n').replace('{n}', i + 1)}
                 className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
                            text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition pr-8"
               >

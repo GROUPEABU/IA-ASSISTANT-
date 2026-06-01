@@ -404,7 +404,7 @@ export default function PriceWatch() {
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('make_label')}</label>
             <input
               type="text" value={make} onChange={e => setMake(e.target.value)}
-              list="makes-list" placeholder={t('make_ph')}
+              list="makes-list" placeholder={t('make_ph')} aria-label={t('make_label')}
               className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
                          text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition"
             />
@@ -417,7 +417,7 @@ export default function PriceWatch() {
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('model_label')}</label>
             <input
               type="text" value={model} onChange={e => setModel(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && search()} placeholder={t('price_model_ph')}
+              onKeyDown={e => e.key === 'Enter' && search()} placeholder={t('price_model_ph')} aria-label={t('model_label')}
               className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
                          text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition"
             />
@@ -442,7 +442,7 @@ export default function PriceWatch() {
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('price_finition_label')}</label>
             <input
               type="text" value={finition} onChange={e => setFinition(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && search()} placeholder={t('price_finition_ph')}
+              onKeyDown={e => e.key === 'Enter' && search()} placeholder={t('price_finition_ph')} aria-label={t('price_finition_label')}
               className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
                          text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition"
             />

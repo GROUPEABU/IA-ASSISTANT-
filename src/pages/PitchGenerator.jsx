@@ -184,6 +184,7 @@ Réponds UNIQUEMENT en JSON valide :
             onChange={(e) => { setCustomVehicle(e.target.value); setVehicleId('') }}
             onKeyDown={(e) => e.key === 'Enter' && generate()}
             placeholder={t('vehicle_ph')}
+            aria-label={t('vehicle_label')}
             className="input-field"
           />
         </div>
