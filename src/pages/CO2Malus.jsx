@@ -134,6 +134,8 @@ export default function CO2Malus() {
         isImported={malus.isImported}       setIsImported={malus.setIsImported}
         dateImmat={malus.dateImmat}
         formatCurrency={formatCurrency}
+        selectedCountry={malus.selectedCountry}
+        activeParams={malus.result?.advanced_params}
       />
 
       <ModeTabs value={mode} onChange={setMode} />

@@ -6,14 +6,81 @@ import {
 import { useSettings } from '@/contexts/SettingsContext'
 import SegButton from './SegButton'
 
+// Countries that use each parameter — shown as full names when no country is selected
+const FIELD_COUNTRIES = {
+  displacement:  ['DE', 'PT', 'NO'],
+  fuelKind:      ['DE', 'PT', 'NL', 'IE'],
+  vehiclePrice:  ['DK', 'ES', 'AT', 'FI', 'IE', 'GB'],
+  beRegion:      ['BE'],
+  esRegion:      ['ES'],
+  childrenCount: ['FR'],
+  isImported:    ['FR', 'NL', 'PT', 'DE', 'ES', 'BE', 'IE'],
+}
+
+const COUNTRY_META = {
+  DE: { name: 'Allemagne',    flag: '🇩🇪' },
+  PT: { name: 'Portugal',     flag: '🇵🇹' },
+  NO: { name: 'Norvège',      flag: '🇳🇴' },
+  NL: { name: 'Pays-Bas',     flag: '🇳🇱' },
+  IE: { name: 'Irlande',      flag: '🇮🇪' },
+  DK: { name: 'Danemark',     flag: '🇩🇰' },
+  ES: { name: 'Espagne',      flag: '🇪🇸' },
+  AT: { name: 'Autriche',     flag: '🇦🇹' },
+  FI: { name: 'Finlande',     flag: '🇫🇮' },
+  GB: { name: 'Royaume-Uni',  flag: '🇬🇧' },
+  BE: { name: 'Belgique',     flag: '🇧🇪' },
+  FR: { name: 'France',       flag: '🇫🇷' },
+}
+
 /**
- * Collapsible "Advanced parameters" panel for the malus calculator.
- * Groups cylindrée / fuel kind / vehicle price / regional toggles /
- * dependent children / imported flag.
+ * Contextual country hint shown below each parameter section.
+ * - No country selected → list full country names that use this field
+ * - Country selected + field active → green "Active" badge
+ * - Country selected + field inactive → muted "Not used" note
  *
- * Each section operates on a single parent-controlled value via setters
- * to avoid prop-drilling a single mega-state object.
+ * For isImported, we check against FIELD_COUNTRIES rather than advanced_params
+ * (since import decote is not listed as an advanced_param on country records).
  */
+function CountryHint({ fieldKey, selectedCountry, activeParams }) {
+  if (selectedCountry) {
+    let isActive
+    if (fieldKey === 'isImported') {
+      isActive = FIELD_COUNTRIES.isImported.includes(selectedCountry.code)
+    } else {
+      isActive = activeParams?.includes(fieldKey)
+    }
+    if (isActive) {
+      return (
+        <div className="mt-2 flex items-center gap-1.5">
+          <span
+            className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
+            style={{ color: '#34d399', background: 'rgba(52,211,153,0.10)', border: '1px solid rgba(52,211,153,0.20)' }}
+          >
+            ✓ Actif · {selectedCountry.flag} {selectedCountry.name}
+          </span>
+        </div>
+      )
+    }
+    return (
+      <p className="mt-2 text-[10px] text-slate-600 italic">
+        Non requis pour {selectedCountry.flag} {selectedCountry.name}
+      </p>
+    )
+  }
+
+  // No country selected — list relevant countries with full names
+  const codes = FIELD_COUNTRIES[fieldKey] || []
+  if (!codes.length) return null
+  return (
+    <p className="mt-2 text-[10px] text-slate-600 leading-relaxed">
+      {codes.map(code => {
+        const m = COUNTRY_META[code]
+        return m ? `${m.flag} ${m.name}` : code
+      }).join(' · ')}
+    </p>
+  )
+}
+
 export default function AdvancedParams({
   show, onToggle,
   displacement, setDisplacement,
@@ -25,8 +92,12 @@ export default function AdvancedParams({
   isImported, setIsImported,
   dateImmat,
   formatCurrency,
+  selectedCountry,
+  activeParams,
 }) {
   const { t } = useSettings()
+  const hint = { selectedCountry, activeParams }
+
   return (
     <div className="mb-2">
       <button
@@ -63,13 +134,13 @@ export default function AdvancedParams({
 
       {show && (
         <div className="glass-card mt-2 overflow-hidden divide-y divide-white/5">
-          <DisplacementSection value={displacement} onChange={setDisplacement} />
-          <FuelKindSection      value={fuelKind}      onChange={setFuelKind} />
-          <VehiclePriceSection  value={vehiclePrice}  onChange={setVehiclePrice} formatCurrency={formatCurrency} />
-          <BeRegionSection      value={beRegion}      onChange={setBeRegion} />
-          <EsRegionSection      value={esRegion}      onChange={setEsRegion} />
-          <ChildrenSection      value={childrenCount} onChange={setChildrenCount} />
-          <ImportedSection      value={isImported}    onChange={setIsImported} dateImmat={dateImmat} />
+          <DisplacementSection value={displacement} onChange={setDisplacement} hint={hint} />
+          <FuelKindSection      value={fuelKind}      onChange={setFuelKind}      hint={hint} />
+          <VehiclePriceSection  value={vehiclePrice}  onChange={setVehiclePrice} formatCurrency={formatCurrency} hint={hint} />
+          <BeRegionSection      value={beRegion}      onChange={setBeRegion}      hint={hint} />
+          <EsRegionSection      value={esRegion}      onChange={setEsRegion}      hint={hint} />
+          <ChildrenSection      value={childrenCount} onChange={setChildrenCount} hint={hint} />
+          <ImportedSection      value={isImported}    onChange={setIsImported}    dateImmat={dateImmat} hint={hint} />
         </div>
       )}
     </div>
@@ -78,7 +149,7 @@ export default function AdvancedParams({
 
 // ── Sub-sections ─────────────────────────────────────────────────────────────
 
-function DisplacementSection({ value, onChange }) {
+function DisplacementSection({ value, onChange, hint }) {
   const { t } = useSettings()
   return (
     <div className="p-4">
@@ -109,12 +180,12 @@ function DisplacementSection({ value, onChange }) {
           </button>
         ))}
       </div>
-      <div className="mt-2 text-[11px] text-slate-600">🇩🇪 DE · 🇵🇹 PT · 🇳🇴 NO</div>
+      <CountryHint fieldKey="displacement" {...hint} />
     </div>
   )
 }
 
-function FuelKindSection({ value, onChange }) {
+function FuelKindSection({ value, onChange, hint }) {
   const { t } = useSettings()
   return (
     <div className="p-4">
@@ -127,12 +198,12 @@ function FuelKindSection({ value, onChange }) {
           { k: 'diesel', l: t('malus_diesel') },
         ]}
       />
-      <div className="mt-2 text-[11px] text-slate-600">🇩🇪 DE · 🇵🇹 PT · 🇳🇱 NL</div>
+      <CountryHint fieldKey="fuelKind" {...hint} />
     </div>
   )
 }
 
-function VehiclePriceSection({ value, onChange, formatCurrency }) {
+function VehiclePriceSection({ value, onChange, formatCurrency, hint }) {
   const { t } = useSettings()
   return (
     <div className="p-4">
@@ -161,12 +232,12 @@ function VehiclePriceSection({ value, onChange, formatCurrency }) {
           >{v / 1000}k</button>
         ))}
       </div>
-      <div className="mt-2 text-[11px] text-slate-600">🇪🇸 ES · 🇦🇹 AT · 🇫🇮 FI · 🇮🇪 IE</div>
+      <CountryHint fieldKey="vehiclePrice" {...hint} />
     </div>
   )
 }
 
-function BeRegionSection({ value, onChange }) {
+function BeRegionSection({ value, onChange, hint }) {
   const { t } = useSettings()
   return (
     <div className="p-4">
@@ -181,11 +252,12 @@ function BeRegionSection({ value, onChange }) {
           { k: 'bruxelles', l: 'Bruxelles' },
         ]}
       />
+      <CountryHint fieldKey="beRegion" {...hint} />
     </div>
   )
 }
 
-function EsRegionSection({ value, onChange }) {
+function EsRegionSection({ value, onChange, hint }) {
   const { t } = useSettings()
   return (
     <div className="p-4">
@@ -201,17 +273,17 @@ function EsRegionSection({ value, onChange }) {
           { k: 'ceuta',    l: 'Ceuta / Melilla' },
         ]}
       />
+      <CountryHint fieldKey="esRegion" {...hint} />
     </div>
   )
 }
 
-function ChildrenSection({ value, onChange }) {
+function ChildrenSection({ value, onChange, hint }) {
   const { t } = useSettings()
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-2">
         <span className="text-sm font-semibold text-slate-200">{t('malus_children_label')}</span>
-        <span className="text-[11px] text-slate-600">🇫🇷 ≥3 : −20 g/km</span>
       </div>
       <SegButton
         cols={5}
@@ -224,11 +296,12 @@ function ChildrenSection({ value, onChange }) {
           {t('malus_large_family').replace('{n}', value * 20)}
         </div>
       )}
+      <CountryHint fieldKey="childrenCount" {...hint} />
     </div>
   )
 }
 
-function ImportedSection({ value, onChange, dateImmat }) {
+function ImportedSection({ value, onChange, dateImmat, hint }) {
   const { t } = useSettings()
   return (
     <div className="p-4">
@@ -239,11 +312,8 @@ function ImportedSection({ value, onChange, dateImmat }) {
           onChange={e => onChange(e.target.checked)}
           className="mt-0.5 w-5 h-5 accent-cyan-400 cursor-pointer flex-shrink-0"
         />
-        <div>
+        <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-slate-200">{t('malus_imported_label')}</div>
-          <div className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-            {t('malus_imported_note')} — 🇫🇷 · 🇳🇱 · 🇵🇹 · 🇩🇪 · 🇪🇸 · 🇧🇪 · 🇮🇪
-          </div>
           {value && (
             <div className="mt-2 text-xs text-cyan-400 bg-cyan-400/7 rounded-lg px-3 py-2 leading-relaxed">
               🇫🇷 −{getImportDecote(dateImmat)}% · 🇳🇱 −{getImportDecoteNL(dateImmat)}%
@@ -252,6 +322,7 @@ function ImportedSection({ value, onChange, dateImmat }) {
               · 🇮🇪 −{getImportDecoteIE(dateImmat)}%
             </div>
           )}
+          <CountryHint fieldKey="isImported" {...hint} />
         </div>
       </label>
     </div>
