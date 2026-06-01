@@ -71,6 +71,7 @@ export default {
     stat_countries: 'Pays couverts',
     stat_tools: 'Outils interactifs',
     stat_price_products: 'Veille & Produits',
+    stat_markets: 'Marchés VO & VN',
     hub_access: 'Accéder',
     // Hub tool cards
     tool_products_title: 'Fiches & Rapports Produits',
@@ -273,8 +274,8 @@ export default {
     co2_disclaimer: "Les montants affichés sont fournis à titre indicatif et ne constituent pas un conseil fiscal. Les barèmes sont susceptibles d\'évoluer — vérifiez auprès de l\'autorité compétente de chaque pays avant toute acquisition.",
     // Settings
     settings_api_section: 'API & Intégrations',
-    settings_api_key_label: 'Clé API IA',
-    settings_api_key_desc: "Clé d\'accès pour l\'assistant intelligent et les analyses de marché",
+    settings_api_key_label: 'Clé API IA (optionnel)',
+    settings_api_key_desc: "Optionnel — l\'assistant fonctionne déjà sans clé. Renseignez-la uniquement pour utiliser votre propre clé d\'accès.",
     settings_api_power_label: 'Puissance IA',
     settings_api_power_desc: 'Niveau de traitement utilisé pour les analyses et générations',
     settings_standard: 'Standard',

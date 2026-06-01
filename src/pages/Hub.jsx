@@ -29,7 +29,7 @@ export default function Hub() {
   const stats = [
     { label: '40 pays',        value: '40',  icon: Globe,      color: '#50E5E5', sub: t('stat_countries') },
     { label: '7 outils',       value: '7',   icon: Zap,        color: '#a78bfa', sub: t('stat_tools') },
-    { label: 'Veille & Prix',  value: 'VO·VN',icon: TrendingUp, color: '#34d399', sub: t('stat_price_products') },
+    { label: 'Marchés',        value: '2',   icon: TrendingUp, color: '#34d399', sub: t('stat_markets') },
   ]
 
   return (
