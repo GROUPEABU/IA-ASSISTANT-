@@ -1,21 +1,7 @@
-// Vercel Edge Function — Collecte prix multi-sources + fallback AI knowledge
+// Vercel Edge Function — Construit les URLs de référence (La Centrale, etc.).
+// Le scraping est abandonné (proxy systématiquement bloqué 403) : la donnée
+// live provient désormais de l'outil web_search de Claude côté client.
 export const config = { runtime: 'edge' }
-
-async function jinaFetch(url, timeoutMs = 12000) {
-  const res = await fetch(`https://r.jina.ai/${url}`, {
-    headers: {
-      Accept: 'text/plain',
-      'X-Return-Format': 'text',
-      'X-Timeout': '10',
-      'X-No-Cache': 'true',
-    },
-    signal: AbortSignal.timeout(timeoutMs),
-  })
-  if (!res.ok) throw new Error(`${res.status}`)
-  const text = await res.text()
-  if (text.length < 120) throw new Error('empty')
-  return text.slice(0, 8000)
-}
 
 function normCode(str) {
   return str.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
@@ -45,12 +31,12 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ error: 'make ou model requis' }), { status: 400 })
   }
 
-  const makeCode = normCode(make)
+  const makeCode  = normCode(make)
   const modelCode = normCode(model)
   const makeSlug  = normSlug(make)
   const modelSlug = normSlug(model)
 
-  // ── La Centrale URL ──────────────────────────────────────────────────────────
+  // La Centrale — format réel : makesModelsCommercialNames=MARQUE::MODELE
   const makesParam = makeCode && modelCode ? `${makeCode}::${modelCode}` : makeCode || modelCode
   const cParams = [`makesModelsCommercialNames=${encodeURIComponent(makesParam)}`]
   if (type === 'vn') cParams.push('isNew=true')
@@ -63,25 +49,20 @@ export default async function handler(req) {
   if (carrosserie) cParams.push(`carTypes=${encodeURIComponent(carrosserie)}`)
   const centraleUrl = `https://www.lacentrale.fr/listing?${cParams.join('&')}`
 
-  // ── Le Bon Coin URL ──────────────────────────────────────────────────────────
   const lbcParts = [make, model ? `"${model}"` : '', finition ? `"${finition}"` : '', yearMin || ''].filter(Boolean).join(' ')
   const lbcUrl = `https://www.leboncoin.fr/recherche?category=2&text=${encodeURIComponent(lbcParts)}&sort=price&order=asc`
 
-  // ── AutoScout24 France URL ───────────────────────────────────────────────────
   const asParams = []
   if (type === 'vn') asParams.push('atype=N')
-  if (yearMin)   asParams.push(`fregfrom=${yearMin}`)
-  if (yearMax)   asParams.push(`fregto=${yearMax}`)
+  if (yearMin)    asParams.push(`fregfrom=${yearMin}`)
+  if (yearMax)    asParams.push(`fregto=${yearMax}`)
   if (mileageMax) asParams.push(`kmto=${mileageMax}`)
   const asQuery = asParams.length ? `?${asParams.join('&')}` : ''
   const autoScoutUrl = makeSlug && modelSlug
-    ? `https://www.autoscout24.fr/lst/${makeSlug}/${modelSlug}${asQuery}`
-    : null
+    ? `https://www.autoscout24.fr/lst/${makeSlug}/${modelSlug}${asQuery}` : null
 
-  // ── Caradisiac URL ───────────────────────────────────────────────────────────
   const caraUrl = makeSlug && modelSlug
-    ? `https://www.caradisiac.com/occasion/${makeSlug}/${modelSlug}/`
-    : null
+    ? `https://www.caradisiac.com/occasion/${makeSlug}/${modelSlug}/` : null
 
   const sources = [
     { name: 'La Centrale', url: centraleUrl },
@@ -90,18 +71,10 @@ export default async function handler(req) {
     ...(caraUrl ? [{ name: 'Caradisiac', url: caraUrl }] : []),
   ]
 
-  const results = await Promise.allSettled(
-    sources.map(async (s) => ({ ...s, content: await jinaFetch(s.url) }))
-  )
-
-  const data = results
-    .filter((r) => r.status === 'fulfilled' && r.value.content?.length > 120)
-    .map((r) => r.value)
-
   return new Response(
     JSON.stringify({
-      sources: data,
-      hasLiveData: data.length > 0,
+      sources,
+      hasLiveData: false, // la donnée live vient de web_search côté client
       fetchedAt: new Date().toISOString(),
       centraleUrl,
       filters: { make, model, finition, carrosserie, type, yearMin, yearMax, mileageMax, fuel, gearbox },

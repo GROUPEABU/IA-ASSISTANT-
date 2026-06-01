@@ -45,11 +45,7 @@ async function fetchPrices(filters) {
   return res.json()
 }
 
-async function analyzePrices(filters, sourcesData, hasLiveData, fuels, gearboxes, bodies, lang = 'fr') {
-  const context = sourcesData.length > 0
-    ? sourcesData.map(s => `=== ${s.name} ===\n${s.content}`).join('\n\n')
-    : ''
-
+async function analyzePrices(filters, fuels, gearboxes, bodies, lang = 'fr') {
   const vehicleDesc = [
     filters.make, filters.model,
     filters.finition || '',
@@ -66,11 +62,12 @@ async function analyzePrices(filters, sourcesData, hasLiveData, fuels, gearboxes
     ? `\n⚠️ FILTRE FINITION STRICT : Analyse UNIQUEMENT la finition/version "${filters.finition}".`
     : ''
 
-  const hint = context
-    ? `\n\nIndices d'annonces déjà collectées (à compléter par ta recherche) :\n${context}`
-    : ''
-
-  const dataSection = `RECHERCHE WEB OBLIGATOIRE : utilise l'outil de recherche web pour trouver les annonces ACTUELLES de ce véhicule sur La Centrale, LeBonCoin, AutoScout24 et Caradisiac. Recherche des requêtes précises (ex: "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.yearMin || ''} prix occasion"). Lis les prix réels affichés, élimine les annonces qui ne correspondent pas exactement au véhicule cible, puis calcule les statistiques sur les prix réellement trouvés. Si la recherche web ne renvoie rien d'exploitable, base-toi sur ta connaissance experte du marché et signale-le dans "alerte".${hint}`
+  const dataSection = `RECHERCHE WEB OBLIGATOIRE — commence IMPÉRATIVEMENT par utiliser l'outil de recherche web (plusieurs requêtes) AVANT toute estimation. Cherche les annonces ACTUELLES de ce véhicule, ex :
+- "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.yearMin || ''} occasion prix lacentrale"
+- "${filters.make} ${filters.model} ${filters.finition || ''} leboncoin"
+- "${filters.make} ${filters.model} ${filters.finition || ''} autoscout24 occasion"
+Lis les prix réels trouvés, ne garde que les annonces correspondant EXACTEMENT au véhicule cible, puis calcule les statistiques sur ces prix réels.
+N'invente JAMAIS d'erreur "403/404" : décris seulement ce que tu as réellement trouvé. Si après recherche tu n'as vraiment aucune annonce exploitable, alors seulement bascule sur ta connaissance experte du marché et indique-le sobrement dans "alerte".`
 
   const prompt = `Tu es expert en cote et marché automobile ${filters.type === 'vn' ? 'VN (véhicule neuf)' : 'VO (occasion)'} pour Autobuyunion, dealer professionnel en France.
 Véhicule cible : "${vehicleDesc}"${finitionFilter}
@@ -274,10 +271,10 @@ export default function PriceWatch() {
       setCentraleUrl(raw.centraleUrl || '')
 
       setStep(t('price_step_calculating'))
-      const analysis = await analyzePrices(filters, raw.sources || [], raw.hasLiveData || false, FUELS, GEARBOXES, BODIES, lang)
-      // hasLiveData = vrai si Claude a réellement effectué une recherche web,
-      // sinon vrai si le proxy a ramené du contenu exploitable.
-      const finalResult = { ...analysis, sources: raw.sources, hasLiveData: analysis.usedWebSearch || raw.hasLiveData }
+      const analysis = await analyzePrices(filters, FUELS, GEARBOXES, BODIES, lang)
+      // hasLiveData = vrai uniquement si Claude a réellement effectué une
+      // recherche web (server_tool_use), sinon estimation experte.
+      const finalResult = { ...analysis, sources: raw.sources, hasLiveData: analysis.usedWebSearch }
       setResult(finalResult)
       addHistory({ searchLabel: label, type: filters.type, result: finalResult })
     } catch (err) {
