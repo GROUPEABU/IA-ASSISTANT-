@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, X, Sparkles, Loader2, AlertCircle } from 'lucide-react'
 import { generateProductFromWeb } from '@/services/generateProduct'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -20,6 +20,13 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [step, setStep] = useState('idle') // idle | loading | done
+
+  // Close on Escape — standard dialog affordance for keyboard users.
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   const generate = async (q) => {
     const search = q || query
@@ -47,8 +54,13 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative w-full sm:max-w-lg bg-navy-800 border border-navy-700/70
-                      rounded-t-2xl sm:rounded-2xl shadow-2xl animate-slide-up">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('modal_generate_sheet')}
+        className="relative w-full sm:max-w-lg bg-navy-800 border border-navy-700/70
+                      rounded-t-2xl sm:rounded-2xl shadow-2xl animate-slide-up"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-navy-700/50">
           <div className="flex items-center gap-2">
@@ -58,7 +70,7 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
               <p className="text-xs text-slate-500">{t('modal_ai_subtitle')}</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-white transition">
+          <button onClick={onClose} aria-label={t('close') || 'Fermer'} className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-white transition">
             <X size={18} />
           </button>
         </div>

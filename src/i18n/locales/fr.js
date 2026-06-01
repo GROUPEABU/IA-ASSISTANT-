@@ -98,6 +98,7 @@ export default {
     exempt: 'Exonéré',
     view_sheet: 'Voir la fiche complète',
     back: 'Retour',
+    close: 'Fermer',
     download_pdf: 'PDF',
     tab_sheet: 'Fiche produit',
     tab_market: 'Analyse marché',

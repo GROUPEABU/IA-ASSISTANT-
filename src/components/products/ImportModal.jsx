@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { X, Upload, FileSpreadsheet, AlertCircle, Loader2, CheckCircle2, Car } from 'lucide-react'
 import { parseImportFile } from '@/services/importParser'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -15,6 +15,13 @@ export default function ImportModal({ onImported, onClose }) {
   const [error, setError] = useState(null)
   const [preview, setPreview] = useState(null) // { products, vehicleCount, modelCount }
   const [fileName, setFileName] = useState('')
+
+  // Close on Escape — standard dialog affordance for keyboard users.
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   const handleFile = async (file) => {
     if (!file) return
@@ -42,8 +49,13 @@ export default function ImportModal({ onImported, onClose }) {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full sm:max-w-2xl max-h-[92vh] flex flex-col bg-navy-800
-                      border border-navy-700/70 rounded-t-2xl sm:rounded-2xl shadow-2xl animate-slide-up">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('import_title')}
+        className="relative w-full sm:max-w-2xl max-h-[92vh] flex flex-col bg-navy-800
+                      border border-navy-700/70 rounded-t-2xl sm:rounded-2xl shadow-2xl animate-slide-up"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-navy-700/50 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -53,7 +65,7 @@ export default function ImportModal({ onImported, onClose }) {
               <p className="text-xs text-slate-500">{t('import_subtitle')}</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-white transition">
+          <button onClick={onClose} aria-label={t('close') || 'Fermer'} className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-white transition">
             <X size={18} />
           </button>
         </div>

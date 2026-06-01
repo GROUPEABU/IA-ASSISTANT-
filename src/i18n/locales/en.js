@@ -89,6 +89,7 @@ export default {
     exempt: 'Exempt',
     view_sheet: 'View full sheet',
     back: 'Back',
+    close: 'Close',
     download_pdf: 'PDF',
     tab_sheet: 'Product sheet',
     tab_market: 'Market analysis',
