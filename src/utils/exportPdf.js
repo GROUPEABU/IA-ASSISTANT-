@@ -77,19 +77,44 @@ export async function exportToPdf(ref, filename, meta = {}) {
     .pdf-root svg { overflow: visible !important; }
   `
 
-  const canvas = await html2canvas(el, {
+  // ── Rendu bloc par bloc ───────────────────────────────────────────────────
+  // Chaque bloc de premier niveau est capturé séparément puis empilé page par
+  // page : un bloc n'est JAMAIS coupé en deux (sauf s'il dépasse une page
+  // entière, où il est alors tranché seul). windowWidth fige la largeur de mise
+  // en page → rendu identique sur mobile comme sur desktop. Largeur < md (768)
+  // pour forcer une colonne unique : libellés/valeurs alignés, plus lisible.
+  const RENDER_W = 720
+
+  // Recolore aussi l'élément racine capturé (et pas seulement ses descendants).
+  const EXTRA_CSS = `
+    .pdf-root.glass-card,
+    .pdf-root[class*="bg-navy"], .pdf-root[class*="bg-slate"], .pdf-root[class*="bg-"] {
+      background: #ffffff !important; border: 1px solid #e2e8f0 !important;
+    }`
+
+  const renderNode = (node) => html2canvas(node, {
     scale: 2,
     backgroundColor: '#ffffff',
     useCORS: true,
     allowTaint: false,
     logging: false,
+    windowWidth: RENDER_W,
     onclone: (doc, cloned) => {
       cloned.classList.add('pdf-root')
       const style = doc.createElement('style')
-      style.textContent = PRINT_CSS
+      style.textContent = PRINT_CSS + EXTRA_CSS
       doc.head.appendChild(style)
     },
   })
+
+  // Blocs de premier niveau (on descend un éventuel wrapper unique).
+  let host = el
+  if (host.children.length === 1 && host.firstElementChild.children.length > 1) {
+    host = host.firstElementChild
+  }
+  const nodes = [...host.children].filter((n) => n.getBoundingClientRect().height > 0)
+  const blocks = []
+  for (const node of (nodes.length ? nodes : [el])) blocks.push(await renderNode(node))
 
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const pageW = pdf.internal.pageSize.getWidth()
@@ -100,10 +125,40 @@ export async function exportToPdf(ref, filename, meta = {}) {
   const footerH  = 12   // hauteur réservée au pied de page
   const usableW  = pageW - margin * 2
   const usableH  = pageH - headerH - footerH
+  const GAP_MM   = 3    // espace entre deux blocs
 
-  const pxPerMm  = canvas.width / usableW
-  const sliceHpx = usableH * pxPerMm
-  const totalPages = Math.max(1, Math.ceil(canvas.height / sliceHpx))
+  // ── Mise en page : empile les blocs, saut de page dès qu'un bloc ne tient pas.
+  //    Chaque entrée = { canvas, srcY, srcH, hMm, atMm } à dessiner.
+  const pages = [[]]
+  let yMm = 0
+  const place = (canvas, srcY, srcH, hMm) => {
+    pages[pages.length - 1].push({ canvas, srcY, srcH, hMm, atMm: yMm })
+    yMm += hMm + GAP_MM
+  }
+  const newPage = () => { pages.push([]); yMm = 0 }
+
+  for (const c of blocks) {
+    const pxPerMmB = c.width / usableW
+    const fullHmm  = c.height / pxPerMmB
+
+    if (fullHmm <= usableH) {
+      if (yMm + fullHmm > usableH && yMm > 0) newPage()
+      place(c, 0, c.height, fullHmm)
+      continue
+    }
+    // Bloc plus haut qu'une page entière → on le tranche (cas rare).
+    if (yMm > 0) newPage()
+    let srcY = 0
+    while (srcY < c.height) {
+      const availPx = Math.max(0, usableH - yMm) * pxPerMmB
+      const srcH = Math.min(availPx, c.height - srcY)
+      place(c, srcY, srcH, srcH / pxPerMmB)
+      srcY += srcH
+      if (srcY < c.height) newPage()
+    }
+  }
+  if (pages[pages.length - 1].length === 0) pages.pop()
+  const totalPages = Math.max(1, pages.length)
 
   const title    = meta.title || filename.replace(/_/g, ' ').replace(/\.pdf$/i, '')
   const subtitle = meta.subtitle || ''
@@ -160,27 +215,29 @@ export async function exportToPdf(ref, filename, meta = {}) {
     pdf.text(`Page ${page} / ${totalPages}`, pageW - margin, pageH - 5, { align: 'right' })
   }
 
-  let renderedPx = 0
-  for (let page = 1; page <= totalPages; page++) {
+  pages.forEach((items, i) => {
+    const page = i + 1
     if (page > 1) pdf.addPage()
     drawHeader()
     drawFooter(page)
 
-    const h = Math.min(sliceHpx, canvas.height - renderedPx)
-    if (h <= 0) break
-
-    const slice = document.createElement('canvas')
-    slice.width = canvas.width
-    slice.height = h
-    const ctx = slice.getContext('2d')
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, slice.width, h)
-    ctx.drawImage(canvas, 0, renderedPx, canvas.width, h, 0, 0, canvas.width, h)
-
-    const imgData = slice.toDataURL('image/jpeg', 0.92)
-    pdf.addImage(imgData, 'JPEG', margin, headerH, usableW, h / pxPerMm)
-    renderedPx += h
-  }
+    for (const it of items) {
+      let img = it.canvas
+      // Sous-tranche uniquement pour un bloc plus haut qu'une page.
+      if (it.srcY !== 0 || it.srcH !== it.canvas.height) {
+        const slice = document.createElement('canvas')
+        slice.width = it.canvas.width
+        slice.height = it.srcH
+        const ctx = slice.getContext('2d')
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, slice.width, it.srcH)
+        ctx.drawImage(it.canvas, 0, it.srcY, it.canvas.width, it.srcH, 0, 0, it.canvas.width, it.srcH)
+        img = slice
+      }
+      const imgData = img.toDataURL('image/jpeg', 0.92)
+      pdf.addImage(imgData, 'JPEG', margin, headerH + it.atMm, usableW, it.hMm)
+    }
+  })
 
   pdf.save(filename)
 }
