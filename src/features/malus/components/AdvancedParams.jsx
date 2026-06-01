@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ChevronDown, SlidersHorizontal, Check, ClipboardList, CheckCircle2 } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 import SegButton from './SegButton'
@@ -42,12 +43,28 @@ const COUNTRY_META = {
  * approximation, the presets for common values.
  */
 function InlineNumberInput({ value, onChange, min = 0, max, step = 1, suffix }) {
+  // While typing we keep the raw text so the field can be fully cleared to
+  // enter an exact amount by hand. `null` ⇒ follow `value`.
+  const [draft, setDraft] = useState(null)
+  const display = draft !== null ? draft : value
+
   const handle = (e) => {
     const raw = e.target.value
+    setDraft(raw)
     if (raw === '') { onChange(min); return }
     const n = Number(raw)
     if (!isNaN(n)) onChange(Math.min(max, Math.max(min, n)))
   }
+
+  // On blur, snap into the valid range and stop overriding `value`.
+  const handleBlur = () => {
+    if (draft !== null) {
+      const n = Number(draft)
+      if (draft !== '' && !isNaN(n)) onChange(Math.min(max, Math.max(min, n)))
+      setDraft(null)
+    }
+  }
+
   return (
     <div
       className="flex items-center gap-1 rounded-lg pl-2.5 pr-2 py-1"
@@ -56,9 +73,10 @@ function InlineNumberInput({ value, onChange, min = 0, max, step = 1, suffix }) 
       <input
         type="number"
         min={min} max={max} step={step}
-        value={value}
+        value={display}
         inputMode="numeric"
         onChange={handle}
+        onBlur={handleBlur}
         className="w-[5.5rem] text-right text-sm font-bold text-cyan-400 bg-transparent border-0 outline-none"
         style={{ MozAppearance: 'textfield', WebkitAppearance: 'none', fontFamily: 'inherit' }}
       />
