@@ -663,7 +663,9 @@ const computeUK = (g, dateImmat) => {
 };
 
 // ─── 🇪🇸 ESPAGNE — Agencia Tributaria IEDMT (% sur valeur) ──────────────
-const computeESPercent = g => g < 120 ? 0 : g < 160 ? 4.75 : g < 200 ? 9.75 : 14.75;
+// Ley 38/1992 art. 70 — épígrafes par seuils INCLUSIFS (≤) :
+// ≤120 → 0% · ≤160 → 4,75% · ≤200 → 9,75% · >200 → 14,75%
+const computeESPercent = g => g <= 120 ? 0 : g <= 160 ? 4.75 : g <= 200 ? 9.75 : 14.75;
 
 // ─── 🇩🇪 ALLEMAGNE — ADAC Kfz-Steuer ANNUELLE composante CO₂ ────────────
 const computeDE = g => {
@@ -679,7 +681,8 @@ const computeDE = g => {
 };
 
 // ─── 🇳🇱 PAYS-BAS — Belastingdienst BPM 2025 ────────────────────────────
-const computeNL = g => {
+// + dieseltoeslag : surtaxe diesel de 103,10 €/g au-delà de 70 g CO₂/km.
+const computeNL = (g, fuelKind = "petrol") => {
   if (g === 0) return 667;
   let tax = 667,
     prev = 0;
@@ -705,6 +708,8 @@ const computeNL = g => {
     if (g <= b.limit) break;
     prev = b.limit;
   }
+  // Supplément diesel (dieseltoeslag) : 103,10 €/g au-delà de 70 g/km
+  if (fuelKind === "diesel" && g > 70) tax += (g - 70) * 103.10;
   return Math.round(tax);
 };
 
@@ -738,22 +743,37 @@ const computeNOPoids = (kg, fuelType) => {
   return Math.round(nok * 0.087); // → EUR
 };
 
-// ─── 🇩🇰 DANEMARK — registreringsafgift (très simplifié, base 2025) ─────
-const computeDK = g => {
-  // Système très complexe basé sur prix + CO2 + autonomie élec.
-  // Composante CO2 simplifiée : 250 DKK/g au-dessus de 0, 500 DKK/g au-dessus de 117, 950 DKK/g au-dessus de 150
-  if (g === 0) return 0;
-  let dkk = g * 250;
-  if (g > 117) dkk += (g - 117) * 250;
-  if (g > 150) dkk += (g - 150) * 450;
-  return Math.round(dkk * 0.134); // DKK → EUR
+// ─── 🇩🇰 DANEMARK — registreringsafgift (valeur + CO₂, base 2025) ───────
+// La taxe danoise est DOMINÉE par la composante valeur (25 % / 85 % / 150 %
+// par tranches de prix), à laquelle s'ajoute un tillæg CO₂ et des déductions.
+// DKK→EUR @0,134. Réf : Lov om registreringsafgift §3-§5a.
+const DKK = 0.134;
+const computeDKValue = (priceEur, fuelType) => {
+  // Conversion prix € → DKK (la base légale est en DKK)
+  const priceDKK = priceEur / DKK;
+  // Barème valeur 2025 : 25 % ≤ 71 800 DKK, 85 % de 71 800 à 223 400, 150 % au-delà
+  let tDKK = 0;
+  tDKK += Math.min(priceDKK, 71800) * 0.25;
+  if (priceDKK > 71800) tDKK += (Math.min(priceDKK, 223400) - 71800) * 0.85;
+  if (priceDKK > 223400) tDKK += (priceDKK - 223400) * 1.50;
+  return tDKK; // en DKK (déductions appliquées dans le case)
+};
+const computeDKco2 = g => {
+  // Tillæg CO₂ 2025 : 280 DKK/g ≤117, 560 DKK/g 117-150, 950 DKK/g >150
+  if (g <= 0) return 0;
+  let dkk = Math.min(g, 117) * 280;
+  if (g > 117) dkk += (Math.min(g, 150) - 117) * 560;
+  if (g > 150) dkk += (g - 150) * 950;
+  return dkk; // en DKK
 };
 
-// ─── 🇦🇹 AUTRICHE — NoVA Normverbrauchsabgabe (formule 2025+ BMF) ────────
-// Source: bmf.gv.at — NoVA % = (CO2 - 96) / 4,4, plafond 80%
-// + Malus CO2 fixe si >155 g/km : 80 €/g (+20 €/g supplémentaires au-delà de 175)
+// ─── 🇦🇹 AUTRICHE — NoVA Normverbrauchsabgabe (formule 2025 BMF) ────────
+// Source: bmf.gv.at — NoVA % = (CO2 − 112) / 5, plafond 80% (seuil abaissé de
+// 3 g/an : 115 en 2024, 112 en 2025). Déduction forfaitaire 350 €.
+// + Malus CO2 fixe (« Malus-Betrag ») si > 155 g/km : 80 €/g (+20 €/g > 175).
+const AT_CO2_THRESHOLD = 112; // 2025
 const computeAT = g => {
-  if (g <= 95) return 0;
+  if (g <= 155) return 0;
   let penalty = 0;
   if (g > 155) penalty += (g - 155) * 80;
   if (g > 175) penalty += (g - 175) * 20;
@@ -1128,11 +1148,17 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           "2026": "2026/27 (depuis 01/04/2026)"
         };
         const a = computeUK(g, dateImmat);
-        const eur = Math.round(a * 1.17);
+        // Expensive Car Supplement (ECS) : supplément annuel pendant 5 ans (années
+        // 2 à 6) si prix catalogue > £40 000. EV inclus depuis 01/04/2025.
+        const ecsRate = { "2024": 410, "2025": 425, "2026": 440 }[ukPeriod] || 425;
+        const priceGBP = vehiclePrice / 1.17; // € → £
+        const ecsTotal = priceGBP > 40000 ? ecsRate * 5 : 0;
+        const aTotal = a + ecsTotal; // VED 1ère année + ECS 5 ans
+        const eur = Math.round(aTotal * 1.17);
         return {
-          tax_name: `VED First-Year Rate — Barème ${periodLabels[ukPeriod]}`,
+          tax_name: `VED First-Year Rate${ecsTotal ? " + ECS" : ""} — Barème ${periodLabels[ukPeriod]}`,
           threshold_gkm: 1,
-          max_penalty_eur: Math.round(5690 * 1.17),
+          max_penalty_eur: Math.round((5690 + 440 * 5) * 1.17),
           currency_symbol: "£",
           system_description: `VERA 1994 (Vehicle Excise and Registration Act) - Tarif 1ère année basé sur CO₂ selon date d'immat. Année fiscale UK : 1er avril → 31 mars. EV soumis au VED depuis 01/04/2025.`,
           brackets: [{
@@ -1172,15 +1198,16 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
             label: "Maximal"
           }],
           exemptions: ["Véhicules historiques (+40 ans)", "Mobilité réduite"],
-          specific_penalty: `£${a.toLocaleString("en-GB")} (~${eur} €)`,
+          specific_penalty: `£${aTotal.toLocaleString("en-GB")} (~${eur} €)`,
           specific_penalty_amount: eur,
-          has_malus: a > 10,
+          has_malus: aTotal > 10,
           severity: sev(eur),
-          notes: `Date d'immat. = ${formatDateFR(dateImmat)}. Barème ${ukPeriod}/27. Supplément +£440/an pendant 5 ans si véhicule > £40 000.`,
+          notes: `Date d'immat. = ${formatDateFR(dateImmat)}. Barème ${ukPeriod}/27. VED 1ère année £${a.toLocaleString("en-GB")}${ecsTotal ? ` + Expensive Car Supplement £${ecsRate}/an × 5 ans = £${ecsTotal.toLocaleString("en-GB")} (prix > £40 000)` : ""}.`,
           source: "gov.uk",
           source_url: "https://www.gov.uk/vehicle-tax-rate-tables",
           legal_ref: "Vehicle Excise and Registration Act 1994 (VERA) · Schedule 1 · Finance (No.2) Act 2023",
-          reliability: "official"
+          reliability: "official",
+          advanced_params: ["vehiclePrice"]
         };
       }
     case "DE":
@@ -1248,6 +1275,7 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           source_url: "https://www.gesetze-im-internet.de/kraftstg/",
           legal_ref: "Kraftfahrzeugsteuergesetz (KfzStG) §9 · BGBl. I 2002, S. 3843 · Einkommensteuergesetz §6 EV",
           reliability: "official",
+          is_annual: true,
           advanced_params: ["displacement", "fuelKind"]
         };
       }
@@ -1273,27 +1301,27 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
         }[esRegion];
         return {
           tax_name: "IEDMT (Impuesto de Matriculación)",
-          threshold_gkm: 120,
+          threshold_gkm: 121,
           max_penalty_eur: null,
           currency_symbol: "€",
-          system_description: `Ley 38/1992 (Impuestos Especiales) art. 70 - Taxe immatriculation = % de la valeur HT, selon CO₂. Région : ${regionLabel}.${isImported ? ` Importé : décote ${decoteES}% (tabla anexo).` : ''}`,
+          system_description: `Ley 38/1992 (Impuestos Especiales) art. 70 - Taxe immatriculation = % de la valeur HT, selon CO₂ (seuils inclusifs ≤). Région : ${regionLabel}.${isImported ? ` Importé : décote ${decoteES}% (tabla anexo).` : ''}`,
           brackets: [{
             min_gkm: 0,
-            max_gkm: 119,
+            max_gkm: 120,
             penalty: "0%",
             label: "Exempté"
           }, {
-            min_gkm: 120,
-            max_gkm: 159,
+            min_gkm: 121,
+            max_gkm: 160,
             penalty: "4,75%",
             label: "Tranche 1"
           }, {
-            min_gkm: 160,
-            max_gkm: 199,
+            min_gkm: 161,
+            max_gkm: 200,
             penalty: "9,75%",
             label: "Tranche 2"
           }, {
-            min_gkm: 200,
+            min_gkm: 201,
             max_gkm: 999,
             penalty: "14,75%",
             label: "Tranche 3"
@@ -1313,15 +1341,16 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
       }
     case "NL":
       {
-        const brut = computeNL(g);
+        const brut = computeNL(g, fuelKind);
         const decoteNL = isImported ? getImportDecoteNL(dateImmat) : 0;
         const a = Math.round(brut * (1 - decoteNL / 100));
+        const dieselSupp = fuelKind === "diesel" && g > 70 ? Math.round((g - 70) * 103.10) : 0;
         return {
           tax_name: "BPM (Belasting Personenauto's)",
           threshold_gkm: 1,
           max_penalty_eur: null,
           currency_symbol: "€",
-          system_description: "Wet BPM 1992 - Taxe immatriculation basée sur CO₂ WLTP. EV soumis à un forfait fixe réduit (plus d'exemption depuis jan. 2025). PHEV : taxés comme thermiques. 2026 : seuils CO₂ abaissés −1,55% et tarifs +1,57% (Belastingplan 2025, business.gov.nl). Paliers révisés annuellement jusqu'en 2028.",
+          system_description: `Wet BPM 1992 - Taxe immatriculation basée sur CO₂ WLTP${fuelKind === "diesel" ? " + dieseltoeslag 103,10 €/g au-delà de 70 g" : ""}. EV : forfait fixe réduit (plus d'exemption depuis jan. 2025). PHEV : taxés comme thermiques. 2026 : seuils CO₂ −1,55%, tarifs +1,57% (Belastingplan 2025).`,
           brackets: [{
             min_gkm: 0,
             max_gkm: 0,
@@ -1358,11 +1387,12 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           specific_penalty_amount: a,
           has_malus: a > 0,
           severity: sev(a),
-          notes: isImported ? `Véhicule importé : décote BPM ${decoteNL}% (Tabel afschrijving Belastingdienst). BPM brut: ${brut.toLocaleString()} € → ${a.toLocaleString()} €.` : "Surtaxe diesel possible. Barème durci chaque année.",
+          notes: `${isImported ? `Véhicule importé : décote BPM ${decoteNL}% (Tabel afschrijving). BPM brut: ${brut.toLocaleString()} € → ${a.toLocaleString()} €. ` : ""}${dieselSupp > 0 ? `Inclut dieseltoeslag ~${dieselSupp.toLocaleString()} € (103,10 €/g > 70 g). ` : ""}Barème durci chaque année.`,
           source: "Belastingdienst",
           source_url: "https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/belastingdienst/zakelijk/andere_belastingen/bpm/",
           legal_ref: "Wet BPM 1992 (Wet op de belasting van personenauto's en motorrijwielen) · Belastingplan 2025 (Stb. 2024, 397)",
-          reliability: "official"
+          reliability: "official",
+          advanced_params: ["fuelKind"]
         };
       }
     case "IT":
@@ -1615,26 +1645,27 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
       }
     case "AT":
       {
-        const penalty = computeAT(g);
-        // NoVA % calc — formule 2025+ : (CO2 - 96) / 4,4, plafond 80%
-        const novaPct = Math.min(80, Math.max(0, Math.round((g - 91) / 5)));
+        const isEVat = fuelType === "ev";
+        const penalty = isEVat ? 0 : computeAT(g);
+        // NoVA % calc — formule 2025 : (CO₂ − 112) ÷ 5, plafond 80%
+        const novaPct = isEVat ? 0 : Math.min(80, Math.max(0, Math.round((g - AT_CO2_THRESHOLD) / 5)));
         const novaAmount = Math.max(0, Math.round(vehiclePrice * novaPct / 100) - 350);
         const total = novaAmount + penalty;
         return {
           tax_name: "NoVA (Normverbrauchsabgabe)",
-          threshold_gkm: 96,
+          threshold_gkm: AT_CO2_THRESHOLD,
           max_penalty_eur: null,
           currency_symbol: "€",
-          system_description: `NoVA 2026 = (CO₂−91)÷5 % du prix HT, plafond 80%. + 80 €/g au-delà de 155 g. Seuil : 91 g/km. + Pénalité CO₂ fixe au-dessus 155 g. Prix : ${vehiclePrice.toLocaleString()} €.`,
+          system_description: `NoVA 2025 = (CO₂−112)÷5 % du prix HT, plafond 80%, − abattement 350 €. + Malus fixe 80 €/g au-delà de 155 g (+20 €/g > 175). Seuil : 112 g/km. Prix : ${vehiclePrice.toLocaleString()} €.`,
           brackets: [{
             min_gkm: 0,
-            max_gkm: 95,
+            max_gkm: 112,
             penalty: "0%",
             label: "Exempté"
           }, {
-            min_gkm: 96,
+            min_gkm: 113,
             max_gkm: 155,
-            penalty: "(g-96)/4,4 %",
+            penalty: "(g-112)/5 %",
             label: "NoVA progressive"
           }, {
             min_gkm: 156,
@@ -1716,13 +1747,21 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
       }
     case "DK":
       {
-        const a = computeDK(g);
+        // EV : abattement spécifique (bundfradrag 165 500 DKK + fradrag grøn),
+        // phase-in progressif jusqu'en 2035 → quasi nul à faible valeur.
+        const isEVdk = fuelType === "ev";
+        const valDKK = isEVdk ? 0 : computeDKValue(vehiclePrice, fuelType);
+        const co2DKK = isEVdk ? 0 : computeDKco2(g);
+        // Déduction (bundfradrag) 2025 : 33 600 DKK pour thermique
+        const deductionDKK = isEVdk ? 0 : 33600;
+        const totalDKK = Math.max(0, valDKK + co2DKK - deductionDKK);
+        const a = Math.round(totalDKK * DKK); // DKK → EUR
         return {
           tax_name: "Registreringsafgift",
           threshold_gkm: 1,
           max_penalty_eur: null,
           currency_symbol: "€",
-          system_description: "Registreringsafgift = la + élevée d'Europe. Valeur véhicule : 25% (≤71 955 DKK) + 85% (71-223 kDKK) + 150% (>223 kDKK). + Tillæg CO₂ : 280 kr/g (2025) ou 294 kr/g (2026). Déduction 33 600 DKK (2025) / 35 200 DKK (2026).",
+          system_description: `Registreringsafgift = la + élevée d'Europe. Valeur véhicule : 25% (≤71 800 DKK) + 85% (71-223 kDKK) + 150% (>223 kDKK) + tillæg CO₂ (280→950 kr/g) − bundfradrag 33 600 DKK. Prix : ${vehiclePrice.toLocaleString()} €.`,
           brackets: [{
             min_gkm: 0,
             max_gkm: 0,
@@ -1745,15 +1784,16 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
             label: "Palier 3"
           }],
           exemptions: ["EV (réduction progressive jusqu'en 2030)", "Véhicules handicapés"],
-          specific_penalty: `~${a.toLocaleString()} € (CO₂ seul)`,
+          specific_penalty: isEVdk ? "~0 € (EV, abattement)" : `~${a.toLocaleString()} € (valeur + CO₂)`,
           specific_penalty_amount: a,
           has_malus: a > 0,
           severity: sev(a),
-          notes: "Tarifs 2025: tillæg CO₂ 280 kr/g, bundfradrag 33 600 DKK. Tarifs 2026: 294 kr/g, 35 200 DKK. EV: bundfradrag 165 500 DKK + fradrag grøn 45 000 DKK. Réf: Lov om registreringsafgift §3.",
+          notes: `Valeur ~${Math.round(valDKK*DKK).toLocaleString()} € + CO₂ ~${Math.round(co2DKK*DKK).toLocaleString()} € − bundfradrag 33 600 DKK. Tarifs 2025. EV : bundfradrag 165 500 DKK + fradrag grøn 45 000 DKK (quasi exonéré). Réf: Lov om registreringsafgift §3-§5a.`,
           source: "Motorstyrelsen / Skat.dk",
           source_url: "https://motorst.dk/registreringsafgift/",
           legal_ref: "Lovbekendtgørelse nr. 177 af 22/02/2024 (registreringsafgiftsloven) §3 + §5a (tillæg CO₂)",
-          reliability: "indicative"
+          reliability: "indicative",
+          advanced_params: ["vehiclePrice"]
         };
       }
     case "SE":
@@ -1790,7 +1830,8 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           source: "Transportstyrelsen",
           source_url: "https://www.transportstyrelsen.se/sv/vagtrafik/Fordon/Fordonsavgifter/Fordonsskatt/",
           legal_ref: "Vägtrafikskattelag (2006:227) §4 · Prop. 2021/22:61 (bonus-malus) · SFS 2022:1128",
-          reliability: "indicative"
+          reliability: "indicative",
+          is_annual: true
         };
       }
     case "CH":
@@ -2136,9 +2177,24 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
         const evReliefIE = isEVie && new Date(dateImmat) < new Date("2026-01-01");
         let vBrut = evReliefIE ? 0 : Math.round(vehiclePrice*bd.r/100);
         const decoteIE = isImported ? getImportDecoteIE(dateImmat) : 0;
-        const v = Math.round(vBrut * (1 - decoteIE / 100));
+        const vrt = Math.round(vBrut * (1 - decoteIE / 100));
+        // Prélèvement NOx (séparé du VRT) — barème €5/€15/€25 par mg/km, plafonné.
+        // Le NOx (mg/km) n'étant pas saisi, on estime une valeur Euro 6d typique
+        // par carburant (essence ~20 mg, diesel ~60 mg) ; nul pour les BEV.
+        const noxMg = isEVie ? 0 : (fuelKind === "diesel" ? 60 : 20);
+        const computeNOxIE = (mg) => {
+          if (mg <= 0) return 0;
+          let lv = 0;
+          lv += Math.min(mg, 40) * 5;
+          if (mg > 40) lv += (Math.min(mg, 80) - 40) * 15;
+          if (mg > 80) lv += (mg - 80) * 25;
+          const cap = fuelKind === "diesel" ? 4850 : 600;
+          return Math.min(lv, cap);
+        };
+        const noxLevy = computeNOxIE(noxMg);
+        const v = vrt + noxLevy;
         const evNote = new Date(dateImmat) >= new Date("2026-01-01") ? "EV : 7% OMSP (relief supprimé au 01/01/2026 — Budget IE 2026)" : "EV : 0% + crédit ≤€5 000 OMSP (immat. avant 01/01/2026)";
-        return {tax_name:"VRT (Vehicle Registration Tax)",threshold_gkm:51,max_penalty_eur:null,currency_symbol:"€",system_description:`Finance Act 1992 Part II + Budget IE 2026. VRT = % OMSP irlandais, 20 bandes CO₂ WLTP (7–41%). Relief EV ≤€50k OMSP supprimé au 01/01/2026.${isImported ? ` Importé : décote ${decoteIE}% (Revenue.ie OMSP table).` : ""}`,brackets:[{min_gkm:0,max_gkm:50,penalty:"7%",label:"EV / très faible"},{min_gkm:51,max_gkm:155,penalty:"7–23%",label:"A–F"},{min_gkm:156,max_gkm:230,penalty:"30–36%",label:"G–I"},{min_gkm:231,max_gkm:999,penalty:"41%",label:"J max"}],exemptions:[evNote],specific_penalty:v===0?"0 €":"~"+v.toLocaleString("fr-FR")+" €"+(isImported?" (−"+decoteIE+"%)":""),specific_penalty_amount:v,has_malus:v>0,severity:sev(v),notes:`${bd.r}% × ${vehiclePrice.toLocaleString()} €${isImported ? ` − ${decoteIE}% (importé)` : ""} = ${v.toLocaleString()} €. NOx levy en supplément selon émissions.`,source:"Revenue.ie",source_url:"https://www.revenue.ie/en/vrt/calculating-vrt/applying-tax.aspx",legal_ref:"Finance Act 1992 Part II Section 131 · Revenue VRT Manual Chapter 3 · Finance Act 2025 (Budget IE 2026)",reliability:"official"}; }
+        return {tax_name:"VRT (Vehicle Registration Tax) + NOx",threshold_gkm:51,max_penalty_eur:null,currency_symbol:"€",system_description:`Finance Act 1992 Part II + Budget IE 2026. VRT = % OMSP irlandais, 20 bandes CO₂ WLTP (7–41%) + prélèvement NOx séparé (€5/€15/€25 par mg/km, plafond €600 essence / €4 850 diesel). Relief EV ≤€50k OMSP supprimé au 01/01/2026.${isImported ? ` Importé : décote ${decoteIE}% (Revenue.ie OMSP table).` : ""}`,brackets:[{min_gkm:0,max_gkm:50,penalty:"7%",label:"EV / très faible"},{min_gkm:51,max_gkm:155,penalty:"7–23%",label:"A–F"},{min_gkm:156,max_gkm:230,penalty:"30–36%",label:"G–I"},{min_gkm:231,max_gkm:999,penalty:"41%",label:"J max"}],exemptions:[evNote],specific_penalty:v===0?"0 €":"~"+v.toLocaleString("fr-FR")+" €"+(isImported?" (−"+decoteIE+"%)":""),specific_penalty_amount:v,has_malus:v>0,severity:sev(v),notes:`VRT ${bd.r}% × ${vehiclePrice.toLocaleString()} €${isImported ? ` − ${decoteIE}% (importé)` : ""} = ${vrt.toLocaleString()} €${noxLevy > 0 ? ` + NOx estimé ~${noxLevy.toLocaleString()} € (${noxMg} mg/km ${fuelKind})` : ""} = ${v.toLocaleString()} €. NOx réel selon valeur homologuée du véhicule.`,source:"Revenue.ie",source_url:"https://www.revenue.ie/en/vrt/calculating-vrt/applying-tax.aspx",legal_ref:"Finance Act 1992 Part II Section 131 + §135 (NOx levy) · Revenue VRT Manual Chapter 3 · Finance Act 2025 (Budget IE 2026)",reliability:"official",advanced_params:["vehiclePrice","fuelKind"]}; }
     case "LU":
       { const t=g<=90?0:g<=130?Math.round((g-90)*8):g<=175?Math.round(40*8+(g-130)*15):Math.round(40*8+45*15+(g-175)*25);
         return {tax_name:"Taxe d’immatriculation CO₂ (Luxembourg)",threshold_gkm:91,max_penalty_eur:null,currency_symbol:"€",system_description:"Loi 22/12/2006 + RGD 23/12/2016 - Progressive selon CO₂ WLTP. 8 €/g (91–130g), 15 €/g (131–175g), 25 €/g au-delà.",brackets:[{min_gkm:0,max_gkm:90,penalty:"0 €",label:"Exempté"},{min_gkm:91,max_gkm:130,penalty:"8 €/g",label:"Basse"},{min_gkm:131,max_gkm:175,penalty:"15 €/g",label:"Haute"},{min_gkm:176,max_gkm:999,penalty:"25 €/g",label:"Max"}],exemptions:["EV : exempté + bonus €5 000"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" €",specific_penalty_amount:t,has_malus:g>90,severity:sev(t),notes:"Parmi les plus favorables aux EV d’Europe.",source:"Gouvernement du Luxembourg (Administration de l'enregistrement)",source_url:"https://guichet.public.lu/fr/citoyens/transport/vehicules/immatriculation/taxe-immatriculation.html",legal_ref:"Loi du 22/12/2006 (Mémorial A-N° 227) · RGD du 23/12/2016 · CO₂ WLTP depuis 01/01/2020",reliability:"official"}; }
@@ -2150,7 +2206,7 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
         return {tax_name:"Taxe d’immatriculation CO₂ (Grèce)",threshold_gkm:101,max_penalty_eur:null,currency_symbol:"€",system_description:"Progressive. Seuil 100 g/km. 90→400 €/g.",brackets:[{min_gkm:0,max_gkm:100,penalty:"0 €",label:"Exempté"},{min_gkm:101,max_gkm:120,penalty:"90 €/g",label:"Basse"},{min_gkm:121,max_gkm:140,penalty:"120 €/g",label:"Modérée"},{min_gkm:141,max_gkm:160,penalty:"200 €/g",label:"Haute"},{min_gkm:161,max_gkm:999,penalty:"400 €/g",label:"Max"}],exemptions:["EV : exempté + bonus €6 000"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" €",specific_penalty_amount:t,has_malus:g>100,severity:sev(t),notes:"Barème 2024.",source:"AADE (Ανεξάρτητη Αρχή Δημοσίων Εσόδων)",source_url:"https://www.aade.gr/menoy/phorologikos-odigos/foros-polvteloias-kai-loipa-teli-kai-eisphores/teli-taxtinomisis-aytokiniton",legal_ref:"Ν. 2960/2001 Τελωνειακός Κώδικας – Άρθρο 121 · Παράρτημα IV (CO₂ WLTP)",reliability:"official"}; }
     case "EE":
       { const t=g<=0?0:g<=117?Math.round(g*2):Math.round(117*2+(g-117)*15);
-        return {tax_name:"Sõidukimaks (taxe annuelle CO₂)",threshold_gkm:1,max_penalty_eur:null,currency_symbol:"€",system_description:"Taxe annuelle depuis juillet 2024.",brackets:[{min_gkm:0,max_gkm:0,penalty:"0 €",label:"EV"},{min_gkm:1,max_gkm:117,penalty:"2 €/g/an",label:"Basse"},{min_gkm:118,max_gkm:999,penalty:"15 €/g",label:"Haute"}],exemptions:["EV : ~50 €/an fixe"],specific_penalty:"~"+t.toLocaleString("fr-FR")+" €/an",specific_penalty_amount:t,has_malus:true,severity:sev(t),notes:"Depuis le 1er juillet 2024. Annuelle.",source:"Maanteeamet (Transport Administration)",source_url:"https://www.mnt.ee/et/liiklus/mootorsoidukimaks",legal_ref:"Mootorsõidukimaksu seadus (RT I 2024, 5) – en vigueur 01/07/2024",reliability:"official"}; }
+        return {tax_name:"Sõidukimaks (taxe annuelle CO₂)",threshold_gkm:1,max_penalty_eur:null,currency_symbol:"€",system_description:"Taxe annuelle depuis juillet 2024.",brackets:[{min_gkm:0,max_gkm:0,penalty:"0 €",label:"EV"},{min_gkm:1,max_gkm:117,penalty:"2 €/g/an",label:"Basse"},{min_gkm:118,max_gkm:999,penalty:"15 €/g",label:"Haute"}],exemptions:["EV : ~50 €/an fixe"],specific_penalty:"~"+t.toLocaleString("fr-FR")+" €/an",specific_penalty_amount:t,has_malus:true,severity:sev(t),notes:"Depuis le 1er juillet 2024. Annuelle.",source:"Maanteeamet (Transport Administration)",source_url:"https://www.mnt.ee/et/liiklus/mootorsoidukimaks",legal_ref:"Mootorsõidukimaksu seadus (RT I 2024, 5) – en vigueur 01/07/2024",reliability:"official",is_annual:true}; }
     case "MT":
       { const t=g<=100?0:g<=130?Math.round((g-100)*30):g<=160?Math.round(30*30+(g-130)*60):Math.round(30*30+30*60+(g-160)*100);
         return {tax_name:"Registration Tax (Malte)",threshold_gkm:101,max_penalty_eur:null,currency_symbol:"€",system_description:"Progressive sur CO₂. Seuil 100 g/km.",brackets:[{min_gkm:0,max_gkm:100,penalty:"0 €",label:"Exempté"},{min_gkm:101,max_gkm:130,penalty:"30 €/g",label:"Basse"},{min_gkm:131,max_gkm:160,penalty:"60 €/g",label:"Haute"},{min_gkm:161,max_gkm:999,penalty:"100 €/g",label:"Max"}],exemptions:["EV : exempté + grant €11 000"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" €",specific_penalty_amount:t,has_malus:g>100,severity:sev(t),notes:"Estimation 2024.",source:"Transport Malta",source_url:"https://www.transport.gov.mt/land/vehicle-registration-1780",legal_ref:"Motor Vehicles (Registration and Licensing) Act (Cap. 368) · LN 346 of 2009 (CO₂ Schedule)",reliability:"official"}; }
@@ -2397,7 +2453,7 @@ export {
   getImportDecote, getImportDecotePT, getImportDecoteNL, getImportDecoteDE,
   getImportDecoteES, getImportDecoteBE, getImportDecoteIE,
   getUKPeriod, computeUK, computeESPercent, computeDE, computeNL, computePT,
-  computeNO, computeNOPoids, computeDK, computeAT, computeFIPercent,
+  computeNO, computeNOPoids, computeDKValue, computeDKco2, computeAT, computeFIPercent,
   computeSE, computeZA, computeSG, computeBE,
   buildCountryData,
   COUNTRIES, CUSTOM_EMISSIONS, RELIABILITY_CONFIG,

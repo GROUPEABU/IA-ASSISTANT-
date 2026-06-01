@@ -245,6 +245,7 @@ export default {
     co2_notes: 'Detailed calculation',
     co2_source: 'Official source',
     co2_legal_ref_label: 'Legal ref.',
+    co2_annual_badge: 'Annual tax',
     co2_malus_detail: 'Tax breakdown',
     co2_malus_co2_row: 'CO₂ TAX',
     co2_malus_weight_row: 'WEIGHT TAX',

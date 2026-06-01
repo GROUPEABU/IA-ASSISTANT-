@@ -57,7 +57,14 @@ function CountryHeader({ result }) {
       <div className="flex items-center gap-3 mb-3">
         <span className="text-3xl">{result.country.flag}</span>
         <div>
-          <div className="text-xl font-bold text-white">{result.country.localizedName || result.country.name}</div>
+          <div className="text-xl font-bold text-white flex items-center gap-2 flex-wrap">
+            {result.country.localizedName || result.country.name}
+            {result.is_annual && (
+              <span className="text-[10px] font-bold text-warn bg-warn/10 border border-warn/25 px-2 py-0.5 rounded-full">
+                {t('co2_annual_badge')}
+              </span>
+            )}
+          </div>
           <div className="text-[11px] text-slate-400 leading-snug">{result.tax_name}</div>
           <div className="text-[11px] mt-0.5" style={{ color: cfg.color }}>
             {t(cfg.labelKey)} ·{' '}

@@ -131,8 +131,13 @@ function CompareResultRow({ result }) {
           </div>
         </div>
       </div>
-      <div className="text-2xl font-bold" style={{ color: hasPenalty ? '#E6B450' : '#50E5E5' }}>
+      <div className="text-2xl font-bold flex items-center gap-2 flex-wrap" style={{ color: hasPenalty ? '#E6B450' : '#50E5E5' }}>
         {result.specific_penalty}
+        {result.is_annual && (
+          <span className="text-[10px] font-bold text-warn bg-warn/10 border border-warn/25 px-2 py-0.5 rounded-full">
+            {t('co2_annual_badge')}
+          </span>
+        )}
       </div>
       <div className="mt-2 flex items-center gap-3 flex-wrap">
         {result.source_url && (

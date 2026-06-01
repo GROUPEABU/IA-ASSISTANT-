@@ -260,6 +260,7 @@ export default {
     co2_notes: 'Calcul détaillé',
     co2_source: 'Source officielle',
     co2_legal_ref_label: 'Réf. légale',
+    co2_annual_badge: 'Taxe annuelle',
     co2_malus_detail: 'Détail du malus',
     co2_malus_co2_row: 'MALUS CO₂',
     co2_malus_weight_row: 'MALUS POIDS',
