@@ -69,10 +69,16 @@ async function analyzePrices(filters, fuels, gearboxes, bodies, lang = 'fr') {
 OBJECTIF PRINCIPAL : identifier les 10–20% des annonces les moins chères réellement disponibles. Les partenaires Autobuyunion achètent en volume à prix HT compétitif et doivent se positionner PARMI LES PREMIERS DU NET — jamais sur la moyenne haute. Lis les prix réels, repère la fourchette basse du marché, et fixe le prix conseillé vente TTC dans cette fourchette compétitive.
 N'invente JAMAIS d'erreur "403/404" : décris ce que tu as réellement trouvé. Si aucune annonce exploitable après recherche, bascule sur ta connaissance experte et l'indique dans "alerte".`
 
-  const prompt = `Tu es expert en cote et marché automobile ${filters.type === 'vn' ? 'VN (véhicule neuf)' : 'VO (occasion)'} pour Autobuyunion, dealer professionnel en France.
+  const prompt = `Tu es expert en cote et marché automobile ${filters.type === 'vn' ? 'VN (véhicule neuf)' : 'VO (occasion)'} pour Autobuyunion, centrale d'achat européenne.
 Véhicule cible : "${vehicleDesc}"${finitionFilter}
 
 ${dataSection}
+
+MÉTHODE DE COTATION AUTOBUYUNION (applique-la précisément) :
+1. Repère le PREMIER PRIX DU NET : l'annonce la moins chère réellement disponible pour ce véhicule (pas la moyenne).
+2. "prix_conseille_vente" TTC = ce premier prix du net (ou légèrement en dessous) pour que le partenaire soit classé 1er du net et vende vite.
+3. À partir de ce prix TTC : retire ~20% de TVA → HT. Le deal doit laisser au partenaire ~3 000–4 000 € HT de marge (min 3 000 €) + ~1 000–1 500 € de marge groupe. Le reste = "fourchette_achat_pro" (prix d'achat HT recommandé).
+4. Écart minimum viable d'un deal ≈ 4 500–5 000 € (davantage sur premium).
 
 Génère une analyse experte complète de type fiche pro. Tous les prix sont en euros TTC sauf indication HT.
 
