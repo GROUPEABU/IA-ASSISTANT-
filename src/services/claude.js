@@ -31,6 +31,13 @@ function getUserApiKey() {
   }
 }
 
+// L'IA exige le réseau : message clair plutôt qu'un échec brut hors-ligne.
+function assertOnline() {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    throw new Error('Connexion requise pour l’assistant IA. Reconnectez-vous puis réessayez.')
+  }
+}
+
 // Builds request headers for the proxy, attaching the personal key only if set.
 function proxyHeaders() {
   const headers = { 'content-type': 'application/json' }
@@ -178,6 +185,7 @@ function buildContent(text, attachment) {
  * @returns {Promise<string>}
  */
 export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3, tool = null, webSearch = false, maxSearches = 5, returnMeta = false } = {}) {
+  assertOnline()
   const apiMessages = messages.map(({ role, content, attachment }) => ({
     role,
     content: buildContent(content, attachment),
@@ -230,6 +238,7 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
  * @returns {Promise<string>}  the complete assistant text
  */
 export async function streamMessage(messages, { lang = 'fr', onChunk, temperature = 0.6, webSearch = false, maxSearches = 3 } = {}) {
+  assertOnline()
   const apiMessages = messages.map(({ role, content, attachment }) => ({
     role,
     content: buildContent(content, attachment),
