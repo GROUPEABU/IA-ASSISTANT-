@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Search, X, Sparkles, Loader2, AlertCircle } from 'lucide-react'
 import { generateProductFromWeb } from '@/services/generateProduct'
 import { useSettings } from '@/contexts/SettingsContext'
+import useFocusTrap from '@/hooks/useFocusTrap'
 
 const SUGGESTIONS = [
   'Toyota Yaris Cross 2024',
@@ -20,6 +21,7 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [step, setStep] = useState('idle') // idle | loading | done
+  const trapRef = useFocusTrap()
 
   // Close on Escape — standard dialog affordance for keyboard users.
   useEffect(() => {
@@ -55,6 +57,7 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
 
       {/* Modal */}
       <div
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-label={t('modal_generate_sheet')}
@@ -86,7 +89,6 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && generate()}
                 placeholder={t('modal_search_ph')}
-                autoFocus
                 className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl
                            pl-9 pr-3 py-3 text-sm text-white placeholder-slate-600
                            focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/20 transition"

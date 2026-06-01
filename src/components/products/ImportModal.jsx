@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { X, Upload, FileSpreadsheet, AlertCircle, Loader2, CheckCircle2, Car } from 'lucide-react'
 import { parseImportFile } from '@/services/importParser'
 import { useSettings } from '@/contexts/SettingsContext'
+import useFocusTrap from '@/hooks/useFocusTrap'
 
 /**
  * Import d'un fichier de stock (CSV / Excel .xlsx) → fiches produit groupées
@@ -15,6 +16,7 @@ export default function ImportModal({ onImported, onClose }) {
   const [error, setError] = useState(null)
   const [preview, setPreview] = useState(null) // { products, vehicleCount, modelCount }
   const [fileName, setFileName] = useState('')
+  const trapRef = useFocusTrap()
 
   // Close on Escape — standard dialog affordance for keyboard users.
   useEffect(() => {
@@ -50,6 +52,7 @@ export default function ImportModal({ onImported, onClose }) {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
       <div
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-label={t('import_title')}
