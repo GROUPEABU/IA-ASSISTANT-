@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react'
-import { findUserByUsername, validateCredentials, isExpired } from '@/data/users'
+import { findUserByUsername, validateCredentials, isExpired, hashPassword } from '@/data/users'
 
 // ── localStorage keys ────────────────────────────────────────────────────────
 const SESSION_KEY    = 'abu_session'
@@ -66,19 +66,21 @@ export function AuthProvider({ children }) {
   }, [])
 
   // ── Auth actions ─────────────────────────────────────────────────────────
-  const login = useCallback((username, password) => {
-    // Check for a password override (set via the reset-password flow)
-    const overrides = readPasswordOverrides()
-    const override  = overrides[username.toLowerCase()]
+  const login = useCallback(async (username, password) => {
+    // Check for a password override (set via the reset-password flow). Overrides
+    // are stored as salted hashes, so we compare against the hash of the input.
+    const overrides   = readPasswordOverrides()
+    const override    = overrides[username.toLowerCase()]
+    const inputHash   = await hashPassword(password)
 
-    const safeUser = override && override === password
+    const safeUser = override && override === inputHash
       ? (() => {
           const user = findUserByUsername(username)
-          if (!user) return null
-          const { password: _, ...safe } = user
+          if (!user || isExpired(user)) return null
+          const { passwordHash: _, expiresAt: __, ...safe } = user
           return safe
         })()
-      : validateCredentials(username, password)
+      : await validateCredentials(username, password)
 
     if (!safeUser) return false
 
@@ -93,10 +95,10 @@ export function AuthProvider({ children }) {
     localStorage.removeItem(SESSION_KEY)
   }, [])
 
-  /** Stores a new password override that takes precedence over the hardcoded one. */
-  const resetPassword = useCallback((username, newPassword) => {
+  /** Stores a new password override (hashed) that takes precedence over the built-in one. */
+  const resetPassword = useCallback(async (username, newPassword) => {
     const overrides = readPasswordOverrides()
-    overrides[username.toLowerCase()] = newPassword
+    overrides[username.toLowerCase()] = await hashPassword(newPassword)
     localStorage.setItem(PW_OVERRIDE_KEY, JSON.stringify(overrides))
   }, [])
 

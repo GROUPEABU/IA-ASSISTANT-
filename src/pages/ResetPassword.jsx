@@ -63,7 +63,7 @@ export default function ResetPassword() {
     }
 
     consumeResetToken(username)
-    resetPassword(username, password)
+    await resetPassword(username, password)
     setSuccess(true)
     setLoading(false)
   }

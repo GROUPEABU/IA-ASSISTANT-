@@ -11,31 +11,34 @@ describe('findUserByUsername', () => {
     expect(findUserByUsername('Admin')?.username).toBe('admin')
   })
 
-  it('returns the full user record (incl. password) for internal use', () => {
+  it('returns the full user record (incl. password hash) for internal use', () => {
     const user = findUserByUsername('admin')
     expect(user).toMatchObject({ username: 'admin', role: 'admin' })
-    expect(user.password).toBeTruthy()
+    expect(user.passwordHash).toBeTruthy()
+    // No clear-text password must ever be present.
+    expect(user.password).toBeUndefined()
   })
 })
 
 describe('validateCredentials', () => {
-  it('returns null for unknown user', () => {
-    expect(validateCredentials('nope', 'whatever')).toBeNull()
+  it('returns null for unknown user', async () => {
+    expect(await validateCredentials('nope', 'whatever')).toBeNull()
   })
 
-  it('returns null for wrong password', () => {
-    expect(validateCredentials('admin', 'wrong')).toBeNull()
+  it('returns null for wrong password', async () => {
+    expect(await validateCredentials('admin', 'wrong')).toBeNull()
   })
 
-  it('returns user without password on success', () => {
-    const safe = validateCredentials('admin', 'autobuyunion2025')
+  it('returns user without password hash on success', async () => {
+    const safe = await validateCredentials('admin', 'autobuyunion2025')
     expect(safe).not.toBeNull()
     expect(safe.username).toBe('admin')
+    expect(safe.passwordHash).toBeUndefined()
     expect(safe.password).toBeUndefined()
   })
 
-  it('matches username case-insensitively', () => {
-    const safe = validateCredentials('ADMIN', 'autobuyunion2025')
+  it('matches username case-insensitively', async () => {
+    const safe = await validateCredentials('ADMIN', 'autobuyunion2025')
     expect(safe?.username).toBe('admin')
   })
 

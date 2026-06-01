@@ -69,7 +69,7 @@ export default function Login() {
     setError('')
     await new Promise(r => setTimeout(r, 400))
 
-    const ok = login(username.trim(), password)
+    const ok = await login(username.trim(), password)
     if (!ok) {
       recordFailure()
       const { isBlocked: nowBlocked, remainingMs: ms, attemptsLeft: left } = getSecurityStatus()
