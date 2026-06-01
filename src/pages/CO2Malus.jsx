@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { RotateCcw } from 'lucide-react'
+import { RotateCcw, Info } from 'lucide-react'
 import { COUNTRIES, CUSTOM_EMISSIONS, RELIABILITY_CONFIG } from '@/utils/malusWorld'
 import { getCountryName } from '@/utils/malusLabels'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -258,8 +258,16 @@ function ModeTabs({ value, onChange }) {
 
 function Disclaimer({ t }) {
   return (
-    <div className="glass-card p-4 mt-2 text-center text-[11px] text-slate-500 leading-relaxed pb-2 px-4">
-      {t('co2_disclaimer')}
+    <div className="mt-4 mb-2 rounded-2xl border border-warn/25 bg-warn/[0.06] px-5 py-4 flex items-start gap-3.5">
+      <div className="w-9 h-9 rounded-xl bg-warn/15 border border-warn/25 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <Info size={18} className="text-warn" />
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-warn mb-1">{t('co2_disclaimer_title')}</p>
+        <p className="text-[13px] text-slate-300 leading-relaxed">
+          {t('co2_disclaimer')}
+        </p>
+      </div>
     </div>
   )
 }

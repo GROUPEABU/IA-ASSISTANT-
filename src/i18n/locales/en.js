@@ -253,6 +253,7 @@ export default {
     co2_compare_btn: '⚖️ Compare',
     co2_select_countries: 'Select countries',
     co2_results_for: 'Results for',
+    co2_disclaimer_title: 'Disclaimer',
     co2_disclaimer: 'Amounts shown are indicative and do not constitute tax advice. Schedules may change — verify with the competent authority of each country before any purchase.',
     settings_api_section: 'API & Integrations',
     settings_api_key_label: 'AI API Key',

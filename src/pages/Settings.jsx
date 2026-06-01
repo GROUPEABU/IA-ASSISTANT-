@@ -90,9 +90,12 @@ export default function Settings() {
     <div className="w-full max-w-5xl animate-fade-in">
       {/* Row 1: API — full width */}
       <Section icon={Key} title={t('settings_api_section')}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <Field label={t('settings_api_key_label')} description={t('settings_api_key_desc')}>
-            <div className="flex gap-2">
+        <div className="space-y-5">
+          {/* API key — full width, label above field */}
+          <div>
+            <p className="text-sm font-medium text-slate-200">{t('settings_api_key_label')}</p>
+            <p className="text-xs text-slate-500 mt-0.5 mb-2 leading-relaxed">{t('settings_api_key_desc')}</p>
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="password"
                 value={apiKey}
@@ -110,32 +113,36 @@ export default function Settings() {
                     setKeyCopied(true)
                     setTimeout(() => setKeyCopied(false), 2000)
                   }}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-navy-700/50
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-navy-700/50
                              text-xs font-medium text-slate-400 hover:text-cyan-400 hover:border-cyan-400/30 transition flex-shrink-0"
                 >
-                  {keyCopied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                  {keyCopied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
                   {keyCopied ? t('api_key_copied') : t('api_key_copy')}
                 </button>
               )}
             </div>
-          </Field>
-          <Field label={t('settings_api_power_label')} description={t('settings_api_power_desc')}>
-            <select
-              value={aiPower}
-              onChange={e => setAiPower(e.target.value)}
-              className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-                         text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition">
-              <option value="standard">{t('settings_standard')}</option>
-              <option value="performance">{t('settings_performance')}</option>
-              <option value="ultra">{t('settings_ultra')}</option>
-            </select>
-          </Field>
-          <div className="flex items-end justify-start lg:justify-end pb-0.5">
+          </div>
+
+          {/* Power + Save — second row, aligned */}
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4 pt-1 border-t border-navy-700/40">
+            <div className="flex-1 pt-4">
+              <p className="text-sm font-medium text-slate-200">{t('settings_api_power_label')}</p>
+              <p className="text-xs text-slate-500 mt-0.5 mb-2 leading-relaxed">{t('settings_api_power_desc')}</p>
+              <select
+                value={aiPower}
+                onChange={e => setAiPower(e.target.value)}
+                className="w-full sm:w-64 bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+                           text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition">
+                <option value="standard">{t('settings_standard')}</option>
+                <option value="performance">{t('settings_performance')}</option>
+                <option value="ultra">{t('settings_ultra')}</option>
+              </select>
+            </div>
             <button
               onClick={handleSave}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold
                          bg-gradient-to-r from-cyan-400 to-cyan-500 text-navy-900
-                         hover:from-cyan-300 hover:to-cyan-400 active:scale-95 transition-all"
+                         hover:from-cyan-300 hover:to-cyan-400 active:scale-95 transition-all flex-shrink-0"
             >
               {saved ? <><Check size={14} /> {t('settings_saved')}</> : t('settings_save')}
             </button>

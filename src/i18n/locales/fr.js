@@ -268,6 +268,7 @@ export default {
     co2_compare_btn: '⚖️ Comparer',
     co2_select_countries: 'Sélectionnez les pays',
     co2_results_for: 'Résultats pour',
+    co2_disclaimer_title: 'Avertissement',
     co2_disclaimer: "Les montants affichés sont fournis à titre indicatif et ne constituent pas un conseil fiscal. Les barèmes sont susceptibles d\'évoluer — vérifiez auprès de l\'autorité compétente de chaque pays avant toute acquisition.",
     // Settings
     settings_api_section: 'API & Intégrations',
