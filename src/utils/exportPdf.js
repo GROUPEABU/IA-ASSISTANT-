@@ -1,8 +1,9 @@
 /**
- * Construit un nom de fichier PDF court et homogène :
- *   ABU-{Modèle}-JJ-MM-AAAA.pdf
- * Le libellé est nettoyé (accents/espaces → tirets, caractères spéciaux retirés)
- * et tronqué pour rester court et lisible.
+ * Construit un nom de fichier PDF lisible et homogène :
+ *   ABU {Modèle} - JJ.MM.AAAA.pdf
+ * Ex. "ABU Citroën C5 Aircross - 01.06.2026.pdf"
+ * Le libellé conserve ses espaces (plus lisible), seuls les séparateurs
+ * internes et caractères spéciaux sont nettoyés.
  *
  * @param {string} label  modèle ou intitulé (ex. "C5 Aircross Hybrid 145")
  * @returns {string}
@@ -10,16 +11,15 @@
 export function pdfFileName(label) {
   const date = new Date()
     .toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    .replace(/\//g, '-')
-  const slug = (label || 'export')
-    .replace(/[·|/]+/g, ' ')           // séparateurs → espace
-    .replace(/[^a-zA-Z0-9À-ÿ\s-]/g, '') // ne garder que lettres/chiffres/accents/espaces/tirets
+    .replace(/\//g, '.')
+  const name = (label || 'Export')
+    .replace(/[·|/]+/g, ' ')            // séparateurs internes → espace
+    .replace(/[^a-zA-Z0-9À-ÿ\s]/g, ' ') // caractères spéciaux → espace
+    .replace(/\s+/g, ' ')               // espaces multiples → un seul
     .trim()
-    .replace(/\s+/g, '-')               // espaces → tiret unique
-    .replace(/-+/g, '-')                // tirets multiples → un seul
-    .slice(0, 28)
-    .replace(/-$/, '')                  // pas de tiret final après troncature
-  return `ABU-${slug}-${date}.pdf`
+    .slice(0, 40)
+    .trim()
+  return `ABU ${name} - ${date}.pdf`
 }
 
 /**
