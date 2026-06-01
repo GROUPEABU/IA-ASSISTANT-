@@ -1,4 +1,28 @@
 /**
+ * Construit un nom de fichier PDF court et homogène :
+ *   ABU-{Modèle}-JJ-MM-AAAA.pdf
+ * Le libellé est nettoyé (accents/espaces → tirets, caractères spéciaux retirés)
+ * et tronqué pour rester court et lisible.
+ *
+ * @param {string} label  modèle ou intitulé (ex. "C5 Aircross Hybrid 145")
+ * @returns {string}
+ */
+export function pdfFileName(label) {
+  const date = new Date()
+    .toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    .replace(/\//g, '-')
+  const slug = (label || 'export')
+    .replace(/[·|/]+/g, ' ')           // séparateurs → espace
+    .replace(/[^a-zA-Z0-9À-ÿ\s-]/g, '') // ne garder que lettres/chiffres/accents/espaces/tirets
+    .trim()
+    .replace(/\s+/g, '-')               // espaces → tiret unique
+    .replace(/-+/g, '-')                // tirets multiples → un seul
+    .slice(0, 28)
+    .replace(/-$/, '')                  // pas de tiret final après troncature
+  return `ABU-${slug}-${date}.pdf`
+}
+
+/**
  * Export PDF « propre » pour tous les outils.
  *
  * Au lieu de capturer l'UI sombre telle quelle (illisible à l'impression,

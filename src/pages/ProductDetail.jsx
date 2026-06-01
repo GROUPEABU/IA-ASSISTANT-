@@ -14,7 +14,7 @@ import SalesReport from '@/components/products/SalesReport'
 import ImportedStockPanel from '@/components/products/ImportedStockPanel'
 import { normalizeProduct } from '@/utils/productShape'
 import { useSettings } from '@/contexts/SettingsContext'
-import { exportToPdf } from '@/utils/exportPdf'
+import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
 
 export default function ProductDetail() {
   const { t } = useSettings()
@@ -48,7 +48,7 @@ export default function ProductDetail() {
   const malusColor = getMalusColor(product.specs.co2_wltp)
 
   const handlePDF = async () => {
-    await exportToPdf(printRef, `${product.fullName.replace(/ /g, '_')}_fiche.pdf`, {
+    await exportToPdf(printRef, pdfFileName(product.fullName), {
       title: t('page_products_title'),
       subtitle: product.fullName,
     })

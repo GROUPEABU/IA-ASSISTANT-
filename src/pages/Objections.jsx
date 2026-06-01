@@ -6,7 +6,7 @@ import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
-import { exportToPdf } from '@/utils/exportPdf'
+import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
 
 const SEGMENTS = [
   { id: 'btoc', labelKey: 'btoc', subKey: 'btoc_sub' },
@@ -167,7 +167,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
   const handlePdf = async () => {
     setExporting(true)
     try {
-      await exportToPdf(objRef, `objections_${vehicleName.replace(/ /g, '_')}.pdf`, { title: t('page_objections_title'), subtitle: vehicleName })
+      await exportToPdf(objRef, pdfFileName(vehicleName), { title: t('page_objections_title'), subtitle: vehicleName })
     } finally {
       setExporting(false)
     }

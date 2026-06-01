@@ -6,7 +6,7 @@ import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
-import { exportToPdf } from '@/utils/exportPdf'
+import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
 
 const PROFILES = [
   { id: 'btoc_famille', labelKey: 'profile_family', subKey: 'profile_family_sub', icon: Users,     segment: 'btoc', color: '#50E5E5' },
@@ -145,7 +145,7 @@ Réponds UNIQUEMENT en JSON valide :
   const handlePdf = async () => {
     setExporting(true)
     try {
-      await exportToPdf(pitchRef, `pitch_${vehicleName.replace(/ /g, '_')}.pdf`, { title: t('page_pitch_title'), subtitle: vehicleName })
+      await exportToPdf(pitchRef, pdfFileName(vehicleName), { title: t('page_pitch_title'), subtitle: vehicleName })
     } finally {
       setExporting(false)
     }

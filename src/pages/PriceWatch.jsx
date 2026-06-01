@@ -9,7 +9,7 @@ import Spinner from '@/components/ui/Spinner'
 import { formatNumber } from '@/utils/formatters'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
-import { exportToPdf } from '@/utils/exportPdf'
+import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
 
 // ── Données filtres ────────────────────────────────────────────────────────────
 const MAKES = [
@@ -305,7 +305,7 @@ export default function PriceWatch() {
   const handlePdf = async () => {
     setExporting(true)
     try {
-      await exportToPdf(resultRef, `veille_prix_${searchLabel.replace(/ /g, '_')}.pdf`, { title: t('tool_price_title'), subtitle: searchLabel })
+      await exportToPdf(resultRef, pdfFileName(searchLabel), { title: t('tool_price_title'), subtitle: searchLabel })
     } finally {
       setExporting(false)
     }
