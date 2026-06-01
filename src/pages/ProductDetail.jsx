@@ -59,9 +59,10 @@ export default function ProductDetail() {
       {/* Header */}
       <div className="flex items-start gap-3">
         <button onClick={() => navigate('/products')}
+          aria-label={t('back') || 'Retour'}
           className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-lg
                      border border-navy-700/50 text-slate-400 hover:text-cyan-400 hover:border-cyan-400/30 transition">
-          <ArrowLeft size={16} />
+          <ArrowLeft size={16} aria-hidden="true" />
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">

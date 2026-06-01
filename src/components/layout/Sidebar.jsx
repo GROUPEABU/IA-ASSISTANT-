@@ -61,9 +61,10 @@ export default function Sidebar({ isOpen, onClose }) {
         </Link>
         <button
           onClick={onClose}
+          aria-label={t('close') || 'Fermer'}
           className="md:hidden w-8 h-8 flex items-center justify-center text-slate-500 hover:text-white hover:bg-navy-700/50 rounded-lg transition"
         >
-          <X size={18} />
+          <X size={18} aria-hidden="true" />
         </button>
       </div>
 
