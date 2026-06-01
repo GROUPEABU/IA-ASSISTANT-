@@ -1,8 +1,4 @@
 import { ChevronDown, SlidersHorizontal, Check, ClipboardList, CheckCircle2 } from 'lucide-react'
-import {
-  getImportDecote, getImportDecoteNL, getImportDecotePT,
-  getImportDecoteDE, getImportDecoteES, getImportDecoteBE, getImportDecoteIE,
-} from '@/utils/malusWorld'
 import { useSettings } from '@/contexts/SettingsContext'
 import SegButton from './SegButton'
 
@@ -77,7 +73,7 @@ function CountryHint({ fieldKey, requiredCtx }) {
     if (!needers.length) return null
     const label = needers.length === 1
       ? `${needers[0].flag} ${needers[0].name}`
-      : needers.map(c => c.flag).join(' ')
+      : `${needers.length} pays`
     return (
       <div className="mt-2 flex items-center gap-1.5 flex-wrap">
         <span
@@ -368,7 +364,7 @@ function ChildrenSection({ value, onChange, hint }) {
   )
 }
 
-function ImportedSection({ value, onChange, dateImmat, hint }) {
+function ImportedSection({ value, onChange, hint }) {
   const { t } = useSettings()
   return (
     <div className="p-4">
@@ -381,14 +377,6 @@ function ImportedSection({ value, onChange, dateImmat, hint }) {
         />
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-slate-200">{t('malus_imported_label')}</div>
-          {value && (
-            <div className="mt-2 text-xs text-cyan-400 bg-cyan-400/7 rounded-lg px-3 py-2 leading-relaxed">
-              🇫🇷 −{getImportDecote(dateImmat)}% · 🇳🇱 −{getImportDecoteNL(dateImmat)}%
-              · 🇵🇹 −{getImportDecotePT(dateImmat)}% · 🇩🇪 −{getImportDecoteDE(dateImmat)}%
-              · 🇪🇸 −{getImportDecoteES(dateImmat)}% · 🇧🇪 −{getImportDecoteBE(dateImmat)}%
-              · 🇮🇪 −{getImportDecoteIE(dateImmat)}%
-            </div>
-          )}
           <CountryHint fieldKey="isImported" {...hint} />
         </div>
       </label>
