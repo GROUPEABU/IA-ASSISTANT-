@@ -92,6 +92,22 @@ export default function CO2Malus() {
       <Header t={t} onReset={handleReset} />
       <ReliabilityLegend />
 
+      <ModeTabs value={mode} onChange={setMode} />
+
+      {/* 1️⃣ Sélection du / des pays en premier — les indices contextuels en dépendent */}
+      {mode === 'country' && (
+        <CountrySelector
+          countries={filteredCountries}
+          search={search}
+          onSearchChange={setSearch}
+          reliabilityFilter={reliabilityFilter}
+          onReliabilityChange={setReliabilityFilter}
+          selectedCountry={malus.selectedCountry}
+          onSelect={malus.selectCountry}
+        />
+      )}
+
+      {/* 2️⃣ Paramètres du véhicule */}
       <SliderSection
         label={t('malus_emissions_label')}
         value={malus.emission}
@@ -122,6 +138,7 @@ export default function CO2Malus() {
 
       <RegistrationDatePicker value={malus.dateImmat} onChange={malus.setDateImmat} />
 
+      {/* 3️⃣ Paramètres avancés — indices contextuels selon le pays sélectionné */}
       <AdvancedParams
         show={showAdvanced}
         onToggle={() => setShowAdvanced(v => !v)}
@@ -138,32 +155,18 @@ export default function CO2Malus() {
         activeParams={malus.result?.advanced_params}
       />
 
-      <ModeTabs value={mode} onChange={setMode} />
-
-      {mode === 'country' && (
-        <>
-          <CountrySelector
-            countries={filteredCountries}
-            search={search}
-            onSearchChange={setSearch}
-            reliabilityFilter={reliabilityFilter}
-            onReliabilityChange={setReliabilityFilter}
-            selectedCountry={malus.selectedCountry}
-            onSelect={malus.selectCountry}
-          />
-          {malus.result && (
-            <MalusResultPanel
-              result={malus.result}
-              dateImmat={malus.dateImmat}
-              isImported={malus.isImported}
-              emission={malus.emission}
-              weight={malus.weight}
-              fuelType={malus.fuelType}
-              formatCurrency={formatCurrency}
-              panelRef={resultRef}
-            />
-          )}
-        </>
+      {/* 4️⃣ Résultat */}
+      {mode === 'country' && malus.result && (
+        <MalusResultPanel
+          result={malus.result}
+          dateImmat={malus.dateImmat}
+          isImported={malus.isImported}
+          emission={malus.emission}
+          weight={malus.weight}
+          fuelType={malus.fuelType}
+          formatCurrency={formatCurrency}
+          panelRef={resultRef}
+        />
       )}
 
       {mode === 'compare' && (
