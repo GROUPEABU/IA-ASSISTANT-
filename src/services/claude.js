@@ -12,7 +12,7 @@
 
 const ENDPOINT     = 'https://api.anthropic.com/v1/messages'
 const API_VERSION  = '2023-06-01'
-const MAX_TOKENS   = 600
+const MAX_TOKENS   = 1500
 
 const MODELS = {
   standard:    'claude-haiku-4-5-20251001',

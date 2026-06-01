@@ -74,7 +74,7 @@ Rédige un verdict comparatif expert et chiffré :
 
 Sois direct, argumenté et chiffré.`
 
-      const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 1200, expert: true, temperature: 0.2, tool: 'comparateur' })
+      const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 2000, expert: true, temperature: 0.2, tool: 'comparateur' })
       setVerdict(result)
     } catch (err) {
       setError(err.message)
