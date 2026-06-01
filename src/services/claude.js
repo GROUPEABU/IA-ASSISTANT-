@@ -117,7 +117,7 @@ function buildContent(text, attachment) {
  * @param {ChatMessage[]} messages
  * @returns {Promise<string>}
  */
-export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false } = {}) {
+export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3 } = {}) {
   const apiKey = getApiKey()
   if (!apiKey) throw new Error('Anthropic API key missing. Please add your key in Settings.')
 
@@ -135,10 +135,11 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model:      getModel(),
-      max_tokens: maxTokens,
-      system:     buildSystemPrompt(lang, expert),
-      messages:   apiMessages,
+      model:       getModel(),
+      max_tokens:  maxTokens,
+      temperature,
+      system:      buildSystemPrompt(lang, expert),
+      messages:    apiMessages,
     }),
   })
 
@@ -161,7 +162,7 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
  * @param {{ lang?: string, onChunk?: (text: string) => void }} opts
  * @returns {Promise<string>}  the complete assistant text
  */
-export async function streamMessage(messages, { lang = 'fr', onChunk } = {}) {
+export async function streamMessage(messages, { lang = 'fr', onChunk, temperature = 0.5 } = {}) {
   const apiKey = getApiKey()
   if (!apiKey) throw new Error('Anthropic API key missing. Please add your key in Settings.')
 
@@ -179,11 +180,12 @@ export async function streamMessage(messages, { lang = 'fr', onChunk } = {}) {
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model:      getModel(),
-      max_tokens: MAX_TOKENS,
-      system:     buildSystemPrompt(lang),
-      messages:   apiMessages,
-      stream:     true,
+      model:       getModel(),
+      max_tokens:  MAX_TOKENS,
+      temperature,
+      system:      buildSystemPrompt(lang),
+      messages:    apiMessages,
+      stream:      true,
     }),
   })
 

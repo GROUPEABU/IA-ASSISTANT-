@@ -106,7 +106,7 @@ Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise mark
   "annonces_par_source": [{"source": "<nom source>", "prix_min": 0, "prix_moy": 0, "prix_max": 0, "nb": 0}]
 }`
 
-  const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 2500, expert: true })
+  const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 2500, expert: true, temperature: 0.2 })
   return extractJSON(raw, 'object')
 }
 
