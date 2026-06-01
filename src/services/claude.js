@@ -1,17 +1,16 @@
 /**
- * Anthropic Claude API client (direct browser → API).
+ * Anthropic Claude API client — routed through the server-side proxy.
  *
- * Constraints:
- *  - This app has no backend. The API key is read from the user's localStorage
- *    OR build-time env var. Browser-direct access requires the
- *    `anthropic-dangerous-direct-browser-access` header.
- *  - For production with multiple users, route this through a Vercel Edge
- *    Function proxy that holds the key server-side. The current setup is
- *    intentional for single-user/portal use.
+ * Security: the API key is never embedded in the client bundle nor sent to a
+ * third-party from the browser. Requests go to the same-origin Edge Function
+ * `/api/chat`, which holds the key server-side (see api/chat.js).
+ *
+ * Optional per-user override: if a user pasted their own key in Settings, it is
+ * sent to the proxy via the `x-user-api-key` header (stored only in their own
+ * localStorage, never in the shipped bundle).
  */
 
-const ENDPOINT     = 'https://api.anthropic.com/v1/messages'
-const API_VERSION  = '2023-06-01'
+const ENDPOINT     = '/api/chat'
 const MAX_TOKENS   = 2048
 
 const MODELS = {
@@ -22,13 +21,22 @@ const MODELS = {
 
 import { getSessionUserId, ukey } from '@/utils/userStorage'
 
-function getApiKey() {
+// Optional personal key override (never required — the server holds the key).
+function getUserApiKey() {
   try {
     const uid = getSessionUserId()
-    return localStorage.getItem(ukey(uid, 'api_key')) || import.meta.env.VITE_ANTHROPIC_API_KEY || ''
+    return localStorage.getItem(ukey(uid, 'api_key')) || ''
   } catch {
-    return import.meta.env.VITE_ANTHROPIC_API_KEY || ''
+    return ''
   }
+}
+
+// Builds request headers for the proxy, attaching the personal key only if set.
+function proxyHeaders() {
+  const headers = { 'content-type': 'application/json' }
+  const userKey = getUserApiKey()
+  if (userKey) headers['x-user-api-key'] = userKey
+  return headers
 }
 
 function getModel() {
@@ -170,9 +178,6 @@ function buildContent(text, attachment) {
  * @returns {Promise<string>}
  */
 export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3, tool = null, webSearch = false, maxSearches = 5, returnMeta = false } = {}) {
-  const apiKey = getApiKey()
-  if (!apiKey) throw new Error('Anthropic API key missing. Please add your key in Settings.')
-
   const apiMessages = messages.map(({ role, content, attachment }) => ({
     role,
     content: buildContent(content, attachment),
@@ -193,12 +198,7 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
 
   const response = await fetch(ENDPOINT, {
     method:  'POST',
-    headers: {
-      'x-api-key':                                 apiKey,
-      'anthropic-version':                         API_VERSION,
-      'content-type':                              'application/json',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
+    headers: proxyHeaders(),
     body: JSON.stringify(body),
   })
 
@@ -230,9 +230,6 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
  * @returns {Promise<string>}  the complete assistant text
  */
 export async function streamMessage(messages, { lang = 'fr', onChunk, temperature = 0.6, webSearch = false, maxSearches = 3 } = {}) {
-  const apiKey = getApiKey()
-  if (!apiKey) throw new Error('Anthropic API key missing. Please add your key in Settings.')
-
   const apiMessages = messages.map(({ role, content, attachment }) => ({
     role,
     content: buildContent(content, attachment),
@@ -252,12 +249,7 @@ export async function streamMessage(messages, { lang = 'fr', onChunk, temperatur
 
   const response = await fetch(ENDPOINT, {
     method:  'POST',
-    headers: {
-      'x-api-key':                                 apiKey,
-      'anthropic-version':                         API_VERSION,
-      'content-type':                              'application/json',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
+    headers: proxyHeaders(),
     body: JSON.stringify(body),
   })
 
