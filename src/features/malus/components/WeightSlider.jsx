@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useSettings } from '@/contexts/SettingsContext'
 import { WEIGHT_PRESETS } from '../constants'
 
@@ -8,10 +9,26 @@ const COLOR = '#7DD3FC'
 
 export default function WeightSlider({ value, onChange }) {
   const { t } = useSettings()
+  // While the user is typing we keep the raw text so the field can be cleared
+  // (or set to 0) to type a value entirely by hand. `null` ⇒ follow `value`.
+  const [draft, setDraft] = useState(null)
+  const display = draft !== null ? draft : value
 
   const handleInputChange = (e) => {
-    const next = e.target.value === '' ? MIN_WEIGHT : Number(e.target.value)
-    if (!isNaN(next)) onChange(Math.min(MAX_WEIGHT, Math.max(MIN_WEIGHT, next)))
+    const raw = e.target.value
+    setDraft(raw)
+    if (raw === '') { onChange(0); return }
+    const n = Number(raw)
+    if (!isNaN(n)) onChange(Math.min(MAX_WEIGHT, Math.max(0, n)))
+  }
+
+  // On blur, snap back into the valid range and stop overriding `value`.
+  const handleBlur = () => {
+    if (draft !== null) {
+      const n = Number(draft)
+      if (draft !== '' && !isNaN(n)) onChange(Math.min(MAX_WEIGHT, Math.max(MIN_WEIGHT, n)))
+      setDraft(null)
+    }
   }
 
   return (
@@ -36,12 +53,13 @@ export default function WeightSlider({ value, onChange }) {
         >
           <input
             type="number"
-            min={MIN_WEIGHT}
+            min={0}
             max={MAX_WEIGHT}
             step={STEP}
-            value={value}
+            value={display}
             inputMode="numeric"
             onChange={handleInputChange}
+            onBlur={handleBlur}
             aria-label={t('weight_input_label')}
             className="slider-value-input w-24 text-3xl font-bold text-center border-0 outline-none leading-none"
             style={{ fontFamily: 'inherit', MozAppearance: 'textfield', WebkitAppearance: 'none', color: COLOR, background: 'transparent' }}
