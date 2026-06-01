@@ -22,29 +22,8 @@ export function CompareCountrySelect({ selectedForCompare, onToggleCountry }) {
 export function CompareResultsPanel({
   selectedForCompare, onRunCompare, compareResults, emission, weight, panelRef,
 }) {
-  const { t } = useSettings()
   return (
     <>
-      {selectedForCompare.length >= 2 && (
-        <div className="flex items-center justify-between gap-3 px-1 mb-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">{selectedForCompare.length} {t('malus_compare_countries_label')} :</span>
-            <div className="flex gap-0.5">
-              {selectedForCompare.map(c => (
-                <span key={c.code} className="text-lg leading-none">{c.flag}</span>
-              ))}
-            </div>
-          </div>
-          <button
-            onClick={onRunCompare}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border border-cyan-400/40 text-cyan-400 active:scale-95 transition"
-            style={{ background: 'rgba(80,229,229,0.06)' }}
-          >
-            {t('malus_compare_btn')}
-          </button>
-        </div>
-      )}
-
       {compareResults.length >= 2 && (
         <CompareResults
           results={compareResults}
