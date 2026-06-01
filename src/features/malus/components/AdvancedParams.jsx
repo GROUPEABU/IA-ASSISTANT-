@@ -1,4 +1,4 @@
-import { ChevronDown, SlidersHorizontal, Check } from 'lucide-react'
+import { ChevronDown, SlidersHorizontal, Check, ClipboardList, CheckCircle2 } from 'lucide-react'
 import {
   getImportDecote, getImportDecoteNL, getImportDecotePT,
   getImportDecoteDE, getImportDecoteES, getImportDecoteBE, getImportDecoteIE,
@@ -33,50 +33,39 @@ const COUNTRY_META = {
 }
 
 /**
- * Contextual country hint shown below each parameter section.
- * - No country selected → list full country names that use this field
- * - Country selected + field active → green "Active" badge
- * - Country selected + field inactive → muted "Not used" note
+ * Hint shown below each parameter section.
  *
- * For isImported, we check against FIELD_COUNTRIES rather than advanced_params
- * (since import decote is not listed as an advanced_param on country records).
+ * - Contextual mode (a country / countries selected) → green "Requis pour 🇪🇸 …"
+ *   listing the selected countries that actually use this field.
+ * - Discovery mode (nothing selected) → muted list of all countries using it.
  */
-function CountryHint({ fieldKey, selectedCountry, activeParams }) {
-  if (selectedCountry) {
-    let isActive
-    if (fieldKey === 'isImported') {
-      isActive = FIELD_COUNTRIES.isImported.includes(selectedCountry.code)
-    } else {
-      isActive = activeParams?.includes(fieldKey)
-    }
-    if (isActive) {
-      return (
-        <div className="mt-2 flex items-center gap-1.5">
-          <span
-            className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
-            style={{ color: '#34d399', background: 'rgba(52,211,153,0.10)', border: '1px solid rgba(52,211,153,0.20)' }}
-          >
-            <Check size={11} strokeWidth={3} className="flex-shrink-0" />
-            Actif · {selectedCountry.flag} {selectedCountry.name}
-          </span>
-        </div>
-      )
-    }
+function CountryHint({ fieldKey, requiredCtx }) {
+  if (requiredCtx) {
+    const needers = requiredCtx.byField[fieldKey] || []
+    if (!needers.length) return null
+    const label = needers.length === 1
+      ? `${needers[0].flag} ${needers[0].name}`
+      : needers.map(c => c.flag).join(' ')
     return (
-      <p className="mt-2 text-[10px] text-slate-600 italic">
-        Non requis pour {selectedCountry.flag} {selectedCountry.name}
-      </p>
+      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+        <span
+          className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
+          style={{ color: '#34d399', background: 'rgba(52,211,153,0.10)', border: '1px solid rgba(52,211,153,0.20)' }}
+        >
+          <Check size={11} strokeWidth={3} className="flex-shrink-0" />
+          Requis pour {label}
+        </span>
+      </div>
     )
   }
 
-  // No country selected — list relevant countries with full names
   const codes = FIELD_COUNTRIES[fieldKey] || []
   if (!codes.length) return null
   return (
     <p className="mt-2 text-[10px] text-slate-600 leading-relaxed">
       {codes.map(code => {
         const m = COUNTRY_META[code]
-        return m ? `${m.flag} ${m.name}` : code
+        return m ? `${m.flag} ${m.name}` : code
       }).join(' · ')}
     </p>
   )
@@ -93,12 +82,66 @@ export default function AdvancedParams({
   isImported, setIsImported,
   dateImmat,
   formatCurrency,
-  selectedCountry,
-  activeParams,
+  requiredCtx,
 }) {
   const { t } = useSettings()
-  const hint = { selectedCountry, activeParams }
+  const contextual = !!requiredCtx
+  const hint = { requiredCtx }
 
+  // Which sections to render: only the required ones in contextual mode, all otherwise
+  const visible = (key) => contextual ? requiredCtx.fields.includes(key) : true
+
+  const sections = (
+    <div className="glass-card mt-2 overflow-hidden divide-y divide-white/5">
+      {visible('displacement')  && <DisplacementSection value={displacement} onChange={setDisplacement} hint={hint} />}
+      {visible('fuelKind')      && <FuelKindSection      value={fuelKind}      onChange={setFuelKind}      hint={hint} />}
+      {visible('vehiclePrice')  && <VehiclePriceSection  value={vehiclePrice}  onChange={setVehiclePrice} formatCurrency={formatCurrency} hint={hint} />}
+      {visible('beRegion')      && <BeRegionSection      value={beRegion}      onChange={setBeRegion}      hint={hint} />}
+      {visible('esRegion')      && <EsRegionSection      value={esRegion}      onChange={setEsRegion}      hint={hint} />}
+      {visible('childrenCount') && <ChildrenSection      value={childrenCount} onChange={setChildrenCount} hint={hint} />}
+      {visible('isImported')    && <ImportedSection      value={isImported}    onChange={setIsImported}    dateImmat={dateImmat} hint={hint} />}
+    </div>
+  )
+
+  // ── Contextual mode: a country (or countries) is selected ──────────────────
+  if (contextual) {
+    const { countries, fields } = requiredCtx
+    const countryLabel = countries.length === 1
+      ? `${countries[0].flag} ${countries[0].name}`
+      : countries.map(c => c.flag).join(' ')
+
+    return (
+      <div className="mb-2">
+        <div
+          className="w-full px-4 py-3 rounded-xl flex items-center gap-2.5 border-2"
+          style={{ background: 'rgba(80,229,229,0.06)', borderColor: 'rgba(80,229,229,0.25)' }}
+        >
+          <span
+            className="flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center"
+            style={{ background: 'rgba(80,229,229,0.15)', color: '#50E5E5' }}
+          >
+            <ClipboardList size={13} />
+          </span>
+          <span className="text-sm font-semibold text-slate-200 min-w-0">
+            {fields.length > 0
+              ? <>{t('malus_required_for')} <span className="text-cyan-400">{countryLabel}</span></>
+              : <span className="text-slate-300">{t('malus_no_extra_required')}</span>}
+          </span>
+        </div>
+
+        {fields.length > 0 ? sections : (
+          <div className="glass-card mt-2 p-4 flex items-start gap-3">
+            <CheckCircle2 size={18} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-slate-400 leading-relaxed">
+              {t('malus_no_extra_note').replace('{country}', countryLabel)}
+            </p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── Discovery mode: nothing selected yet — keep the collapsible explorer ────
   return (
     <div className="mb-2">
       <button
@@ -135,17 +178,7 @@ export default function AdvancedParams({
         />
       </button>
 
-      {show && (
-        <div className="glass-card mt-2 overflow-hidden divide-y divide-white/5">
-          <DisplacementSection value={displacement} onChange={setDisplacement} hint={hint} />
-          <FuelKindSection      value={fuelKind}      onChange={setFuelKind}      hint={hint} />
-          <VehiclePriceSection  value={vehiclePrice}  onChange={setVehiclePrice} formatCurrency={formatCurrency} hint={hint} />
-          <BeRegionSection      value={beRegion}      onChange={setBeRegion}      hint={hint} />
-          <EsRegionSection      value={esRegion}      onChange={setEsRegion}      hint={hint} />
-          <ChildrenSection      value={childrenCount} onChange={setChildrenCount} hint={hint} />
-          <ImportedSection      value={isImported}    onChange={setIsImported}    dateImmat={dateImmat} hint={hint} />
-        </div>
-      )}
+      {show && sections}
     </div>
   )
 }

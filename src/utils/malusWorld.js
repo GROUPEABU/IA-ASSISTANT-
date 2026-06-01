@@ -2447,7 +2447,32 @@ const RELIABILITY_CONFIG = {
   }
 };
 
+// Pays appliquant une décote « importé » (le champ "véhicule importé" leur est utile)
+const IMPORT_COUNTRIES = ["FR", "NL", "PT", "DE", "ES", "BE", "IE"];
+
+/**
+ * Renvoie la liste des champs avancés réellement utilisés par un pays
+ * (cylindrée, type de carburant, prix, région, enfants, importé…).
+ *
+ * Source de vérité : le tableau `advanced_params` renvoyé par buildCountryData,
+ * complété par le champ "importé" pour les pays appliquant une décote.
+ * Les valeurs d'entrée n'influencent pas la structure fiscale, on utilise donc
+ * des valeurs neutres par défaut.
+ *
+ * @param {string} code  code pays ISO (ex. "ES")
+ * @returns {string[]}   ex. ["vehiclePrice", "esRegion", "isImported"]
+ */
+function getCountryRequiredFields(code) {
+  const d = buildCountryData(code, 120, 1400, "thermique", "2025-01-01", false, {});
+  const fields = Array.isArray(d?.advanced_params) ? [...d.advanced_params] : [];
+  if (IMPORT_COUNTRIES.includes(code) && !fields.includes("isImported")) {
+    fields.push("isImported");
+  }
+  return fields;
+}
+
 export {
+  IMPORT_COUNTRIES, getCountryRequiredFields,
   FR_BAREME_2023, FR_BAREME_2024, FR_BAREME_2025, FR_BAREME_2026, FR_BAREME_2027,
   getFRPeriod, computeFR, computeFRPoids, formatDateFR,
   getImportDecote, getImportDecotePT, getImportDecoteNL, getImportDecoteDE,

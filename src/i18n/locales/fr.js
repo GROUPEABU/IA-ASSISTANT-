@@ -395,6 +395,9 @@ export default {
     malus_advanced_params: 'Paramètres avancés',
     malus_show: '▼ Afficher',
     malus_hide: '▲ Masquer',
+    malus_required_for: 'À renseigner pour',
+    malus_no_extra_required: 'Aucune information supplémentaire requise',
+    malus_no_extra_note: 'Le malus de {country} se calcule uniquement à partir des émissions, du poids, de la motorisation et de la date d’immatriculation.',
     malus_reset: 'Réinitialiser',
     malus_page_title: 'CO₂ & Malus Mondial',
     malus_page_subtitle: 'Calculateur sur 40 pays · Autobuyunion',
@@ -663,7 +666,7 @@ export default {
   malus_es_peninsula: 'Péninsule',
   malus_children_label: 'Enfants à charge',
   malus_large_family: 'Famille nombreuse : −{n} g/km (art. L421-70 CIBS)',
-  malus_imported_label: "🚗 Véhicule importé d'occasion",
+  malus_imported_label: "Véhicule importé d'occasion",
   malus_imported_note: 'Décote selon ancienneté',
   // CompareView
   malus_compare_select_countries: 'Sélectionnez les pays',

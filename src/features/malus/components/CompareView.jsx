@@ -4,20 +4,27 @@ import { getCountryName } from '@/utils/malusLabels'
 import { sevColor } from '../constants'
 
 /**
- * Compare-mode view: select up to 6 countries, run the comparison, see ranked results.
+ * Compare-mode country selection grid — shown first (top of the page) so the
+ * user picks the countries before filling the vehicle parameters.
  */
-export default function CompareView({
-  selectedForCompare, onToggleCountry, onRunCompare,
-  compareResults, emission, weight, panelRef,
+export function CompareCountrySelect({ selectedForCompare, onToggleCountry }) {
+  return (
+    <CountryCheckboxGrid
+      selected={selectedForCompare}
+      onToggle={onToggleCountry}
+    />
+  )
+}
+
+/**
+ * Compare-mode run button + ranked results — shown after the parameters.
+ */
+export function CompareResultsPanel({
+  selectedForCompare, onRunCompare, compareResults, emission, weight, panelRef,
 }) {
   const { t } = useSettings()
   return (
     <>
-      <CountryCheckboxGrid
-        selected={selectedForCompare}
-        onToggle={onToggleCountry}
-      />
-
       {selectedForCompare.length >= 2 && (
         <div className="flex items-center justify-between gap-3 px-1 mb-2">
           <div className="flex items-center gap-2">

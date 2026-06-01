@@ -371,6 +371,9 @@ export default {
     malus_advanced_params: 'Advanced parameters',
     malus_show: '▼ Show',
     malus_hide: '▲ Hide',
+    malus_required_for: 'To fill in for',
+    malus_no_extra_required: 'No additional information required',
+    malus_no_extra_note: 'The {country} tax is computed solely from emissions, weight, powertrain and registration date.',
     malus_reset: 'Reset',
     malus_page_title: 'CO₂ & Worldwide Duty',
     malus_page_subtitle: 'Calculator across 40 countries · Autobuyunion',
@@ -635,7 +638,7 @@ export default {
   malus_es_peninsula: 'Peninsula',
   malus_children_label: 'Dependent children',
   malus_large_family: 'Large family: −{n} g/km (art. L421-70 CIBS)',
-  malus_imported_label: '🚗 Imported used vehicle',
+  malus_imported_label: 'Imported used vehicle',
   malus_imported_note: 'Age-based reduction',
   // CompareView
   malus_compare_select_countries: 'Select countries',

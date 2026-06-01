@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { RotateCcw, Info } from 'lucide-react'
-import { COUNTRIES, CUSTOM_EMISSIONS, RELIABILITY_CONFIG } from '@/utils/malusWorld'
+import { COUNTRIES, CUSTOM_EMISSIONS, RELIABILITY_CONFIG, getCountryRequiredFields } from '@/utils/malusWorld'
 import { getCountryName } from '@/utils/malusLabels'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useMalusCalculation } from '@/features/malus/hooks/useMalusCalculation'
@@ -11,7 +11,10 @@ import RegistrationDatePicker from '@/features/malus/components/RegistrationDate
 import AdvancedParams     from '@/features/malus/components/AdvancedParams'
 import CountrySelector    from '@/features/malus/components/CountrySelector'
 import MalusResultPanel   from '@/features/malus/components/MalusResultPanel'
-import CompareView        from '@/features/malus/components/CompareView'
+import { CompareCountrySelect, CompareResultsPanel } from '@/features/malus/components/CompareView'
+
+// Ordre d'affichage canonique des paramètres requis
+const FIELD_ORDER = ['displacement', 'fuelKind', 'vehiclePrice', 'beRegion', 'esRegion', 'childrenCount', 'isImported']
 
 // Fuel options are i18n-aware — labelKey/noteKey are resolved via t() at render
 const FUEL_OPTIONS = [
@@ -72,6 +75,28 @@ export default function CO2Malus() {
     )
   })
 
+  // Champs spécifiques à renseigner pour le(s) pays sélectionné(s).
+  // En mode pays : le pays choisi. En mode comparaison : l'union des champs
+  // requis par tous les pays comparés, avec le détail du / des pays concernés
+  // par champ. null = aucun pays choisi → on garde l'explorateur repliable.
+  const requiredCtx = useMemo(() => {
+    const countries = mode === 'country'
+      ? (malus.selectedCountry ? [malus.selectedCountry] : [])
+      : malus.selectedForCompare
+    if (countries.length === 0) return null
+
+    const byField = {}
+    countries.forEach(c => {
+      getCountryRequiredFields(c.code).forEach(f => {
+        if (!byField[f]) byField[f] = []
+        byField[f].push({ code: c.code, flag: c.flag, name: getCountryName(c.code, lang) || c.name })
+      })
+    })
+    const fields = FIELD_ORDER.filter(f => byField[f])
+    const labelled = countries.map(c => ({ code: c.code, flag: c.flag, name: getCountryName(c.code, lang) || c.name }))
+    return { fields, byField, countries: labelled }
+  }, [mode, malus.selectedCountry, malus.selectedForCompare, lang])
+
   // Auto-scroll to results when they appear
   useEffect(() => {
     if (malus.result) {
@@ -94,7 +119,7 @@ export default function CO2Malus() {
 
       <ModeTabs value={mode} onChange={setMode} />
 
-      {/* 1. Sélection du / des pays en premier — les indices contextuels en dépendent */}
+      {/* 1. Sélection du / des pays en premier — les champs requis en dépendent */}
       {mode === 'country' && (
         <CountrySelector
           countries={filteredCountries}
@@ -104,6 +129,13 @@ export default function CO2Malus() {
           onReliabilityChange={setReliabilityFilter}
           selectedCountry={malus.selectedCountry}
           onSelect={malus.selectCountry}
+        />
+      )}
+
+      {mode === 'compare' && (
+        <CompareCountrySelect
+          selectedForCompare={malus.selectedForCompare}
+          onToggleCountry={malus.toggleCompareCountry}
         />
       )}
 
@@ -138,7 +170,7 @@ export default function CO2Malus() {
 
       <RegistrationDatePicker value={malus.dateImmat} onChange={malus.setDateImmat} />
 
-      {/* 3. Paramètres avancés — indices contextuels selon le pays sélectionné */}
+      {/* 3. Champs spécifiques requis par le(s) pays — ou explorateur si aucun pays choisi */}
       <AdvancedParams
         show={showAdvanced}
         onToggle={() => setShowAdvanced(v => !v)}
@@ -151,8 +183,7 @@ export default function CO2Malus() {
         isImported={malus.isImported}       setIsImported={malus.setIsImported}
         dateImmat={malus.dateImmat}
         formatCurrency={formatCurrency}
-        selectedCountry={malus.selectedCountry}
-        activeParams={malus.result?.advanced_params}
+        requiredCtx={requiredCtx}
       />
 
       {/* 4. Résultat */}
@@ -170,9 +201,8 @@ export default function CO2Malus() {
       )}
 
       {mode === 'compare' && (
-        <CompareView
+        <CompareResultsPanel
           selectedForCompare={malus.selectedForCompare}
-          onToggleCountry={malus.toggleCompareCountry}
           onRunCompare={malus.runManualCompare}
           compareResults={malus.compareResults}
           emission={malus.emission}
