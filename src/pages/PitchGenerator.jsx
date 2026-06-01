@@ -91,25 +91,27 @@ export default function PitchGenerator() {
           ].filter(Boolean).join('\n')
         : ''
 
-      const prompt = `Tu es un expert commercial automobile pour Autobuyunion.
+      const prompt = `Tu es un expert commercial automobile pour Autobuyunion — 1er groupement européen d'achat auto.
 
 Génère un pitch de vente structuré et percutant pour le ${vehicleName}, destiné à : ${t(profile.subKey)} — ${t(profile.labelKey)}.
 ${context ? `\nContexte client : ${context}` : ''}
 ${productContext}
 
+RÈGLE AUTOBUYUNION : nos partenaires achètent en volume à prix HT compétitif et se positionnent TOUJOURS parmi les prix les plus attractifs du marché (premiers du net, top 20% moins chers). L'argument prix est un avantage concurrentiel fort — intègre-le dans l'accroche ou les arguments.
+
 Réponds UNIQUEMENT en JSON valide :
 {
-  "accroche": "2-3 phrases d'accroche percutantes, adaptées au profil, avec chiffres si possible",
+  "accroche": "2-3 phrases d'accroche percutantes, adaptées au profil, avec chiffres et argument prix compétitif Autobuyunion",
   "arguments": [
     "Argument 1 concret avec données chiffrées",
     "Argument 2 concret avec données chiffrées",
-    "Argument 3 concret avec données chiffrées"
+    "Argument prix Autobuyunion : positionnement parmi les plus compétitifs du marché, économie réelle vs. prix marché moyen"
   ],
   "objections": [
     {"question": "Objection probable du client", "reponse": "Réponse commerciale en 2-3 phrases avec argument concret"},
     {"question": "Deuxième objection probable", "reponse": "Réponse commerciale en 2-3 phrases avec argument concret"}
   ],
-  "closing": "Phrase de closing engageante avec appel à l'action"
+  "closing": "Phrase de closing engageante avec appel à l'action et argument prix"
 }`
 
       const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 3000, expert: true, temperature: 0.85, tool: 'pitch' })

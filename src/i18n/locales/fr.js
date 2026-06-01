@@ -754,6 +754,8 @@ export default {
   price_argus_range: 'Cote Argus (min – max)',
   price_pro_range: 'Fourchette achat pro',
   price_margin_label: 'Marge brute pot.',
+  price_best_market: 'Meilleur prix du net',
+  price_conseille_vente: 'Prix conseillé vente',
   price_equipements_label: 'Équipements recherchés',
   price_arguments_label: 'Arguments commerciaux',
   price_vigilance_label: 'Points de vigilance',

@@ -729,6 +729,8 @@ export default {
   price_argus_range: 'Argus valuation (min – max)',
   price_pro_range: 'Pro purchase range',
   price_margin_label: 'Potential gross margin',
+  price_best_market: 'Best price online',
+  price_conseille_vente: 'Recommended sale price',
   price_equipements_label: 'Sought-after features',
   price_arguments_label: 'Commercial arguments',
   price_vigilance_label: 'Watch-out points',

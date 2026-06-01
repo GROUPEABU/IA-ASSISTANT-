@@ -92,10 +92,12 @@ Inclus :
 2. **Arguments BtoB** (flottes, entreprises)
 3. **Arguments BtoC** (particuliers)
 4. **Réponses aux 3 objections principales** (marque inconnue, malus, valeur résiduelle)
-5. **Closing** — phrase de signature
+5. **Argument prix Autobuyunion** — achat en volume pro HT → prix de vente TTC PARMI LES PREMIERS DU NET (top 20% moins chers du marché). Cite un prix compétitif concret et l'écart vs. marché moyen.
+6. **Closing** — phrase de signature
 
-Prix : ${formatNumber(product.prix.base)}€ · Malus : ${malus > 0 ? `+${formatNumber(malus)}€` : 'Exonéré'} · CO₂ : ${product.specs.co2_wltp}g/km${priceAdvantageLine}${stockLine}
+Prix catalogue : ${formatNumber(product.prix.base)}€ · Malus : ${malus > 0 ? `+${formatNumber(malus)}€` : 'Exonéré'} · CO₂ : ${product.specs.co2_wltp}g/km${priceAdvantageLine}${stockLine}
 
+RÈGLE AUTOBUYUNION : nos partenaires se positionnent toujours parmi les prix les plus compétitifs du marché, jamais sur la moyenne haute. Intègre cet avantage concurrentiel dans le pitch.
 Sois percutant, concret et adapté au marché français.`
 
       const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 2500, expert: true, temperature: 0.7, tool: 'rapportcommercial' })

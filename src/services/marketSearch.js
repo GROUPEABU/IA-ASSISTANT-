@@ -38,7 +38,8 @@ Prix neuf vs concurrence directe, remises pratiquées sur le marché, budget tot
 Actualité du modèle, évolutions gamme, impact ZFE, électrification du segment.
 
 **5. RECOMMANDATIONS AUTOBUYUNION**
-Actions concrètes : timing optimal d'achat, leviers de négociation, cibles BtoB/BtoC prioritaires, argument prix.
+Actions concrètes : timing optimal d'achat, leviers de négociation, cibles BtoB/BtoC prioritaires.
+POSITIONNEMENT PRIX OBLIGATOIRE : identifier les prix les plus compétitifs du marché (premiers du net, top 20% annonces les moins chères). Recommander un prix de vente TTC qui place les partenaires parmi les offres les plus attractives visibles sur La Centrale / LeBonCoin / AutoScout24. Les partenaires achètent en volume à prix HT et DOIVENT transmettre cet avantage en prix TTC compétitif — jamais positionné sur la moyenne haute du marché.
 
 Sois précis, chiffré, et directement utilisable par nos équipes commerciales.${langInstruction}`
 }

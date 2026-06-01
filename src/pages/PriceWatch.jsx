@@ -62,12 +62,12 @@ async function analyzePrices(filters, fuels, gearboxes, bodies, lang = 'fr') {
     ? `\n⚠️ FILTRE FINITION STRICT : Analyse UNIQUEMENT la finition/version "${filters.finition}".`
     : ''
 
-  const dataSection = `RECHERCHE WEB OBLIGATOIRE — commence IMPÉRATIVEMENT par utiliser l'outil de recherche web (plusieurs requêtes) AVANT toute estimation. Cherche les annonces ACTUELLES de ce véhicule, ex :
+  const dataSection = `RECHERCHE WEB OBLIGATOIRE — utilise l'outil de recherche web (plusieurs requêtes) AVANT toute estimation. Cherche en priorité les annonces les MOINS CHÈRES du marché ("premiers du net"), ex :
 - "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.yearMin || ''} occasion prix lacentrale"
-- "${filters.make} ${filters.model} ${filters.finition || ''} leboncoin"
-- "${filters.make} ${filters.model} ${filters.finition || ''} autoscout24 occasion"
-Lis les prix réels trouvés, ne garde que les annonces correspondant EXACTEMENT au véhicule cible, puis calcule les statistiques sur ces prix réels.
-N'invente JAMAIS d'erreur "403/404" : décris seulement ce que tu as réellement trouvé. Si après recherche tu n'as vraiment aucune annonce exploitable, alors seulement bascule sur ta connaissance experte du marché et indique-le sobrement dans "alerte".`
+- "${filters.make} ${filters.model} ${filters.finition || ''} leboncoin occasion pas cher"
+- "${filters.make} ${filters.model} ${filters.finition || ''} autoscout24 moins cher"
+OBJECTIF PRINCIPAL : identifier les 10–20% des annonces les moins chères réellement disponibles. Les partenaires Autobuyunion achètent en volume à prix HT compétitif et doivent se positionner PARMI LES PREMIERS DU NET — jamais sur la moyenne haute. Lis les prix réels, repère la fourchette basse du marché, et fixe le prix conseillé vente TTC dans cette fourchette compétitive.
+N'invente JAMAIS d'erreur "403/404" : décris ce que tu as réellement trouvé. Si aucune annonce exploitable après recherche, bascule sur ta connaissance experte et l'indique dans "alerte".`
 
   const prompt = `Tu es expert en cote et marché automobile ${filters.type === 'vn' ? 'VN (véhicule neuf)' : 'VO (occasion)'} pour Autobuyunion, dealer professionnel en France.
 Véhicule cible : "${vehicleDesc}"${finitionFilter}
@@ -92,12 +92,14 @@ Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise mark
   "fourchette_achat_pro_min": <prix achat pro recommandé minimum HT>,
   "fourchette_achat_pro_max": <prix achat pro recommandé maximum HT>,
   "marge_brute_potentielle": <marge brute moyenne potentielle en €>,
+  "prix_meilleur_marche": <prix des 10% annonces les moins chères observées TTC — référence "premier du net">,
+  "prix_conseille_vente": <prix de vente conseillé TTC pour se positionner parmi les 20% moins chers du marché : compétitif et rapide à vendre>,
   "cote_argus_min": <cote Argus basse TTC>,
   "cote_argus_max": <cote Argus haute TTC>,
   "alerte": <"texte si données insuffisantes ou anomalie" | null>,
   "analyse": "<3-4 phrases expertes : positionnement marché, demande, liquidité, points clés>",
-  "conseil_achat": "<conseil d'achat chiffré et actionnable pour obtenir le meilleur prix>",
-  "conseil_vente": "<conseil de vente chiffré et actionnable pour vendre vite au meilleur prix>",
+  "conseil_achat": "<conseil d'achat chiffré et actionnable pour obtenir le meilleur prix HT>",
+  "conseil_vente": "<stratégie PREMIERS DU NET : prix exact conseillé TTC, écart vs prix moyen marché, argument face aux concurrents en ligne, délai rotation estimé si bien positionné>",
   "equipements_recherches": ["<équip1 très recherché>", "<équip2>", "<équip3>", "<équip4>"],
   "arguments_commerciaux": ["<argument fort 1 avec chiffre>", "<argument fort 2>", "<argument fort 3>"],
   "points_vigilance": ["<point vigilance 1>", "<point vigilance 2>", "<point vigilance 3>"],
@@ -548,6 +550,11 @@ export default function PriceWatch() {
             {/* Pricing pro */}
             <div className="glass-card p-4">
               <SectionTitle icon={Zap} label={t('price_pro_section')} color="text-emerald-400" />
+              {/* Prix compétitifs — priorité absolue */}
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <KpiCard label={t('price_best_market')} value={fmtEur(result.prix_meilleur_marche)} sub="TOP 10% marché" small />
+                <KpiCard label={t('price_conseille_vente')} value={fmtEur(result.prix_conseille_vente)} highlight sub="TTC compétitif" small />
+              </div>
               <div className="grid grid-cols-2 gap-2 mb-2">
                 <KpiCard
                   label={t('price_pro_range')}
@@ -556,7 +563,7 @@ export default function PriceWatch() {
                     : 'N/D'}
                   sub="HT" small
                 />
-                <KpiCard label={t('price_margin_label')} value={fmtEur(result.marge_brute_potentielle)} highlight small />
+                <KpiCard label={t('price_margin_label')} value={fmtEur(result.marge_brute_potentielle)} small />
               </div>
               <p className="text-[10px] text-slate-500 leading-relaxed">{result.conseil_achat}</p>
             </div>
