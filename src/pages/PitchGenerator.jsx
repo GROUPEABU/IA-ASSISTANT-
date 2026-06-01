@@ -143,7 +143,7 @@ Réponds UNIQUEMENT en JSON valide :
   const handlePdf = async () => {
     setExporting(true)
     try {
-      await exportToPdf(pitchRef, `pitch_${vehicleName.replace(/ /g, '_')}.pdf`)
+      await exportToPdf(pitchRef, `pitch_${vehicleName.replace(/ /g, '_')}.pdf`, { title: t('page_pitch_title'), subtitle: vehicleName })
     } finally {
       setExporting(false)
     }

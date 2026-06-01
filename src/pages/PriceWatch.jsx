@@ -297,7 +297,7 @@ export default function PriceWatch() {
   const handlePdf = async () => {
     setExporting(true)
     try {
-      await exportToPdf(resultRef, `veille_prix_${searchLabel.replace(/ /g, '_')}.pdf`)
+      await exportToPdf(resultRef, `veille_prix_${searchLabel.replace(/ /g, '_')}.pdf`, { title: t('tool_price_title'), subtitle: searchLabel })
     } finally {
       setExporting(false)
     }
