@@ -12,7 +12,7 @@
 
 const ENDPOINT     = 'https://api.anthropic.com/v1/messages'
 const API_VERSION  = '2023-06-01'
-const MAX_TOKENS   = 1500
+const MAX_TOKENS   = 2048
 
 const MODELS = {
   standard:    'claude-haiku-4-5-20251001',
@@ -206,7 +206,7 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
  * @param {{ lang?: string, onChunk?: (text: string) => void }} opts
  * @returns {Promise<string>}  the complete assistant text
  */
-export async function streamMessage(messages, { lang = 'fr', onChunk, temperature = 0.5 } = {}) {
+export async function streamMessage(messages, { lang = 'fr', onChunk, temperature = 0.6 } = {}) {
   const apiKey = getApiKey()
   if (!apiKey) throw new Error('Anthropic API key missing. Please add your key in Settings.')
 
