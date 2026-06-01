@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   Bell, Search, RefreshCw, RotateCcw, TrendingUp, TrendingDown, Minus,
   AlertCircle, ExternalLink, Clock, SlidersHorizontal, Download, History,
-  Trash2, Wifi, WifiOff, ShieldCheck, Zap, Tag,
+  Trash2, Wifi, WifiOff, ShieldCheck, Zap, Tag, FileText,
 } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
@@ -10,6 +10,12 @@ import { formatNumber } from '@/utils/formatters'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
 import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
+import { useToast } from '@/components/ui/Toast'
+
+const PW_SESSION = 'abu_pw_filters'
+function readPwSession(field, def) {
+  try { return JSON.parse(sessionStorage.getItem(PW_SESSION))?.[field] ?? def } catch { return def }
+}
 
 // ── Données filtres ────────────────────────────────────────────────────────────
 const MAKES = [
@@ -192,6 +198,7 @@ function HistoryPanel({ history, onRestore, onClear, t }) {
 // ── Page principale ───────────────────────────────────────────────────────────
 export default function PriceWatch() {
   const { t, lang } = useSettings()
+  const { toast } = useToast()
   const resultRef = useRef(null)
 
   const FUELS = [
@@ -234,16 +241,16 @@ export default function PriceWatch() {
     { label: '< 200 000 km', value: '200000' },
   ]
 
-  const [type, setType]           = useState('vo')
-  const [make, setMake]           = useState('')
-  const [model, setModel]         = useState('')
-  const [finition, setFinition]   = useState('')
-  const [carrosserie, setCarrosserie] = useState('')
-  const [yearMin, setYearMin]     = useState('')
-  const [yearMax, setYearMax]     = useState('')
-  const [mileageMax, setMileageMax] = useState('')
-  const [fuel, setFuel]           = useState('')
-  const [gearbox, setGearbox]     = useState('')
+  const [type, setType]           = useState(() => readPwSession('type', 'vo'))
+  const [make, setMake]           = useState(() => readPwSession('make', ''))
+  const [model, setModel]         = useState(() => readPwSession('model', ''))
+  const [finition, setFinition]   = useState(() => readPwSession('finition', ''))
+  const [carrosserie, setCarrosserie] = useState(() => readPwSession('carrosserie', ''))
+  const [yearMin, setYearMin]     = useState(() => readPwSession('yearMin', ''))
+  const [yearMax, setYearMax]     = useState(() => readPwSession('yearMax', ''))
+  const [mileageMax, setMileageMax] = useState(() => readPwSession('mileageMax', ''))
+  const [fuel, setFuel]           = useState(() => readPwSession('fuel', ''))
+  const [gearbox, setGearbox]     = useState(() => readPwSession('gearbox', ''))
   const [loading, setLoading]     = useState(false)
   const [step, setStep]           = useState('')
   const [result, setResult]       = useState(null)
@@ -253,6 +260,15 @@ export default function PriceWatch() {
   const [searchLabel, setSearchLabel] = useState('')
   const [exporting, setExporting] = useState(false)
   const { history, add: addHistory, clear: clearHistory } = useHistory('pricewatch')
+
+  // Persist filter state across page navigations (session-scoped)
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(PW_SESSION, JSON.stringify(
+        { type, make, model, finition, carrosserie, yearMin, yearMax, mileageMax, fuel, gearbox }
+      ))
+    } catch {}
+  }, [type, make, model, finition, carrosserie, yearMin, yearMax, mileageMax, fuel, gearbox])
 
   const canSearch = make.trim() || model.trim()
 
@@ -287,10 +303,41 @@ export default function PriceWatch() {
       addHistory({ searchLabel: label, type: filters.type, result: finalResult })
     } catch (err) {
       setError(err.message)
+      toast(err.message, 'error')
     } finally {
       setLoading(false)
       setStep('')
     }
+  }
+
+  const handleCsv = () => {
+    if (!result) return
+    const rows = [
+      ['Véhicule', searchLabel],
+      ['Type', type === 'vo' ? 'Occasion' : 'Neuf'],
+      ['Date', fetchedAt ? new Date(fetchedAt).toLocaleString('fr-FR') : new Date().toLocaleString('fr-FR')],
+      ['Prix moyen TTC (€)', result.prix_moyen ?? ''],
+      ['Prix médian TTC (€)', result.prix_median ?? ''],
+      ['Quartile bas Q1 (€)', result.prix_q1 ?? ''],
+      ['Quartile haut Q3 (€)', result.prix_q3 ?? ''],
+      ['Nb annonces estimé', result.nb_annonces_estim ?? ''],
+      ['Tendance', result.tendance ?? ''],
+      ['Évolution (%)', result.tendance_pct ?? ''],
+      ['Meilleur prix du net (€)', result.prix_meilleur_marche ?? ''],
+      ['Prix conseillé vente (€)', result.prix_conseille_vente ?? ''],
+      ['Achat HT min (€)', result.prix_achat_ht_min ?? ''],
+      ['Achat HT max (€)', result.prix_achat_ht_max ?? ''],
+      ['Cote Argus min (€)', result.cote_argus_min ?? ''],
+      ['Cote Argus max (€)', result.cote_argus_max ?? ''],
+    ]
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = pdfFileName(searchLabel).replace('.pdf', '.csv')
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const TrendIcon   = result?.tendance === 'hausse' ? TrendingUp : result?.tendance === 'baisse' ? TrendingDown : Minus
@@ -489,6 +536,12 @@ export default function PriceWatch() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button onClick={handleCsv}
+                className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                           px-3 py-1.5 rounded-lg hover:text-emerald-400 hover:border-emerald-400/30 hover:bg-emerald-400/5 transition">
+                <FileText size={12} />
+                {t('csv_export')}
+              </button>
               <button onClick={handlePdf} disabled={exporting}
                 className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
                            px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition">

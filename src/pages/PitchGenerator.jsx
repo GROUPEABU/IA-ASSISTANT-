@@ -7,6 +7,7 @@ import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
 import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
+import { useToast } from '@/components/ui/Toast'
 
 const PROFILES = [
   { id: 'btoc_famille', labelKey: 'profile_family', subKey: 'profile_family_sub', icon: Users,     segment: 'btoc', color: '#50E5E5' },
@@ -60,6 +61,7 @@ export default function PitchGenerator() {
   const [generatedFor, setGeneratedFor] = useState('')
   const [exporting, setExporting] = useState(false)
 
+  const { toast } = useToast()
   const { generated } = useGeneratedProducts()
   const allProducts = [...PRODUCTS, ...generated]
   const { history, add: addHistory, clear: clearHistory } = useHistory('pitch')
@@ -122,6 +124,7 @@ Réponds UNIQUEMENT en JSON valide :
       addHistory({ generatedFor: label, pitch: data })
     } catch (err) {
       setError(err.message)
+      toast(err.message, 'error')
     } finally {
       setLoading(false)
     }

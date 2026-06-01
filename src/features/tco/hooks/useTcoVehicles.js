@@ -1,8 +1,17 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { emptyVehicle, getMaintDefault, COLORS } from '../constants'
 import { calcTco } from '../calculations'
 
 const MAX_VEHICLES = 4
+const SESSION_KEY = 'abu_tco_vehicles'
+
+function loadVehicles() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY))
+    if (Array.isArray(saved) && saved.length) return saved
+  } catch {}
+  return [emptyVehicle(1)]
+}
 
 /**
  * Hook managing the list of TCO vehicles and producing sorted results.
@@ -14,7 +23,11 @@ const MAX_VEHICLES = 4
  * @param {object} globals { years, kmYear, fuelPrice, elecPrice }
  */
 export function useTcoVehicles(globals) {
-  const [vehicles, setVehicles] = useState(() => [emptyVehicle(1)])
+  const [vehicles, setVehicles] = useState(loadVehicles)
+
+  useEffect(() => {
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(vehicles)) } catch {}
+  }, [vehicles])
 
   const update = useCallback((id, field, value) => {
     setVehicles(prev => prev.map(v => {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Key, Palette, Globe, Check, Monitor, Sun, Laptop, Scale, ChevronRight } from 'lucide-react'
+import { Key, Palette, Globe, Check, Monitor, Sun, Laptop, Scale, ChevronRight, Copy } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { ukey } from '@/utils/userStorage'
@@ -42,9 +42,10 @@ export default function Settings() {
   const themeKey    = ukey(user?.id ?? null, 'theme')
   const apiKeyKey   = ukey(user?.id ?? null, 'api_key')
   const aiPowerKey  = ukey(user?.id ?? null, 'ai_power')
-  const [theme,   setTheme]   = useState(() => localStorage.getItem(themeKey)   || 'dark')
-  const [apiKey,  setApiKey]  = useState(() => localStorage.getItem(apiKeyKey)  || '')
-  const [aiPower, setAiPower] = useState(() => localStorage.getItem(aiPowerKey) || 'performance')
+  const [theme,      setTheme]      = useState(() => localStorage.getItem(themeKey)   || 'dark')
+  const [apiKey,     setApiKey]     = useState(() => localStorage.getItem(apiKeyKey)  || '')
+  const [aiPower,    setAiPower]    = useState(() => localStorage.getItem(aiPowerKey) || 'performance')
+  const [keyCopied,  setKeyCopied]  = useState(false)
 
   function applyThemeValue(v) {
     if (v === 'light') {
@@ -91,15 +92,32 @@ export default function Settings() {
       <Section icon={Key} title={t('settings_api_section')}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <Field label={t('settings_api_key_label')} description={t('settings_api_key_desc')}>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={e => setApiKey(e.target.value)}
-              placeholder="sk-ant-..."
-              className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-                         text-sm text-slate-300 placeholder-slate-600
-                         focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/10 transition"
-            />
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={apiKey}
+                onChange={e => setApiKey(e.target.value)}
+                placeholder="sk-ant-..."
+                className="flex-1 bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+                           text-sm text-slate-300 placeholder-slate-600
+                           focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/10 transition"
+              />
+              {apiKey && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(apiKey)
+                    setKeyCopied(true)
+                    setTimeout(() => setKeyCopied(false), 2000)
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-navy-700/50
+                             text-xs font-medium text-slate-400 hover:text-cyan-400 hover:border-cyan-400/30 transition flex-shrink-0"
+                >
+                  {keyCopied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                  {keyCopied ? t('api_key_copied') : t('api_key_copy')}
+                </button>
+              )}
+            </div>
           </Field>
           <Field label={t('settings_api_power_label')} description={t('settings_api_power_desc')}>
             <select
@@ -177,6 +195,8 @@ export default function Settings() {
                          text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition"
             >
               <option value="EUR">EUR (€)</option>
+              <option value="GBP">{t('currency_gbp')}</option>
+              <option value="CHF">{t('currency_chf')}</option>
             </select>
           </Field>
           <Field label={t('settings_language_label')} description={t('settings_language_desc')}>

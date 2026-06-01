@@ -7,6 +7,7 @@ import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
 import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
+import { useToast } from '@/components/ui/Toast'
 
 const SEGMENTS = [
   { id: 'btoc', labelKey: 'btoc', subKey: 'btoc_sub' },
@@ -111,6 +112,7 @@ export default function Objections() {
   const [generatedFor, setGeneratedFor] = useState('')
   const [exporting, setExporting] = useState(false)
   const [forceOpenAll, setForceOpenAll] = useState(false)
+  const { toast } = useToast()
   const { generated } = useGeneratedProducts()
   const { history, add: addHistory, clear: clearHistory } = useHistory('objections')
 
@@ -160,6 +162,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
       addHistory({ generatedFor: label, objections: data })
     } catch (err) {
       setError(err.message)
+      toast(err.message, 'error')
     } finally {
       setLoading(false)
     }

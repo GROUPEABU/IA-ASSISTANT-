@@ -6,14 +6,15 @@ import { COLORS } from '@/features/tco/constants'
 import TcoConfig    from '@/features/tco/components/TcoConfig'
 import VehicleForm  from '@/features/tco/components/VehicleForm'
 import TcoResults   from '@/features/tco/components/TcoResults'
+import { useSessionState } from '@/hooks/useSessionState'
 
 export default function Tco() {
   const { t } = useSettings()
 
-  const [years, setYears]         = useState(4)
-  const [kmYear, setKmYear]       = useState(15000)
-  const [fuelPrice, setFuelPrice] = useState(1.85)
-  const [elecPrice, setElecPrice] = useState(0.25)
+  const [years, setYears]         = useSessionState('abu_tco_years', 4)
+  const [kmYear, setKmYear]       = useSessionState('abu_tco_km', 15000)
+  const [fuelPrice, setFuelPrice] = useSessionState('abu_tco_fuel', 1.85)
+  const [elecPrice, setElecPrice] = useSessionState('abu_tco_elec', 0.25)
   const [calculated, setCalculated] = useState(false)
 
   const globals = useMemo(

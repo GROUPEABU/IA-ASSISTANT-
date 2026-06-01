@@ -1,13 +1,27 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { useSettings } from '@/contexts/SettingsContext'
 import Sidebar from './Sidebar'
 import Header from './Header'
 import BottomNav from './BottomNav'
+import { ToastContainer, useToast } from '@/components/ui/Toast'
 
 export default function Layout() {
   const { t } = useSettings()
+  const { toast } = useToast()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isOffline, setIsOffline] = useState(!navigator.onLine)
+
+  useEffect(() => {
+    const goOffline = () => { setIsOffline(true);  toast(t('offline_banner'), 'offline', 8000) }
+    const goOnline  = () => { setIsOffline(false) }
+    window.addEventListener('offline', goOffline)
+    window.addEventListener('online',  goOnline)
+    return () => {
+      window.removeEventListener('offline', goOffline)
+      window.removeEventListener('online',  goOnline)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const close = useCallback(() => setSidebarOpen(false), [])
   const toggle = useCallback(() => setSidebarOpen((v) => !v), [])
 
@@ -48,6 +62,17 @@ export default function Layout() {
 
       {/* Bottom nav mobile uniquement */}
       <BottomNav />
+
+      {/* Offline banner */}
+      {isOffline && (
+        <div className="fixed top-0 inset-x-0 z-50 flex items-center justify-center gap-2 py-2 px-4
+                        bg-warn/15 border-b border-warn/30 text-xs font-semibold text-warn">
+          <span className="w-1.5 h-1.5 rounded-full bg-warn animate-pulse flex-shrink-0" />
+          {t('offline_banner')}
+        </div>
+      )}
+
+      <ToastContainer />
     </div>
   )
 }

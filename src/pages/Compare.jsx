@@ -7,6 +7,8 @@ import { formatNumber } from '@/utils/formatters'
 import { sendMessage } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import { useSettings } from '@/contexts/SettingsContext'
+import { useSessionState } from '@/hooks/useSessionState'
+import { useToast } from '@/components/ui/Toast'
 
 function getBestIndex(row, products) {
   if (!row.rawVal || !row.better) return -1
@@ -18,7 +20,8 @@ function getBestIndex(row, products) {
 
 export default function Compare() {
   const { t, lang } = useSettings()
-  const [selected, setSelected] = useState([null, null])
+  const { toast } = useToast()
+  const [selected, setSelected] = useSessionState('abu_compare_sel', [null, null])
   const [verdict, setVerdict] = useState('')
   const [loadingVerdict, setLoadingVerdict] = useState(false)
   const [error, setError] = useState(null)
@@ -78,6 +81,7 @@ Sois direct, argumenté et chiffré.`
       setVerdict(result)
     } catch (err) {
       setError(err.message)
+      toast(err.message, 'error')
     } finally {
       setLoadingVerdict(false)
     }
@@ -198,9 +202,18 @@ Sois direct, argumenté et chiffré.`
           )}
 
           {error && (
-            <div className="flex gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-              <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
-              <p className="text-xs text-red-400">{error}</p>
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+              <AlertCircle size={14} className="text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-red-400">{error}</p>
+              </div>
+              <button
+                onClick={generateVerdict}
+                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-white border border-red-500/40
+                           px-2.5 py-1 rounded-lg hover:bg-red-500/20 transition flex-shrink-0"
+              >
+                <RefreshCw size={10} /> {t('regenerate')}
+              </button>
             </div>
           )}
 

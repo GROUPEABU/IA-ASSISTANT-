@@ -87,7 +87,7 @@ export default function Chat() {
                              border border-navy-700/40 bg-navy-900/20
                              active:bg-cyan-400/8 active:border-cyan-400/25
                              transition-colors duration-100 flex items-start gap-2.5
-                             focus:outline-none${i >= 2 ? ' hidden md:flex' : ''}`}
+                             focus:outline-none`}
                 >
                   <Sparkles size={12} className="text-cyan-400/60 flex-shrink-0 mt-0.5" />
                   {q}

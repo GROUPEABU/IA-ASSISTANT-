@@ -1,6 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts'
 import { useSettings } from '@/contexts/SettingsContext'
 import { formatNumber } from '@/utils/formatters'
+import { FileText } from 'lucide-react'
 
 /**
  * TCO results panel — bar chart + savings callout + detail table.
@@ -16,12 +17,31 @@ export default function TcoResults({ results, years, kmYear }) {
   const worstResult = results[results.length - 1]
   const hasSavings = results.length >= 2 && bestResult.total < worstResult.total
 
+  const handleCsv = () => {
+    const header = ['Véhicule', 'Prix achat (€)', 'Malus (€)', `Carburant ${years}ans (€)`, `Entretien ${years}ans (€)`, 'TCO Total (€)']
+    const rows = results.map(r => [r.nom, Math.round(r.prix), Math.round(r.malus), Math.round(r.totalFuel), Math.round(r.totalMaint), Math.round(r.total)])
+    const csv = [header, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ABU TCO - ${new Date().toLocaleDateString('fr-FR').replace(/\//g, '.')}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="glass-card overflow-hidden animate-fade-in">
-      <div className="px-4 py-3 border-b border-white/7">
+      <div className="px-4 py-3 border-b border-white/7 flex items-center justify-between">
         <div className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">
           {t('tco_on_years').replace('{n}', years)} · {(kmYear / 1000).toFixed(0)}k {t('tco_km_year')}
         </div>
+        <button
+          onClick={handleCsv}
+          className="flex items-center gap-1.5 text-[10px] text-slate-500 hover:text-emerald-400 transition"
+        >
+          <FileText size={11} /> {t('csv_export')}
+        </button>
       </div>
 
       <ResultsChart results={results} formatCurrency={formatCurrency} />

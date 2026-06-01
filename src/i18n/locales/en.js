@@ -766,4 +766,13 @@ export default {
   product_imported: 'Imported',
   products_imported: 'Imported sheets',
   products_restore_hidden: 'Restore ({n})',
+  // Toast & offline
+  offline_banner: 'Internet connection lost — some features are unavailable.',
+  // CSV export
+  csv_export: 'Export CSV',
+  // Settings — currency & API key
+  currency_gbp: 'GBP (£)',
+  currency_chf: 'CHF (Fr)',
+  api_key_copy: 'Copy',
+  api_key_copied: 'Copied!',
 }

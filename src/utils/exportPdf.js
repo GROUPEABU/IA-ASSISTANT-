@@ -74,14 +74,35 @@ export async function exportToPdf(ref, filename, meta = {}) {
     .pdf-root .text-violet-400, .pdf-root .text-violet-300 { color: #7c3aed !important; }
     .pdf-root .text-warn { color: #B07D18 !important; }
     .pdf-root .text-red-400, .pdf-root .text-red-300 { color: #dc2626 !important; }
+    /* Recharts SVG — forcer les dimensions pour que les graphiques s'affichent dans le PDF */
+    .pdf-root .recharts-responsive-container { width: 100% !important; min-width: 400px !important; }
+    .pdf-root .recharts-wrapper, .pdf-root .recharts-surface { overflow: visible !important; }
+    .pdf-root svg { overflow: visible !important; }
   `
+
+  // Capture Recharts container dimensions before cloning (clone has no layout)
+  const chartSizes = []
+  el.querySelectorAll('.recharts-responsive-container').forEach((c, i) => {
+    chartSizes.push({ i, w: c.offsetWidth || 600, h: c.offsetHeight || 250 })
+  })
 
   const canvas = await html2canvas(el, {
     scale: 2,
     backgroundColor: '#ffffff',
     useCORS: true,
+    allowTaint: false,
+    logging: false,
     onclone: (doc, cloned) => {
       cloned.classList.add('pdf-root')
+      // Apply measured dimensions to Recharts containers so SVGs render correctly
+      const containers = cloned.querySelectorAll('.recharts-responsive-container')
+      chartSizes.forEach(({ i, w, h }) => {
+        if (containers[i]) {
+          containers[i].style.width = `${w}px`
+          containers[i].style.height = `${h}px`
+          containers[i].style.minWidth = `${w}px`
+        }
+      })
       const style = doc.createElement('style')
       style.textContent = PRINT_CSS
       doc.head.appendChild(style)
