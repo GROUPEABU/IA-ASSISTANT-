@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import {
   Bell, Search, RefreshCw, RotateCcw, TrendingUp, TrendingDown, Minus,
   AlertCircle, ExternalLink, Clock, SlidersHorizontal, Download, History,
-  Trash2, Sparkles, Wifi, WifiOff, ShieldCheck, Zap, Tag,
+  Trash2, Wifi, WifiOff, ShieldCheck, Zap, Tag,
 } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
@@ -458,14 +458,14 @@ export default function PriceWatch() {
                   type === 'vo' ? 'bg-amber-400/10 text-amber-400' : 'bg-emerald-400/10 text-emerald-400'
                 }`}>{type === 'vo' ? t('used_vehicle') : t('new_vehicle')}</span>
 
-                {/* Data source badge */}
-                {result.source_donnees === 'knowledge' ? (
-                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-400/10 text-violet-400 border border-violet-400/20">
-                    <Sparkles size={9} /> {t('price_knowledge_badge')}
-                  </span>
-                ) : (
+                {/* Data source badge — piloté par hasLiveData (API), pas par l'IA */}
+                {result.hasLiveData ? (
                   <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/10 text-emerald-400 border border-emerald-400/20">
                     <Wifi size={9} /> {t('price_live_badge')}
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-400/10 text-violet-400 border border-violet-400/20">
+                    <WifiOff size={9} /> {t('price_knowledge_badge')}
                   </span>
                 )}
 
