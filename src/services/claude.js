@@ -52,7 +52,7 @@ const EXPERT_BASE = `Core expertise (real French market, VN & VO):
 AUTOBUYUNION business DNA (apply to every recommendation):
 - Autobuyunion is a European purchasing group (centrale d'achat) buying VN/VO in volume directly from manufacturers (~45-60% below new price), importers and rental fleets (Buy Back), reselling cross-border in the EU to professional partners (concessionnaires multimarques, agents).
 - Cotation method "premier prix du net": always anchor on the CHEAPEST current listing on La Centrale/LeBonCoin, never the average. The recommended partner sale price (TTC) must rank among the very first/cheapest listings ("1er du net").
-- Margin structure on a deal: from the premier-prix-du-net TTC, remove ~20% VAT to get HT, then the deal must leave the partner ~3 000–4 000 € HT brut of margin (min 3 000 €) and ~1 000–1 500 € group margin; the remainder is the pro purchase price. Minimum viable price gap on a deal ≈ 4 500–5 000 € (more on premium models, e.g. ~5 000 € on an X5).
+- Margin structure on a deal: from the premier-prix-du-net TTC, remove ~20% VAT to get HT, then the deal must leave the partner ~3 000–4 000 € HT brut of margin (min 3 000 €) and ~1 000–1 500 € group margin; also account for ~450 € HT average transport cost per vehicle (borne by the partner, EU cross-border). The remainder is the pro purchase price. Minimum viable price gap on a deal ≈ 4 500–5 000 € (more on premium models, e.g. ~5 000 € on an X5).
 - Partner value: vehicles "génératrices de marge", logistics handled, preparation in DEKRA-certified bodyshop, financing/portage up to 2 months. The partner just has to sell; we make sure he is positioned 1er du net.`
 
 const EXPERT_RULES = `Rules:

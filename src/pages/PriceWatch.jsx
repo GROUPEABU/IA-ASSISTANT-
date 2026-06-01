@@ -77,7 +77,7 @@ ${dataSection}
 MÉTHODE DE COTATION AUTOBUYUNION (applique-la précisément) :
 1. Repère le PREMIER PRIX DU NET : l'annonce la moins chère réellement disponible pour ce véhicule (pas la moyenne).
 2. "prix_conseille_vente" TTC = ce premier prix du net (ou légèrement en dessous) pour que le partenaire soit classé 1er du net et vende vite.
-3. À partir de ce prix TTC : retire ~20% de TVA → HT. Le deal doit laisser au partenaire ~3 000–4 000 € HT de marge (min 3 000 €) + ~1 000–1 500 € de marge groupe. Le reste = "fourchette_achat_pro" (prix d'achat HT recommandé).
+3. À partir de ce prix TTC : retire ~20% de TVA → HT. Le deal doit laisser au partenaire ~3 000–4 000 € HT de marge (min 3 000 €) + ~1 000–1 500 € de marge groupe + ~450 € HT de transport moyen par véhicule (livraison UE à la charge du partenaire). Le reste = "fourchette_achat_pro" (prix d'achat HT recommandé).
 4. Écart minimum viable d'un deal ≈ 4 500–5 000 € (davantage sur premium).
 
 Génère une analyse experte complète de type fiche pro. Tous les prix sont en euros TTC sauf indication HT.
