@@ -189,7 +189,6 @@ export default function CO2Malus() {
             childrenCount={malus.childrenCount} setChildrenCount={malus.setChildrenCount}
             isImported={malus.isImported}       setIsImported={malus.setIsImported}
             dateImmat={malus.dateImmat}
-            formatCurrency={formatCurrency}
             requiredCtx={requiredCtx}
           />
         </StepSection>

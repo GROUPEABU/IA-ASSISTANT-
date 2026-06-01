@@ -39,6 +39,38 @@ const COUNTRY_META = {
  *   listing the selected countries that actually use this field.
  * - Discovery mode (nothing selected) → muted list of all countries using it.
  */
+/**
+ * Compact, keyboard-editable numeric value shown in a section header.
+ * Lets the user type an exact amount (e.g. 32 450 €) instead of relying on
+ * the coarse slider / preset buttons. The slider below stays for quick
+ * approximation, the presets for common values.
+ */
+function InlineNumberInput({ value, onChange, min = 0, max, step = 1, suffix }) {
+  const handle = (e) => {
+    const raw = e.target.value
+    if (raw === '') { onChange(min); return }
+    const n = Number(raw)
+    if (!isNaN(n)) onChange(Math.min(max, Math.max(min, n)))
+  }
+  return (
+    <div
+      className="flex items-center gap-1 rounded-lg pl-2.5 pr-2 py-1"
+      style={{ background: 'rgba(80,229,229,0.08)', border: '1px solid rgba(80,229,229,0.22)' }}
+    >
+      <input
+        type="number"
+        min={min} max={max} step={step}
+        value={value}
+        inputMode="numeric"
+        onChange={handle}
+        className="w-[5.5rem] text-right text-sm font-bold text-cyan-400 bg-transparent border-0 outline-none"
+        style={{ MozAppearance: 'textfield', WebkitAppearance: 'none', fontFamily: 'inherit' }}
+      />
+      <span className="text-sm font-bold text-cyan-400 flex-shrink-0">{suffix}</span>
+    </div>
+  )
+}
+
 function CountryHint({ fieldKey, requiredCtx }) {
   if (requiredCtx) {
     const needers = requiredCtx.byField[fieldKey] || []
@@ -81,7 +113,6 @@ export default function AdvancedParams({
   childrenCount, setChildrenCount,
   isImported, setIsImported,
   dateImmat,
-  formatCurrency,
   requiredCtx,
 }) {
   const { t } = useSettings()
@@ -95,7 +126,7 @@ export default function AdvancedParams({
     <div className="glass-card mt-2 overflow-hidden divide-y divide-white/5">
       {visible('displacement')  && <DisplacementSection value={displacement} onChange={setDisplacement} hint={hint} />}
       {visible('fuelKind')      && <FuelKindSection      value={fuelKind}      onChange={setFuelKind}      hint={hint} />}
-      {visible('vehiclePrice')  && <VehiclePriceSection  value={vehiclePrice}  onChange={setVehiclePrice} formatCurrency={formatCurrency} hint={hint} />}
+      {visible('vehiclePrice')  && <VehiclePriceSection  value={vehiclePrice}  onChange={setVehiclePrice} hint={hint} />}
       {visible('beRegion')      && <BeRegionSection      value={beRegion}      onChange={setBeRegion}      hint={hint} />}
       {visible('esRegion')      && <EsRegionSection      value={esRegion}      onChange={setEsRegion}      hint={hint} />}
       {visible('childrenCount') && <ChildrenSection      value={childrenCount} onChange={setChildrenCount} hint={hint} />}
@@ -189,9 +220,9 @@ function DisplacementSection({ value, onChange, hint }) {
   const { t } = useSettings()
   return (
     <div className="p-4">
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex justify-between items-center mb-2 gap-2">
         <span className="text-sm font-semibold text-slate-200">{t('malus_displacement_label')}</span>
-        <span className="text-sm font-bold text-cyan-400">{value.toLocaleString('fr-FR')} cm³</span>
+        <InlineNumberInput value={value} onChange={onChange} min={0} max={9999} step={10} suffix="cm³" />
       </div>
       <input
         type="range" min={600} max={5000} step={100} value={value}
@@ -239,13 +270,13 @@ function FuelKindSection({ value, onChange, hint }) {
   )
 }
 
-function VehiclePriceSection({ value, onChange, formatCurrency, hint }) {
+function VehiclePriceSection({ value, onChange, hint }) {
   const { t } = useSettings()
   return (
     <div className="p-4">
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex justify-between items-center mb-2 gap-2">
         <span className="text-sm font-semibold text-slate-200">{t('malus_vehicle_price_ht')}</span>
-        <span className="text-sm font-bold text-cyan-400">{formatCurrency(value)}</span>
+        <InlineNumberInput value={value} onChange={onChange} min={0} max={1000000} step={100} suffix="€" />
       </div>
       <input
         type="range" min={5000} max={150000} step={1000} value={value}
