@@ -1406,7 +1406,11 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           if (fuelKind === "diesel") cylBrut = Math.round(cylBrut * 1.2);
         }
         const isDieselPT = fuelKind === "diesel";
-        const totalBrut = co2Brut + cylBrut;
+        // PHEV éligible (autonomie élec. ≥ 50 km, CO₂ < 50 g/km) : ISV réduit à 25%
+        // (art. 8 nº1 f) CISV) — soit −75%.
+        const totalBrut = fuelType === "phev"
+          ? Math.round((co2Brut + cylBrut) * 0.25)
+          : co2Brut + cylBrut;
         const decotePT = isImported ? getImportDecotePT(dateImmat) : 0;
         const a = Math.round(totalBrut * (1 - decotePT / 100));
         return {
@@ -1989,6 +1993,7 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           notes: "Acquisition tax + Automobile tax + Tonnage tax basés sur poids+cylindrée. Bonus pour efficacité.",
           source: "MLIT / NTA",
           source_url: "https://www.nta.go.jp",
+          legal_ref: "地方税法 (Local Tax Act) · エコカー減税 sous 租税特別措置法 (Special Taxation Measures Act)",
           reliability: "info"
         };
       }
@@ -2014,6 +2019,7 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           notes: "Système orienté sur les NEV (électriques) plus que sur le CO₂ des thermiques.",
           source: "STA China",
           source_url: "https://www.chinatax.gov.cn",
+          legal_ref: "中华人民共和国车辆购置税法 (Vehicle Purchase Tax Law, en vigueur 01/07/2019) · exonération NEV prolongée 2024-2027",
           reliability: "info"
         };
       }
@@ -2039,6 +2045,7 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           notes: "L'Australie n'a pas de malus CO₂ national. La LCT vise les véhicules de luxe.",
           source: "ATO",
           source_url: "https://www.ato.gov.au",
+          legal_ref: "A New Tax System (Luxury Car Tax) Act 1999 (Cth) · seuils indexés 2024-25",
           reliability: "info"
         };
       }
@@ -2064,6 +2071,7 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           notes: "Réforme fiscale 2026 introduit une 'Selective Tax' qui pourrait inclure le CO₂.",
           source: "Receita Federal",
           source_url: "https://www.gov.br/receitafederal",
+          legal_ref: "Decreto 11.158/2022 (Tabela TIPI - IPI) · Reforma Tributária EC 132/2023 (Imposto Seletivo dès 2026)",
           reliability: "info"
         };
       }
@@ -2115,6 +2123,7 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
           notes: "Subventions importantes pour EV (jusqu'à 12M KRW). Pas de malus CO₂ direct.",
           source: "NTS Korea",
           source_url: "https://www.nts.go.kr",
+          legal_ref: "개별소비세법 (Individual Consumption Tax Act) · 지방세법 (Local Tax Act, acquisition 7%)",
           reliability: "info"
         };
       }
@@ -2151,13 +2160,13 @@ function buildCountryData(code, g, kg = 1500, fuelType = "thermique", dateImmat 
     case "HR":
       { const t=g<=110?0:g<=150?Math.round((g-110)*20):Math.round(40*20+(g-150)*50);
         return {tax_name:"Posebni porez na motorna vozila (Croatie)",threshold_gkm:111,max_penalty_eur:null,currency_symbol:"€",system_description:"Taxe combinant CO₂ et puissance (kW).",brackets:[{min_gkm:0,max_gkm:110,penalty:"0 €",label:"Exempté"},{min_gkm:111,max_gkm:150,penalty:"~20 €/g",label:"Modéré"},{min_gkm:151,max_gkm:999,penalty:"~50 €/g",label:"Élevé"}],exemptions:["EV : exempté"],specific_penalty:t===0?"Aucune taxe":"~"+t.toLocaleString("fr-FR")+" € (estimatif)",specific_penalty_amount:t,has_malus:g>110,severity:sev(t),notes:"Estimation. Système CO₂ + puissance.",source:"Porezna uprava (Administration fiscale croate)",source_url:"https://www.porezna-uprava.hr/HR_porezni_sustav/Stranice/posebni-porez-na-motorna-vozila.aspx",legal_ref:"Zakon o posebnom porezu na motorna vozila (NN 15/13, 108/13, 115/16, 66/19)",reliability:"indicative"}; }
-    case "SK": return {tax_name:"Pas de malus CO₂ (Slovaquie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"€",system_description:"Pas de malus CO₂ à l’immatriculation.",brackets:[{min_gkm:0,max_gkm:999,penalty:"0 €",label:"Pas de malus"}],exemptions:["EV : TVA réduite"],specific_penalty:"Pas de malus CO₂",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Réforme en discussion.",source:"Ministerstvo financíí SR",source_url:"https://www.mfsr.sk",reliability:"indicative"};
-    case "CZ": return {tax_name:"Pas de malus CO₂ (Tchéquie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"CZK",system_description:"Pas de malus CO₂ à l’immatriculation.",brackets:[{min_gkm:0,max_gkm:999,penalty:"0 CZK",label:"Pas de malus"}],exemptions:["EV : incentives jusqu’à 300 000 CZK"],specific_penalty:"Pas de malus CO₂",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Transition EV lente.",source:"Finanční správa ČR",source_url:"https://www.financnisprava.cz",reliability:"indicative"};
-    case "HU": return {tax_name:"Regisztrációs adó (Hongrie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"HUF",system_description:"Taxée basée sur puissance (kW) et âge.",brackets:[{min_gkm:0,max_gkm:999,penalty:"Selon kW + âge",label:"Taxe immat."}],exemptions:["EV : exempté"],specific_penalty:"Selon puissance (pas CO₂)",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Basée puissance moteur.",source:"NAV Magyarország",source_url:"https://nav.gov.hu",reliability:"indicative"};
-    case "LV": return {tax_name:"Taxe d’exploitation (Lettonie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"€",system_description:"Taxe annuelle basée sur poids et puissance.",brackets:[{min_gkm:0,max_gkm:999,penalty:"Selon poids/kW",label:"Taxe annuelle"}],exemptions:["EV : taux réduit"],specific_penalty:"Selon poids/kW (pas CO₂)",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Réforme en cours.",source:"CSDD Latvija",source_url:"https://www.csdd.lv",reliability:"indicative"};
-    case "LT": return {tax_name:"Taxe véhicule (Lituanie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"€",system_description:"Taxe annuelle basée sur puissance et âge.",brackets:[{min_gkm:0,max_gkm:999,penalty:"Selon kW + âge",label:"Taxe annuelle"}],exemptions:["EV : exempté"],specific_penalty:"Selon puissance (pas CO₂)",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Réforme attendue 2026.",source:"VMI Lietuva",source_url:"https://www.vmi.lt",reliability:"indicative"};
-    case "RO": return {tax_name:"Pas de malus CO₂ (Roumanie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"RON",system_description:"Le timbru de mediu a été supprimé en 2017.",brackets:[{min_gkm:0,max_gkm:999,penalty:"0 RON",label:"Pas de malus"}],exemptions:["EV : bonus achat €10 000"],specific_penalty:"Pas de malus CO₂",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Timbru de mediu annulé. Aucun remplacement.",source:"ANAF România",source_url:"https://www.anaf.ro",reliability:"info"};
-    case "BG": return {tax_name:"Taxe annuelle (Bulgarie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"BGN",system_description:"Taxe annuelle basée sur puissance et norme Euro.",brackets:[{min_gkm:0,max_gkm:999,penalty:"Selon kW/Euro",label:"Taxe annuelle"}],exemptions:["EV : exempté"],specific_penalty:"Selon puissance (pas CO₂)",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Un des pays UE les moins avancés sur CO₂.",source:"NRA Bulgaria",source_url:"https://nra.bg",reliability:"info"};
+    case "SK": return {tax_name:"Pas de malus CO₂ (Slovaquie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"€",system_description:"Pas de malus CO₂ à l’immatriculation.",brackets:[{min_gkm:0,max_gkm:999,penalty:"0 €",label:"Pas de malus"}],exemptions:["EV : TVA réduite"],specific_penalty:"Pas de malus CO₂",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Réforme en discussion.",source:"Ministerstvo financíí SR",source_url:"https://www.mfsr.sk",legal_ref:"Zákon č. 145/1995 Z. z. o správnych poplatkoch (frais d'immatriculation selon kW)",reliability:"indicative"};
+    case "CZ": return {tax_name:"Pas de malus CO₂ (Tchéquie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"CZK",system_description:"Pas de malus CO₂ à l’immatriculation.",brackets:[{min_gkm:0,max_gkm:999,penalty:"0 CZK",label:"Pas de malus"}],exemptions:["EV : incentives jusqu’à 300 000 CZK"],specific_penalty:"Pas de malus CO₂",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Transition EV lente.",source:"Finanční správa ČR",source_url:"https://www.financnisprava.cz",legal_ref:"Zákon č. 56/2001 Sb. (immatriculation) · poplatek na podporu sběru vozidel (Zákon č. 542/2020 Sb.)",reliability:"indicative"};
+    case "HU": return {tax_name:"Regisztrációs adó (Hongrie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"HUF",system_description:"Taxée basée sur puissance (kW) et âge.",brackets:[{min_gkm:0,max_gkm:999,penalty:"Selon kW + âge",label:"Taxe immat."}],exemptions:["EV : exempté"],specific_penalty:"Selon puissance (pas CO₂)",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Basée puissance moteur.",source:"NAV Magyarország",source_url:"https://nav.gov.hu",legal_ref:"2003. évi CX. törvény a regisztrációs adóról (taxe d'immatriculation kW + âge)",reliability:"indicative"};
+    case "LV": return {tax_name:"Taxe d’exploitation (Lettonie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"€",system_description:"Taxe annuelle basée sur poids et puissance.",brackets:[{min_gkm:0,max_gkm:999,penalty:"Selon poids/kW",label:"Taxe annuelle"}],exemptions:["EV : taux réduit"],specific_penalty:"Selon poids/kW (pas CO₂)",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Réforme en cours.",source:"CSDD Latvija",source_url:"https://www.csdd.lv",legal_ref:"Likums par transportlīdzekļa ekspluatācijas nodokli (2010) — taxe poids/puissance",reliability:"indicative"};
+    case "LT": return {tax_name:"Taxe véhicule (Lituanie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"€",system_description:"Taxe annuelle basée sur puissance et âge.",brackets:[{min_gkm:0,max_gkm:999,penalty:"Selon kW + âge",label:"Taxe annuelle"}],exemptions:["EV : exempté"],specific_penalty:"Selon puissance (pas CO₂)",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Réforme attendue 2026.",source:"VMI Lietuva",source_url:"https://www.vmi.lt",legal_ref:"LR motorinių transporto priemonių registracijos mokesčio įstatymas (2020, Nr. XIII-2690)",reliability:"indicative"};
+    case "RO": return {tax_name:"Pas de malus CO₂ (Roumanie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"RON",system_description:"Le timbru de mediu a été supprimé en 2017.",brackets:[{min_gkm:0,max_gkm:999,penalty:"0 RON",label:"Pas de malus"}],exemptions:["EV : bonus achat €10 000"],specific_penalty:"Pas de malus CO₂",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Timbru de mediu annulé. Aucun remplacement.",source:"ANAF România",source_url:"https://www.anaf.ro",legal_ref:"OUG 9/2013 (timbru de mediu) abrogée par OUG 52/2017 · aucun malus CO₂ en vigueur",reliability:"info"};
+    case "BG": return {tax_name:"Taxe annuelle (Bulgarie)",threshold_gkm:null,max_penalty_eur:null,currency_symbol:"BGN",system_description:"Taxe annuelle basée sur puissance et norme Euro.",brackets:[{min_gkm:0,max_gkm:999,penalty:"Selon kW/Euro",label:"Taxe annuelle"}],exemptions:["EV : exempté"],specific_penalty:"Selon puissance (pas CO₂)",specific_penalty_amount:0,has_malus:false,severity:"none",notes:"Un des pays UE les moins avancés sur CO₂.",source:"NRA Bulgaria",source_url:"https://nra.bg",legal_ref:"Закон за местните данъци и такси (ZMDT) art. 54-58 — taxe annuelle kW + norme Euro",reliability:"info"};
     default:
       return null;
   }
