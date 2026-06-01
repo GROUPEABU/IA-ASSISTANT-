@@ -83,7 +83,7 @@ function ProductCard({ product, onDelete, navigate, t, formatCurrency }) {
         </div>
         <div className="text-right">
           <span className="text-[11px] text-slate-500">{t('products_fr_duty')} </span>
-          <span className={`text-sm font-bold ${mc === 'danger' ? 'text-red-400' : mc === 'orange' ? 'text-amber-400' : 'text-emerald-400'}`}>
+          <span className={`text-sm font-bold ${mc === 'danger' ? 'text-red-400' : mc === 'orange' ? 'text-warn' : 'text-emerald-400'}`}>
             {malus > 0 ? `+${formatCurrency(malus)}` : t('exempt')}
           </span>
         </div>

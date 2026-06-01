@@ -52,8 +52,8 @@ export default function ForgotPassword() {
 
         <div className="glass-card p-6 shadow-2xl shadow-black/40">
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-9 h-9 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center flex-shrink-0">
-              <Key size={16} className="text-amber-400" />
+            <div className="w-9 h-9 rounded-xl bg-warn/10 border border-warn/20 flex items-center justify-center flex-shrink-0">
+              <Key size={16} className="text-warn" />
             </div>
             <div>
               <h2 className="text-sm font-semibold text-white">{t('forgot_title')}</h2>
@@ -91,8 +91,8 @@ export default function ForgotPassword() {
                 type="submit"
                 disabled={!username.trim() || loading}
                 className="w-full py-3 rounded-xl text-sm font-bold
-                           bg-gradient-to-r from-amber-400 to-amber-500 text-navy-900
-                           hover:from-amber-300 hover:to-amber-400 active:scale-[0.98] transition-all
+                           bg-gradient-to-r from-warn to-warn text-navy-900
+                           hover:from-warn hover:to-warn active:scale-[0.98] transition-all
                            disabled:opacity-40 disabled:pointer-events-none
                            flex items-center justify-center gap-2"
               >
@@ -137,11 +137,11 @@ function SuccessView({ resetCode, username, t }) {
         </div>
       </div>
 
-      <div className="p-4 rounded-xl bg-amber-400/6 border border-amber-400/25 text-center">
+      <div className="p-4 rounded-xl bg-warn/6 border border-warn/25 text-center">
         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
           {t('forgot_code_hint')}
         </p>
-        <div className="text-3xl font-bold tracking-[0.4em] text-amber-400 font-mono">
+        <div className="text-3xl font-bold tracking-[0.4em] text-warn font-mono">
           {resetCode}
         </div>
         <p className="text-[10px] text-slate-500 mt-2">{t('forgot_code_validity')}</p>

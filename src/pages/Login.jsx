@@ -175,10 +175,10 @@ export default function Login() {
             <RememberMe checked={remember} onChange={setRemember} t={t} />
 
             {showCaptcha && challenge && !isBlocked && (
-              <div className="p-3 rounded-xl bg-amber-400/6 border border-amber-400/20">
+              <div className="p-3 rounded-xl bg-warn/6 border border-warn/20">
                 <div className="flex items-center gap-2 mb-2">
-                  <ShieldAlert size={13} className="text-amber-400" aria-hidden="true" />
-                  <span className="text-[11px] font-semibold text-amber-400">{t('login_captcha_label')}</span>
+                  <ShieldAlert size={13} className="text-warn" aria-hidden="true" />
+                  <span className="text-[11px] font-semibold text-warn">{t('login_captcha_label')}</span>
                 </div>
                 <label htmlFor="captcha-answer" className="text-xs text-slate-400 mb-2 block">
                   {interpolate(t('login_captcha_question'), { a: challenge.a, b: challenge.b })}

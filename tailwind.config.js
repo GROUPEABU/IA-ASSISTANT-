@@ -19,6 +19,8 @@ export default {
           200: '#a3f3f3',
           500: '#2ed8d8',
         },
+        // Token unique « attention » — or doré sobre, accordé à la palette froide
+        warn: '#E6B450',
         surface: {
           DEFAULT: '#102f47',
           dark: '#0D273C',

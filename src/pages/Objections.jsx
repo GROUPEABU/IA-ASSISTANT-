@@ -15,11 +15,11 @@ const SEGMENTS = [
 ]
 
 const CATEGORY_COLORS = {
-  prix: 'bg-amber-400/10 text-amber-400 border-amber-400/20',
+  prix: 'bg-warn/10 text-warn border-warn/20',
   marque: 'bg-violet-400/10 text-violet-400 border-violet-400/20',
   qualité: 'bg-rose-400/10 text-rose-400 border-rose-400/20',
   financement: 'bg-blue-400/10 text-blue-400 border-blue-400/20',
-  'après-vente': 'bg-orange-400/10 text-orange-400 border-orange-400/20',
+  'après-vente': 'bg-warn/10 text-warn border-warn/20',
   revente: 'bg-red-400/10 text-red-400 border-red-400/20',
   malus: 'bg-red-400/10 text-red-400 border-red-400/20',
   concurrence: 'bg-slate-400/10 text-slate-400 border-slate-400/20',

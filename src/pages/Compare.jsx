@@ -186,7 +186,7 @@ Sois direct, argumenté et chiffré.`
       {(verdict || loadingVerdict || error) && (
         <div className="glass-card p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Trophy size={15} className="text-amber-400" />
+            <Trophy size={15} className="text-warn" />
             <h3 className="text-sm font-semibold text-white">{t('compare_verdict_title')}</h3>
           </div>
 
@@ -208,7 +208,7 @@ Sois direct, argumenté et chiffré.`
             <div className="space-y-1">
               {verdict.split('\n').map((line, i) => {
                 if (line.startsWith('**') && line.endsWith('**')) {
-                  return <h4 key={i} className="text-sm font-bold text-amber-400 mt-4 mb-1 first:mt-0">{line.replace(/\*\*/g, '')}</h4>
+                  return <h4 key={i} className="text-sm font-bold text-warn mt-4 mb-1 first:mt-0">{line.replace(/\*\*/g, '')}</h4>
                 }
                 if (line.trim() === '') return <div key={i} className="h-1" />
                 return <p key={i} className="text-sm text-slate-300 leading-relaxed">{line}</p>

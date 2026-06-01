@@ -15,7 +15,7 @@ export const FUEL_LABEL_KEYS = {
   ev:        'malus_fuel_ev',
 }
 
-export const COLORS = ['#50E5E5', '#7DD3FC', '#a78bfa', '#fb923c']
+export const COLORS = ['#50E5E5', '#7DD3FC', '#a78bfa', '#E6B450']
 
 export const emptyVehicle = (id) => ({
   id,

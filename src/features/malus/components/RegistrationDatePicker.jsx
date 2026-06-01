@@ -72,7 +72,7 @@ export default function RegistrationDatePicker({ value, onChange }) {
         <span className="text-[11px] text-slate-500 font-medium tracking-widest uppercase">
           {t('malus_date_label')}
         </span>
-        <span className="text-xs font-semibold text-amber-400">{formatDateFR(value)}</span>
+        <span className="text-xs font-semibold text-warn">{formatDateFR(value)}</span>
       </div>
       <div className="grid grid-cols-3 gap-2 mb-2.5">
         {/* Day */}
@@ -129,9 +129,9 @@ export default function RegistrationDatePicker({ value, onChange }) {
               onClick={() => onChange(p.d)}
               className="py-1.5 rounded-lg text-[10px] font-medium transition border active:scale-95 truncate"
               style={{
-                borderColor: isActive ? '#fbbf24' : 'rgba(255,255,255,0.08)',
-                background:  isActive ? 'rgba(251,191,36,0.12)' : 'transparent',
-                color:       isActive ? '#fbbf24' : '#475569',
+                borderColor: isActive ? '#E6B450' : 'rgba(255,255,255,0.08)',
+                background:  isActive ? 'rgba(230,180,80,0.12)' : 'transparent',
+                color:       isActive ? '#E6B450' : '#475569',
               }}
             >{p.l}</button>
           )

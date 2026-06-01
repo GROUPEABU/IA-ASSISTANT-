@@ -6,7 +6,7 @@ const colorMap = {
   cyan:    { bg: 'bg-cyan-400/10',    border: 'border-cyan-400/20',    icon: 'text-cyan-400',    badge: 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20',       hoverBorder: '#50E5E5' },
   emerald: { bg: 'bg-emerald-400/10', border: 'border-emerald-400/20', icon: 'text-emerald-400', badge: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20', hoverBorder: '#34d399' },
   violet:  { bg: 'bg-violet-400/10',  border: 'border-violet-400/20',  icon: 'text-violet-400',  badge: 'bg-violet-400/10 text-violet-400 border-violet-400/20',   hoverBorder: '#a78bfa' },
-  amber:   { bg: 'bg-amber-400/10',   border: 'border-amber-400/20',   icon: 'text-amber-400',   badge: 'bg-amber-400/10 text-amber-400 border-amber-400/20',     hoverBorder: '#fbbf24' },
+  amber:   { bg: 'bg-warn/10',   border: 'border-warn/20',   icon: 'text-warn',   badge: 'bg-warn/10 text-warn border-warn/20',     hoverBorder: '#E6B450' },
   rose:    { bg: 'bg-rose-400/10',    border: 'border-rose-400/20',    icon: 'text-rose-400',    badge: 'bg-rose-400/10 text-rose-400 border-rose-400/20',       hoverBorder: '#fb7185' },
   teal:    { bg: 'bg-teal-400/10',    border: 'border-teal-400/20',    icon: 'text-teal-400',    badge: 'bg-teal-400/10 text-teal-400 border-teal-400/20',       hoverBorder: '#2dd4bf' },
   indigo:  { bg: 'bg-indigo-400/10',  border: 'border-indigo-400/20',  icon: 'text-indigo-400',  badge: 'bg-indigo-400/10 text-indigo-400 border-indigo-400/20', hoverBorder: '#818cf8' },

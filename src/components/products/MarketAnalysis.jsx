@@ -152,8 +152,8 @@ export default function MarketAnalysis({ product }) {
         </div>
         <div className="glass-card p-4">
           <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle size={15} className="text-amber-400" />
-            <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider">{t('market_risks')}</h3>
+            <AlertTriangle size={15} className="text-warn" />
+            <h3 className="text-xs font-bold text-warn uppercase tracking-wider">{t('market_risks')}</h3>
           </div>
           <p className="text-sm text-slate-300 leading-relaxed">{product.marche.risques}</p>
         </div>

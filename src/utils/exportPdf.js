@@ -72,7 +72,7 @@ export async function exportToPdf(ref, filename, meta = {}) {
     .pdf-root .text-cyan-400, .pdf-root .text-cyan-300 { color: #0891b2 !important; }
     .pdf-root .text-emerald-400, .pdf-root .text-emerald-300 { color: #059669 !important; }
     .pdf-root .text-violet-400, .pdf-root .text-violet-300 { color: #7c3aed !important; }
-    .pdf-root .text-amber-400, .pdf-root .text-amber-300 { color: #d97706 !important; }
+    .pdf-root .text-warn { color: #B07D18 !important; }
     .pdf-root .text-red-400, .pdf-root .text-red-300 { color: #dc2626 !important; }
   `
 

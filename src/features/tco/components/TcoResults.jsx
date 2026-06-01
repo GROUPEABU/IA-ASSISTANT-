@@ -58,7 +58,7 @@ function ResultsChart({ results, formatCurrency }) {
             {results.map((r, i) => <Cell key={i} fill={i === 0 ? `${r.color}cc` : '#334155'} />)}
           </Bar>
           <Bar dataKey="malus"      name="Malus"                   stackId="a" fill="#f87171" />
-          <Bar dataKey="totalFuel"  name={t('tco_bar_fuel')}       stackId="a" fill="#fbbf24" />
+          <Bar dataKey="totalFuel"  name={t('tco_bar_fuel')}       stackId="a" fill="#E6B450" />
           <Bar dataKey="totalMaint" name={t('tco_bar_maint')}      stackId="a" fill="#64748b" radius={[0, 4, 4, 0]}>
             <LabelList
               dataKey="total"

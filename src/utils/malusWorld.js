@@ -2353,7 +2353,7 @@ const RELIABILITY_CONFIG = {
     descKey:  "malus_reliability_official_desc",
   },
   indicative: {
-    color: "#facc15",
+    color: "#E6B450",
     labelKey: "malus_reliability_indicative_label",
     shortKey: "malus_reliability_indicative_short",
     descKey:  "malus_reliability_indicative_desc",

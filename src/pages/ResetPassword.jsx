@@ -131,7 +131,7 @@ export default function ResetPassword() {
                 inputMode="numeric"
                 className="w-full bg-navy-900/80 border border-navy-700/60 rounded-xl
                            px-3 py-3 text-sm text-white placeholder-slate-600 text-center tracking-[0.3em]
-                           focus:outline-none focus:border-amber-400/60 focus:ring-1 focus:ring-amber-400/20 transition"
+                           focus:outline-none focus:border-warn/60 focus:ring-1 focus:ring-warn/20 transition"
               />
             </div>
 

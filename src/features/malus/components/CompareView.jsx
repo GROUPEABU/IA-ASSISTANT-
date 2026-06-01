@@ -131,7 +131,7 @@ function CompareResultRow({ result }) {
           </div>
         </div>
       </div>
-      <div className="text-2xl font-bold" style={{ color: hasPenalty ? '#fb923c' : '#50E5E5' }}>
+      <div className="text-2xl font-bold" style={{ color: hasPenalty ? '#E6B450' : '#50E5E5' }}>
         {result.specific_penalty}
       </div>
       <div className="mt-2 flex items-center gap-3 flex-wrap">

@@ -31,15 +31,15 @@ export default function MalusWidget({ product }) {
 
   const colorClass = {
     success: 'text-emerald-400',
-    warning: 'text-amber-400',
-    orange: 'text-orange-400',
+    warning: 'text-warn',
+    orange: 'text-warn',
     danger: 'text-red-400',
   }[mc]
 
   const bgClass = {
     success: 'bg-emerald-400/10 border-emerald-400/20',
-    warning: 'bg-amber-400/10 border-amber-400/20',
-    orange: 'bg-orange-400/10 border-orange-400/20',
+    warning: 'bg-warn/10 border-warn/20',
+    orange: 'bg-warn/10 border-warn/20',
     danger: 'bg-red-400/10 border-red-400/20',
   }[mc]
 
@@ -147,7 +147,7 @@ export default function MalusWidget({ product }) {
                   <p className="text-xs font-medium text-slate-300">{name}</p>
                   <p className="text-[10px] text-slate-600">{note}</p>
                 </div>
-                <span className={`text-xs font-bold ${m > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                <span className={`text-xs font-bold ${m > 0 ? 'text-warn' : 'text-emerald-400'}`}>
                   {m > 0 ? `~${formatNumber(m)} €` : t('malus_exempt_label')}
                 </span>
               </div>

@@ -220,7 +220,7 @@ function MaintenanceField({ vehicle, onUpdate }) {
             onUpdate('maintManual', true)
           }}
           aria-label={t('tco_annual_maint_label')}
-          className="flex-1 px-3 py-2 rounded-lg text-sm text-amber-400 font-semibold border border-amber-400/20 bg-amber-400/5 outline-none text-center"
+          className="flex-1 px-3 py-2 rounded-lg text-sm text-warn font-semibold border border-warn/20 bg-warn/5 outline-none text-center"
           style={{ fontFamily: 'inherit', MozAppearance: 'textfield' }}
         />
         <span className="text-xs text-slate-500">€/an</span>

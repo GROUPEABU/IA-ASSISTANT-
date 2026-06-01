@@ -57,7 +57,7 @@ export default function ConditionsUtilisation() {
             <Item>{t('cgu_art4_item4')}</Item>
             <Item>{t('cgu_art4_item5')}</Item>
           </ul>
-          <p className="mt-3 text-amber-400/80 text-[12px] font-medium">{t('cgu_art4_warning')}</p>
+          <p className="mt-3 text-warn/80 text-[12px] font-medium">{t('cgu_art4_warning')}</p>
         </Article>
 
         <Article title={t('cgu_art5_title')}>

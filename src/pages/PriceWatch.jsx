@@ -178,7 +178,7 @@ function HistoryPanel({ history, onRestore, onClear, t }) {
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-semibold text-slate-300 group-hover:text-cyan-300 truncate">{item.searchLabel}</p>
               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${
-                item.type === 'vo' ? 'bg-amber-400/10 text-amber-400' : 'bg-emerald-400/10 text-emerald-400'
+                item.type === 'vo' ? 'bg-warn/10 text-warn' : 'bg-emerald-400/10 text-emerald-400'
               }`}>{item.type?.toUpperCase()}</span>
             </div>
             <p className="text-[10px] text-slate-600">{new Date(item.savedAt).toLocaleString()}</p>
@@ -466,7 +466,7 @@ export default function PriceWatch() {
               <h3 className="text-base font-bold text-white">{searchLabel}</h3>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  type === 'vo' ? 'bg-amber-400/10 text-amber-400' : 'bg-emerald-400/10 text-emerald-400'
+                  type === 'vo' ? 'bg-warn/10 text-warn' : 'bg-emerald-400/10 text-emerald-400'
                 }`}>{type === 'vo' ? t('used_vehicle') : t('new_vehicle')}</span>
 
                 {/* Data source badge — piloté par hasLiveData (API), pas par l'IA */}
@@ -511,9 +511,9 @@ export default function PriceWatch() {
 
           {/* Alerte */}
           {result.alerte && (
-            <div className="flex gap-2 p-3 rounded-xl bg-amber-400/10 border border-amber-400/20">
-              <AlertCircle size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-amber-300 font-medium">{result.alerte}</p>
+            <div className="flex gap-2 p-3 rounded-xl bg-warn/10 border border-warn/20">
+              <AlertCircle size={14} className="text-warn flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-warn font-medium">{result.alerte}</p>
             </div>
           )}
 
@@ -666,11 +666,11 @@ export default function PriceWatch() {
             {/* Points de vigilance */}
             {result.points_vigilance?.length > 0 && (
               <div className="glass-card p-4">
-                <SectionTitle icon={ShieldCheck} label={t('price_vigilance_label')} color="text-amber-400" />
+                <SectionTitle icon={ShieldCheck} label={t('price_vigilance_label')} color="text-warn" />
                 <ul className="space-y-1.5">
                   {result.points_vigilance.map((pt, i) => (
                     <li key={i} className="flex items-start gap-1.5">
-                      <span className="text-amber-400 mt-0.5 flex-shrink-0">⚠</span>
+                      <span className="text-warn mt-0.5 flex-shrink-0">⚠</span>
                       <span className="text-xs text-slate-400">{pt}</span>
                     </li>
                   ))}

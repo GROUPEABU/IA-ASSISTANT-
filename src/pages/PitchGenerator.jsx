@@ -11,8 +11,8 @@ import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
 const PROFILES = [
   { id: 'btoc_famille', labelKey: 'profile_family', subKey: 'profile_family_sub', icon: Users,     segment: 'btoc', color: '#50E5E5' },
   { id: 'btoc_rouleur', labelKey: 'profile_driver', subKey: 'profile_family_sub', icon: Car,       segment: 'btoc', color: '#7DD3FC' },
-  { id: 'btob_pme',     labelKey: 'profile_pme',    subKey: 'profile_pme_sub',    icon: Wrench,    segment: 'btob', color: '#fbbf24' },
-  { id: 'btob_flotte',  labelKey: 'profile_fleet',  subKey: 'profile_fleet_sub',  icon: Building2, segment: 'btob', color: '#fb923c' },
+  { id: 'btob_pme',     labelKey: 'profile_pme',    subKey: 'profile_pme_sub',    icon: Wrench,    segment: 'btob', color: '#E6B450' },
+  { id: 'btob_flotte',  labelKey: 'profile_fleet',  subKey: 'profile_fleet_sub',  icon: Building2, segment: 'btob', color: '#CC8B3D' },
   { id: 'btob_cadre',   labelKey: 'profile_exec',   subKey: 'profile_exec_sub',   icon: Briefcase, segment: 'btob', color: '#a78bfa' },
 ]
 
@@ -355,17 +355,17 @@ Réponds UNIQUEMENT en JSON valide :
             {/* Objections */}
             <div className="glass-card p-4">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-lg bg-amber-400/15 flex items-center justify-center">
-                  <span className="text-amber-400 text-xs font-bold leading-none">3</span>
+                <div className="w-6 h-6 rounded-lg bg-warn/15 flex items-center justify-center">
+                  <span className="text-warn text-xs font-bold leading-none">3</span>
                 </div>
-                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">{t('obj_responses')}</span>
+                <span className="text-[10px] font-bold text-warn uppercase tracking-wider">{t('obj_responses')}</span>
               </div>
               <div className="space-y-2.5">
                 {pitch.objections.map((obj, i) => (
-                  <div key={i} className="bg-amber-400/5 border border-amber-400/10 rounded-xl p-3.5">
+                  <div key={i} className="bg-warn/5 border border-warn/10 rounded-xl p-3.5">
                     <p className="text-sm font-semibold text-slate-300 mb-2">"{obj.question}"</p>
                     <div className="flex items-start gap-2">
-                      <ChevronRight size={13} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                      <ChevronRight size={13} className="text-warn flex-shrink-0 mt-0.5" />
                       <p className="text-sm text-slate-400 leading-relaxed">{obj.reponse}</p>
                     </div>
                   </div>

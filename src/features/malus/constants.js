@@ -6,8 +6,8 @@
 export const SEVERITY_COLOR = {
   none:      '#50E5E5',
   low:       '#A5F3FC',
-  medium:    '#facc15',
-  high:      '#fb923c',
+  medium:    '#E6B450',
+  high:      '#CC8B3D',
   very_high: '#f87171',
 }
 
