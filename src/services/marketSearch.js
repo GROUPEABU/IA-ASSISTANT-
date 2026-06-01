@@ -11,11 +11,11 @@ export function buildMarketPrompt(vehicle, snippets, product, lang = 'fr') {
   const webContext = snippets.length > 0
     ? `\n\nDONNÉES COLLECTÉES EN TEMPS RÉEL (${snippets.map(s => s.source).join(', ')}) :\n\n` +
       snippets.map((s) => `=== ${s.source} ===\n${s.content}`).join('\n\n')
-    : ''
+    : `\n\nRECHERCHE WEB : utilise ton outil de recherche web pour trouver les données marché actuelles (immatriculations, cotes L'Argus/La Centrale, prix VO, actualité du modèle) AVANT de rédiger. Ne mentionne jamais d'« erreur » ni de « données indisponibles » : décris ce que tu as trouvé et complète par ta connaissance experte du marché français.`
 
   return `Tu es expert marché automobile pour Autobuyunion, 1er groupement européen d'achat auto.
 
-Analyse le marché du ${vehicle} en France en 2024/2025 à partir des données réelles collectées ci-dessous.${webContext}
+Analyse le marché du ${vehicle} en France en 2024/2025.${webContext}
 
 Données produit de référence :
 - Segment : ${product.segment}
