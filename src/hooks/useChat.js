@@ -26,6 +26,7 @@ export function useChat() {
 
       await streamMessage(history, {
         lang,
+        webSearch: true,
         onChunk: (fullText) => {
           if (firstChunk) {
             firstChunk = false

@@ -66,9 +66,11 @@ async function analyzePrices(filters, sourcesData, hasLiveData, fuels, gearboxes
     ? `\n⚠️ FILTRE FINITION STRICT : Analyse UNIQUEMENT la finition/version "${filters.finition}".`
     : ''
 
-  const dataSection = hasLiveData && context
-    ? `Données annonces collectées en temps réel :\n${context}\n\nAnalyse UNIQUEMENT les annonces qui correspondent exactement à "${filters.make} ${filters.model}"${filters.finition ? ` finition "${filters.finition}"` : ''}. Élimine tout ce qui ne correspond pas.`
-    : `⚠️ Les sources web ne sont pas disponibles actuellement. Utilise tes connaissances expertes du marché automobile français (formation sur données de marché réelles) pour fournir une analyse précise et réaliste. Sois aussi précis que possible avec des chiffres réels.`
+  const hint = context
+    ? `\n\nIndices d'annonces déjà collectées (à compléter par ta recherche) :\n${context}`
+    : ''
+
+  const dataSection = `RECHERCHE WEB OBLIGATOIRE : utilise l'outil de recherche web pour trouver les annonces ACTUELLES de ce véhicule sur La Centrale, LeBonCoin, AutoScout24 et Caradisiac. Recherche des requêtes précises (ex: "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.yearMin || ''} prix occasion"). Lis les prix réels affichés, élimine les annonces qui ne correspondent pas exactement au véhicule cible, puis calcule les statistiques sur les prix réellement trouvés. Si la recherche web ne renvoie rien d'exploitable, base-toi sur ta connaissance experte du marché et signale-le dans "alerte".${hint}`
 
   const prompt = `Tu es expert en cote et marché automobile ${filters.type === 'vn' ? 'VN (véhicule neuf)' : 'VO (occasion)'} pour Autobuyunion, dealer professionnel en France.
 Véhicule cible : "${vehicleDesc}"${finitionFilter}
@@ -96,7 +98,6 @@ Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise mark
   "cote_argus_min": <cote Argus basse TTC>,
   "cote_argus_max": <cote Argus haute TTC>,
   "alerte": <"texte si données insuffisantes ou anomalie" | null>,
-  "source_donnees": "${hasLiveData ? 'live' : 'knowledge'}",
   "analyse": "<3-4 phrases expertes : positionnement marché, demande, liquidité, points clés>",
   "conseil_achat": "<conseil d'achat chiffré et actionnable pour obtenir le meilleur prix>",
   "conseil_vente": "<conseil de vente chiffré et actionnable pour vendre vite au meilleur prix>",
@@ -106,8 +107,11 @@ Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise mark
   "annonces_par_source": [{"source": "<nom source>", "prix_min": 0, "prix_moy": 0, "prix_max": 0, "nb": 0}]
 }`
 
-  const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 4096, expert: true, temperature: 0.3, tool: 'veilleprix' })
-  return extractJSON(raw, 'object')
+  const { text: raw, usedWebSearch } = await sendMessage(
+    [{ role: 'user', content: prompt }],
+    { lang, maxTokens: 4096, expert: true, temperature: 0.3, tool: 'veilleprix', webSearch: true, maxSearches: 5, returnMeta: true }
+  )
+  return { ...extractJSON(raw, 'object'), usedWebSearch }
 }
 
 // ── Composants UI ─────────────────────────────────────────────────────────────
@@ -271,7 +275,9 @@ export default function PriceWatch() {
 
       setStep(t('price_step_calculating'))
       const analysis = await analyzePrices(filters, raw.sources || [], raw.hasLiveData || false, FUELS, GEARBOXES, BODIES, lang)
-      const finalResult = { ...analysis, sources: raw.sources, hasLiveData: raw.hasLiveData }
+      // hasLiveData = vrai si Claude a réellement effectué une recherche web,
+      // sinon vrai si le proxy a ramené du contenu exploitable.
+      const finalResult = { ...analysis, sources: raw.sources, hasLiveData: analysis.usedWebSearch || raw.hasLiveData }
       setResult(finalResult)
       addHistory({ searchLabel: label, type: filters.type, result: finalResult })
     } catch (err) {

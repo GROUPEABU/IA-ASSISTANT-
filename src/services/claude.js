@@ -161,7 +161,7 @@ function buildContent(text, attachment) {
  * @param {ChatMessage[]} messages
  * @returns {Promise<string>}
  */
-export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3, tool = null } = {}) {
+export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3, tool = null, webSearch = false, maxSearches = 5, returnMeta = false } = {}) {
   const apiKey = getApiKey()
   if (!apiKey) throw new Error('Anthropic API key missing. Please add your key in Settings.')
 
@@ -169,6 +169,19 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
     role,
     content: buildContent(content, attachment),
   }))
+
+  const body = {
+    model:       getModel(),
+    max_tokens:  maxTokens,
+    temperature,
+    system:      buildSystemPrompt(lang, expert, tool),
+    messages:    apiMessages,
+  }
+  // Pont vers la recherche web officielle Anthropic (exécutée côté serveur,
+  // jamais bloquée comme un proxy navigateur). Claude décide quand chercher.
+  if (webSearch) {
+    body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: maxSearches }]
+  }
 
   const response = await fetch(ENDPOINT, {
     method:  'POST',
@@ -178,13 +191,7 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
       'content-type':                              'application/json',
       'anthropic-dangerous-direct-browser-access': 'true',
     },
-    body: JSON.stringify({
-      model:       getModel(),
-      max_tokens:  maxTokens,
-      temperature,
-      system:      buildSystemPrompt(lang, expert, tool),
-      messages:    apiMessages,
-    }),
+    body: JSON.stringify(body),
   })
 
   if (!response.ok) {
@@ -193,8 +200,16 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
   }
 
   const payload = await response.json()
-  const text = payload.content?.[0]?.text
-  if (typeof text !== 'string') throw new Error('Unexpected API response (no text content).')
+  const blocks = payload.content || []
+  // Concatène tous les blocs texte (la recherche web insère des blocs
+  // server_tool_use / web_search_tool_result entre les textes).
+  const text = blocks.filter(b => b.type === 'text').map(b => b.text).join('\n').trim()
+  if (!text) throw new Error('Unexpected API response (no text content).')
+
+  if (returnMeta) {
+    const searchCount = blocks.filter(b => b.type === 'server_tool_use' && b.name === 'web_search').length
+    return { text, usedWebSearch: searchCount > 0, searchCount }
+  }
   return text
 }
 
@@ -206,7 +221,7 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
  * @param {{ lang?: string, onChunk?: (text: string) => void }} opts
  * @returns {Promise<string>}  the complete assistant text
  */
-export async function streamMessage(messages, { lang = 'fr', onChunk, temperature = 0.6 } = {}) {
+export async function streamMessage(messages, { lang = 'fr', onChunk, temperature = 0.6, webSearch = false, maxSearches = 3 } = {}) {
   const apiKey = getApiKey()
   if (!apiKey) throw new Error('Anthropic API key missing. Please add your key in Settings.')
 
@@ -214,6 +229,18 @@ export async function streamMessage(messages, { lang = 'fr', onChunk, temperatur
     role,
     content: buildContent(content, attachment),
   }))
+
+  const body = {
+    model:       getModel(),
+    max_tokens:  MAX_TOKENS,
+    temperature,
+    system:      buildSystemPrompt(lang),
+    messages:    apiMessages,
+    stream:      true,
+  }
+  if (webSearch) {
+    body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: maxSearches }]
+  }
 
   const response = await fetch(ENDPOINT, {
     method:  'POST',
@@ -223,14 +250,7 @@ export async function streamMessage(messages, { lang = 'fr', onChunk, temperatur
       'content-type':                              'application/json',
       'anthropic-dangerous-direct-browser-access': 'true',
     },
-    body: JSON.stringify({
-      model:       getModel(),
-      max_tokens:  MAX_TOKENS,
-      temperature,
-      system:      buildSystemPrompt(lang),
-      messages:    apiMessages,
-      stream:      true,
-    }),
+    body: JSON.stringify(body),
   })
 
   if (!response.ok) {
