@@ -71,9 +71,7 @@ function CountryHint({ fieldKey, requiredCtx }) {
   if (requiredCtx) {
     const needers = requiredCtx.byField[fieldKey] || []
     if (!needers.length) return null
-    const label = needers.length === 1
-      ? `${needers[0].flag} ${needers[0].name}`
-      : `${needers.length} pays`
+    const label = needers.map(c => c.name).join(' / ')
     return (
       <div className="mt-2 flex items-center gap-1.5 flex-wrap">
         <span
@@ -93,7 +91,7 @@ function CountryHint({ fieldKey, requiredCtx }) {
     <p className="mt-2 text-[10px] text-slate-600 leading-relaxed">
       {codes.map(code => {
         const m = COUNTRY_META[code]
-        return m ? `${m.flag} ${m.name}` : code
+        return m ? m.name : code
       }).join(' · ')}
     </p>
   )
@@ -133,9 +131,7 @@ export default function AdvancedParams({
   // ── Contextual mode: a country (or countries) is selected ──────────────────
   if (contextual) {
     const { countries, fields } = requiredCtx
-    const countryLabel = countries.length === 1
-      ? `${countries[0].flag} ${countries[0].name}`
-      : countries.map(c => c.flag).join(' ')
+    const countryLabel = countries.map(c => c.name).join(' / ')
 
     return (
       <div className="mb-2">
