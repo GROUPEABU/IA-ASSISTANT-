@@ -279,8 +279,9 @@ export default {
     co2_disclaimer: "Les montants affichés sont fournis à titre indicatif et ne constituent pas un conseil fiscal. Les barèmes sont susceptibles d\'évoluer — vérifiez auprès de l\'autorité compétente de chaque pays avant toute acquisition.",
     // Settings
     settings_api_section: 'API & Intégrations',
-    settings_api_key_label: 'Clé API IA (optionnel)',
+    settings_api_key_label: 'Connexion IA',
     settings_api_key_desc: "Optionnel — l\'assistant fonctionne déjà sans clé. Renseignez-la uniquement pour utiliser votre propre clé d\'accès.",
+    settings_api_connected: 'IA connectée — accès partagé actif',
     settings_api_power_label: 'Puissance IA',
     settings_api_power_desc: 'Niveau de traitement utilisé pour les analyses et générations',
     settings_standard: 'Standard',

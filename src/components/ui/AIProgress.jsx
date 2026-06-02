@@ -175,29 +175,32 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
   }
 
   return (
-    <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-3">
-      {/* Anneau de progression */}
-      <div className="relative w-16 h-16">
-        <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64" aria-hidden="true">
-          <circle cx="32" cy="32" r="28" fill="none" stroke={C.track} strokeWidth="6" />
-          <circle
-            cx="32" cy="32" r="28" fill="none" stroke={C.accent} strokeWidth="6" strokeLinecap="round"
-            strokeDasharray={2 * Math.PI * 28}
-            strokeDashoffset={2 * Math.PI * 28 * (1 - pct / 100)}
-            style={{ transition: 'stroke-dashoffset 200ms ease-out', filter: `drop-shadow(${C.glow})` }}
-          />
-        </svg>
-        <span className={`absolute inset-0 flex items-center justify-center text-sm font-bold tabular-nums${waiting ? ' animate-pulse' : ''}`} style={{ color: C.accent }}>
-          {rounded}%
-        </span>
+    <div className="w-full max-w-sm mx-auto flex flex-col gap-3">
+      {/* Ring + label centrés indépendamment de la barre */}
+      <div className="flex flex-col items-center gap-3">
+        {/* Anneau de progression */}
+        <div className="relative w-16 h-16">
+          <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64" aria-hidden="true">
+            <circle cx="32" cy="32" r="28" fill="none" stroke={C.track} strokeWidth="6" />
+            <circle
+              cx="32" cy="32" r="28" fill="none" stroke={C.accent} strokeWidth="6" strokeLinecap="round"
+              strokeDasharray={2 * Math.PI * 28}
+              strokeDashoffset={2 * Math.PI * 28 * (1 - pct / 100)}
+              style={{ transition: 'stroke-dashoffset 200ms ease-out', filter: `drop-shadow(${C.glow})` }}
+            />
+          </svg>
+          <span className={`absolute inset-0 flex items-center justify-center text-sm font-bold tabular-nums${waiting ? ' animate-pulse' : ''}`} style={{ color: C.accent }}>
+            {rounded}%
+          </span>
+        </div>
+
+        {/* Libellé d'étape */}
+        {text && (
+          <p className={`text-sm ${C.labelCls} text-center leading-snug min-h-[1.25rem]`}>{text}</p>
+        )}
       </div>
 
-      {/* Libellé d'étape */}
-      {text && (
-        <p className={`text-sm ${C.labelCls} text-center leading-snug min-h-[1.25rem]`}>{text}</p>
-      )}
-
-      {/* Barre linéaire */}
+      {/* Barre linéaire — pleine largeur (hors items-center pour éviter le shrink) */}
       {barFill}
     </div>
   )

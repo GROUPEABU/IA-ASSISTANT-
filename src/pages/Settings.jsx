@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Key, Palette, Globe, Check, Monitor, Sun, Laptop, Scale, ChevronRight, Copy } from 'lucide-react'
+import { Key, Palette, Globe, Check, Monitor, Sun, Laptop, Scale, ChevronRight, Wifi } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { ukey } from '@/utils/userStorage'
@@ -43,9 +43,7 @@ export default function Settings() {
   const apiKeyKey   = ukey(user?.id ?? null, 'api_key')
   const aiPowerKey  = ukey(user?.id ?? null, 'ai_power')
   const [theme,      setTheme]      = useState(() => localStorage.getItem(themeKey)   || 'dark')
-  const [apiKey,     setApiKey]     = useState(() => localStorage.getItem(apiKeyKey)  || '')
   const [aiPower,    setAiPower]    = useState(() => localStorage.getItem(aiPowerKey) || 'performance')
-  const [keyCopied,  setKeyCopied]  = useState(false)
 
   function applyThemeValue(v) {
     if (v === 'light') {
@@ -76,11 +74,6 @@ export default function Settings() {
   }, [theme])
 
   const handleSave = () => {
-    if (apiKey.trim()) {
-      localStorage.setItem(apiKeyKey, apiKey.trim())
-    } else {
-      localStorage.removeItem(apiKeyKey)
-    }
     localStorage.setItem(aiPowerKey, aiPower)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -91,36 +84,16 @@ export default function Settings() {
       {/* Row 1: API — full width */}
       <Section icon={Key} title={t('settings_api_section')}>
         <div className="space-y-5">
-          {/* API key — full width, label above field */}
-          <div>
-            <p className="text-sm font-medium text-slate-200">{t('settings_api_key_label')}</p>
-            <p className="text-xs text-slate-500 mt-0.5 mb-2 leading-relaxed">{t('settings_api_key_desc')}</p>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input
-                type="password"
-                value={apiKey}
-                onChange={e => setApiKey(e.target.value)}
-                placeholder="sk-ant-..."
-                className="flex-1 bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-                           text-sm text-slate-300 placeholder-slate-600
-                           focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/10 transition"
-              />
-              {apiKey && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(apiKey)
-                    setKeyCopied(true)
-                    setTimeout(() => setKeyCopied(false), 2000)
-                  }}
-                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-navy-700/50
-                             text-xs font-medium text-slate-400 hover:text-cyan-400 hover:border-cyan-400/30 transition flex-shrink-0"
-                >
-                  {keyCopied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-                  {keyCopied ? t('api_key_copied') : t('api_key_copy')}
-                </button>
-              )}
+          {/* API key — statut connexion (champ masqué, clé gérée côté serveur) */}
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-400/8 border border-emerald-400/20">
+            <div className="w-7 h-7 rounded-lg bg-emerald-400/10 flex items-center justify-center flex-shrink-0">
+              <Wifi size={14} className="text-emerald-400" />
             </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-slate-200">{t('settings_api_key_label')}</p>
+              <p className="text-xs text-emerald-400 mt-0.5">{t('settings_api_connected')}</p>
+            </div>
+            <div className="ml-auto w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0 animate-pulse" />
           </div>
 
           {/* Power + Save — second row, aligned */}
