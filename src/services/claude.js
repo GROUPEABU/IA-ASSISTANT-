@@ -276,7 +276,7 @@ function buildContent(text, attachment) {
  * @param {ChatMessage[]} messages
  * @returns {Promise<string>}
  */
-export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3, tool = null, webSearch = false, maxSearches = 5, returnMeta = false, stream = false } = {}) {
+export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3, tool = null, webSearch = false, maxSearches = 5, returnMeta = false, stream = false, onChunk = null } = {}) {
   assertOnline()
   const apiMessages = messages.map(({ role, content, attachment }) => ({
     role,
@@ -302,7 +302,7 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
   // est accumulé puis renvoyé comme si la requête était classique.
   if (stream || webSearch) {
     body.stream = true
-    return streamToText(body, { returnMeta })
+    return streamToText(body, { returnMeta, onChunk })
   }
 
   const response = await fetchResilient(ENDPOINT, {
@@ -355,7 +355,7 @@ async function postNonStream(body) {
   return { text, searchCount }
 }
 
-async function streamToText(body, { returnMeta = false } = {}) {
+async function streamToText(body, { returnMeta = false, onChunk = null } = {}) {
   let text = ''
   let searchCount = 0
 
@@ -384,6 +384,7 @@ async function streamToText(body, { returnMeta = false } = {}) {
           const evt = JSON.parse(data)
           if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
             text += evt.delta.text
+            onChunk?.(text)
           } else if (evt.type === 'content_block_start'
                      && evt.content_block?.type === 'server_tool_use'
                      && evt.content_block?.name === 'web_search') {
@@ -399,6 +400,7 @@ async function streamToText(body, { returnMeta = false } = {}) {
     const r = await postNonStream(body)
     text = r.text
     searchCount = r.searchCount
+    onChunk?.(text)
   }
 
   if (!text) throw new Error('Unexpected API response (no text content).')

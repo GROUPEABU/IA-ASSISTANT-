@@ -83,7 +83,8 @@ Rédige un comparatif expert, chiffré et NEUTRE. N'élis PAS un « gagnant » u
 
 Reste neutre, factuel et chiffré : montre à qui chaque véhicule convient, sans désigner de « meilleur » absolu.`
 
-      const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 6000, expert: true, temperature: 0.3, tool: 'comparateur', stream: true })
+      // Affichage au fil de l'eau (comme le chat) : le verdict s'écrit en direct.
+      const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 6000, expert: true, temperature: 0.3, tool: 'comparateur', stream: true, onChunk: (t) => setVerdict(t) })
       setVerdict(result)
       addHistory({ label: selected.filter(Boolean).map(id => allProducts.find(p => p.id === id)?.name).join(' vs '), verdict: result })
     } catch (err) {
@@ -202,7 +203,8 @@ Reste neutre, factuel et chiffré : montre à qui chaque véhicule convient, san
             <h3 ref={headingRef} tabIndex={-1} className="text-sm font-semibold text-white outline-none">{t('compare_verdict_title')}</h3>
           </div>
 
-          {loadingVerdict && (
+          {/* Barre uniquement avant le 1er mot ; ensuite, écriture en direct. */}
+          {loadingVerdict && !verdict && (
             <div className="py-4">
               <AIProgress
                 active={loadingVerdict}
@@ -229,7 +231,7 @@ Reste neutre, factuel et chiffré : montre à qui chaque véhicule convient, san
             </div>
           )}
 
-          {verdict && !loadingVerdict && (
+          {verdict && (
             <div className="space-y-1">
               {verdict.split('\n').map((line, i) => {
                 if (line.startsWith('**') && line.endsWith('**')) {
@@ -238,18 +240,23 @@ Reste neutre, factuel et chiffré : montre à qui chaque véhicule convient, san
                 if (line.trim() === '') return <div key={i} className="h-1" />
                 return <p key={i} className="text-sm text-slate-300 leading-relaxed">{line}</p>
               })}
-              <div className="flex items-center gap-2 mt-3">
-                <button onClick={generateVerdict}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition">
-                  <RefreshCw size={11} /> {t('compare_regenerate')}
-                </button>
-                <button
-                  onClick={reset}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30"
-                >
-                  <RotateCcw size={11} /> {t('new_analysis_btn')}
-                </button>
-              </div>
+              {loadingVerdict ? (
+                /* Curseur d'écriture pendant le streaming */
+                <span className="inline-block w-1.5 h-4 bg-cyan-400 rounded-sm animate-pulse align-middle ml-0.5" />
+              ) : (
+                <div className="flex items-center gap-2 mt-3">
+                  <button onClick={generateVerdict}
+                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition">
+                    <RefreshCw size={11} /> {t('compare_regenerate')}
+                  </button>
+                  <button
+                    onClick={reset}
+                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30"
+                  >
+                    <RotateCcw size={11} /> {t('new_analysis_btn')}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
