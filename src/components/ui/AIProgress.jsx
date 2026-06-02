@@ -66,7 +66,10 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
     if (storeKey) {
       try {
         const saved = Number(localStorage.getItem(storeKey))
-        if (saved > 1500) estRef.current = saved
+        // +12 % de marge sur la durée réelle observée : la barre vise un peu au-delà
+        // du temps habituel → elle finit le plus souvent AVANT la fin réelle (saut
+        // à 100 %) plutôt que de stagner. « Fin plus rapide », jamais figée.
+        if (saved > 1500) estRef.current = Math.round(saved * 1.12)
       } catch {}
     }
     const est = estRef.current
@@ -79,9 +82,14 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
       const elapsed = performance.now() - startRef.current
       let pctVal
       if (elapsed <= est) {
-        pctVal = (elapsed / est) * 92
+        // Phase 1 : progression régulière 0 → 95 % sur la durée estimée.
+        pctVal = (elapsed / est) * 95
       } else {
-        pctVal = Math.min(98, 92 + (elapsed - est) / 2500)
+        // Phase 2 (dépassement) : approche ASYMPTOTIQUE de 99,5 % — la barre
+        // continue toujours d'avancer (95→96→97→98→99…) au lieu de se figer à
+        // une valeur fixe. Elle n'atteint jamais 100 % avant la fin réelle.
+        const over = elapsed - est
+        pctVal = 99.5 - 4.5 * Math.exp(-over / 9000)
       }
       setPct(pctVal)
       if (stages.length > 1) {
@@ -101,19 +109,21 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
   // ── Palette par thème ───────────────────────────────────────────────
   // Sombre : piste slate claire, accent cyan vif.
   // Clair  : piste slate foncée subtile, accent teal foncé (plus lisible sur blanc).
+  // Piste volontairement DISCRÈTE + arc VIF : le contraste rend l'avancement
+  // lisible même à faible %. Halo court (3-4 px) pour un arc net, pas flou.
   const C = isLight
     ? {
-        track:    'rgba(15,23,42,0.12)',
+        track:    'rgba(15,23,42,0.10)',
         accent:   '#0e7490',              // teal-700 — net sur fond blanc
         gradient: 'linear-gradient(90deg, #0e7490, #0891b2)',
-        glow:     '0 0 8px rgba(8,145,178,0.45)',
+        glow:     '0 0 3px rgba(14,116,144,0.40)',
         labelCls: 'text-slate-500',
       }
     : {
-        track:    'rgba(148,163,184,0.28)',
+        track:    'rgba(148,163,184,0.20)',
         accent:   '#22d3ee',              // cyan-400 — éclatant sur fond navy
         gradient: 'linear-gradient(90deg, #06b6d4, #22d3ee)',
-        glow:     '0 0 10px rgba(34,211,238,0.7)',
+        glow:     '0 0 4px rgba(34,211,238,0.55)',
         labelCls: 'text-slate-400',
       }
 
