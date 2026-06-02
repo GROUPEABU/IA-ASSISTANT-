@@ -588,7 +588,7 @@ export default {
     tco_maint_help: 'Entretien + réparations estimés · ajustez selon votre expérience',
     tco_currency_year: '€/an',
     // Validity hint
-    forgot_code_validity: 'Valable 15 minutes',
+    forgot_code_validity: 'Valable 5 minutes',
     auto_redirect: 'Redirection automatique…',
     technical_details: 'Détails techniques',
     error_title: "Une erreur inattendue s\'est produite",

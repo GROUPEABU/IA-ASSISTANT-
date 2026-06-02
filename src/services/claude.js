@@ -112,6 +112,11 @@ function proxyHeaders() {
   const headers = { 'content-type': 'application/json' }
   const userKey = getUserApiKey()
   if (userKey) headers['x-user-api-key'] = userKey
+  // APP_SECRET: set via VITE_APP_SECRET in Vercel env. Present in the bundle
+  // (Vite bakes VITE_* vars at build time) — raises the bar against scanners
+  // without being a substitute for proper auth.
+  const appSecret = import.meta.env.VITE_APP_SECRET
+  if (appSecret) headers['x-app-secret'] = appSecret
   return headers
 }
 

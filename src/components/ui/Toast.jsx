@@ -27,7 +27,7 @@ export function ToastContainer() {
 
   useEffect(() => {
     _push = (message, type = 'error', duration = 4500) => {
-      const id = Date.now() + Math.random()
+      const id = Date.now() + crypto.getRandomValues(new Uint32Array(1))[0]
       setToasts(prev => [...prev.slice(-4), { id, message, type }])
       setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration)
     }

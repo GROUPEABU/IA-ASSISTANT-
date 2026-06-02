@@ -37,7 +37,7 @@ export default async function handler(req) {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 })
 
   const { searchParams } = new URL(req.url)
-  const vehicle = searchParams.get('vehicle')
+  const vehicle = (searchParams.get('vehicle') || '').trim().slice(0, 200)
 
   if (!vehicle) {
     return new Response(JSON.stringify({ error: 'vehicle requis' }), { status: 400 })

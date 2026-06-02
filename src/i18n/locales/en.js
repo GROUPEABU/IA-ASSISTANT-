@@ -560,7 +560,7 @@ export default {
     tco_editable: 'editable',
     tco_maint_help: 'Estimated maintenance + repairs · adjust to your experience',
     tco_currency_year: '€/year',
-    forgot_code_validity: 'Valid for 15 minutes',
+    forgot_code_validity: 'Valid for 5 minutes',
     auto_redirect: 'Auto-redirecting…',
     technical_details: 'Technical details',
     error_title: 'An unexpected error occurred',

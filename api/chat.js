@@ -1,11 +1,13 @@
 // Vercel Edge Function — proxy mince vers l'API Anthropic.
 //
-// But sécurité : la clé API n'est JAMAIS exposée au navigateur ni embarquée
-// dans le bundle client. Elle est lue côté serveur depuis les variables
-// d'environnement du projet. Le client envoie le corps de requête déjà
-// construit (system, messages, model, tools, stream…) ; cette fonction y
-// ajoute la clé + la version et relaie la réponse telle quelle — y compris
-// le flux SSE en streaming.
+// Sécurité :
+//   - La clé API n'est JAMAIS exposée au navigateur ni embarquée dans le bundle.
+//   - Si APP_SECRET est configuré (recommandé), le proxy exige le header
+//     `x-app-secret` avec la valeur correspondante — sans cela : 401.
+//     Le client passe ce secret via VITE_APP_SECRET (présent dans le bundle,
+//     pas dans le code source versionné, suffisant pour bloquer les scanners).
+//   - Limite de corps à 200 KB pour prévenir les abus de payload.
+//   - Validation que le corps est un objet JSON avec un tableau `messages`.
 //
 // Override optionnel : un utilisateur peut fournir sa propre clé via l'en-tête
 // `x-user-api-key` (saisie dans Réglages, stockée dans son propre localStorage,
@@ -14,6 +16,7 @@ export const config = { runtime: 'edge' }
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const API_VERSION   = '2023-06-01'
+const MAX_BODY_BYTES = 200 * 1024 // 200 KB
 
 const json = (obj, status) =>
   new Response(JSON.stringify(obj), {
@@ -27,6 +30,38 @@ export default async function handler(req) {
     return json({ error: { message: 'Method not allowed' } }, 405)
   }
 
+  // ── Vérification du secret applicatif ─────────────────────────────────────
+  const appSecret = process.env.APP_SECRET
+  if (appSecret) {
+    const clientSecret = req.headers.get('x-app-secret') || ''
+    if (clientSecret !== appSecret) {
+      return json({ error: { message: 'Unauthorized' } }, 401)
+    }
+  }
+
+  // ── Limite de taille du corps ──────────────────────────────────────────────
+  const contentLength = parseInt(req.headers.get('content-length') || '0', 10)
+  if (contentLength > MAX_BODY_BYTES) {
+    return json({ error: { message: 'Payload trop volumineux.' } }, 413)
+  }
+
+  const body = await req.text()
+  if (body.length > MAX_BODY_BYTES) {
+    return json({ error: { message: 'Payload trop volumineux.' } }, 413)
+  }
+
+  // ── Validation de structure minimale ──────────────────────────────────────
+  let parsed
+  try {
+    parsed = JSON.parse(body)
+  } catch {
+    return json({ error: { message: 'Corps JSON invalide.' } }, 400)
+  }
+  if (!parsed || !Array.isArray(parsed.messages)) {
+    return json({ error: { message: 'Corps JSON invalide : messages[] requis.' } }, 400)
+  }
+
+  // ── Clé API ───────────────────────────────────────────────────────────────
   const key =
     req.headers.get('x-user-api-key') ||
     process.env.ANTHROPIC_API_KEY ||
@@ -39,8 +74,6 @@ export default async function handler(req) {
       500,
     )
   }
-
-  const body = await req.text()
 
   let upstream
   try {

@@ -7,7 +7,7 @@
 
 const RESET_KEY_PREFIX  = 'abu_reset_'
 const RESET_TRIES_PREFIX = 'abu_reset_tries_'
-export const RESET_TTL_MS   = 15 * 60 * 1000 // 15 minutes
+export const RESET_TTL_MS   = 5 * 60 * 1000 // 5 minutes
 export const MAX_OTP_TRIES  = 5
 
 export function generateOTP() {

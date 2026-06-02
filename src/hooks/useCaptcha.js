@@ -11,8 +11,10 @@ export function useCaptcha() {
   const [answer, setAnswer]       = useState('')
 
   const generate = useCallback(() => {
-    const a = Math.ceil(Math.random() * 9)
-    const b = Math.ceil(Math.random() * 9)
+    const rng = new Uint32Array(2)
+    crypto.getRandomValues(rng)
+    const a = 1 + (rng[0] % 9)
+    const b = 1 + (rng[1] % 9)
     setChallenge({ a, b, expected: a + b })
     setAnswer('')
   }, [])

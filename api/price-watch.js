@@ -47,17 +47,18 @@ export default async function handler(req) {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 })
 
   const { searchParams } = new URL(req.url)
-  const make        = searchParams.get('make') || ''
-  const model       = searchParams.get('model') || ''
-  const finition    = searchParams.get('finition') || ''
-  const carrosserie = searchParams.get('carrosserie') || ''
-  const type        = searchParams.get('type') || 'vo'
-  const yearMin     = searchParams.get('yearMin') || ''
-  const yearMax     = searchParams.get('yearMax') || ''
-  const mileageMin  = searchParams.get('mileageMin') || ''
-  const mileageMax  = searchParams.get('mileageMax') || ''
-  const fuel        = searchParams.get('fuel') || ''
-  const gearbox     = searchParams.get('gearbox') || ''
+  const s = (k, max = 100) => (searchParams.get(k) || '').trim().slice(0, max)
+  const make        = s('make')
+  const model       = s('model')
+  const finition    = s('finition')
+  const carrosserie = s('carrosserie', 20)
+  const type        = ['vo', 'vn'].includes(s('type', 5)) ? s('type', 5) : 'vo'
+  const yearMin     = s('yearMin', 4).replace(/\D/g, '')
+  const yearMax     = s('yearMax', 4).replace(/\D/g, '')
+  const mileageMin  = s('mileageMin', 7).replace(/\D/g, '')
+  const mileageMax  = s('mileageMax', 7).replace(/\D/g, '')
+  const fuel        = s('fuel', 5)
+  const gearbox     = s('gearbox', 5)
 
   if (!make && !model) {
     return new Response(JSON.stringify({ error: 'make ou model requis' }), { status: 400 })
