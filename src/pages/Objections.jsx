@@ -18,7 +18,6 @@ import { useToast } from '@/components/ui/Toast'
 const SEGMENTS = [
   { id: 'btoc', labelKey: 'btoc', subKey: 'btoc_sub' },
   { id: 'btob', labelKey: 'btob', subKey: 'btob_sub' },
-  { id: 'both', labelKey: 'both', subKey: 'both_sub' },
 ]
 
 const CATEGORY_COLORS = {
@@ -80,7 +79,7 @@ export default function Objections() {
   const objRef = useRef(null)
   const [vehicleId, setVehicleId] = useState('')
   const [customVehicle, setCustomVehicle] = useState(() => readLastVehicleName())
-  const [segment, setSegment] = useState('both')
+  const [segment, setSegment] = useState('btoc')
   const [loading, setLoading] = useState(false)
   const [objections, setObjections] = useState([])
   const [openIndex, setOpenIndex] = useState(0)
@@ -218,7 +217,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
             {t('segment_label')}
           </label>
-          <div className="grid grid-cols-3 gap-1 p-1 bg-navy-900/60 rounded-xl border border-navy-700/40">
+          <div className="grid grid-cols-2 gap-1 p-1 bg-navy-900/60 rounded-xl border border-navy-700/40">
             {SEGMENTS.map((s) => (
               <button
                 key={s.id}

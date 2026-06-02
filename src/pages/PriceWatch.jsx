@@ -174,7 +174,7 @@ Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise mark
 
   const { text: raw, usedWebSearch } = await sendMessage(
     [{ role: 'user', content: prompt }],
-    { lang, maxTokens: withWebSearch ? 4096 : 3000, expert: true, temperature: 0.3, tool: 'veilleprix', webSearch: withWebSearch, maxSearches: 3, returnMeta: true }
+    { lang, maxTokens: withWebSearch ? 4096 : 3000, expert: true, temperature: 0.3, tool: 'veilleprix', webSearch: withWebSearch, maxSearches: 2, returnMeta: true }
   )
   return { ...extractJSON(raw, 'object'), usedWebSearch }
 }
@@ -559,7 +559,7 @@ export default function PriceWatch() {
           <AIProgress
             active={loading}
             stages={[t('price_step_collecting'), t('ai_progress_search'), t('ai_progress_analyze'), t('ai_progress_format')]}
-            estimatedMs={38000}
+            estimatedMs={42000}
             persistKey="pricewatch"
             resume
           />
