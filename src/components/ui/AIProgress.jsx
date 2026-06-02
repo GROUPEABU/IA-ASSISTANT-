@@ -162,7 +162,10 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
     // même imbriquée sous un parent `items-center` (robuste Safari iOS).
     <div className="h-2 rounded-full overflow-hidden" style={{ background: C.track, width: '100%' }}>
       <div
-        className={`h-full rounded-full transition-[width] duration-200 ease-out${waiting ? ' animate-pulse' : ''}`}
+        // Pas de transition CSS sur `width` : la boucle requestAnimationFrame
+        // réécrit la largeur à chaque frame. Une transition de 200 ms redémarrerait
+        // en continu et figerait la barre sur sa valeur initiale (bug observé).
+        className={`h-full rounded-full${waiting ? ' animate-pulse' : ''}`}
         style={{
           width: `${Math.max(pct, pct > 0 ? 4 : 0)}%`,
           background: C.gradient,
