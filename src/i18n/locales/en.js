@@ -757,8 +757,6 @@ export default {
   price_prio_achat_sub: 'excl. VAT · max to pay',
   price_prio_revente: 'Resale, cheapest tier',
   price_prio_revente_sub: 'incl. VAT · competitive',
-  price_prio_marche: 'Market range',
-  price_prio_marche_sub: 'incl. VAT · observed',
   price_pro_range: 'Pro purchase range',
   price_margin_label: 'Partner margin',
   price_margin_sub: 'if bought at {p} € excl. VAT',

@@ -782,8 +782,6 @@ export default {
   price_prio_achat_sub: 'HT · plafond à payer',
   price_prio_revente: 'Revente 1er du net',
   price_prio_revente_sub: 'TTC · compétitif',
-  price_prio_marche: 'Fourchette marché',
-  price_prio_marche_sub: 'TTC · observé',
   price_pro_range: 'Fourchette achat pro',
   price_margin_label: 'Marge partenaire',
   price_margin_sub: 'si achat à {p} € HT',

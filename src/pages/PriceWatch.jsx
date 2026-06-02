@@ -414,9 +414,6 @@ export default function PriceWatch() {
   const achatProFourchette = (achatMin && achatMax)
     ? `${formatNumber(achatMin)} – ${formatNumber(achatMax)} € HT`
     : 'N/D'
-  const marcheFourchette = (result?.prix_q1 && result?.prix_q3)
-    ? `${formatNumber(result.prix_q1)} – ${formatNumber(result.prix_q3)} €`
-    : 'N/D'
 
   const fmtEur = (v) => v ? `${formatNumber(v)} €` : 'N/D'
   const fmtHT  = (v) => v ? `${formatNumber(v)} € HT` : 'N/D'
@@ -644,19 +641,25 @@ export default function PriceWatch() {
             </div>
           )}
 
-          {/* Priorités terrain — ordre voulu : marge, achat pro, revente 1er du net, marché */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {/* Priorités terrain — en tête : marge (1), achat pro (2), revente 1er du net (3) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <KpiCard label={t('price_prio_margin')} value={margeFourchette} highlight sub={t('price_prio_margin_sub')} />
             <KpiCard label={t('price_prio_achat')} value={achatProFourchette} sub={t('price_prio_achat_sub')} />
             <KpiCard label={t('price_prio_revente')} value={fmtEur(result.prix_conseille_vente)} sub={t('price_prio_revente_sub')} />
-            <KpiCard label={t('price_prio_marche')} value={marcheFourchette} sub={t('price_prio_marche_sub')} />
           </div>
 
-          {/* Repères marché secondaires */}
-          <div className="grid grid-cols-3 gap-2">
-            <KpiCard label={t('avg_price')} value={fmtEur(result.prix_moyen)} small sub={t('excl_outliers')} />
-            <KpiCard label={t('median_price')} value={fmtEur(result.prix_median)} small />
-            <KpiCard label={t('listings_est')} value={result.nb_annonces_estim ? `~${result.nb_annonces_estim}` : 'N/D'} small />
+          {/* Repères marché — données de base, prominentes */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <KpiCard label={t('avg_price')} value={fmtEur(result.prix_moyen)} highlight sub={t('excl_outliers')} />
+            <KpiCard label={t('median_price')} value={fmtEur(result.prix_median)} />
+            <KpiCard
+              label={t('price_range')}
+              value={result.prix_q1 && result.prix_q3
+                ? `${formatNumber(result.prix_q1)} – ${formatNumber(result.prix_q3)} €`
+                : 'N/D'}
+              sub={t('percentile')}
+            />
+            <KpiCard label={t('listings_est')} value={result.nb_annonces_estim ? `~${result.nb_annonces_estim}` : 'N/D'} />
           </div>
 
           {/* Analyse expert + pro en 2 colonnes */}
