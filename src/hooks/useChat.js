@@ -11,9 +11,9 @@ export function useChat() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const send = useCallback(async (text, attachment = null) => {
-    const userMsg = { id: newId(), role: 'user', content: text, attachment }
-    setMessages(prev => [...prev, userMsg])
+  // Lance la réponse assistant à partir d'un historique donné (qui se termine
+  // déjà par le dernier message utilisateur). Partagé par send() et retry().
+  const runAssistant = useCallback(async (history) => {
     setIsLoading(true)
     setError(null)
 
@@ -21,9 +21,6 @@ export function useChat() {
     let firstChunk = true
 
     try {
-      // Snapshot history before state update
-      const history = [...messages, userMsg]
-
       await streamMessage(history, {
         lang,
         webSearch: true,
@@ -53,12 +50,26 @@ export function useChat() {
     } finally {
       setIsLoading(false)
     }
-  }, [messages, lang])
+  }, [lang])
+
+  const send = useCallback(async (text, attachment = null) => {
+    const userMsg = { id: newId(), role: 'user', content: text, attachment }
+    const history = [...messages, userMsg] // snapshot avant la mise à jour d'état
+    setMessages(prev => [...prev, userMsg])
+    await runAssistant(history)
+  }, [messages, runAssistant])
+
+  // Relance la dernière requête : l'historique se termine déjà par le message
+  // utilisateur en échec, on ne le ré-ajoute donc pas (pas de doublon).
+  const retry = useCallback(async () => {
+    if (isLoading || messages.length === 0) return
+    await runAssistant(messages)
+  }, [isLoading, messages, runAssistant])
 
   const clear = useCallback(() => {
     setMessages([])
     setError(null)
   }, [])
 
-  return { messages, isLoading, error, send, clear }
+  return { messages, isLoading, error, send, retry, clear }
 }

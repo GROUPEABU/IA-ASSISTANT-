@@ -273,10 +273,16 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
         </button>
       </div>
 
-      {error && (
-        <div className="glass-card p-4 flex gap-2">
+      {error && !loading && (
+        <div className="glass-card p-4 flex items-start gap-2">
           <AlertCircle size={15} className="text-red-400 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-red-400">{error}</p>
+          <p className="text-sm text-red-400 flex-1">{error}</p>
+          <button
+            onClick={generate}
+            className="flex items-center gap-1.5 text-xs font-semibold text-cyan-400 border border-cyan-400/30
+                       px-3 py-1.5 rounded-lg hover:bg-cyan-400/10 transition flex-shrink-0">
+            <RefreshCw size={12} /> {t('retry_btn')}
+          </button>
         </div>
       )}
 

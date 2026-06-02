@@ -161,6 +161,7 @@ export default {
     print_btn: 'Imprimer',
     regenerate: 'Régénérer',
     new_analysis_btn: 'Nouvelle analyse',
+    retry_btn: 'Réessayer',
     recommended_answer: 'Réponse recommandée',
     obj_count_hint: 'objections · Cliquez pour révéler la réponse',
     // Pitch
@@ -760,6 +761,8 @@ export default {
   price_see_listing: 'Voir sur La Centrale',
   price_knowledge_badge: 'Expertise IA · données marché',
   price_live_badge: 'Données live',
+  price_live_partial: 'Mise à jour live…',
+  price_live_failed: 'Mise à jour live indisponible — estimation experte affichée. Réessayez pour les données en direct.',
   price_expert_section: 'Cotation & Décote',
   price_pro_section: 'Pricing Pro',
   price_catalogue_label: 'PVC neuf catalogue',

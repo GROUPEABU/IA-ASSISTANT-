@@ -338,6 +338,7 @@ export default function PriceWatch() {
     setError(null)
     setResult(null)
 
+    let hasPartial = false // une estimation rapide est-elle déjà affichée ?
     try {
       setStep(t('price_step_collecting'))
       const raw = await fetchPrices(filters)
@@ -354,7 +355,8 @@ export default function PriceWatch() {
         setIsPartial(true)
         setLoading(false) // libère l'UI mais continue en arrière-plan
         setStep('')
-      } catch { /* si la phase rapide échoue, on continue silencieusement */ }
+        hasPartial = true
+      } catch { /* phase rapide optionnelle : on continue vers la phase complète */ }
 
       // Phase 2 — analyse complète avec recherche web réelle
       setLoading(true)
@@ -370,8 +372,16 @@ export default function PriceWatch() {
       setIsPartial(false)
       addHistory({ searchLabel: label, type: filters.type, result: finalResult })
     } catch (err) {
-      setError(err.message)
-      toast(err.message, 'error')
+      if (hasPartial) {
+        // Une estimation est déjà à l'écran : ne pas la masquer par une erreur
+        // bloquante. On retire le badge « live » (l'estimation experte reste
+        // affichée et son badge violet la qualifie) et on informe sans bloquer.
+        setIsPartial(false)
+        toast(t('price_live_failed'), 'error')
+      } else {
+        setError(err.message)
+        toast(err.message, 'error')
+      }
     } finally {
       setLoading(false)
       setStep('')
@@ -572,9 +582,15 @@ export default function PriceWatch() {
 
       {/* ── Error ────────────────────────────────────────────────────────────── */}
       {error && !loading && (
-        <div className="glass-card p-4 flex gap-2">
+        <div className="glass-card p-4 flex items-start gap-2">
           <AlertCircle size={15} className="text-red-400 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-red-400">{error}</p>
+          <p className="text-sm text-red-400 flex-1">{error}</p>
+          <button
+            onClick={() => search()}
+            className="flex items-center gap-1.5 text-xs font-semibold text-cyan-400 border border-cyan-400/30
+                       px-3 py-1.5 rounded-lg hover:bg-cyan-400/10 transition flex-shrink-0">
+            <RefreshCw size={12} /> {t('retry_btn')}
+          </button>
         </div>
       )}
 
@@ -603,7 +619,7 @@ export default function PriceWatch() {
 
                 {result.isPartial && (
                   <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/20 animate-pulse">
-                    <RefreshCw size={9} /> Mise à jour live…
+                    <RefreshCw size={9} /> {t('price_live_partial')}
                   </span>
                 )}
 

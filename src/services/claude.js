@@ -38,6 +38,75 @@ function assertOnline() {
   }
 }
 
+// ── Résilience réseau ───────────────────────────────────────────────────────
+// Timeout (AbortController) + retries à backoff exponentiel sur les seules
+// erreurs transitoires. Les requêtes longues (recherche web) sont couvertes par
+// un timeout généreux ; les flux ont en plus un garde d'inactivité.
+const REQUEST_TIMEOUT_MS = 150000   // 2,5 min — couvre la recherche web en direct
+const STREAM_IDLE_MS     = 70000    // abandon si aucun octet pendant 70 s
+const MAX_RETRIES        = 2        // 3 tentatives au total
+const RETRYABLE_STATUS   = new Set([408, 425, 429, 500, 502, 503, 504, 529])
+
+const sleep   = (ms) => new Promise((r) => setTimeout(r, ms))
+const backoff = (attempt) => Math.min(8000, 1000 * 2 ** attempt) // 1 s, 2 s, 4 s…
+
+async function httpError(res) {
+  const err = await res.json().catch(() => ({}))
+  const e = new Error(err.error?.message ?? `Erreur du service IA (${res.status})`)
+  e.status = res.status
+  return e
+}
+
+/**
+ * fetch avec timeout et retries. Ne réessaie QUE les transitoires (réseau,
+ * timeout, 408/425/429/5xx). Les 4xx définitifs (400/401/403…) ne sont jamais
+ * réessayés. Renvoie une Response OK ; sinon lève une Error explicite.
+ */
+async function fetchResilient(url, options, { timeoutMs = REQUEST_TIMEOUT_MS, retries = MAX_RETRIES } = {}) {
+  let lastErr
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const ctrl  = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs)
+    let res
+    try {
+      res = await fetch(url, { ...options, signal: ctrl.signal })
+    } catch (e) {
+      clearTimeout(timer)
+      lastErr = e.name === 'AbortError'
+        ? new Error('Le service IA met trop de temps à répondre. Réessayez dans un instant.')
+        : new Error('Connexion au service IA interrompue. Vérifiez votre réseau puis réessayez.')
+      if (attempt < retries) { await sleep(backoff(attempt)); continue }
+      throw lastErr
+    }
+    clearTimeout(timer)
+    if (res.ok) return res
+    if (RETRYABLE_STATUS.has(res.status) && attempt < retries) {
+      lastErr = await httpError(res)
+      await sleep(backoff(attempt))
+      continue
+    }
+    throw await httpError(res)
+  }
+  throw lastErr ?? new Error('Le service IA est indisponible. Réessayez dans un instant.')
+}
+
+/**
+ * Lit un chunk d'un flux avec garde d'inactivité : si aucun octet n'arrive
+ * pendant `idleMs`, on abandonne (le timeout global ne convient pas au
+ * streaming, où la recherche web peut légitimement durer).
+ */
+async function readChunk(reader, idleMs = STREAM_IDLE_MS) {
+  let timer
+  const idle = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Le flux du service IA s’est interrompu. Réessayez.')), idleMs)
+  })
+  try {
+    return await Promise.race([reader.read(), idle])
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 // Builds request headers for the proxy, attaching the personal key only if set.
 function proxyHeaders() {
   const headers = { 'content-type': 'application/json' }
@@ -224,16 +293,11 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
     return streamToText(body, { returnMeta })
   }
 
-  const response = await fetch(ENDPOINT, {
+  const response = await fetchResilient(ENDPOINT, {
     method:  'POST',
     headers: proxyHeaders(),
     body: JSON.stringify(body),
   })
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}))
-    throw new Error(err.error?.message ?? `Erreur du service IA (${response.status})`)
-  }
 
   const payload = await response.json()
   const blocks = payload.content || []
@@ -259,16 +323,11 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
  * @returns {Promise<string|{text:string,usedWebSearch:boolean,searchCount:number}>}
  */
 async function streamToText(body, { returnMeta = false } = {}) {
-  const response = await fetch(ENDPOINT, {
+  const response = await fetchResilient(ENDPOINT, {
     method:  'POST',
     headers: proxyHeaders(),
     body: JSON.stringify(body),
   })
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}))
-    throw new Error(err.error?.message ?? `Erreur du service IA (${response.status})`)
-  }
 
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
@@ -277,7 +336,7 @@ async function streamToText(body, { returnMeta = false } = {}) {
   let buffer = ''
 
   while (true) {
-    const { done, value } = await reader.read()
+    const { done, value } = await readChunk(reader)
     if (done) break
     buffer += decoder.decode(value, { stream: true })
     const lines = buffer.split('\n')
@@ -332,16 +391,11 @@ export async function streamMessage(messages, { lang = 'fr', onChunk, temperatur
     body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: maxSearches }]
   }
 
-  const response = await fetch(ENDPOINT, {
+  const response = await fetchResilient(ENDPOINT, {
     method:  'POST',
     headers: proxyHeaders(),
     body: JSON.stringify(body),
   })
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}))
-    throw new Error(err.error?.message ?? `Erreur du service IA (${response.status})`)
-  }
 
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
@@ -349,7 +403,7 @@ export async function streamMessage(messages, { lang = 'fr', onChunk, temperatur
   let buffer = ''
 
   while (true) {
-    const { done, value } = await reader.read()
+    const { done, value } = await readChunk(reader)
     if (done) break
 
     buffer += decoder.decode(value, { stream: true })
