@@ -749,6 +749,7 @@ export default {
   price_pro_range_sub: 'excl. VAT · max to pay',
   price_malus_label: 'Malus (end customer)',
   price_malus_sub: 'Borne by B2C customer · not deducted',
+  price_malus_calc_link: 'Calculate exact malus (40 countries)',
   price_best_market: 'Best price online',
   price_conseille_vente: 'Recommended sale price',
   price_equipements_label: 'Sought-after features',

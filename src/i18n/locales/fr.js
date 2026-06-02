@@ -774,6 +774,7 @@ export default {
   price_pro_range_sub: 'HT · plafond à payer',
   price_malus_label: 'Malus (client final)',
   price_malus_sub: 'À la charge du client B2C · non déduit',
+  price_malus_calc_link: 'Calculer le malus exact (40 pays)',
   price_best_market: 'Meilleur prix du net',
   price_conseille_vente: 'Prix conseillé vente',
   price_equipements_label: 'Équipements recherchés',

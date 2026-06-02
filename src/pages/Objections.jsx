@@ -286,6 +286,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
             active={loading}
             stages={[t('ai_progress_connect'), t('ai_progress_analyze'), t('ai_progress_format')]}
             estimatedMs={22000}
+            persistKey="objections"
           />
         </div>
       )}

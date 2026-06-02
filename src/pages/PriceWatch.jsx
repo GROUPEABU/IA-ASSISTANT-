@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Bell, Search, RefreshCw, RotateCcw, TrendingUp, TrendingDown, Minus,
   AlertCircle, ExternalLink, Clock, SlidersHorizontal, Download, History,
-  Trash2, Wifi, WifiOff, ShieldCheck, Zap, Tag, FileText,
+  Trash2, Wifi, WifiOff, ShieldCheck, Zap, Tag, FileText, Calculator,
 } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
@@ -545,6 +546,7 @@ export default function PriceWatch() {
             active={loading}
             stages={[t('price_step_collecting'), t('ai_progress_search'), t('ai_progress_analyze'), t('ai_progress_format')]}
             estimatedMs={38000}
+            persistKey="pricewatch"
           />
         </div>
       )}
@@ -688,15 +690,16 @@ export default function PriceWatch() {
             </div>
           </div>
 
-          {/* Malus client final — carte séparée (hors cascade B2B) */}
-          {result.malus_estime != null && result.malus_estime !== '' && (
-            <div className="glass-card p-4">
-              <SectionTitle icon={AlertCircle} label={t('price_malus_label')} color="text-warn" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <KpiCard label={t('price_malus_label')} value={fmtEur(result.malus_estime)} sub={t('price_malus_sub')} small />
-              </div>
-            </div>
-          )}
+          {/* Malus client final — lien centré vers le calculateur du site */}
+          <div className="glass-card p-4 flex justify-center">
+            <Link
+              to="/co2-malus"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-warn/10 border border-warn/30
+                         text-sm font-bold text-warn hover:bg-warn/20 active:scale-95 transition-all"
+            >
+              <Calculator size={15} /> {t('price_malus_calc_link')}
+            </Link>
+          </div>
 
           {/* Tendance */}
           <div className="glass-card p-4 flex items-center gap-4">

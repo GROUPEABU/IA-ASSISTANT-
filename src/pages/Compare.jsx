@@ -202,6 +202,7 @@ Sois direct, argumenté et chiffré.`
                 active={loadingVerdict}
                 stages={[t('ai_progress_connect'), t('compare_analyzing_progress'), t('ai_progress_format')]}
                 estimatedMs={16000}
+                persistKey="compare"
               />
             </div>
           )}

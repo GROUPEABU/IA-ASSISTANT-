@@ -120,7 +120,7 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
                 </div>
               </div>
               <div className="mt-3">
-                <AIProgress active={loading} compact estimatedMs={16000} />
+                <AIProgress active={loading} compact estimatedMs={16000} persistKey="vehiclesearch" />
               </div>
             </div>
           )}

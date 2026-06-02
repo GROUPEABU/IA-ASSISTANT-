@@ -178,7 +178,7 @@ Sois percutant, concret et adapté au marché français.`
 
         {loading && (
           <div className="py-8">
-            <AIProgress active={loading} label={t('sales_pitch_loading')} estimatedMs={12000} />
+            <AIProgress active={loading} label={t('sales_pitch_loading')} estimatedMs={12000} persistKey="salesreport" />
           </div>
         )}
 

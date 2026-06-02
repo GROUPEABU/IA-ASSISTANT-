@@ -281,6 +281,7 @@ Réponds UNIQUEMENT en JSON valide :
             active={loading}
             stages={[t('ai_progress_connect'), t('ai_progress_analyze'), t('ai_progress_format')]}
             estimatedMs={14000}
+            persistKey="pitch"
           />
         </div>
       )}

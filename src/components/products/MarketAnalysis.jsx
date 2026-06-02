@@ -193,7 +193,7 @@ export default function MarketAnalysis({ product }) {
         {/* Loading */}
         {loading && (
           <div className="py-8">
-            <AIProgress active={loading} label={loadingStep} estimatedMs={30000} />
+            <AIProgress active={loading} label={loadingStep} estimatedMs={30000} persistKey="marketanalysis" />
           </div>
         )}
 
