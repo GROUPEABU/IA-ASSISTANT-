@@ -158,7 +158,9 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
   const waiting = pct >= 99
 
   const barFill = (
-    <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: C.track }}>
+    // width:100% inline → la piste occupe toujours toute la largeur disponible,
+    // même imbriquée sous un parent `items-center` (robuste Safari iOS).
+    <div className="h-2 rounded-full overflow-hidden" style={{ background: C.track, width: '100%' }}>
       <div
         className={`h-full rounded-full transition-[width] duration-200 ease-out${waiting ? ' animate-pulse' : ''}`}
         style={{

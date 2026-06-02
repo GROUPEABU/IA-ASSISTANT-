@@ -10,7 +10,7 @@
  *  - assets same-origin → stale-while-revalidate (instantané + maj en fond)
  *  - /api/*             → réseau uniquement (jamais de cache)
  */
-const CACHE = 'abu-v1'
+const CACHE = 'abu-v2'
 const SHELL = ['/', '/index.html', '/manifest.json', '/favicon.svg?v=3']
 
 self.addEventListener('install', (event) => {

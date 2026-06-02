@@ -95,7 +95,7 @@ Réponds UNIQUEMENT en JSON valide :
   "closing": "Phrase de closing engageante avec appel à l'action et argument prix"
 }`
 
-      const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 3000, expert: true, temperature: 0.85, tool: 'pitch' })
+      const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 3000, expert: true, temperature: 0.85, tool: 'pitch', stream: true })
       const data = extractJSON(raw, 'object')
       const label = `${vehicleName} · ${t(profile.subKey)} ${t(profile.labelKey)}`
       setPitch(data)

@@ -83,7 +83,7 @@ Rédige un verdict comparatif expert et chiffré :
 
 Sois direct, argumenté et chiffré.`
 
-      const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 3500, expert: true, temperature: 0.3, tool: 'comparateur' })
+      const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 3500, expert: true, temperature: 0.3, tool: 'comparateur', stream: true })
       setVerdict(result)
       addHistory({ label: selected.filter(Boolean).map(id => allProducts.find(p => p.id === id)?.name).join(' vs '), verdict: result })
     } catch (err) {
