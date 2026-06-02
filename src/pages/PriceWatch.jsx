@@ -88,10 +88,10 @@ MÉTHODE DE COTATION AUTOBUYUNION (applique-la précisément, raisonne PAR VÉHI
    a. Vente HT = prix_conseille_vente ÷ 1,20 (retrait TVA 20%).
    b. MALUS écologique à PAYER ("malus_estime") : ces VO proviennent d'AUTRES PAYS de l'UE ; le malus CO2 + masse est DÛ à la 1re immatriculation française (avec réfaction d'âge ~10%/an). C'est un COÛT réel à PAYER — JAMAIS "déjà absorbé / inclus / amorti".
    c. Transport UE ≈ 450 € HT par véhicule.
-   d. Marge groupe Autobuyunion ≈ 1 000–1 500 €.
+   d. Marge groupe Autobuyunion = 550 € HT (FIXE, toujours 550 € — ni plus, ni moins).
    e. Marge partenaire visée ≈ 3 000–4 000 € HT (min 3 000 €).
-   → fourchette_achat_pro (HT) = Vente HT − malus_estime − transport − marge groupe − marge partenaire.
-4. "marge_brute_potentielle" = marge NETTE PARTENAIRE = Vente HT − fourchette_achat_pro_max − malus_estime − 450 (transport) − marge groupe. Le chiffre DOIT être cohérent avec ce calcul.
+   → fourchette_achat_pro (HT) = Vente HT − malus_estime − 450 (transport) − 550 (marge groupe) − marge partenaire.
+4. "marge_brute_potentielle" = marge NETTE PARTENAIRE = Vente HT − fourchette_achat_pro_max − malus_estime − 450 (transport) − 550 (marge groupe). Le chiffre DOIT être cohérent avec ce calcul.
 5. Écart minimum viable d'un deal ≈ 4 500–5 000 € (davantage sur premium).
 
 RÈGLES DE FORMULATION STRICTES :
@@ -116,7 +116,7 @@ Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise mark
   "fourchette_achat_pro_min": <prix achat pro recommandé minimum HT>,
   "fourchette_achat_pro_max": <prix achat pro recommandé maximum HT>,
   "malus_estime": <malus écologique CO2+masse estimé à PAYER à la 1re immat. française pour ce VO importé d'UE, en € (réfaction d'âge appliquée)>,
-  "marge_brute_potentielle": <marge nette partenaire = vente HT − fourchette_achat_pro_max − malus_estime − 450 − marge groupe>,
+  "marge_brute_potentielle": <marge nette partenaire = vente HT − fourchette_achat_pro_max − malus_estime − 450 (transport) − 550 (marge groupe FIXE)>,
   "prix_meilleur_marche": <prix des 10% annonces les moins chères observées TTC — référence "premier du net">,
   "prix_conseille_vente": <prix de vente conseillé TTC pour se positionner parmi les 20% moins chers du marché : compétitif et rapide à vendre>,
   "cote_argus_min": <cote Argus basse TTC>,
