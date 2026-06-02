@@ -1,19 +1,17 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import {
   MessageSquare, Zap, X, Home, BookOpen, Gauge, Bell, ShieldCheck, Mic, LogOut,
-  Calculator, AlertCircle, GitCompare,
+  Calculator, GitCompare,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
-import { ukey } from '@/utils/userStorage'
 import Logo from '@/components/ui/Logo'
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth()
   const { t } = useSettings()
   const navigate = useNavigate()
-  const hasApiKey = !!(user && localStorage.getItem(ukey(user.id, 'api_key')))
 
   const navGroups = [
     {
@@ -94,36 +92,23 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Footer */}
       <div className="px-3 pb-4 pt-3 border-t border-navy-700/50 space-y-2">
-        {hasApiKey ? (
-          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border"
-               style={{ background: 'linear-gradient(135deg, rgba(80,229,229,0.07) 0%, rgba(52,211,153,0.07) 100%)', borderColor: 'rgba(52,211,153,0.20)' }}>
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                 style={{ background: 'linear-gradient(135deg, rgba(80,229,229,0.20) 0%, rgba(52,211,153,0.20) 100%)' }}>
-              <Zap size={14} className="text-emerald-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold leading-tight"
-                 style={{ background: 'linear-gradient(90deg, #50E5E5, #34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                Autobuyunion
-              </p>
-              <div className="flex items-center gap-1 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-slow flex-shrink-0" />
-                <p className="text-[10px] font-medium text-emerald-400/80 leading-tight">{t('connected_label')}</p>
-              </div>
+        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border"
+             style={{ background: 'linear-gradient(135deg, rgba(80,229,229,0.07) 0%, rgba(52,211,153,0.07) 100%)', borderColor: 'rgba(52,211,153,0.20)' }}>
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+               style={{ background: 'linear-gradient(135deg, rgba(80,229,229,0.20) 0%, rgba(52,211,153,0.20) 100%)' }}>
+            <Zap size={14} className="text-emerald-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold leading-tight"
+               style={{ background: 'linear-gradient(90deg, #50E5E5, #34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Autobuyunion
+            </p>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-slow flex-shrink-0" />
+              <p className="text-[10px] font-medium text-emerald-400/80 leading-tight">{t('connected_label')}</p>
             </div>
           </div>
-        ) : (
-          <Link to="/settings" onClick={onClose}
-            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-warn/6 border border-warn/20 hover:border-warn/35 transition group">
-            <div className="w-6 h-6 rounded-lg bg-warn/15 flex items-center justify-center flex-shrink-0">
-              <AlertCircle size={13} className="text-warn" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-semibold text-warn leading-tight">{t('ai_inactive')}</p>
-              <p className="text-[10px] text-warn/60 group-hover:text-warn/80 transition">{t('ai_inactive_sub')}</p>
-            </div>
-          </Link>
-        )}
+        </div>
 
 {user && (
           <div className="flex items-center gap-2.5 px-2 py-2">

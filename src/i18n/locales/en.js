@@ -262,7 +262,7 @@ export default {
     co2_results_for: 'Results for',
     co2_disclaimer_title: 'Disclaimer',
     co2_disclaimer: 'Amounts shown are indicative and do not constitute tax advice. Schedules may change — verify with the competent authority of each country before any purchase.',
-    settings_api_section: 'API & Integrations',
+    settings_api_section: 'AI & Connection',
     settings_api_key_label: 'AI Connection',
     settings_api_key_desc: 'Optional — the assistant already works without a key. Add one only to use your own access key.',
     settings_api_connected: 'AI connected — shared access active',
