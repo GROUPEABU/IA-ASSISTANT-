@@ -5,6 +5,7 @@ import Spinner from '@/components/ui/Spinner'
 import AIProgress from '@/components/ui/AIProgress'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
+import VehicleDetails, { EMPTY_DETAILS, formatVehicleDetails } from '@/components/ui/VehicleDetails'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -80,6 +81,7 @@ export default function Objections() {
   const [vehicleId, setVehicleId] = useState('')
   const [customVehicle, setCustomVehicle] = useState(() => readLastVehicleName())
   const [segment, setSegment] = useState('btoc')
+  const [details, setDetails] = useState(EMPTY_DETAILS)
   const [loading, setLoading] = useState(false)
   const [objections, setObjections] = useState([])
   const [openIndex, setOpenIndex] = useState(0)
@@ -114,10 +116,11 @@ CO₂ : ${selectedProduct.specs.co2_wltp} g/km
 Segment : ${selectedProduct.segment}`
         : ''
 
+      const detailsLine = formatVehicleDetails(details)
       const prompt = `Tu es expert commercial automobile pour Autobuyunion.
 
 Génère exactement 10 objections clients fréquentes pour le ${vehicleName}, segment ${segLabel}.
-${productContext}
+${detailsLine ? `Détails véhicule : ${detailsLine}. Tiens-en compte pour des objections et réponses PRÉCISES (motorisation, âge, kilométrage, finition).\n` : ''}${productContext}
 
 Réponds UNIQUEMENT avec un tableau JSON valide, sans aucun texte ni balise markdown avant ou après :
 [
@@ -212,6 +215,8 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
             </div>
           </div>
         )}
+
+        <VehicleDetails value={details} onChange={setDetails} />
 
         <div className="mb-4">
           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">

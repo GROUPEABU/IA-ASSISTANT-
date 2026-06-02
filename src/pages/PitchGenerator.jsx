@@ -5,6 +5,7 @@ import Spinner from '@/components/ui/Spinner'
 import AIProgress from '@/components/ui/AIProgress'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
+import VehicleDetails, { EMPTY_DETAILS, formatVehicleDetails } from '@/components/ui/VehicleDetails'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -29,6 +30,7 @@ export default function PitchGenerator() {
   const [vehicleId, setVehicleId] = useState('')
   const [customVehicle, setCustomVehicle] = useState(() => readLastVehicleName())
   const [profileId, setProfileId] = useState('btoc_famille')
+  const [details, setDetails] = useState(EMPTY_DETAILS)
   const [context, setContext] = useState('')
   const [loading, setLoading] = useState(false)
   const [pitch, setPitch] = useState(null)
@@ -75,6 +77,7 @@ export default function PitchGenerator() {
       const prompt = `Tu es un expert commercial automobile pour Autobuyunion — 1er groupement européen d'achat auto.
 
 Génère un pitch de vente structuré et percutant pour le ${vehicleName}, destiné à : ${t(profile.subKey)} — ${t(profile.labelKey)}.
+${formatVehicleDetails(details) ? `Détails véhicule : ${formatVehicleDetails(details)}. Appuie-toi dessus pour des arguments PRÉCIS (motorisation, âge, kilométrage, finition).` : ''}
 ${context ? `\nContexte client : ${context}` : ''}
 ${productContext}
 
@@ -184,6 +187,8 @@ Réponds UNIQUEMENT en JSON valide :
             </div>
           </div>
         )}
+
+        <VehicleDetails value={details} onChange={setDetails} />
 
         {/* Profile selector */}
         <div className="mb-4">
