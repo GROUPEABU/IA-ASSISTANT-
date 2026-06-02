@@ -62,11 +62,15 @@ export default async function handler(req) {
   }
 
   // ── Clé API (serveur uniquement) ────────────────────────────────────────────
-  // Pas de fallback VITE_* : un préfixe VITE_ serait embarqué dans le bundle
-  // client au build (fuite). La clé reste strictement côté serveur.
+  // NB : VITE_ANTHROPIC_API_KEY est conservé en fallback car c'est le nom sous
+  // lequel la clé est configurée dans l'environnement Vercel. C'est SANS risque
+  // ici : le code CLIENT ne référence jamais import.meta.env.VITE_ANTHROPIC_API_KEY,
+  // donc Vite ne l'embarque PAS dans le bundle — seule cette fonction edge la lit
+  // via process.env, côté serveur.
   const key =
     req.headers.get('x-user-api-key') ||
     process.env.ANTHROPIC_API_KEY ||
+    process.env.VITE_ANTHROPIC_API_KEY ||
     ''
 
   if (!key) {
