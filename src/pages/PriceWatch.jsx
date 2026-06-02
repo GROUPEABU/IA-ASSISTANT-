@@ -684,14 +684,19 @@ export default function PriceWatch() {
                   small
                 />
               </div>
-              {result.malus_estime != null && result.malus_estime !== '' && (
-                <div className="grid grid-cols-1 gap-2 mb-2">
-                  <KpiCard label={t('price_malus_label')} value={fmtEur(result.malus_estime)} sub={t('price_malus_sub')} small />
-                </div>
-              )}
               <p className="text-[10px] text-slate-500 leading-relaxed">{result.conseil_achat}</p>
             </div>
           </div>
+
+          {/* Malus client final — carte séparée (hors cascade B2B) */}
+          {result.malus_estime != null && result.malus_estime !== '' && (
+            <div className="glass-card p-4">
+              <SectionTitle icon={AlertCircle} label={t('price_malus_label')} color="text-warn" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <KpiCard label={t('price_malus_label')} value={fmtEur(result.malus_estime)} sub={t('price_malus_sub')} small />
+              </div>
+            </div>
+          )}
 
           {/* Tendance */}
           <div className="glass-card p-4 flex items-center gap-4">

@@ -35,14 +35,20 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
 
     const tick = () => {
       const elapsed = performance.now() - startRef.current
-      // Progression RÉGULIÈRE (quasi linéaire) jusqu'à 95 % : ni démarrage trop
-      // rapide, ni longue traîne en fin. Une fois 95 % atteint, on patiente là
-      // jusqu'à la fin réelle de la tâche (qui fait sauter à 100 %).
-      const ratio = Math.min(1, elapsed / estimatedMs)
-      setPct(ratio * 95)
+      // Phase 1 : progression régulière jusqu'à 88 % sur la durée estimée.
+      // Phase 2 : après estimatedMs, progression lente (~0,5 %/s) jusqu'à 98 %
+      // pour éviter que la barre se fige si la tâche dépasse l'estimation.
+      let pctVal
+      if (elapsed <= estimatedMs) {
+        pctVal = (elapsed / estimatedMs) * 88
+      } else {
+        pctVal = Math.min(98, 88 + (elapsed - estimatedMs) / 2000)
+      }
+      setPct(pctVal)
       // Étape courante proportionnelle au temps écoulé (capée à la dernière).
       if (stages.length > 1) {
-        const idx = Math.min(stages.length - 1, Math.floor((elapsed / estimatedMs) * stages.length))
+        const ratio = Math.min(1, elapsed / estimatedMs)
+        const idx = Math.min(stages.length - 1, Math.floor(ratio * stages.length))
         setStageIdx(idx)
       }
       rafRef.current = requestAnimationFrame(tick)
