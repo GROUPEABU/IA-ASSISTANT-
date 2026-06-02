@@ -8,9 +8,11 @@ import {
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import AIProgress from '@/components/ui/AIProgress'
+import ErrorAlert from '@/components/ui/ErrorAlert'
 import { formatNumber } from '@/utils/formatters'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
+import { useLastVehicle } from '@/hooks/useLastVehicle'
 import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
 import { useToast } from '@/components/ui/Toast'
 
@@ -310,6 +312,7 @@ export default function PriceWatch() {
   const [exporting, setExporting] = useState(false)
   const [isPartial, setIsPartial] = useState(false)
   const { history, add: addHistory, clear: clearHistory } = useHistory('pricewatch')
+  const { save: saveLastVehicle } = useLastVehicle()
 
   // Persist filter state across page navigations (session-scoped)
   useEffect(() => {
@@ -332,6 +335,9 @@ export default function PriceWatch() {
       filters.yearMin && `${filters.yearMin}${filters.yearMax ? '–'+filters.yearMax : '+'}`,
       filters.mileageMax && `< ${Number(filters.mileageMax).toLocaleString()} km`,
     ].filter(Boolean).join(' · ')
+
+    // Mémorise le véhicule pour préremplir les autres outils (pitch, objections).
+    saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '))
 
     setSearchLabel(label)
     setLoading(true)
@@ -576,23 +582,13 @@ export default function PriceWatch() {
             stages={[t('price_step_collecting'), t('ai_progress_search'), t('ai_progress_analyze'), t('ai_progress_format')]}
             estimatedMs={38000}
             persistKey="pricewatch"
+            resume
           />
         </div>
       )}
 
       {/* ── Error ────────────────────────────────────────────────────────────── */}
-      {error && !loading && (
-        <div className="glass-card p-4 flex items-start gap-2">
-          <AlertCircle size={15} className="text-red-400 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-red-400 flex-1">{error}</p>
-          <button
-            onClick={() => search()}
-            className="flex items-center gap-1.5 text-xs font-semibold text-cyan-400 border border-cyan-400/30
-                       px-3 py-1.5 rounded-lg hover:bg-cyan-400/10 transition flex-shrink-0">
-            <RefreshCw size={12} /> {t('retry_btn')}
-          </button>
-        </div>
-      )}
+      {!loading && <ErrorAlert message={error} onRetry={() => search()} />}
 
       {/* ── Résultats ────────────────────────────────────────────────────────── */}
       {result && (!loading || isPartial) && (

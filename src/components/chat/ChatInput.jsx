@@ -61,7 +61,7 @@ export default function ChatInput({ onSend, disabled }) {
             ? <Image size={13} className="text-cyan-400 flex-shrink-0" />
             : <FileText size={13} className="text-cyan-400 flex-shrink-0" />}
           <span className="text-slate-300 truncate flex-1">{attachment.name}</span>
-          <button onClick={() => setAttachment(null)} className="text-slate-500 hover:text-red-400 transition flex-shrink-0">
+          <button onClick={() => setAttachment(null)} aria-label={t('remove_attachment')} className="text-slate-500 hover:text-red-400 transition flex-shrink-0">
             <X size={13} />
           </button>
         </div>
@@ -87,6 +87,7 @@ export default function ChatInput({ onSend, disabled }) {
             onClick={() => fileRef.current?.click()}
             className="absolute right-3 bottom-3 text-slate-600 hover:text-cyan-400 transition"
             title={t('chat_file_tip')}
+            aria-label={t('attach_file')}
           >
             <Paperclip size={16} />
           </button>
@@ -102,6 +103,7 @@ export default function ChatInput({ onSend, disabled }) {
         <button
           type="submit"
           disabled={disabled || (!value.trim() && !attachment)}
+          aria-label={t('send_message')}
           className="w-12 h-12 rounded-xl bg-cyan-400 text-navy-900 flex items-center justify-center
                      hover:bg-cyan-300 active:scale-95 transition-all duration-150
                      disabled:opacity-40 disabled:pointer-events-none flex-shrink-0"

@@ -1,12 +1,14 @@
 import { useState, useRef } from 'react'
-import { ShieldCheck, RefreshCw, RotateCcw, ChevronDown, ChevronUp, Download, AlertCircle, History, Trash2 } from 'lucide-react'
+import { ShieldCheck, RefreshCw, RotateCcw, ChevronDown, ChevronUp, Download, History, Trash2 } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import AIProgress from '@/components/ui/AIProgress'
+import ErrorAlert from '@/components/ui/ErrorAlert'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
+import { useLastVehicle, readLastVehicleName } from '@/hooks/useLastVehicle'
 import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
 import { useToast } from '@/components/ui/Toast'
 
@@ -104,7 +106,7 @@ export default function Objections() {
   const { t, lang } = useSettings()
   const objRef = useRef(null)
   const [vehicleId, setVehicleId] = useState('')
-  const [customVehicle, setCustomVehicle] = useState('')
+  const [customVehicle, setCustomVehicle] = useState(() => readLastVehicleName())
   const [segment, setSegment] = useState('both')
   const [loading, setLoading] = useState(false)
   const [objections, setObjections] = useState([])
@@ -116,6 +118,7 @@ export default function Objections() {
   const { toast } = useToast()
   const { generated } = useGeneratedProducts()
   const { history, add: addHistory, clear: clearHistory } = useHistory('objections')
+  const { save: saveLastVehicle } = useLastVehicle()
 
   const allProducts = [...PRODUCTS, ...generated]
   const selectedProduct = allProducts.find((p) => p.id === vehicleId)
@@ -123,6 +126,7 @@ export default function Objections() {
 
   const generate = async () => {
     if (!vehicleName.trim()) return
+    saveLastVehicle(vehicleName)
     setLoading(true)
     setError(null)
     setObjections([])
@@ -273,18 +277,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
         </button>
       </div>
 
-      {error && !loading && (
-        <div className="glass-card p-4 flex items-start gap-2">
-          <AlertCircle size={15} className="text-red-400 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-red-400 flex-1">{error}</p>
-          <button
-            onClick={generate}
-            className="flex items-center gap-1.5 text-xs font-semibold text-cyan-400 border border-cyan-400/30
-                       px-3 py-1.5 rounded-lg hover:bg-cyan-400/10 transition flex-shrink-0">
-            <RefreshCw size={12} /> {t('retry_btn')}
-          </button>
-        </div>
-      )}
+      {!loading && <ErrorAlert message={error} onRetry={generate} />}
 
       {loading && (
         <div className="glass-card p-8 flex flex-col items-center gap-3">

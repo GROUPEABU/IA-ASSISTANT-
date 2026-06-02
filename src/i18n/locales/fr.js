@@ -233,6 +233,10 @@ export default {
     chat_s4: 'Tendance prix marché Renault Clio 2022 occasion',
     chat_placeholder: 'Votre question…',
     chat_file_tip: 'PDF, images supportés',
+    attach_file: 'Joindre un fichier',
+    send_message: 'Envoyer le message',
+    remove_attachment: 'Retirer la pièce jointe',
+    copy_section: 'Copier',
     // CO2 Malus UI labels
     co2_country_mode: '🔍 Analyse par pays',
     co2_compare_mode: '⚖️ Comparateur',

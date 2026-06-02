@@ -38,12 +38,18 @@ function useIsLight() {
   return isLight
 }
 
-export default function AIProgress({ active, stages = [], estimatedMs = 18000, label, compact = false, persistKey }) {
+// Mémoire de continuité (hors React, survit au démontage du composant) :
+// retient le dernier % atteint par clé, pour reprendre une progression
+// interrompue (ex. PriceWatch phase 1 → phase 2) au lieu de repartir de 0.
+const resumeMem = new Map() // storeKey -> { pct, at }
+
+export default function AIProgress({ active, stages = [], estimatedMs = 18000, label, compact = false, persistKey, resume = false }) {
   const [pct, setPct] = useState(0)
   const [stageIdx, setStageIdx] = useState(0)
   const startRef = useRef(0)
   const rafRef = useRef(0)
   const estRef = useRef(estimatedMs)
+  const pctRef = useRef(0)
   const isLight = useIsLight()
 
   const storeKey = persistKey ? `abu_aiprog_${persistKey}` : null
@@ -74,9 +80,22 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
     }
     const est = estRef.current
 
-    setPct(0)
+    // Reprise de continuité : si une exécution liée vient de s'interrompre
+    // (< 4 s) sans avoir terminé, on redémarre depuis ~la moitié du % acquis
+    // (plafonné à 60 %) en décalant l'horloge, plutôt que de revenir à 0.
+    let initialPct = 0
+    if (resume && storeKey) {
+      const mem = resumeMem.get(storeKey)
+      if (mem && Date.now() - mem.at < 4000 && mem.pct > 0 && mem.pct < 95) {
+        initialPct = Math.min(mem.pct * 0.5, 60)
+      }
+    }
+    const initialElapsed = initialPct > 0 ? (initialPct / 90) * est : 0
+
+    setPct(initialPct)
+    pctRef.current = initialPct
     setStageIdx(0)
-    startRef.current = performance.now()
+    startRef.current = performance.now() - initialElapsed
 
     const tick = () => {
       const elapsed = performance.now() - startRef.current
@@ -95,6 +114,7 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
         }
       }
       setPct(pctVal)
+      pctRef.current = pctVal
       if (stages.length > 1) {
         const ratio = Math.min(1, elapsed / est)
         const idx = Math.min(stages.length - 1, Math.floor(ratio * stages.length))
@@ -103,8 +123,13 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
       rafRef.current = requestAnimationFrame(tick)
     }
     rafRef.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(rafRef.current)
-  }, [active, storeKey, stages.length])
+    return () => {
+      cancelAnimationFrame(rafRef.current)
+      // Sauve la progression au démontage (ou désactivation) pour permettre
+      // une reprise immédiate si la tâche enchaîne une seconde phase.
+      if (resume && storeKey) resumeMem.set(storeKey, { pct: pctRef.current, at: Date.now() })
+    }
+  }, [active, storeKey, stages.length, resume])
 
   const text = label || stages[stageIdx] || ''
   const rounded = Math.round(pct)

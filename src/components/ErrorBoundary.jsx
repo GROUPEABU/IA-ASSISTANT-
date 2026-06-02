@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { getItem, getSessionUserId } from '@/utils/userStorage'
 
 /**
  * Application-wide error boundary.
@@ -9,7 +10,31 @@ import { AlertTriangle, RefreshCw } from 'lucide-react'
  *
  * React requires class components for error boundaries. This is the only
  * class component in the codebase by design.
+ *
+ * Le boundary lit la langue active directement depuis localStorage (le contexte
+ * i18n n'est pas garanti disponible si le crash vient de plus haut dans l'arbre)
+ * et puise dans un dictionnaire local autonome — aucune dépendance au module de
+ * traductions, qui pourrait justement être la source de l'erreur.
  */
+const STRINGS = {
+  fr: {
+    title: 'Une erreur inattendue est survenue',
+    desc: "Le portail a rencontré une erreur. Vous pouvez recharger la page. Si le problème persiste, contactez votre administrateur.",
+    details: 'Détails techniques',
+    reload: "Recharger l'application",
+  },
+  en: {
+    title: 'An unexpected error occurred',
+    desc: 'The portal encountered an error. You can reload the page. If the problem persists, contact your administrator.',
+    details: 'Technical details',
+    reload: 'Reload application',
+  },
+}
+
+function readLang() {
+  try { return getItem(getSessionUserId(), 'lang') || 'fr' } catch { return 'fr' }
+}
+
 export default class ErrorBoundary extends Component {
   state = { error: null }
 
@@ -31,6 +56,8 @@ export default class ErrorBoundary extends Component {
   render() {
     if (!this.state.error) return this.props.children
 
+    const s = STRINGS[readLang()] || STRINGS.fr
+
     return (
       <div
         role="alert"
@@ -41,15 +68,14 @@ export default class ErrorBoundary extends Component {
             <AlertTriangle size={24} className="text-red-400" aria-hidden="true" />
           </div>
           <h1 className="text-lg font-semibold text-white mb-2">
-            An unexpected error occurred
+            {s.title}
           </h1>
           <p className="text-sm text-slate-400 mb-6 leading-relaxed">
-            The portal encountered an error. You can reload the page.
-            If the problem persists, contact your administrator.
+            {s.desc}
           </p>
           <details className="text-left text-[11px] text-slate-500 bg-navy-900/60 rounded-lg p-3 mb-4">
             <summary className="cursor-pointer text-slate-400 hover:text-white">
-              Technical details
+              {s.details}
             </summary>
             <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words">
               {this.state.error?.message ?? String(this.state.error)}
@@ -62,7 +88,7 @@ export default class ErrorBoundary extends Component {
                        hover:bg-cyan-300 active:scale-95 transition"
           >
             <RefreshCw size={14} />
-            Reload application
+            {s.reload}
           </button>
         </div>
       </div>
