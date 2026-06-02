@@ -200,7 +200,7 @@ export default function CO2Malus() {
           <CalculateCTA
             disabled={!canCalcSingle}
             label={canCalcSingle
-              ? `${t('malus_calc_btn_for')} ${malus.selectedCountry.flag} ${getCountryName(malus.selectedCountry.code, lang) || malus.selectedCountry.name}`
+              ? `${t('malus_calc_btn_for')} ${getCountryName(malus.selectedCountry.code, lang) || malus.selectedCountry.name}`
               : t('malus_select_country_first')}
             onClick={handleCalculate}
           />
