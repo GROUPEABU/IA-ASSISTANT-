@@ -81,11 +81,22 @@ Véhicule cible : "${vehicleDesc}"${finitionFilter}
 
 ${dataSection}
 
-MÉTHODE DE COTATION AUTOBUYUNION (applique-la précisément) :
-1. Repère le PREMIER PRIX DU NET : l'annonce la moins chère réellement disponible pour ce véhicule (pas la moyenne).
-2. "prix_conseille_vente" TTC = ce premier prix du net (ou légèrement en dessous) pour que le partenaire soit classé 1er du net et vende vite.
-3. À partir de ce prix TTC : retire ~20% de TVA → HT. Le deal doit laisser au partenaire ~3 000–4 000 € HT de marge (min 3 000 €) + ~1 000–1 500 € de marge groupe + ~450 € HT de transport moyen par véhicule (livraison UE à la charge du partenaire). Le reste = "fourchette_achat_pro" (prix d'achat HT recommandé).
-4. Écart minimum viable d'un deal ≈ 4 500–5 000 € (davantage sur premium).
+MÉTHODE DE COTATION AUTOBUYUNION (applique-la précisément, raisonne PAR VÉHICULE) :
+1. PREMIER PRIX DU NET : l'annonce la moins chère réellement disponible (jamais la moyenne).
+2. "prix_conseille_vente" TTC = ce premier prix du net (ou légèrement en dessous) pour être 1er du net et vendre vite.
+3. CASCADE DE COÛTS pour obtenir le prix d'achat HT recommandé :
+   a. Vente HT = prix_conseille_vente ÷ 1,20 (retrait TVA 20%).
+   b. MALUS écologique à PAYER ("malus_estime") : ces VO proviennent d'AUTRES PAYS de l'UE ; le malus CO2 + masse est DÛ à la 1re immatriculation française (avec réfaction d'âge ~10%/an). C'est un COÛT réel à PAYER — JAMAIS "déjà absorbé / inclus / amorti".
+   c. Transport UE ≈ 450 € HT par véhicule.
+   d. Marge groupe Autobuyunion ≈ 1 000–1 500 €.
+   e. Marge partenaire visée ≈ 3 000–4 000 € HT (min 3 000 €).
+   → fourchette_achat_pro (HT) = Vente HT − malus_estime − transport − marge groupe − marge partenaire.
+4. "marge_brute_potentielle" = marge NETTE PARTENAIRE = Vente HT − fourchette_achat_pro_max − malus_estime − 450 (transport) − marge groupe. Le chiffre DOIT être cohérent avec ce calcul.
+5. Écart minimum viable d'un deal ≈ 4 500–5 000 € (davantage sur premium).
+
+RÈGLES DE FORMULATION STRICTES :
+- Autobuyunion vend PAR CAMION COMPLET au partenaire : ne recommande JAMAIS un nombre d'unités ni "lots de X unités". Raisonne par camion / par véhicule, jamais en quantité conseillée.
+- VO IMPORTÉS d'autres pays UE : le malus est TOUJOURS à payer à l'import. N'écris jamais que le malus est "déjà absorbé", "inclus", "amorti" ou "neutralisé".
 
 Génère une analyse experte complète de type fiche pro. Tous les prix sont en euros TTC sauf indication HT.
 
@@ -104,7 +115,8 @@ Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise mark
   "valeur_residuelle_3ans": <valeur estimée dans 3 ans TTC>,
   "fourchette_achat_pro_min": <prix achat pro recommandé minimum HT>,
   "fourchette_achat_pro_max": <prix achat pro recommandé maximum HT>,
-  "marge_brute_potentielle": <marge brute moyenne potentielle en €>,
+  "malus_estime": <malus écologique CO2+masse estimé à PAYER à la 1re immat. française pour ce VO importé d'UE, en € (réfaction d'âge appliquée)>,
+  "marge_brute_potentielle": <marge nette partenaire = vente HT − fourchette_achat_pro_max − malus_estime − 450 − marge groupe>,
   "prix_meilleur_marche": <prix des 10% annonces les moins chères observées TTC — référence "premier du net">,
   "prix_conseille_vente": <prix de vente conseillé TTC pour se positionner parmi les 20% moins chers du marché : compétitif et rapide à vendre>,
   "cote_argus_min": <cote Argus basse TTC>,
@@ -330,6 +342,8 @@ export default function PriceWatch() {
       ['Achat HT max (€)', result.prix_achat_ht_max ?? ''],
       ['Cote Argus min (€)', result.cote_argus_min ?? ''],
       ['Cote Argus max (€)', result.cote_argus_max ?? ''],
+      ['Malus à payer import (€)', result.malus_estime ?? ''],
+      ['Marge brute potentielle (€)', result.marge_brute_potentielle ?? ''],
     ]
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n')
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
@@ -628,6 +642,11 @@ export default function PriceWatch() {
                 />
                 <KpiCard label={t('price_margin_label')} value={fmtEur(result.marge_brute_potentielle)} small />
               </div>
+              {result.malus_estime != null && result.malus_estime !== '' && (
+                <div className="grid grid-cols-1 gap-2 mb-2">
+                  <KpiCard label={t('price_malus_label')} value={fmtEur(result.malus_estime)} sub={t('price_malus_sub')} small />
+                </div>
+              )}
               <p className="text-[10px] text-slate-500 leading-relaxed">{result.conseil_achat}</p>
             </div>
           </div>
