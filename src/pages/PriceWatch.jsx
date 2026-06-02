@@ -42,6 +42,34 @@ const MAKES = [
 
 const YEARS = Array.from({ length: 27 }, (_, i) => 2026 - i)
 
+// ── Règles de cotation Autobuyunion (figées, déterministes) ─────────────────────
+// Achat pro HT = Vente HT − transport − marge partenaire.
+//   • Vente HT          = prix de vente conseillé TTC ÷ 1,20 (TVA 20%)
+//   • Transport UE      = 450 € HT / véhicule
+//   • Marge partenaire  = 3 000 € HT (FIXE)
+//   • La marge groupe (550 €) est prise EN AMONT → jamais déduite ici.
+//   • Le malus est à la charge du client final B2C → jamais déduit ici.
+const TVA = 1.20
+const TRANSPORT_HT = 450
+const MARGE_PARTENAIRE_HT = 3000
+
+function applyPricingRules(analysis) {
+  const venteTTC = Number(analysis?.prix_conseille_vente) || 0
+  const refBasseTTC = Number(analysis?.prix_meilleur_marche) || venteTTC
+  if (!venteTTC) return analysis
+
+  const achatFrom = (ttc) => Math.max(0, Math.round(ttc / TVA - TRANSPORT_HT - MARGE_PARTENAIRE_HT))
+  const achatMax = achatFrom(venteTTC)
+  const achatMin = Math.min(achatMax, achatFrom(refBasseTTC))
+
+  return {
+    ...analysis,
+    fourchette_achat_pro_min: achatMin,
+    fourchette_achat_pro_max: achatMax,
+    marge_brute_potentielle: MARGE_PARTENAIRE_HT,
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 async function fetchPrices(filters) {
   const params = new URLSearchParams(
@@ -86,12 +114,12 @@ MÉTHODE DE COTATION AUTOBUYUNION (applique-la précisément, raisonne PAR VÉHI
 2. "prix_conseille_vente" TTC = ce premier prix du net (ou légèrement en dessous) pour être 1er du net et vendre vite.
 3. CASCADE DE COÛTS pour obtenir le prix d'achat HT recommandé (deal B2B Autobuyunion → partenaire) :
    a. Vente HT = prix_conseille_vente ÷ 1,20 (retrait TVA 20%).
-   b. Transport UE ≈ 450 € HT par véhicule.
-   c. Marge groupe Autobuyunion = 550 € HT (FIXE, toujours 550 € — ni plus, ni moins).
-   d. Marge partenaire visée ≈ 3 000–4 000 € HT (min 3 000 €).
-   → fourchette_achat_pro (HT) = Vente HT − 450 (transport) − 550 (marge groupe) − marge partenaire.
+   b. Transport UE = 450 € HT par véhicule.
+   c. Marge partenaire = 3 000 € HT (FIXE, exactement 3 000 € — jamais plus).
+   → fourchette_achat_pro (HT) = Vente HT − 450 (transport) − 3 000 (marge partenaire).
+   NE soustrais PAS de marge groupe ici : la marge Autobuyunion (550 €) est déjà prise EN AMONT, hors de ce calcul.
    Le MALUS n'entre JAMAIS dans cette cascade : il est à la charge du CLIENT FINAL (B2C), pas du deal B2B.
-4. "marge_brute_potentielle" = marge NETTE PARTENAIRE = Vente HT − fourchette_achat_pro_max − 450 (transport) − 550 (marge groupe). SANS le malus. Le chiffre DOIT être cohérent avec ce calcul.
+4. "marge_brute_potentielle" = 3 000 € (la marge partenaire fixe).
 5. "malus_estime" = information pour l'acheteur FINAL B2C uniquement (jamais déduit de l'achat ni de la marge).
 6. Écart minimum viable d'un deal ≈ 4 500–5 000 € (davantage sur premium).
 
@@ -117,7 +145,7 @@ Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise mark
   "fourchette_achat_pro_min": <prix achat pro recommandé minimum HT>,
   "fourchette_achat_pro_max": <prix achat pro recommandé maximum HT>,
   "malus_estime": <malus écologique CO2+masse à la charge du CLIENT FINAL B2C à la 1re immat. française, en € (info seule, JAMAIS déduit de l'achat/marge)>,
-  "marge_brute_potentielle": <marge nette partenaire = vente HT − fourchette_achat_pro_max − 450 (transport) − 550 (marge groupe FIXE), SANS le malus>,
+  "marge_brute_potentielle": <toujours 3000 (marge partenaire fixe)>,
   "prix_meilleur_marche": <prix des 10% annonces les moins chères observées TTC — référence "premier du net">,
   "prix_conseille_vente": <prix de vente conseillé TTC pour se positionner parmi les 20% moins chers du marché : compétitif et rapide à vendre>,
   "cote_argus_min": <cote Argus basse TTC>,
@@ -309,7 +337,10 @@ export default function PriceWatch() {
       setCentraleUrl(raw.centraleUrl || '')
 
       setStep(t('price_step_calculating'))
-      const analysis = await analyzePrices(filters, FUELS, GEARBOXES, BODIES, lang)
+      const rawAnalysis = await analyzePrices(filters, FUELS, GEARBOXES, BODIES, lang)
+      // Achat pro + marge recalculés de façon déterministe (jamais l'arithmétique
+      // approximative de l'IA) : Vente HT − 450 transport − 3 000 marge partenaire.
+      const analysis = applyPricingRules(rawAnalysis)
       // hasLiveData = vrai uniquement si Claude a réellement effectué une
       // recherche web (server_tool_use), sinon estimation experte.
       const finalResult = { ...analysis, sources: raw.sources, hasLiveData: analysis.usedWebSearch }
