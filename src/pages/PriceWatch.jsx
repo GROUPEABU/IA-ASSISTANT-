@@ -686,7 +686,7 @@ export default function PriceWatch() {
                   small
                 />
               </div>
-              <p className="text-[10px] text-slate-500 leading-relaxed">{result.conseil_achat}</p>
+              <p className="text-xs text-slate-300 leading-relaxed">{result.conseil_achat}</p>
             </div>
           </div>
 
@@ -716,7 +716,7 @@ export default function PriceWatch() {
                   </span>
                 )}
               </div>
-              <p className="text-sm text-slate-400 mt-1 leading-relaxed">{result.analyse}</p>
+              <p className="text-sm text-slate-200 mt-1 leading-relaxed">{result.analyse}</p>
             </div>
           </div>
 
@@ -754,7 +754,7 @@ export default function PriceWatch() {
           {/* Conseil vente */}
           <div className="glass-card p-4">
             <SectionTitle label={t('sell_advice')} color="text-cyan-400" />
-            <p className="text-sm text-slate-300 leading-relaxed">{result.conseil_vente}</p>
+            <p className="text-sm text-slate-200 leading-relaxed">{result.conseil_vente}</p>
           </div>
 
           {/* Équipements + Arguments + Vigilance en grille */}
@@ -782,7 +782,7 @@ export default function PriceWatch() {
                   {result.arguments_commerciaux.map((arg, i) => (
                     <li key={i} className="flex items-start gap-1.5">
                       <span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span>
-                      <span className="text-xs text-slate-300">{arg}</span>
+                      <span className="text-xs text-slate-200 leading-relaxed">{arg}</span>
                     </li>
                   ))}
                 </ul>
@@ -797,7 +797,7 @@ export default function PriceWatch() {
                   {result.points_vigilance.map((pt, i) => (
                     <li key={i} className="flex items-start gap-1.5">
                       <span className="text-warn mt-0.5 flex-shrink-0">⚠</span>
-                      <span className="text-xs text-slate-400">{pt}</span>
+                      <span className="text-xs text-slate-200 leading-relaxed">{pt}</span>
                     </li>
                   ))}
                 </ul>
