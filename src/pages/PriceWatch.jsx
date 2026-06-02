@@ -51,14 +51,16 @@ const YEARS = Array.from({ length: 27 }, (_, i) => 2026 - i)
 //   • Le malus est à la charge du client final B2C → jamais déduit ici.
 const TVA = 1.20
 const TRANSPORT_HT = 450
-const MARGE_PARTENAIRE_HT = 3000
+const MARGE_PARTENAIRE_MIN_HT = 3000 // marge partenaire PLANCHER (au moins 3 000 €)
 
 function applyPricingRules(analysis) {
   const venteTTC = Number(analysis?.prix_conseille_vente) || 0
   const refBasseTTC = Number(analysis?.prix_meilleur_marche) || venteTTC
   if (!venteTTC) return analysis
 
-  const achatFrom = (ttc) => Math.max(0, Math.round(ttc / TVA - TRANSPORT_HT - MARGE_PARTENAIRE_HT))
+  // Achat = prix PLAFOND à payer pour garder AU MOINS 3 000 € de marge :
+  // Vente HT − transport − marge partenaire mini. Acheter en dessous = marge ↑.
+  const achatFrom = (ttc) => Math.max(0, Math.round(ttc / TVA - TRANSPORT_HT - MARGE_PARTENAIRE_MIN_HT))
   const achatMax = achatFrom(venteTTC)
   const achatMin = Math.min(achatMax, achatFrom(refBasseTTC))
 
@@ -66,7 +68,7 @@ function applyPricingRules(analysis) {
     ...analysis,
     fourchette_achat_pro_min: achatMin,
     fourchette_achat_pro_max: achatMax,
-    marge_brute_potentielle: MARGE_PARTENAIRE_HT,
+    marge_brute_potentielle: MARGE_PARTENAIRE_MIN_HT, // plancher garanti au prix plafond
   }
 }
 
@@ -115,11 +117,11 @@ MÉTHODE DE COTATION AUTOBUYUNION (applique-la précisément, raisonne PAR VÉHI
 3. CASCADE DE COÛTS pour obtenir le prix d'achat HT recommandé (deal B2B Autobuyunion → partenaire) :
    a. Vente HT = prix_conseille_vente ÷ 1,20 (retrait TVA 20%).
    b. Transport UE = 450 € HT par véhicule.
-   c. Marge partenaire = 3 000 € HT (FIXE, exactement 3 000 € — jamais plus).
-   → fourchette_achat_pro (HT) = Vente HT − 450 (transport) − 3 000 (marge partenaire).
+   c. Marge partenaire = 3 000 € HT MINIMUM (plancher : au moins 3 000 €, jamais moins).
+   → fourchette_achat_pro (HT) = prix PLAFOND à payer = Vente HT − 450 (transport) − 3 000 (marge mini). Acheter en dessous augmente la marge.
    NE soustrais PAS de marge groupe ici : la marge Autobuyunion (550 €) est déjà prise EN AMONT, hors de ce calcul.
    Le MALUS n'entre JAMAIS dans cette cascade : il est à la charge du CLIENT FINAL (B2C), pas du deal B2B.
-4. "marge_brute_potentielle" = 3 000 € (la marge partenaire fixe).
+4. "marge_brute_potentielle" = 3 000 € (marge plancher au prix d'achat plafond).
 5. "malus_estime" = information pour l'acheteur FINAL B2C uniquement (jamais déduit de l'achat ni de la marge).
 6. Écart minimum viable d'un deal ≈ 4 500–5 000 € (davantage sur premium).
 
@@ -670,9 +672,9 @@ export default function PriceWatch() {
                   value={result.fourchette_achat_pro_min && result.fourchette_achat_pro_max
                     ? `${formatNumber(result.fourchette_achat_pro_min)} – ${formatNumber(result.fourchette_achat_pro_max)} €`
                     : 'N/D'}
-                  sub="HT" small
+                  sub={t('price_pro_range_sub')} small
                 />
-                <KpiCard label={t('price_margin_label')} value={fmtEur(result.marge_brute_potentielle)} small />
+                <KpiCard label={t('price_margin_label')} value={`≥ ${fmtEur(result.marge_brute_potentielle)}`} sub={t('price_margin_sub')} small />
               </div>
               {result.malus_estime != null && result.malus_estime !== '' && (
                 <div className="grid grid-cols-1 gap-2 mb-2">
