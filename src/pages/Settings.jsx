@@ -40,7 +40,6 @@ export default function Settings() {
   const { language, currency, density, changeLanguage, changeCurrency, changeDensity, t } = useSettings()
   const { user } = useAuth()
   const themeKey    = ukey(user?.id ?? null, 'theme')
-  const apiKeyKey   = ukey(user?.id ?? null, 'api_key')
   const aiPowerKey  = ukey(user?.id ?? null, 'ai_power')
   const [theme,      setTheme]      = useState(() => localStorage.getItem(themeKey)   || 'dark')
   const [aiPower,    setAiPower]    = useState(() => localStorage.getItem(aiPowerKey) || 'performance')

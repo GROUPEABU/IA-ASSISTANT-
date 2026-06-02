@@ -333,7 +333,12 @@ function buildImportedProduct(modelKey, units) {
  * @param {File} file
  * @returns {Promise<{products: object[], vehicleCount: number, modelCount: number}>}
  */
+const MAX_IMPORT_BYTES = 25 * 1024 * 1024 // 25 Mo — garde-fou mémoire / XML bomb
+
 export async function parseImportFile(file) {
+  if (file?.size > MAX_IMPORT_BYTES) {
+    throw new Error('Fichier trop volumineux (max 25 Mo).')
+  }
   const name = (file.name || '').toLowerCase()
   let grid
   if (name.endsWith('.xlsx') || name.endsWith('.xlsm')) {

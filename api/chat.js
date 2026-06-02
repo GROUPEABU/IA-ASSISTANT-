@@ -61,11 +61,12 @@ export default async function handler(req) {
     return json({ error: { message: 'Corps JSON invalide : messages[] requis.' } }, 400)
   }
 
-  // ── Clé API ───────────────────────────────────────────────────────────────
+  // ── Clé API (serveur uniquement) ────────────────────────────────────────────
+  // Pas de fallback VITE_* : un préfixe VITE_ serait embarqué dans le bundle
+  // client au build (fuite). La clé reste strictement côté serveur.
   const key =
     req.headers.get('x-user-api-key') ||
     process.env.ANTHROPIC_API_KEY ||
-    process.env.VITE_ANTHROPIC_API_KEY ||
     ''
 
   if (!key) {
