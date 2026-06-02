@@ -184,7 +184,7 @@ function buildContent(text, attachment) {
  * @param {ChatMessage[]} messages
  * @returns {Promise<string>}
  */
-export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3, tool = null, webSearch = false, maxSearches = 5, returnMeta = false } = {}) {
+export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3, tool = null, webSearch = false, maxSearches = 5, returnMeta = false, stream = false } = {}) {
   assertOnline()
   const apiMessages = messages.map(({ role, content, attachment }) => ({
     role,
@@ -198,10 +198,19 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
     system:      buildSystemPrompt(lang, expert, tool),
     messages:    apiMessages,
   }
-  // Pont vers la recherche web officielle Anthropic (exécutée côté serveur,
-  // jamais bloquée comme un proxy navigateur). Claude décide quand chercher.
+  // Pont vers la recherche web officielle (exécutée côté serveur,
+  // jamais bloquée comme un proxy navigateur). Le modèle décide quand chercher.
   if (webSearch) {
     body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: maxSearches }]
+  }
+
+  // Streaming interne : pour les requêtes longues (recherche web en direct),
+  // on stream la réponse afin que des octets circulent en continu. Sans cela,
+  // la passerelle coupe une requête non-streamée trop longue → 504. Le texte
+  // est accumulé puis renvoyé comme si la requête était classique.
+  if (stream || webSearch) {
+    body.stream = true
+    return streamToText(body, { returnMeta })
   }
 
   const response = await fetch(ENDPOINT, {
@@ -212,7 +221,7 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}))
-    throw new Error(err.error?.message ?? `Erreur API Anthropic (${response.status})`)
+    throw new Error(err.error?.message ?? `Erreur du service IA (${response.status})`)
   }
 
   const payload = await response.json()
@@ -226,6 +235,62 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
     const searchCount = blocks.filter(b => b.type === 'server_tool_use' && b.name === 'web_search').length
     return { text, usedWebSearch: searchCount > 0, searchCount }
   }
+  return text
+}
+
+/**
+ * Envoie une requête en streaming SSE et accumule le texte complet.
+ * Garde la connexion vivante (octets en continu) pour éviter les 504 sur les
+ * requêtes longues, tout en renvoyant un résultat équivalent au mode classique.
+ *
+ * @param {object} body — corps de requête (avec stream:true)
+ * @param {{ returnMeta?: boolean }} opts
+ * @returns {Promise<string|{text:string,usedWebSearch:boolean,searchCount:number}>}
+ */
+async function streamToText(body, { returnMeta = false } = {}) {
+  const response = await fetch(ENDPOINT, {
+    method:  'POST',
+    headers: proxyHeaders(),
+    body: JSON.stringify(body),
+  })
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error?.message ?? `Erreur du service IA (${response.status})`)
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let text = ''
+  let searchCount = 0
+  let buffer = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop() ?? ''
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue
+      const data = line.slice(6).trim()
+      if (!data || data === '[DONE]') continue
+      try {
+        const evt = JSON.parse(data)
+        if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+          text += evt.delta.text
+        } else if (evt.type === 'content_block_start'
+                   && evt.content_block?.type === 'server_tool_use'
+                   && evt.content_block?.name === 'web_search') {
+          searchCount += 1
+        }
+      } catch { /* skip malformed SSE events */ }
+    }
+  }
+
+  text = text.trim()
+  if (!text) throw new Error('Unexpected API response (no text content).')
+  if (returnMeta) return { text, usedWebSearch: searchCount > 0, searchCount }
   return text
 }
 
@@ -264,7 +329,7 @@ export async function streamMessage(messages, { lang = 'fr', onChunk, temperatur
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}))
-    throw new Error(err.error?.message ?? `Erreur API Anthropic (${response.status})`)
+    throw new Error(err.error?.message ?? `Erreur du service IA (${response.status})`)
   }
 
   const reader = response.body.getReader()
