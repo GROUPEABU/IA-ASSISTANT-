@@ -1,6 +1,7 @@
 import { Component } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { getItem, getSessionUserId } from '@/utils/userStorage'
+import { reportError } from '@/utils/reportError'
 
 /**
  * Application-wide error boundary.
@@ -43,10 +44,9 @@ export default class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    // Errors are surfaced to the console for now — wire to Sentry/etc when
-    // an observability stack is provisioned.
-    // eslint-disable-next-line no-console
-    console.error('[ErrorBoundary]', error, info)
+    // Remontée centralisée (console + tampon localStorage `abu_errors`).
+    // Point unique à brancher sur Sentry/endpoint quand l'observabilité existera.
+    reportError(error, { where: 'ErrorBoundary', componentStack: info?.componentStack })
   }
 
   handleReload = () => {

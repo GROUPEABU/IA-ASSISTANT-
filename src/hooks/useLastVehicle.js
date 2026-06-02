@@ -23,11 +23,14 @@ export function readLastVehicleName() {
 }
 
 export function useLastVehicle() {
-  const save = useCallback((name) => {
+  const save = useCallback((name, { price } = {}) => {
     const clean = (name || '').trim()
     if (!clean) return
+    const payload = { name: clean, savedAt: Date.now() }
+    // Prix optionnel (ex. prix conseillé Veille Prix) — sert au préremplissage TCO.
+    if (Number(price) > 0) payload.price = Math.round(Number(price))
     try {
-      localStorage.setItem(keyFor(), JSON.stringify({ name: clean, savedAt: Date.now() }))
+      localStorage.setItem(keyFor(), JSON.stringify(payload))
     } catch {}
   }, [])
 

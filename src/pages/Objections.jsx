@@ -1,14 +1,17 @@
 import { useState, useRef } from 'react'
-import { ShieldCheck, RefreshCw, RotateCcw, ChevronDown, ChevronUp, Download, History, Trash2 } from 'lucide-react'
+import { ShieldCheck, RefreshCw, RotateCcw, ChevronDown, ChevronUp, Download } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import AIProgress from '@/components/ui/AIProgress'
 import ErrorAlert from '@/components/ui/ErrorAlert'
+import HistoryPanel from '@/components/ui/HistoryPanel'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
 import { useLastVehicle, readLastVehicleName } from '@/hooks/useLastVehicle'
+import { useExport } from '@/hooks/useExport'
+import { useResultFocus } from '@/hooks/useResultFocus'
 import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
 import { useToast } from '@/components/ui/Toast'
 
@@ -72,36 +75,6 @@ function ObjectionCard({ item, index, isOpen, onToggle, noAnimate }) {
   )
 }
 
-function HistoryPanel({ history, onRestore, onClear, t }) {
-  if (history.length === 0) return null
-  return (
-    <div className="glass-card p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <History size={13} className="text-slate-500" />
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('history_title')} ({history.length})</span>
-        </div>
-        <button onClick={onClear} className="flex items-center gap-1 text-[10px] text-slate-600 hover:text-red-400 transition">
-          <Trash2 size={10} /> {t('history_clear')}
-        </button>
-      </div>
-      <div className="space-y-1.5">
-        {history.map((item, i) => (
-          <button
-            key={i}
-            onClick={() => onRestore(item)}
-            className="w-full text-left px-3 py-2 rounded-xl bg-navy-900/40 border border-navy-700/30
-                       hover:border-cyan-400/30 hover:bg-cyan-400/5 transition group"
-          >
-            <p className="text-xs font-semibold text-slate-300 group-hover:text-cyan-300 truncate">{item.generatedFor}</p>
-            <p className="text-[10px] text-slate-600">{new Date(item.savedAt).toLocaleString()}</p>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 export default function Objections() {
   const { t, lang } = useSettings()
   const objRef = useRef(null)
@@ -113,12 +86,13 @@ export default function Objections() {
   const [openIndex, setOpenIndex] = useState(0)
   const [error, setError] = useState(null)
   const [generatedFor, setGeneratedFor] = useState('')
-  const [exporting, setExporting] = useState(false)
   const [forceOpenAll, setForceOpenAll] = useState(false)
   const { toast } = useToast()
   const { generated } = useGeneratedProducts()
   const { history, add: addHistory, clear: clearHistory } = useHistory('objections')
   const { save: saveLastVehicle } = useLastVehicle()
+  const { exporting, withExporting } = useExport()
+  const headingRef = useResultFocus(objections.length > 0 && !loading)
 
   const allProducts = [...PRODUCTS, ...generated]
   const selectedProduct = allProducts.find((p) => p.id === vehicleId)
@@ -173,8 +147,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
     }
   }
 
-  const handlePdf = async () => {
-    setExporting(true)
+  const handlePdf = () => withExporting(async () => {
     // Déplie toutes les objections avant la capture : le PDF doit contenir
     // chaque réponse, pas seulement la carte ouverte à l'écran.
     setForceOpenAll(true)
@@ -183,10 +156,9 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
     try {
       await exportToPdf(objRef, pdfFileName(vehicleName), { title: t('page_objections_title'), subtitle: vehicleName })
     } finally {
-      setExporting(false)
       setForceOpenAll(false)
     }
-  }
+  })
 
   const reset = () => { setObjections([]); setVehicleId(''); setCustomVehicle(''); setGeneratedFor('') }
 
@@ -294,7 +266,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
         <>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-white">{generatedFor}</p>
+              <p ref={headingRef} tabIndex={-1} className="text-sm font-semibold text-white outline-none">{generatedFor}</p>
               <p className="text-xs text-slate-500">{objections.length} {t('obj_count_hint')}</p>
             </div>
             <div className="flex items-center gap-2">
@@ -335,7 +307,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
         </>
       )}
 
-      <HistoryPanel history={history} onRestore={restore} onClear={clearHistory} t={t} />
+      <HistoryPanel items={history} onRestore={restore} onClear={clearHistory} primary={(item) => item.generatedFor} />
     </div>
   )
 }

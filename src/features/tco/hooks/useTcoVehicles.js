@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { emptyVehicle, getMaintDefault, COLORS } from '../constants'
 import { calcTco } from '../calculations'
+import { readLastVehicle } from '@/hooks/useLastVehicle'
 
 const MAX_VEHICLES = 4
 const SESSION_KEY = 'abu_tco_vehicles'
@@ -10,6 +11,12 @@ function loadVehicles() {
     const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY))
     if (Array.isArray(saved) && saved.length) return saved
   } catch {}
+  // Pas de session en cours : préremplir le 1er véhicule depuis le dernier
+  // véhicule travaillé (Veille Prix / Pitch / Objections) pour éviter la double saisie.
+  const last = readLastVehicle()
+  if (last?.name) {
+    return [{ ...emptyVehicle(1), nom: last.name, prix: last.price ? String(last.price) : '' }]
+  }
   return [emptyVehicle(1)]
 }
 

@@ -1,14 +1,17 @@
 import { useState, useRef } from 'react'
-import { Mic, Copy, Check, RefreshCw, RotateCcw, ChevronRight, Users, Car, Wrench, Building2, Briefcase, Download, History, Trash2 } from 'lucide-react'
+import { Mic, Copy, Check, RefreshCw, RotateCcw, ChevronRight, Users, Car, Wrench, Building2, Briefcase, Download } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import AIProgress from '@/components/ui/AIProgress'
 import ErrorAlert from '@/components/ui/ErrorAlert'
+import HistoryPanel from '@/components/ui/HistoryPanel'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
 import { useLastVehicle, readLastVehicleName } from '@/hooks/useLastVehicle'
+import { useExport } from '@/hooks/useExport'
+import { useResultFocus } from '@/hooks/useResultFocus'
 import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
 import { useToast } from '@/components/ui/Toast'
 
@@ -19,36 +22,6 @@ const PROFILES = [
   { id: 'btob_flotte',  labelKey: 'profile_fleet',  subKey: 'profile_fleet_sub',  icon: Building2, segment: 'btob', color: '#CC8B3D' },
   { id: 'btob_cadre',   labelKey: 'profile_exec',   subKey: 'profile_exec_sub',   icon: Briefcase, segment: 'btob', color: '#a78bfa' },
 ]
-
-function HistoryPanel({ history, onRestore, onClear, t }) {
-  if (history.length === 0) return null
-  return (
-    <div className="glass-card p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <History size={13} className="text-slate-500" />
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('history_title')} ({history.length})</span>
-        </div>
-        <button onClick={onClear} className="flex items-center gap-1 text-[10px] text-slate-600 hover:text-red-400 transition">
-          <Trash2 size={10} /> {t('history_clear')}
-        </button>
-      </div>
-      <div className="space-y-1.5">
-        {history.map((item, i) => (
-          <button
-            key={i}
-            onClick={() => onRestore(item)}
-            className="w-full text-left px-3 py-2 rounded-xl bg-navy-900/40 border border-navy-700/30
-                       hover:border-cyan-400/30 hover:bg-cyan-400/5 transition group"
-          >
-            <p className="text-xs font-semibold text-slate-300 group-hover:text-cyan-300 truncate">{item.generatedFor}</p>
-            <p className="text-[10px] text-slate-600">{new Date(item.savedAt).toLocaleString()}</p>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 export default function PitchGenerator() {
   const { t, lang } = useSettings()
@@ -62,13 +35,14 @@ export default function PitchGenerator() {
   const [error, setError] = useState(null)
   const [copied, setCopied] = useState(false)
   const [generatedFor, setGeneratedFor] = useState('')
-  const [exporting, setExporting] = useState(false)
 
   const { toast } = useToast()
   const { generated } = useGeneratedProducts()
   const allProducts = [...PRODUCTS, ...generated]
   const { history, add: addHistory, clear: clearHistory } = useHistory('pitch')
   const { save: saveLastVehicle } = useLastVehicle()
+  const { exporting, withExporting } = useExport()
+  const headingRef = useResultFocus(pitch !== null && !loading)
 
   const selectedProduct = allProducts.find((p) => p.id === vehicleId)
   const vehicleName = selectedProduct?.fullName || customVehicle
@@ -150,14 +124,9 @@ Réponds UNIQUEMENT en JSON valide :
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handlePdf = async () => {
-    setExporting(true)
-    try {
-      await exportToPdf(pitchRef, pdfFileName(vehicleName), { title: t('page_pitch_title'), subtitle: vehicleName })
-    } finally {
-      setExporting(false)
-    }
-  }
+  const handlePdf = () => withExporting(() =>
+    exportToPdf(pitchRef, pdfFileName(vehicleName), { title: t('page_pitch_title'), subtitle: vehicleName })
+  )
 
   const reset = () => { setPitch(null); setVehicleId(''); setCustomVehicle(''); setContext(''); setGeneratedFor('') }
 
@@ -297,7 +266,7 @@ Réponds UNIQUEMENT en JSON valide :
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-white">{generatedFor}</p>
+              <p ref={headingRef} tabIndex={-1} className="text-sm font-semibold text-white outline-none">{generatedFor}</p>
               <p className="text-xs text-slate-500">{t('pitch_ready')}</p>
             </div>
             <div className="flex items-center gap-2">
@@ -417,7 +386,7 @@ Réponds UNIQUEMENT en JSON valide :
         </div>
       )}
 
-      <HistoryPanel history={history} onRestore={restore} onClear={clearHistory} t={t} />
+      <HistoryPanel items={history} onRestore={restore} onClear={clearHistory} primary={(item) => item.generatedFor} />
     </div>
   )
 }

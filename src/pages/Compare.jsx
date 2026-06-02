@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GitCompare, Plus, X, Trophy, RefreshCw, RotateCcw, AlertCircle, History, Trash2 } from 'lucide-react'
+import { GitCompare, Plus, X, Trophy, RefreshCw, RotateCcw, AlertCircle } from 'lucide-react'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { getMalus } from '@/utils/malus'
@@ -7,36 +7,12 @@ import { formatNumber } from '@/utils/formatters'
 import { sendMessage } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import AIProgress from '@/components/ui/AIProgress'
+import HistoryPanel from '@/components/ui/HistoryPanel'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useSessionState } from '@/hooks/useSessionState'
 import { useToast } from '@/components/ui/Toast'
 import { useHistory } from '@/hooks/useHistory'
-
-function HistoryPanel({ history, onRestore, onClear, t }) {
-  if (history.length === 0) return null
-  return (
-    <div className="glass-card p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <History size={13} className="text-slate-500" />
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('history_title')} ({history.length})</span>
-        </div>
-        <button onClick={onClear} className="flex items-center gap-1 text-[10px] text-slate-600 hover:text-red-400 transition">
-          <Trash2 size={10} /> {t('history_clear')}
-        </button>
-      </div>
-      <div className="space-y-1.5">
-        {history.map((item, i) => (
-          <button key={i} onClick={() => onRestore(item)}
-            className="w-full text-left px-3 py-2 rounded-xl bg-navy-900/40 border border-navy-700/30 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition group">
-            <p className="text-xs font-semibold text-slate-300 group-hover:text-cyan-300 truncate">{item.label}</p>
-            <p className="text-[10px] text-slate-600">{new Date(item.savedAt).toLocaleString()}</p>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
+import { useResultFocus } from '@/hooks/useResultFocus'
 
 function getBestIndex(row, products) {
   if (!row.rawVal || !row.better) return -1
@@ -56,6 +32,7 @@ export default function Compare() {
   const { generated } = useGeneratedProducts()
   const allProducts = [...PRODUCTS, ...generated]
   const { history, add: addHistory, clear: clearHistory } = useHistory('compare')
+  const headingRef = useResultFocus(!!verdict && !loadingVerdict)
 
   const ROWS = [
     { key: 'prix_base', label: t('compare_row_prix_base'), format: (p) => `${formatNumber(p.prix.base)} €`, better: 'min' },
@@ -222,7 +199,7 @@ Sois direct, argumenté et chiffré.`
         <div className="glass-card p-5">
           <div className="flex items-center gap-2 mb-4">
             <Trophy size={15} className="text-warn" />
-            <h3 className="text-sm font-semibold text-white">{t('compare_verdict_title')}</h3>
+            <h3 ref={headingRef} tabIndex={-1} className="text-sm font-semibold text-white outline-none">{t('compare_verdict_title')}</h3>
           </div>
 
           {loadingVerdict && (
@@ -287,7 +264,7 @@ Sois direct, argumenté et chiffré.`
         </div>
       )}
 
-      <HistoryPanel history={history} onRestore={(item) => setVerdict(item.verdict)} onClear={clearHistory} t={t} />
+      <HistoryPanel items={history} onRestore={(item) => setVerdict(item.verdict)} onClear={clearHistory} primary={(item) => item.label} />
     </div>
   )
 }

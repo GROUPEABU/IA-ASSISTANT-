@@ -2,17 +2,20 @@ import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Bell, Search, RefreshCw, RotateCcw, TrendingUp, TrendingDown, Minus,
-  AlertCircle, ExternalLink, Clock, SlidersHorizontal, Download, History,
-  Trash2, Wifi, WifiOff, ShieldCheck, Zap, Tag, FileText, Calculator,
+  AlertCircle, ExternalLink, Clock, SlidersHorizontal, Download,
+  Wifi, WifiOff, ShieldCheck, Zap, Tag, FileText, Calculator,
 } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import AIProgress from '@/components/ui/AIProgress'
 import ErrorAlert from '@/components/ui/ErrorAlert'
+import HistoryPanel from '@/components/ui/HistoryPanel'
 import { formatNumber } from '@/utils/formatters'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
 import { useLastVehicle } from '@/hooks/useLastVehicle'
+import { useExport } from '@/hooks/useExport'
+import { useResultFocus } from '@/hooks/useResultFocus'
 import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
 import { useToast } from '@/components/ui/Toast'
 
@@ -210,42 +213,6 @@ function SectionTitle({ icon: Icon, label, color = 'text-slate-500' }) {
   )
 }
 
-// ── HistoryPanel ──────────────────────────────────────────────────────────────
-function HistoryPanel({ history, onRestore, onClear, t }) {
-  if (history.length === 0) return null
-  return (
-    <div className="glass-card p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <History size={13} className="text-slate-500" />
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('history_title')} ({history.length})</span>
-        </div>
-        <button onClick={onClear} className="flex items-center gap-1 text-[10px] text-slate-600 hover:text-red-400 transition">
-          <Trash2 size={10} /> {t('history_clear')}
-        </button>
-      </div>
-      <div className="space-y-1.5">
-        {history.map((item, i) => (
-          <button
-            key={i}
-            onClick={() => onRestore(item)}
-            className="w-full text-left px-3 py-2 rounded-xl bg-navy-900/40 border border-navy-700/30
-                       hover:border-cyan-400/30 hover:bg-cyan-400/5 transition group"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-semibold text-slate-300 group-hover:text-cyan-300 truncate">{item.searchLabel}</p>
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${
-                item.type === 'vo' ? 'bg-warn/10 text-warn' : 'bg-emerald-400/10 text-emerald-400'
-              }`}>{item.type?.toUpperCase()}</span>
-            </div>
-            <p className="text-[10px] text-slate-600">{new Date(item.savedAt).toLocaleString()}</p>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 // ── Page principale ───────────────────────────────────────────────────────────
 export default function PriceWatch() {
   const { t, lang } = useSettings()
@@ -309,10 +276,11 @@ export default function PriceWatch() {
   const [error, setError]         = useState(null)
   const [centraleUrl, setCentraleUrl] = useState('')
   const [searchLabel, setSearchLabel] = useState('')
-  const [exporting, setExporting] = useState(false)
   const [isPartial, setIsPartial] = useState(false)
   const { history, add: addHistory, clear: clearHistory } = useHistory('pricewatch')
   const { save: saveLastVehicle } = useLastVehicle()
+  const { exporting, withExporting } = useExport()
+  const headingRef = useResultFocus(!!result && !loading)
 
   // Persist filter state across page navigations (session-scoped)
   useEffect(() => {
@@ -376,6 +344,8 @@ export default function PriceWatch() {
       const finalResult = { ...analysis, sources: raw.sources, hasLiveData: analysis.usedWebSearch, isPartial: false }
       setResult(finalResult)
       setIsPartial(false)
+      // Mémorise aussi le prix conseillé → préremplissage TCO (nom + prix d'achat).
+      saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '), { price: analysis.prix_conseille_vente })
       addHistory({ searchLabel: label, type: filters.type, result: finalResult })
     } catch (err) {
       if (hasPartial) {
@@ -435,14 +405,9 @@ export default function PriceWatch() {
   const fmtHT  = (v) => v ? `${formatNumber(v)} € HT` : 'N/D'
   const fmtPct = (v) => v ? `${v}%` : 'N/D'
 
-  const handlePdf = async () => {
-    setExporting(true)
-    try {
-      await exportToPdf(resultRef, pdfFileName(searchLabel), { title: t('tool_price_title'), subtitle: searchLabel })
-    } finally {
-      setExporting(false)
-    }
-  }
+  const handlePdf = () => withExporting(() =>
+    exportToPdf(resultRef, pdfFileName(searchLabel), { title: t('tool_price_title'), subtitle: searchLabel })
+  )
 
   const reset = () => {
     setResult(null); setMake(''); setModel(''); setFinition(''); setCarrosserie('')
@@ -596,7 +561,7 @@ export default function PriceWatch() {
           {/* Header */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="min-w-0">
-              <h3 className="text-base font-bold text-white">{searchLabel}</h3>
+              <h3 ref={headingRef} tabIndex={-1} className="text-base font-bold text-white outline-none">{searchLabel}</h3>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   type === 'vo' ? 'bg-warn/10 text-warn' : 'bg-emerald-400/10 text-emerald-400'
@@ -881,7 +846,17 @@ export default function PriceWatch() {
         </div>
       )}
 
-      <HistoryPanel history={history} onRestore={restore} onClear={clearHistory} t={t} />
+      <HistoryPanel
+        items={history}
+        onRestore={restore}
+        onClear={clearHistory}
+        primary={(item) => item.searchLabel}
+        badge={(item) => (
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${
+            item.type === 'vo' ? 'bg-warn/10 text-warn' : 'bg-emerald-400/10 text-emerald-400'
+          }`}>{item.type?.toUpperCase()}</span>
+        )}
+      />
     </div>
   )
 }
