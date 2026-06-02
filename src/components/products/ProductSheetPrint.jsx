@@ -68,7 +68,7 @@ const ProductSheetPrint = forwardRef(({ product, malus, malusColor }, ref) => {
             </div>
             <div className="text-right flex-shrink-0">
               <p className="text-xs text-slate-500">{t('product_from')}</p>
-              <p className="text-xl font-bold text-white">{formatNumber(product.prix.base)} €</p>
+              <p className="text-xl font-bold text-white">{formatNumber(product.prix.premier_net ?? product.prix.base)} €</p>
               <p className="text-xs text-slate-500">{t('product_up_to')} {formatNumber(product.prix.haut)} €</p>
               {malus > 0 && (
                 <p className={`text-xs font-semibold mt-1 ${malusColor === 'danger' ? 'text-red-400' : 'text-warn'}`}>

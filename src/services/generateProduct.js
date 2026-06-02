@@ -27,7 +27,7 @@ const SCHEMA = `{
     "reservoir": 55,
     "poids": 1250
   },
-  "prix": { "base": 25000, "haut": 32000, "devise": "EUR" },
+  "prix": { "base": 25000, "haut": 32000, "premier_net": 21000, "devise": "EUR" },
   "garantie": {
     "vehicule": "ex: 5 ans ou 100 000 km",
     "peinture": "ex: 3 ans",
@@ -76,7 +76,8 @@ ${SCHEMA}
 
 Règles importantes :
 - co2_wltp : valeur WLTP officielle en g/km (entier)
-- prix en euros TTC catalogue France
+- prix.base / prix.haut : en euros TTC catalogue France (véhicule neuf)
+- prix.premier_net : prix MÉDIAN des annonces VO récentes les MOINS chères de ce modèle (les "premiers du net" sur La Centrale / LeBonCoin), en € TTC. C'est le prix de marché réaliste "à partir de". Toujours INFÉRIEUR au prix catalogue base. Si tu manques d'éléments, donne une estimation crédible cohérente avec la décote VO récente.
 - liste 4 concurrents directs réels avec leurs vrais prix et CO2
 - équipements : liste des 8-12 équipements de série principaux
 - id : format "generated-<marque>-<modele>-<annee>" en minuscules sans espaces

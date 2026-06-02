@@ -210,11 +210,10 @@ export default function MarketAnalysis({ product }) {
           <div className="text-center py-10">
             <Globe size={32} className="text-slate-700 mx-auto mb-3" />
             <p className="text-sm text-slate-400 mb-1 font-medium">{t('market_empty_title')}</p>
-            <p className="text-xs text-slate-600 mb-4">
+            <p className="text-xs text-slate-600">
               {t('market_empty_desc_1')}<br />
               {t('market_empty_desc_2')}
             </p>
-            <p className="text-[11px] text-cyan-400/60">{t('market_free_note')}</p>
           </div>
         )}
 

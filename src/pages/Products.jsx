@@ -79,7 +79,7 @@ function ProductCard({ product, onDelete, navigate, t, formatCurrency }) {
       <div className="flex items-center justify-between pt-3 border-t border-navy-700/50 mb-2">
         <div>
           <span className="text-[11px] text-slate-500">{t('from_price')} </span>
-          <span className="text-base font-bold text-white">{formatCurrency(product.prix.base)}</span>
+          <span className="text-base font-bold text-white">{formatCurrency(product.prix.premier_net ?? product.prix.base)}</span>
         </div>
         <div className="text-right">
           <span className="text-[11px] text-slate-500">{t('products_fr_duty')} </span>
