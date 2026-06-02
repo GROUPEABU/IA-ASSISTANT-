@@ -94,6 +94,11 @@ export async function exportToPdf(ref, filename, meta = {}) {
     windowWidth: RENDER_W,
     onclone: (doc, cloned) => {
       cloned.classList.add('pdf-root')
+      // Forcer height:auto + overflow:visible pour que html2canvas mesure
+      // la hauteur réelle APRÈS reflow à windowWidth=760 (évite le clipping
+      // des cartes flex dont le texte reflue au rendu PDF).
+      cloned.style.height = 'auto'
+      cloned.style.overflow = 'visible'
       const style = doc.createElement('style')
       style.textContent = PRINT_CSS + EXTRA_CSS
       doc.head.appendChild(style)

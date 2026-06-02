@@ -82,14 +82,17 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
       const elapsed = performance.now() - startRef.current
       let pctVal
       if (elapsed <= est) {
-        // Phase 1 : progression régulière 0 → 95 % sur la durée estimée.
-        pctVal = (elapsed / est) * 95
+        // Phase 1 : progression régulière 0 → 90 % sur la durée estimée.
+        pctVal = (elapsed / est) * 90
       } else {
-        // Phase 2 (dépassement) : approche ASYMPTOTIQUE de 99,5 % — la barre
-        // continue toujours d'avancer (95→96→97→98→99…) au lieu de se figer à
-        // une valeur fixe. Elle n'atteint jamais 100 % avant la fin réelle.
+        // Phase 2 (dépassement) : sprint LINÉAIRE rapide 90→99 % en 3 s, puis
+        // rampe très lente jusqu'à 99,5 %. Jamais figé visuellement.
         const over = elapsed - est
-        pctVal = 99.5 - 4.5 * Math.exp(-over / 9000)
+        if (over <= 3000) {
+          pctVal = 90 + (over / 3000) * 9          // 90 → 99 % en 3 s
+        } else {
+          pctVal = 99 + Math.min(0.45, (over - 3000) / 30000 * 0.45)  // 99 → 99,45 % très lentement
+        }
       }
       setPct(pctVal)
       if (stages.length > 1) {
@@ -127,10 +130,12 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
         labelCls: 'text-slate-400',
       }
 
+  const waiting = pct >= 99
+
   const barFill = (
     <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: C.track }}>
       <div
-        className="h-full rounded-full transition-[width] duration-200 ease-out"
+        className={`h-full rounded-full transition-[width] duration-200 ease-out${waiting ? ' animate-pulse' : ''}`}
         style={{
           width: `${Math.max(pct, pct > 0 ? 4 : 0)}%`,
           background: C.gradient,
@@ -157,7 +162,7 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
             style={{ transition: 'stroke-dashoffset 200ms ease-out', filter: `drop-shadow(${C.glow})` }}
           />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-sm font-bold tabular-nums" style={{ color: C.accent }}>
+        <span className={`absolute inset-0 flex items-center justify-center text-sm font-bold tabular-nums${waiting ? ' animate-pulse' : ''}`} style={{ color: C.accent }}>
           {rounded}%
         </span>
       </div>
