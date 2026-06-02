@@ -43,7 +43,7 @@ function assertOnline() {
 // erreurs transitoires. Les requêtes longues (recherche web) sont couvertes par
 // un timeout généreux ; les flux ont en plus un garde d'inactivité.
 const REQUEST_TIMEOUT_MS = 150000   // 2,5 min — couvre la recherche web en direct
-const STREAM_IDLE_MS     = 70000    // abandon si aucun octet pendant 70 s
+const STREAM_IDLE_MS     = 110000   // abandon si aucun octet pendant 110 s (laisse le temps à plusieurs recherches web d'enchaîner sans déclencher le repli)
 const MAX_RETRIES        = 2        // 3 tentatives au total
 const RETRYABLE_STATUS   = new Set([408, 425, 429, 500, 502, 503, 504, 529])
 
