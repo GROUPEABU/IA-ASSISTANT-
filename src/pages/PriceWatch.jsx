@@ -174,7 +174,7 @@ Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise mark
 
   const { text: raw, usedWebSearch } = await sendMessage(
     [{ role: 'user', content: prompt }],
-    { lang, maxTokens: withWebSearch ? 8192 : 4096, expert: true, temperature: 0.3, tool: 'veilleprix', webSearch: withWebSearch, maxSearches: 5, returnMeta: true }
+    { lang, maxTokens: withWebSearch ? 4096 : 3000, expert: true, temperature: 0.3, tool: 'veilleprix', webSearch: withWebSearch, maxSearches: 3, returnMeta: true }
   )
   return { ...extractJSON(raw, 'object'), usedWebSearch }
 }

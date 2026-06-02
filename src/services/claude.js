@@ -335,43 +335,72 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
  * @param {{ returnMeta?: boolean }} opts
  * @returns {Promise<string|{text:string,usedWebSearch:boolean,searchCount:number}>}
  */
-async function streamToText(body, { returnMeta = false } = {}) {
+/**
+ * Repli NON-STREAMING. Si le flux échoue (ex. iOS Safari « Load failed »,
+ * `response.body` non lisible, flux coupé), on rejoue la requête SANS stream :
+ * le proxy renvoie alors le JSON complet d'un coup. Garantit un résultat même
+ * quand le streaming casse côté navigateur.
+ */
+async function postNonStream(body) {
+  const { stream: _omitStream, ...rest } = body
   const response = await fetchResilient(ENDPOINT, {
     method:  'POST',
     headers: proxyHeaders(),
-    body: JSON.stringify(body),
+    body: JSON.stringify(rest),
   })
+  const payload = await response.json()
+  const blocks = payload.content || []
+  const text = blocks.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim()
+  const searchCount = blocks.filter((b) => b.type === 'server_tool_use' && b.name === 'web_search').length
+  return { text, searchCount }
+}
 
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder()
+async function streamToText(body, { returnMeta = false } = {}) {
   let text = ''
   let searchCount = 0
-  let buffer = ''
 
-  while (true) {
-    const { done, value } = await readChunk(reader)
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop() ?? ''
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue
-      const data = line.slice(6).trim()
-      if (!data || data === '[DONE]') continue
-      try {
-        const evt = JSON.parse(data)
-        if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-          text += evt.delta.text
-        } else if (evt.type === 'content_block_start'
-                   && evt.content_block?.type === 'server_tool_use'
-                   && evt.content_block?.name === 'web_search') {
-          searchCount += 1
-        }
-      } catch { /* skip malformed SSE events */ }
+  try {
+    const response = await fetchResilient(ENDPOINT, {
+      method:  'POST',
+      headers: proxyHeaders(),
+      body: JSON.stringify(body),
+    })
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('stream-unavailable')
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await readChunk(reader)
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        const data = line.slice(6).trim()
+        if (!data || data === '[DONE]') continue
+        try {
+          const evt = JSON.parse(data)
+          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+            text += evt.delta.text
+          } else if (evt.type === 'content_block_start'
+                     && evt.content_block?.type === 'server_tool_use'
+                     && evt.content_block?.name === 'web_search') {
+            searchCount += 1
+          }
+        } catch { /* skip malformed SSE events */ }
+      }
     }
+    text = text.trim()
+    if (!text) throw new Error('stream-empty')
+  } catch {
+    // Streaming KO → repli non-streamé (résultat complet d'un coup).
+    const r = await postNonStream(body)
+    text = r.text
+    searchCount = r.searchCount
   }
 
-  text = text.trim()
   if (!text) throw new Error('Unexpected API response (no text content).')
   auditResponse(text, 'stream')
   if (returnMeta) return { text, usedWebSearch: searchCount > 0, searchCount }
@@ -405,37 +434,46 @@ export async function streamMessage(messages, { lang = 'fr', onChunk, temperatur
     body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: maxSearches }]
   }
 
-  const response = await fetchResilient(ENDPOINT, {
-    method:  'POST',
-    headers: proxyHeaders(),
-    body: JSON.stringify(body),
-  })
-
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder()
   let fullText = ''
-  let buffer = ''
+  try {
+    const response = await fetchResilient(ENDPOINT, {
+      method:  'POST',
+      headers: proxyHeaders(),
+      body: JSON.stringify(body),
+    })
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('stream-unavailable')
+    const decoder = new TextDecoder()
+    let buffer = ''
 
-  while (true) {
-    const { done, value } = await readChunk(reader)
-    if (done) break
+    while (true) {
+      const { done, value } = await readChunk(reader)
+      if (done) break
 
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop() ?? ''
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
 
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue
-      const data = line.slice(6).trim()
-      if (!data || data === '[DONE]') continue
-      try {
-        const evt = JSON.parse(data)
-        if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-          fullText += evt.delta.text
-          onChunk?.(fullText)
-        }
-      } catch { /* skip malformed SSE events */ }
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        const data = line.slice(6).trim()
+        if (!data || data === '[DONE]') continue
+        try {
+          const evt = JSON.parse(data)
+          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+            fullText += evt.delta.text
+            onChunk?.(fullText)
+          }
+        } catch { /* skip malformed SSE events */ }
+      }
     }
+    if (!fullText.trim()) throw new Error('stream-empty')
+  } catch {
+    // Streaming KO (ex. iOS Safari « Load failed ») → repli non-streamé :
+    // on récupère le texte complet d'un coup et on l'affiche en une fois.
+    const r = await postNonStream(body)
+    fullText = r.text
+    onChunk?.(fullText)
   }
 
   auditResponse(fullText, 'chat')
