@@ -735,3 +735,19 @@ html, body, .glass-card, header, nav, aside, main {
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Chat markdown rendering ─────────────────────────────────────────────── */
+.chat-md p          { margin-bottom: 0.5em; }
+.chat-md p:last-child { margin-bottom: 0; }
+.chat-md h1, .chat-md h2, .chat-md h3 { font-weight: 700; margin: 0.75em 0 0.25em; }
+.chat-md h1 { font-size: 1.05em; }
+.chat-md h2 { font-size: 1em; }
+.chat-md h3 { font-size: 0.95em; }
+.chat-md strong  { font-weight: 700; color: inherit; }
+.chat-md em      { font-style: italic; }
+.chat-md code    { font-family: ui-monospace, monospace; font-size: 0.85em;
+                   background: rgba(0,0,0,0.25); padding: 0.1em 0.35em;
+                   border-radius: 0.25em; color: #67e8f9; }
+.chat-md ul      { list-style: disc; padding-left: 1.25em; margin: 0.4em 0; }
+.chat-md li      { margin-bottom: 0.2em; }
+html.light .chat-md code { background: rgba(0,0,0,0.08); color: #0369a1; }

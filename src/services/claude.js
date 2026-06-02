@@ -209,7 +209,7 @@ Rules:
 - Always include at least one concrete figure (price, %, km, lead time, saving).
 - Bullet points when there are more than 2 facts.
 - Never use generic formulas ("cela dépend…", "il faut considérer…").
-- If the question exceeds your data, suggest the right tool (Veille Prix, Fiche IA, Comparateur…).
+- If the question needs real-time pricing, mention the Veille Prix tool; for vehicle comparison, the Comparateur; for CO₂/malus, the CO₂ & Malus calculator; for TCO, the Calculateur TCO. Never invent tool or feature names.
 - Always respond in ${langName}.
 ${ANTI_HALLUCINATION}`
 }

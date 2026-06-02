@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { User, FileText, Image } from 'lucide-react'
+import DOMPurify from 'dompurify'
 
 function AbuLogo() {
   return (
@@ -10,9 +11,47 @@ function AbuLogo() {
   )
 }
 
+// Convertit le Markdown basique de Claude en HTML sécurisé (DOMPurify).
+// Couvre : titres, gras, italique, code, listes à puce, sauts de ligne.
+function mdToHtml(text) {
+  if (!text) return ''
+  let s = text
+    // Escaper d'abord pour éviter les injections HTML dans le texte brut
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    // Titres
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    // Gras + italique combinés
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    // Gras
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // Italique (éviter les listes `-`)
+    .replace(/(?<![*])\*(?![*\s])(.+?)(?<!\s)\*(?![*])/g, '<em>$1</em>')
+    // Code inline
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // Listes à puce (- item ou * item)
+    .replace(/^[ \t]*[-*] (.+)$/gm, '<li>$1</li>')
+    // Regrouper les <li> consécutifs dans un <ul>
+    .replace(/(<li>[\s\S]*?<\/li>)(\n<li>[\s\S]*?<\/li>)*/g, (m) => `<ul>${m}</ul>`)
+    // Paragraphes : double saut de ligne
+    .replace(/\n{2,}/g, '</p><p>')
+    // Saut de ligne simple (hors blocs)
+    .replace(/\n/g, '<br>')
+  s = '<p>' + s + '</p>'
+  // Nettoyer les balises ouvertes/fermées parasites autour des blocs
+  s = s.replace(/<p>(<h[123]>)/g, '$1').replace(/(<\/h[123]>)<\/p>/g, '$1')
+  s = s.replace(/<p>(<ul>)/g, '$1').replace(/(<\/ul>)<\/p>/g, '$1')
+  return DOMPurify.sanitize(s, {
+    ALLOWED_TAGS: ['p','h1','h2','h3','strong','em','code','ul','li','br'],
+    ALLOWED_ATTR: [],
+  })
+}
+
 export default function ChatMessage({ message }) {
   const isAssistant = message.role === 'assistant'
   const { attachment } = message
+  const html = isAssistant ? mdToHtml(message.content) : null
 
   return (
     <div className={clsx('flex gap-3 animate-slide-up', isAssistant ? 'flex-row' : 'flex-row-reverse')}>
@@ -43,12 +82,14 @@ export default function ChatMessage({ message }) {
         )}
         {(message.content || message.streaming) && (
           <div className={clsx(
-            'px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap',
+            'px-4 py-3 rounded-2xl text-sm leading-relaxed',
             isAssistant
-              ? 'bg-navy-800/80 border border-navy-700/50 text-slate-200 rounded-tl-sm'
-              : 'bg-cyan-400/10 border border-cyan-400/20 text-cyan-100 rounded-tr-sm',
+              ? 'bg-navy-800/80 border border-navy-700/50 text-slate-200 rounded-tl-sm chat-md'
+              : 'bg-cyan-400/10 border border-cyan-400/20 text-cyan-100 rounded-tr-sm whitespace-pre-wrap',
           )}>
-            {message.content}
+            {isAssistant
+              ? <span dangerouslySetInnerHTML={{ __html: html }} />
+              : message.content}
             {message.streaming && (
               <span className="inline-block w-0.5 h-[1em] bg-cyan-400 animate-pulse align-middle ml-0.5 opacity-80" />
             )}
