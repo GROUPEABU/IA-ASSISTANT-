@@ -1,68 +1,36 @@
-/* Autobuyunion — service worker.
+/* Autobuyunion — service worker KILL-SWITCH (auto-destruction).
  *
- * Objectif : ouverture instantanée en visite répétée et fonctionnement
- * hors-ligne des outils qui ne dépendent PAS de l'IA (calculateur malus,
- * TCO, fiches déjà consultées). L'IA, elle, exige le réseau : les appels
- * /api/* ne sont jamais mis en cache et échouent proprement hors-ligne.
+ * La PWA est abandonnée : l'ancien service worker servait des assets en cache
+ * obsolète (impossible de purger côté utilisateur) et cassait le streaming IA
+ * sur iOS Safari.
  *
- * Stratégies :
- *  - navigation (HTML)  → réseau d'abord, repli sur l'app shell en cache
- *  - assets same-origin → stale-while-revalidate (instantané + maj en fond)
- *  - /api/*             → réseau uniquement (jamais de cache)
+ * Le navigateur revérifie TOUJOURS /sw.js à chaque navigation (il ne passe pas
+ * par le cache du SW pour ce fichier). En livrant cette version, tout navigateur
+ * encore contrôlé par l'ancien SW récupère celle-ci, qui :
+ *   1. prend le contrôle immédiatement (skipWaiting + claim) ;
+ *   2. supprime TOUS les caches ;
+ *   3. se désenregistre lui-même ;
+ *   4. recharge les onglets ouverts → ils repartent du réseau, code à jour.
+ *
+ * Aucun handler `fetch` : plus rien n'est servi depuis le cache.
  */
-const CACHE = 'abu-v2'
-const SHELL = ['/', '/index.html', '/manifest.json', '/favicon.svg?v=3']
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {}),
-  )
+self.addEventListener('install', () => {
   self.skipWaiting()
 })
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))),
-    ).then(() => self.clients.claim()),
-  )
-})
-
-self.addEventListener('fetch', (event) => {
-  const { request } = event
-  if (request.method !== 'GET') return
-
-  const url = new URL(request.url)
-  if (url.origin !== self.location.origin) return        // tiers : laisser passer
-  if (url.pathname.startsWith('/api/')) return            // IA / données : réseau seul
-
-  // Navigation (chargement d'une page) → réseau d'abord, repli app shell.
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((res) => {
-          const copy = res.clone()
-          caches.open(CACHE).then((c) => c.put('/index.html', copy)).catch(() => {})
-          return res
-        })
-        .catch(() => caches.match('/index.html').then((r) => r || caches.match('/'))),
-    )
-    return
-  }
-
-  // Assets (JS/CSS/images/polices) → stale-while-revalidate.
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      const network = fetch(request)
-        .then((res) => {
-          if (res && res.status === 200 && res.type === 'basic') {
-            const copy = res.clone()
-            caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {})
-          }
-          return res
-        })
-        .catch(() => cached)
-      return cached || network
-    }),
-  )
+  event.waitUntil((async () => {
+    try {
+      const keys = await caches.keys()
+      await Promise.all(keys.map((k) => caches.delete(k)))
+    } catch { /* non bloquant */ }
+    try { await self.registration.unregister() } catch { /* non bloquant */ }
+    try {
+      const clients = await self.clients.matchAll({ type: 'window' })
+      for (const client of clients) {
+        // Recharge l'onglet pour charger les assets frais depuis le réseau.
+        client.navigate(client.url)
+      }
+    } catch { /* non bloquant */ }
+  })())
 })
