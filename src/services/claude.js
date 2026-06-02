@@ -139,21 +139,17 @@ AUTOBUYUNION business DNA (apply to every recommendation):
 - Margin structure on a deal: from the premier-prix-du-net TTC, remove ~20% VAT to get HT, then the deal must leave the partner ~3 000–4 000 € HT brut of margin (min 3 000 €) and ~1 000–1 500 € group margin; also account for ~450 € HT average transport cost per vehicle (borne by the partner, EU cross-border). The remainder is the pro purchase price. Minimum viable price gap on a deal ≈ 4 500–5 000 € (more on premium models, e.g. ~5 000 € on an X5).
 - Partner value: vehicles "génératrices de marge", logistics handled, preparation in DEKRA-certified bodyshop, financing/portage up to 2 months. The partner just has to sell; we make sure he is positioned 1er du net.`
 
-// Garde-fou anti-hallucination — partagé par TOUS les assistants (chat, expert,
-// outils). L'IA invente fréquemment des noms propres plausibles mais faux
-// (enseignes, mandataires, villes, annonces précises) : c'est strictement interdit.
-const ANTI_HALLUCINATION = `ANTI-HALLUCINATION (absolute, non-negotiable):
-- NEVER invent or cite a specific proper name you cannot verify: dealership/garage names, mandataire or broker brand names, company names, marketplace seller names, named individuals, phone numbers, postal/email addresses, URLs, license plates, VINs, or a town/department/postal-code tied to a specific listing or stock.
-- Speak in GENERIC terms instead: "un réseau de mandataires", "une concession multimarque", "une plateforme d'annonces", "un vendeur professionnel". This applies even when web search is available unless the exact name is explicitly present in the retrieved sources.
-- Never fabricate a precise listing (exact mileage + price + location combo) as if observed. If you have no verified source, present figures as a market estimate and say so.
-- Better to stay general and correct than specific and invented.`
+// Garde-fou anti-bullshit — partagé par TOUS les assistants (chat, expert,
+// outils). Centralisé dans antiBullshit.js : noms propres inventés, outils/
+// features inexistants, lois/taux fabriqués, annonces/sources fictives.
+import { ANTI_BS, auditResponse } from './antiBullshit'
 
 const EXPERT_RULES = `Rules:
 - Always give concrete, realistic figures (€, %, g/km, km) grounded in the real French market. Never invent implausible numbers; if uncertain, give a credible range and say it is an estimate.
 - Distinguish VN vs VO whenever it changes the answer (pricing, décote, négociation).
 - Be specific to the exact model AND finition requested — never generalise across variants.
 - No filler, no vague formulas ("cela dépend…"): figures or an explicit "Données insuffisantes".
-${ANTI_HALLUCINATION}`
+${ANTI_BS}`
 
 // Personas dédiés par outil — élèvent la pertinence au niveau d'un échange direct.
 // Le FORMAT de sortie (JSON/Markdown) reste piloté par le prompt utilisateur de chaque page.
@@ -209,9 +205,9 @@ Rules:
 - Always include at least one concrete figure (price, %, km, lead time, saving).
 - Bullet points when there are more than 2 facts.
 - Never use generic formulas ("cela dépend…", "il faut considérer…").
-- If the question needs real-time pricing, mention the Veille Prix tool; for vehicle comparison, the Comparateur; for CO₂/malus, the CO₂ & Malus calculator; for TCO, the Calculateur TCO. Never invent tool or feature names.
+- If the question needs real-time pricing, mention the Veille Prix tool; for vehicle comparison, the Comparateur; for CO₂/malus, the CO₂ & Malus calculator; for TCO, the Calculateur TCO.
 - Always respond in ${langName}.
-${ANTI_HALLUCINATION}`
+${ANTI_BS}`
 }
 
 /**
@@ -305,6 +301,7 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
   // server_tool_use / web_search_tool_result entre les textes).
   const text = blocks.filter(b => b.type === 'text').map(b => b.text).join('\n').trim()
   if (!text) throw new Error('Unexpected API response (no text content).')
+  auditResponse(text, tool || (expert ? 'expert' : 'chat'))
 
   if (returnMeta) {
     const searchCount = blocks.filter(b => b.type === 'server_tool_use' && b.name === 'web_search').length
@@ -360,6 +357,7 @@ async function streamToText(body, { returnMeta = false } = {}) {
 
   text = text.trim()
   if (!text) throw new Error('Unexpected API response (no text content).')
+  auditResponse(text, 'stream')
   if (returnMeta) return { text, usedWebSearch: searchCount > 0, searchCount }
   return text
 }
@@ -424,6 +422,7 @@ export async function streamMessage(messages, { lang = 'fr', onChunk, temperatur
     }
   }
 
+  auditResponse(fullText, 'chat')
   return fullText
 }
 
