@@ -51,6 +51,16 @@ export async function exportToPdf(ref, filename, meta = {}) {
       text-rendering: optimizeLegibility !important;
     }
     .pdf-root { background: #ffffff !important; padding: 4px !important; }
+    .pdf-root .glass-card { padding: 12px !important; }
+    .pdf-root .p-4 { padding: 12px !important; }
+    .pdf-root .p-5 { padding: 14px !important; }
+    .pdf-root .p-3 { padding: 8px !important; }
+    .pdf-root .gap-3 { gap: 8px !important; }
+    .pdf-root .gap-2 { gap: 6px !important; }
+    .pdf-root .mb-3 { margin-bottom: 8px !important; }
+    .pdf-root .mb-4 { margin-bottom: 10px !important; }
+    .pdf-root .space-y-3 > * + * { margin-top: 8px !important; }
+    .pdf-root .space-y-4 > * + * { margin-top: 10px !important; }
     .pdf-root .glass-card,
     .pdf-root [class*="bg-navy"],
     .pdf-root [class*="bg-slate"] {
@@ -109,7 +119,7 @@ export async function exportToPdf(ref, filename, meta = {}) {
   const footerH  = 12
   const usableW  = pageW - margin * 2
   const usableH  = pageH - headerH - footerH
-  const GAP_MM   = 3
+  const GAP_MM   = 2
 
   const pages = [[]]
   let yMm = 0

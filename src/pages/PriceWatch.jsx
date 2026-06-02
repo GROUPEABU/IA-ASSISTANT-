@@ -84,7 +84,7 @@ async function fetchPrices(filters) {
   return res.json()
 }
 
-async function analyzePrices(filters, fuels, gearboxes, bodies, lang = 'fr') {
+async function analyzePrices(filters, fuels, gearboxes, bodies, lang = 'fr', withWebSearch = true) {
   const vehicleDesc = [
     filters.make, filters.model,
     filters.finition || '',
@@ -169,7 +169,7 @@ Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise mark
 
   const { text: raw, usedWebSearch } = await sendMessage(
     [{ role: 'user', content: prompt }],
-    { lang, maxTokens: 4096, expert: true, temperature: 0.3, tool: 'veilleprix', webSearch: true, maxSearches: 5, returnMeta: true }
+    { lang, maxTokens: withWebSearch ? 4096 : 2048, expert: true, temperature: 0.3, tool: 'veilleprix', webSearch: withWebSearch, maxSearches: 5, returnMeta: true }
   )
   return { ...extractJSON(raw, 'object'), usedWebSearch }
 }
@@ -308,6 +308,7 @@ export default function PriceWatch() {
   const [centraleUrl, setCentraleUrl] = useState('')
   const [searchLabel, setSearchLabel] = useState('')
   const [exporting, setExporting] = useState(false)
+  const [isPartial, setIsPartial] = useState(false)
   const { history, add: addHistory, clear: clearHistory } = useHistory('pricewatch')
 
   // Persist filter state across page navigations (session-scoped)
@@ -343,15 +344,30 @@ export default function PriceWatch() {
       setFetchedAt(raw.fetchedAt)
       setCentraleUrl(raw.centraleUrl || '')
 
+      // Phase 1 — estimation experte rapide (sans recherche web, ~5-8 s)
+      // On affiche une première réponse pendant que la recherche web tourne.
       setStep(t('price_step_calculating'))
-      const rawAnalysis = await analyzePrices(filters, FUELS, GEARBOXES, BODIES, lang)
+      try {
+        const fastRaw = await analyzePrices(filters, FUELS, GEARBOXES, BODIES, lang, false)
+        const fastAnalysis = applyPricingRules(fastRaw)
+        setResult({ ...fastAnalysis, sources: raw.sources, hasLiveData: false, isPartial: true })
+        setIsPartial(true)
+        setLoading(false) // libère l'UI mais continue en arrière-plan
+        setStep('')
+      } catch { /* si la phase rapide échoue, on continue silencieusement */ }
+
+      // Phase 2 — analyse complète avec recherche web réelle
+      setLoading(true)
+      setStep(t('ai_progress_search'))
+      const rawAnalysis = await analyzePrices(filters, FUELS, GEARBOXES, BODIES, lang, true)
       // Achat pro + marge recalculés de façon déterministe (jamais l'arithmétique
       // approximative de l'IA) : Vente HT − 450 transport − 3 000 marge partenaire.
       const analysis = applyPricingRules(rawAnalysis)
       // hasLiveData = vrai uniquement si Claude a réellement effectué une
       // recherche web (server_tool_use), sinon estimation experte.
-      const finalResult = { ...analysis, sources: raw.sources, hasLiveData: analysis.usedWebSearch }
+      const finalResult = { ...analysis, sources: raw.sources, hasLiveData: analysis.usedWebSearch, isPartial: false }
       setResult(finalResult)
+      setIsPartial(false)
       addHistory({ searchLabel: label, type: filters.type, result: finalResult })
     } catch (err) {
       setError(err.message)
@@ -563,11 +579,11 @@ export default function PriceWatch() {
       )}
 
       {/* ── Résultats ────────────────────────────────────────────────────────── */}
-      {result && !loading && (
+      {result && (!loading || isPartial) && (
         <>
           {/* Header */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div>
+            <div className="min-w-0">
               <h3 className="text-base font-bold text-white">{searchLabel}</h3>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -585,6 +601,12 @@ export default function PriceWatch() {
                   </span>
                 )}
 
+                {result.isPartial && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/20 animate-pulse">
+                    <RefreshCw size={9} /> Mise à jour live…
+                  </span>
+                )}
+
                 {fetchedAt && (
                   <div className="flex items-center gap-1">
                     <Clock size={10} className="text-slate-600" />
@@ -593,26 +615,26 @@ export default function PriceWatch() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto pb-0.5 w-full sm:w-auto">
               <button onClick={handleCsv}
                 className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
-                           px-3 py-1.5 rounded-lg hover:text-emerald-400 hover:border-emerald-400/30 hover:bg-emerald-400/5 transition">
+                           px-3 py-1.5 rounded-lg hover:text-emerald-400 hover:border-emerald-400/30 hover:bg-emerald-400/5 transition flex-shrink-0">
                 <FileText size={12} />
                 {t('csv_export')}
               </button>
               <button onClick={handlePdf} disabled={exporting}
                 className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
-                           px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition">
+                           px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition flex-shrink-0">
                 {exporting ? <Spinner size="sm" /> : <Download size={12} />}
                 {t('download_pdf')}
               </button>
               <button onClick={() => search()}
                 className="flex items-center gap-1.5 text-xs text-cyan-400 border border-cyan-400/30
-                           px-3 py-2 rounded-lg hover:bg-cyan-400/10 transition">
+                           px-3 py-2 rounded-lg hover:bg-cyan-400/10 transition flex-shrink-0">
                 <RefreshCw size={12} /> {t('analyze_btn')}
               </button>
               <button onClick={reset}
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30">
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30 flex-shrink-0">
                 <RotateCcw size={11} /> {t('new_analysis_btn')}
               </button>
             </div>
