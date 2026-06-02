@@ -191,7 +191,10 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
               cx="32" cy="32" r="28" fill="none" stroke={C.accent} strokeWidth="6" strokeLinecap="round"
               strokeDasharray={2 * Math.PI * 28}
               strokeDashoffset={2 * Math.PI * 28 * (1 - pct / 100)}
-              style={{ transition: 'stroke-dashoffset 200ms ease-out', filter: `drop-shadow(${C.glow})` }}
+              // Pas de transition CSS : la boucle requestAnimationFrame met l'arc
+              // à jour à chaque frame. Une transition stroke-dashoffset
+              // redémarrerait en continu et figerait l'arc (même cause que la barre).
+              style={{ filter: `drop-shadow(${C.glow})` }}
             />
           </svg>
           <span className={`absolute inset-0 flex items-center justify-center text-sm font-bold tabular-nums${waiting ? ' animate-pulse' : ''}`} style={{ color: C.accent }}>

@@ -10,7 +10,8 @@
     "lint": "eslint src --ext .js,.jsx --report-unused-disable-directives --max-warnings 0",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check:i18n": "node scripts/check-i18n.mjs"
+    "check:i18n": "node scripts/check-i18n.mjs",
+    "verify:aiprogress": "vite build && node scripts/verify-aiprogress.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.0",
