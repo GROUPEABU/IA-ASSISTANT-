@@ -84,19 +84,20 @@ ${dataSection}
 MÉTHODE DE COTATION AUTOBUYUNION (applique-la précisément, raisonne PAR VÉHICULE) :
 1. PREMIER PRIX DU NET : l'annonce la moins chère réellement disponible (jamais la moyenne).
 2. "prix_conseille_vente" TTC = ce premier prix du net (ou légèrement en dessous) pour être 1er du net et vendre vite.
-3. CASCADE DE COÛTS pour obtenir le prix d'achat HT recommandé :
+3. CASCADE DE COÛTS pour obtenir le prix d'achat HT recommandé (deal B2B Autobuyunion → partenaire) :
    a. Vente HT = prix_conseille_vente ÷ 1,20 (retrait TVA 20%).
-   b. MALUS écologique à PAYER ("malus_estime") : ces VO proviennent d'AUTRES PAYS de l'UE ; le malus CO2 + masse est DÛ à la 1re immatriculation française (avec réfaction d'âge ~10%/an). C'est un COÛT réel à PAYER — JAMAIS "déjà absorbé / inclus / amorti".
-   c. Transport UE ≈ 450 € HT par véhicule.
-   d. Marge groupe Autobuyunion = 550 € HT (FIXE, toujours 550 € — ni plus, ni moins).
-   e. Marge partenaire visée ≈ 3 000–4 000 € HT (min 3 000 €).
-   → fourchette_achat_pro (HT) = Vente HT − malus_estime − 450 (transport) − 550 (marge groupe) − marge partenaire.
-4. "marge_brute_potentielle" = marge NETTE PARTENAIRE = Vente HT − fourchette_achat_pro_max − malus_estime − 450 (transport) − 550 (marge groupe). Le chiffre DOIT être cohérent avec ce calcul.
-5. Écart minimum viable d'un deal ≈ 4 500–5 000 € (davantage sur premium).
+   b. Transport UE ≈ 450 € HT par véhicule.
+   c. Marge groupe Autobuyunion = 550 € HT (FIXE, toujours 550 € — ni plus, ni moins).
+   d. Marge partenaire visée ≈ 3 000–4 000 € HT (min 3 000 €).
+   → fourchette_achat_pro (HT) = Vente HT − 450 (transport) − 550 (marge groupe) − marge partenaire.
+   Le MALUS n'entre JAMAIS dans cette cascade : il est à la charge du CLIENT FINAL (B2C), pas du deal B2B.
+4. "marge_brute_potentielle" = marge NETTE PARTENAIRE = Vente HT − fourchette_achat_pro_max − 450 (transport) − 550 (marge groupe). SANS le malus. Le chiffre DOIT être cohérent avec ce calcul.
+5. "malus_estime" = information pour l'acheteur FINAL B2C uniquement (jamais déduit de l'achat ni de la marge).
+6. Écart minimum viable d'un deal ≈ 4 500–5 000 € (davantage sur premium).
 
 RÈGLES DE FORMULATION STRICTES :
 - Autobuyunion vend PAR CAMION COMPLET au partenaire : ne recommande JAMAIS un nombre d'unités ni "lots de X unités". Raisonne par camion / par véhicule, jamais en quantité conseillée.
-- VO IMPORTÉS d'autres pays UE : le malus est TOUJOURS à payer à l'import. N'écris jamais que le malus est "déjà absorbé", "inclus", "amorti" ou "neutralisé".
+- Le MALUS écologique est à la charge du CLIENT FINAL (B2C) à la 1re immat. française — il N'EST JAMAIS déduit du prix d'achat pro ni de la marge partenaire (deal B2B). Affiche-le seulement à titre informatif. N'écris jamais qu'il est "déjà absorbé", "inclus" ou "amorti".
 
 Génère une analyse experte complète de type fiche pro. Tous les prix sont en euros TTC sauf indication HT.
 
@@ -115,8 +116,8 @@ Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise mark
   "valeur_residuelle_3ans": <valeur estimée dans 3 ans TTC>,
   "fourchette_achat_pro_min": <prix achat pro recommandé minimum HT>,
   "fourchette_achat_pro_max": <prix achat pro recommandé maximum HT>,
-  "malus_estime": <malus écologique CO2+masse estimé à PAYER à la 1re immat. française pour ce VO importé d'UE, en € (réfaction d'âge appliquée)>,
-  "marge_brute_potentielle": <marge nette partenaire = vente HT − fourchette_achat_pro_max − malus_estime − 450 (transport) − 550 (marge groupe FIXE)>,
+  "malus_estime": <malus écologique CO2+masse à la charge du CLIENT FINAL B2C à la 1re immat. française, en € (info seule, JAMAIS déduit de l'achat/marge)>,
+  "marge_brute_potentielle": <marge nette partenaire = vente HT − fourchette_achat_pro_max − 450 (transport) − 550 (marge groupe FIXE), SANS le malus>,
   "prix_meilleur_marche": <prix des 10% annonces les moins chères observées TTC — référence "premier du net">,
   "prix_conseille_vente": <prix de vente conseillé TTC pour se positionner parmi les 20% moins chers du marché : compétitif et rapide à vendre>,
   "cote_argus_min": <cote Argus basse TTC>,
@@ -342,7 +343,7 @@ export default function PriceWatch() {
       ['Achat HT max (€)', result.prix_achat_ht_max ?? ''],
       ['Cote Argus min (€)', result.cote_argus_min ?? ''],
       ['Cote Argus max (€)', result.cote_argus_max ?? ''],
-      ['Malus à payer import (€)', result.malus_estime ?? ''],
+      ['Malus client final B2C (€)', result.malus_estime ?? ''],
       ['Marge brute potentielle (€)', result.marge_brute_potentielle ?? ''],
     ]
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n')
