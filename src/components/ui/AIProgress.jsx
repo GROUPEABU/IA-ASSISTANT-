@@ -35,10 +35,11 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
 
     const tick = () => {
       const elapsed = performance.now() - startRef.current
-      // Approche asymptotique de 95 % : progresse vite puis ralentit.
-      const target = 95
-      const ratio = 1 - Math.exp(-elapsed / (estimatedMs * 0.55))
-      setPct(Math.min(target, target * ratio))
+      // Progression RÉGULIÈRE (quasi linéaire) jusqu'à 95 % : ni démarrage trop
+      // rapide, ni longue traîne en fin. Une fois 95 % atteint, on patiente là
+      // jusqu'à la fin réelle de la tâche (qui fait sauter à 100 %).
+      const ratio = Math.min(1, elapsed / estimatedMs)
+      setPct(ratio * 95)
       // Étape courante proportionnelle au temps écoulé (capée à la dernière).
       if (stages.length > 1) {
         const idx = Math.min(stages.length - 1, Math.floor((elapsed / estimatedMs) * stages.length))

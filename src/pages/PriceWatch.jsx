@@ -55,20 +55,21 @@ const MARGE_PARTENAIRE_MIN_HT = 3000 // marge partenaire PLANCHER (au moins 3 00
 
 function applyPricingRules(analysis) {
   const venteTTC = Number(analysis?.prix_conseille_vente) || 0
-  const refBasseTTC = Number(analysis?.prix_meilleur_marche) || venteTTC
   if (!venteTTC) return analysis
 
-  // Achat = prix PLAFOND à payer pour garder AU MOINS 3 000 € de marge :
+  // PLAFOND = prix d'achat max pour garder AU MOINS 3 000 € de marge :
   // Vente HT − transport − marge partenaire mini. Acheter en dessous = marge ↑.
-  const achatFrom = (ttc) => Math.max(0, Math.round(ttc / TVA - TRANSPORT_HT - MARGE_PARTENAIRE_MIN_HT))
-  const achatMax = achatFrom(venteTTC)
-  const achatMin = Math.min(achatMax, achatFrom(refBasseTTC))
+  const achatMax = Math.max(0, Math.round(venteTTC / TVA - TRANSPORT_HT - MARGE_PARTENAIRE_MIN_HT))
+  // Bas de fourchette = fenêtre réaliste ~1 000 € sous le plafond (cible idéale).
+  // On ne descend pas plus bas, sinon le prix devient introuvable sur le marché.
+  const FOURCHETTE_BAND = 1000
+  const achatMin = Math.max(0, achatMax - FOURCHETTE_BAND)
 
   return {
     ...analysis,
     fourchette_achat_pro_min: achatMin,
     fourchette_achat_pro_max: achatMax,
-    marge_brute_potentielle: MARGE_PARTENAIRE_MIN_HT, // plancher garanti au prix plafond
+    marge_brute_potentielle: MARGE_PARTENAIRE_MIN_HT, // marge au prix d'achat plafond
   }
 }
 
@@ -674,7 +675,14 @@ export default function PriceWatch() {
                     : 'N/D'}
                   sub={t('price_pro_range_sub')} small
                 />
-                <KpiCard label={t('price_margin_label')} value={`≥ ${fmtEur(result.marge_brute_potentielle)}`} sub={t('price_margin_sub')} small />
+                <KpiCard
+                  label={t('price_margin_label')}
+                  value={fmtEur(result.marge_brute_potentielle)}
+                  sub={result.fourchette_achat_pro_max
+                    ? t('price_margin_sub').replace('{p}', formatNumber(result.fourchette_achat_pro_max))
+                    : t('price_margin_sub_generic')}
+                  small
+                />
               </div>
               {result.malus_estime != null && result.malus_estime !== '' && (
                 <div className="grid grid-cols-1 gap-2 mb-2">
