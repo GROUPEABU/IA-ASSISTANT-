@@ -130,6 +130,9 @@ MÉTHODE DE COTATION AUTOBUYUNION (applique-la précisément, raisonne PAR VÉHI
 RÈGLES DE FORMULATION STRICTES :
 - Autobuyunion vend PAR CAMION COMPLET au partenaire : ne recommande JAMAIS un nombre d'unités ni "lots de X unités". Raisonne par camion / par véhicule, jamais en quantité conseillée.
 - Le MALUS écologique est à la charge du CLIENT FINAL (B2C) à la 1re immat. française — il N'EST JAMAIS déduit du prix d'achat pro ni de la marge partenaire (deal B2B). Affiche-le seulement à titre informatif. N'écris jamais qu'il est "déjà absorbé", "inclus" ou "amorti".
+- NE cite JAMAIS de noms de réseaux, mandataires, enseignes, concessions ni de villes/codes postaux précis (tu les inventerais → risque de crédibilité). Reste sur des règles générales chiffrées.
+- KILOMÉTRAGE : ne déconseille JAMAIS les véhicules à fort kilométrage. Plus le kilométrage est élevé, plus le prix d'acquisition cible BAISSE sous le plafond — ce qui PRÉSERVE la marge de 3 000 € HT minimum ET offre un coût TTC plus bas au client final. Ces unités se vendent très bien : adapte le prix à la baisse, ne les rejette pas.
+- "conseil_achat" : rédige 2 paragraphes structurés et professionnels (discipline d'achat). §1 = profil de véhicule à cibler (millésime, kilométrage, origine type LLD/flotte) et pourquoi (rapport valeur/décote). §2 = discipline de prix d'acquisition : maintenir le prix cible sous le plafond HT pour sécuriser ≥ 3 000 € HT de marge, et descendre le prix d'achat à mesure que le kilométrage monte (marge préservée + TTC plus attractif client final). Conclure sur l'optimisation simultanée marge / rotation / valeur de revente.
 
 Génère une analyse experte complète de type fiche pro. Tous les prix sont en euros TTC sauf indication HT.
 
@@ -156,7 +159,7 @@ Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise mark
   "cote_argus_max": <cote Argus haute TTC>,
   "alerte": <"texte si données insuffisantes ou anomalie" | null>,
   "analyse": "<3-4 phrases expertes : positionnement marché, demande, liquidité, points clés>",
-  "conseil_achat": "<conseil d'achat chiffré et actionnable pour obtenir le meilleur prix HT>",
+  "conseil_achat": "<2 paragraphes pro (voir règle conseil_achat) : §1 profil véhicule à cibler + justification valeur/décote ; §2 discipline de prix d'acquisition HT, baisse du prix d'achat si km élevé pour préserver ≥ 3 000 € de marge et un TTC client plus bas. Aucun nom de réseau/ville inventé.>",
   "conseil_vente": "<stratégie PREMIERS DU NET : prix exact conseillé TTC, écart vs prix moyen marché, argument face aux concurrents en ligne, délai rotation estimé si bien positionné>",
   "equipements_recherches": ["<équip1 très recherché>", "<équip2>", "<équip3>", "<équip4>"],
   "arguments_commerciaux": ["<argument fort 1 avec chiffre>", "<argument fort 2>", "<argument fort 3>"],
