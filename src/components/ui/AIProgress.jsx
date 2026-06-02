@@ -56,7 +56,7 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
   if (compact) {
     return (
       <div className="w-full">
-        <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+        <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'rgba(148,163,184,0.25)' }}>
           <div
             className="h-full rounded-full transition-[width] duration-200 ease-out"
             style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #0ea5e9, #50E5E5)' }}
@@ -71,15 +71,17 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
       {/* Anneau de progression */}
       <div className="relative w-16 h-16">
         <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64" aria-hidden="true">
-          <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="6" />
+          {/* Piste : gris slate visible sur fond clair ET sombre */}
+          <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(148,163,184,0.30)" strokeWidth="6" />
+          {/* Arc : bleu sky, contrasté sur les deux thèmes */}
           <circle
-            cx="32" cy="32" r="28" fill="none" stroke="#50E5E5" strokeWidth="6" strokeLinecap="round"
+            cx="32" cy="32" r="28" fill="none" stroke="#0ea5e9" strokeWidth="6" strokeLinecap="round"
             strokeDasharray={2 * Math.PI * 28}
             strokeDashoffset={2 * Math.PI * 28 * (1 - pct / 100)}
-            style={{ transition: 'stroke-dashoffset 200ms ease-out', filter: 'drop-shadow(0 0 4px rgba(80,229,229,0.5))' }}
+            style={{ transition: 'stroke-dashoffset 200ms ease-out', filter: 'drop-shadow(0 0 3px rgba(14,165,233,0.45))' }}
           />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-cyan-400 tabular-nums">
+        <span className="absolute inset-0 flex items-center justify-center text-sm font-bold tabular-nums" style={{ color: '#0ea5e9' }}>
           {rounded}%
         </span>
       </div>
@@ -90,7 +92,7 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
       )}
 
       {/* Barre linéaire */}
-      <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+      <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'rgba(148,163,184,0.25)' }}>
         <div
           className="h-full rounded-full transition-[width] duration-200 ease-out"
           style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #0ea5e9, #50E5E5)' }}
