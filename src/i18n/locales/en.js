@@ -321,6 +321,7 @@ export default {
     reset_success_title: 'Password updated',
     reset_success_msg: 'Your password has been changed. Redirecting to login…',
     reset_error_code: 'Invalid or expired code. Start over from "Forgot password".',
+    reset_error_locked: 'Too many incorrect attempts. Please restart the process from "Forgot password".',
     reset_error_pwd: 'Passwords do not match.',
     reset_error_weak: 'Password too weak. Please meet the criteria shown.',
     cookie_title: 'Cookie settings',

@@ -338,6 +338,7 @@ export default {
     reset_success_title: 'Mot de passe mis à jour',
     reset_success_msg: 'Votre mot de passe a été modifié. Vous allez être redirigé vers la connexion.',
     reset_error_code: 'Code invalide ou expiré. Recommencez depuis « Mot de passe oublié ».',
+    reset_error_locked: 'Trop de tentatives incorrectes. Recommencez la procédure depuis « Mot de passe oublié ».',
     reset_error_pwd: 'Les mots de passe ne correspondent pas.',
     reset_error_weak: 'Mot de passe trop faible. Respectez les critères indiqués.',
     // Cookie consent

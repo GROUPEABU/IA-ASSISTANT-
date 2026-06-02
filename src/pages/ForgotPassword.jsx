@@ -10,7 +10,7 @@ export default function ForgotPassword() {
   const { t } = useSettings()
   const [username, setUsername]   = useState('')
   const [loading, setLoading]     = useState(false)
-  const [state, setState]         = useState('idle') // 'idle' | 'success' | 'not_found'
+  const [state, setState]         = useState('idle') // 'idle' | 'success'
   const [resetCode, setResetCode] = useState('')
 
   const handleSubmit = async (e) => {
@@ -19,17 +19,16 @@ export default function ForgotPassword() {
     if (!clean) return
 
     setLoading(true)
+    // Constant-time delay prevents timing-based account enumeration
     await new Promise(r => setTimeout(r, 600))
 
-    if (!findUserByUsername(clean)) {
-      setState('not_found')
-      setLoading(false)
-      return
+    const user = findUserByUsername(clean)
+    if (user) {
+      const code = generateOTP()
+      storeResetToken(clean, code)
+      setResetCode(code)
     }
-
-    const code = generateOTP()
-    storeResetToken(clean, code)
-    setResetCode(code)
+    // Always show success — don't reveal whether the account exists
     setState('success')
     setLoading(false)
   }
@@ -82,9 +81,6 @@ export default function ForgotPassword() {
                                focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/20 transition"
                   />
                 </div>
-                {state === 'not_found' && (
-                  <p className="text-[11px] text-red-400 mt-1.5">{t('forgot_no_account')}</p>
-                )}
               </div>
 
               <button
@@ -137,24 +133,28 @@ function SuccessView({ resetCode, username, t }) {
         </div>
       </div>
 
-      <div className="p-4 rounded-xl bg-warn/6 border border-warn/25 text-center">
-        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
-          {t('forgot_code_hint')}
-        </p>
-        <div className="text-3xl font-bold tracking-[0.4em] text-warn font-mono">
-          {resetCode}
-        </div>
-        <p className="text-[10px] text-slate-500 mt-2">{t('forgot_code_validity')}</p>
-      </div>
+      {resetCode && (
+        <>
+          <div className="p-4 rounded-xl bg-warn/6 border border-warn/25 text-center">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+              {t('forgot_code_hint')}
+            </p>
+            <div className="text-3xl font-bold tracking-[0.4em] text-warn font-mono">
+              {resetCode}
+            </div>
+            <p className="text-[10px] text-slate-500 mt-2">{t('forgot_code_validity')}</p>
+          </div>
 
-      <Link
-        to={`/reset-password?user=${encodeURIComponent(username)}`}
-        className="block w-full py-3 rounded-xl text-sm font-bold text-center
-                   bg-gradient-to-r from-cyan-400 to-cyan-500 text-navy-900
-                   hover:from-cyan-300 hover:to-cyan-400 transition-all active:scale-[0.98]"
-      >
-        {t('reset_title')} →
-      </Link>
+          <Link
+            to={`/reset-password?user=${encodeURIComponent(username)}`}
+            className="block w-full py-3 rounded-xl text-sm font-bold text-center
+                       bg-gradient-to-r from-cyan-400 to-cyan-500 text-navy-900
+                       hover:from-cyan-300 hover:to-cyan-400 transition-all active:scale-[0.98]"
+          >
+            {t('reset_title')} →
+          </Link>
+        </>
+      )}
     </div>
   )
 }

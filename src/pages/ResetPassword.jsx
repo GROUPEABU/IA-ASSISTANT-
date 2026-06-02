@@ -4,7 +4,7 @@ import { Eye, EyeOff, Lock, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-r
 import Logo from '@/components/ui/Logo'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
-import { readResetToken, consumeResetToken } from '@/utils/passwordReset'
+import { readResetToken, consumeResetToken, recordOtpAttempt, isOtpLocked } from '@/utils/passwordReset'
 
 // ── Password validation ───────────────────────────────────────────────────────
 const PASSWORD_RULE_TESTS = [
@@ -52,18 +52,25 @@ export default function ResetPassword() {
     if (password !== confirm) { setError(t('reset_error_pwd'));  return }
     if (!allRulesOk)          { setError(t('reset_error_weak')); return }
 
+    const cleanUser = username.trim().toLowerCase()
+    if (isOtpLocked(cleanUser)) {
+      setError(t('reset_error_locked'))
+      return
+    }
+
     setLoading(true)
     await new Promise(r => setTimeout(r, 400))
 
-    const token = readResetToken(username)
+    const token = readResetToken(cleanUser)
     if (!token || token.code !== code || Date.now() > token.exp) {
-      setError(t('reset_error_code'))
+      const remaining = recordOtpAttempt(cleanUser)
+      setError(remaining > 0 ? t('reset_error_code') : t('reset_error_locked'))
       setLoading(false)
       return
     }
 
-    consumeResetToken(username)
-    await resetPassword(username, password)
+    consumeResetToken(cleanUser)
+    await resetPassword(cleanUser, password)
     setSuccess(true)
     setLoading(false)
   }
