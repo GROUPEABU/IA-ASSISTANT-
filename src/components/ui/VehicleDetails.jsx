@@ -27,16 +27,20 @@ export function formatVehicleDetails(d) {
 const selectCls = 'w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition'
 const inputCls  = 'w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition'
 
-export default function VehicleDetails({ value, onChange }) {
-  const { t } = useSettings()
-  const set = (k) => (e) => onChange({ ...value, [k]: e.target.value })
-
-  const Field = ({ label, children }) => (
+// Défini AU NIVEAU MODULE (jamais dans le rendu) : sinon React recrée le type à
+// chaque frappe, démonte/remonte le champ et le focus saute.
+function Field({ label, children }) {
+  return (
     <div>
       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{label}</label>
       {children}
     </div>
   )
+}
+
+export default function VehicleDetails({ value, onChange }) {
+  const { t } = useSettings()
+  const set = (k) => (e) => onChange({ ...value, [k]: e.target.value })
 
   return (
     <div className="mb-4">
