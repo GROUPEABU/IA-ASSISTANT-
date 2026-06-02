@@ -751,6 +751,8 @@ export default {
   price_vr_1an: 'RV in 1 year',
   price_vr_3ans: 'RV in 3 years',
   price_argus_range: 'Argus valuation (min – max)',
+  price_essential_title: 'The essentials',
+  price_market_ref_title: 'Market reference',
   price_prio_margin: 'Achievable margin',
   price_prio_margin_sub: 'excl. VAT · per vehicle',
   price_prio_achat: 'Pro purchase price',

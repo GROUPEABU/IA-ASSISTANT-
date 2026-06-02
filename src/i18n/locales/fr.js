@@ -776,6 +776,8 @@ export default {
   price_vr_1an: 'VR dans 1 an',
   price_vr_3ans: 'VR dans 3 ans',
   price_argus_range: 'Cote Argus (min – max)',
+  price_essential_title: 'L’essentiel',
+  price_market_ref_title: 'Repères marché',
   price_prio_margin: 'Marge dégageable',
   price_prio_margin_sub: 'HT · par véhicule',
   price_prio_achat: 'Prix d’achat pro',

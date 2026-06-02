@@ -174,7 +174,7 @@ Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise mark
 
   const { text: raw, usedWebSearch } = await sendMessage(
     [{ role: 'user', content: prompt }],
-    { lang, maxTokens: withWebSearch ? 4096 : 3000, expert: true, temperature: 0.3, tool: 'veilleprix', webSearch: withWebSearch, maxSearches: 2, returnMeta: true }
+    { lang, maxTokens: withWebSearch ? 4096 : 3000, expert: true, temperature: 0.3, tool: 'veilleprix', webSearch: withWebSearch, maxSearches: 1, returnMeta: true }
   )
   return { ...extractJSON(raw, 'object'), usedWebSearch }
 }
@@ -332,8 +332,11 @@ export default function PriceWatch() {
         hasPartial = true
       } catch { /* phase rapide optionnelle : on continue vers la phase complète */ }
 
-      // Phase 2 — analyse complète avec recherche web réelle
-      setLoading(true)
+      // Phase 2 — analyse complète avec recherche web réelle.
+      // Si l'estimation rapide est déjà à l'écran, on NE re-bloque PAS l'UI :
+      // la MAJ « live » se fait en arrière-plan (badge « actualisation »), bien
+      // plus fluide. La grande barre ne réapparaît que faute d'estimation.
+      if (!hasPartial) setLoading(true)
       setStep(t('ai_progress_search'))
       const rawAnalysis = await analyzePrices(filters, FUELS, GEARBOXES, BODIES, lang, true)
       // Achat pro + marge recalculés de façon déterministe (jamais l'arithmétique
@@ -641,14 +644,18 @@ export default function PriceWatch() {
             </div>
           )}
 
-          {/* Priorités terrain — en tête : marge (1), achat pro (2), revente 1er du net (3) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <KpiCard label={t('price_prio_margin')} value={margeFourchette} highlight sub={t('price_prio_margin_sub')} />
-            <KpiCard label={t('price_prio_achat')} value={achatProFourchette} sub={t('price_prio_achat_sub')} />
-            <KpiCard label={t('price_prio_revente')} value={fmtEur(result.prix_conseille_vente)} sub={t('price_prio_revente_sub')} />
+          {/* L'essentiel — bloc clair en tête : les 3 chiffres de décision */}
+          <div className="glass-card p-4 border border-cyan-400/20">
+            <SectionTitle icon={Zap} label={t('price_essential_title')} color="text-cyan-400" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <KpiCard label={t('price_prio_margin')} value={margeFourchette} highlight sub={t('price_prio_margin_sub')} />
+              <KpiCard label={t('price_prio_achat')} value={achatProFourchette} sub={t('price_prio_achat_sub')} />
+              <KpiCard label={t('price_prio_revente')} value={fmtEur(result.prix_conseille_vente)} sub={t('price_prio_revente_sub')} />
+            </div>
           </div>
 
-          {/* Repères marché — données de base, prominentes */}
+          {/* Repères marché — données de base */}
+          <SectionTitle label={t('price_market_ref_title')} />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <KpiCard label={t('avg_price')} value={fmtEur(result.prix_moyen)} highlight sub={t('excl_outliers')} />
             <KpiCard label={t('median_price')} value={fmtEur(result.prix_median)} />
