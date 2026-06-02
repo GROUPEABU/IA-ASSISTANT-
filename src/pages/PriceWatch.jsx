@@ -401,6 +401,23 @@ export default function PriceWatch() {
   const trendBg     = result?.tendance === 'hausse' ? 'bg-red-400/10' : result?.tendance === 'baisse' ? 'bg-emerald-400/10' : 'bg-slate-700/40'
   const trendLabel  = result?.tendance === 'hausse' ? t('market_up') : result?.tendance === 'baisse' ? t('market_down') : t('market_stable')
 
+  // ── Priorités terrain (ordre voulu : marge, achat pro, revente, marché) ──
+  // Marge = fourchette HT : plancher 3 000 € (achat au plafond) → plus on achète
+  // bas, plus la marge monte (delta de la fourchette d'achat pro).
+  const margeMin = result?.marge_brute_potentielle || 3000
+  const achatMin = result?.fourchette_achat_pro_min
+  const achatMax = result?.fourchette_achat_pro_max
+  const margeMax = (achatMin && achatMax) ? margeMin + Math.max(0, achatMax - achatMin) : margeMin
+  const margeFourchette = margeMax > margeMin
+    ? `${formatNumber(margeMin)} – ${formatNumber(margeMax)} € HT`
+    : `≥ ${formatNumber(margeMin)} € HT`
+  const achatProFourchette = (achatMin && achatMax)
+    ? `${formatNumber(achatMin)} – ${formatNumber(achatMax)} € HT`
+    : 'N/D'
+  const marcheFourchette = (result?.prix_q1 && result?.prix_q3)
+    ? `${formatNumber(result.prix_q1)} – ${formatNumber(result.prix_q3)} €`
+    : 'N/D'
+
   const fmtEur = (v) => v ? `${formatNumber(v)} €` : 'N/D'
   const fmtHT  = (v) => v ? `${formatNumber(v)} € HT` : 'N/D'
   const fmtPct = (v) => v ? `${v}%` : 'N/D'
@@ -627,18 +644,19 @@ export default function PriceWatch() {
             </div>
           )}
 
-          {/* KPIs principaux */}
+          {/* Priorités terrain — ordre voulu : marge, achat pro, revente 1er du net, marché */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <KpiCard label={t('avg_price')} value={fmtEur(result.prix_moyen)} highlight sub={t('excl_outliers')} />
-            <KpiCard label={t('median_price')} value={fmtEur(result.prix_median)} />
-            <KpiCard
-              label={t('price_range')}
-              value={result.prix_q1 && result.prix_q3
-                ? `${formatNumber(result.prix_q1)} – ${formatNumber(result.prix_q3)} €`
-                : 'N/D'}
-              sub={t('percentile')}
-            />
-            <KpiCard label={t('listings_est')} value={result.nb_annonces_estim ? `~${result.nb_annonces_estim}` : 'N/D'} />
+            <KpiCard label={t('price_prio_margin')} value={margeFourchette} highlight sub={t('price_prio_margin_sub')} />
+            <KpiCard label={t('price_prio_achat')} value={achatProFourchette} sub={t('price_prio_achat_sub')} />
+            <KpiCard label={t('price_prio_revente')} value={fmtEur(result.prix_conseille_vente)} sub={t('price_prio_revente_sub')} />
+            <KpiCard label={t('price_prio_marche')} value={marcheFourchette} sub={t('price_prio_marche_sub')} />
+          </div>
+
+          {/* Repères marché secondaires */}
+          <div className="grid grid-cols-3 gap-2">
+            <KpiCard label={t('avg_price')} value={fmtEur(result.prix_moyen)} small sub={t('excl_outliers')} />
+            <KpiCard label={t('median_price')} value={fmtEur(result.prix_median)} small />
+            <KpiCard label={t('listings_est')} value={result.nb_annonces_estim ? `~${result.nb_annonces_estim}` : 'N/D'} small />
           </div>
 
           {/* Analyse expert + pro en 2 colonnes */}

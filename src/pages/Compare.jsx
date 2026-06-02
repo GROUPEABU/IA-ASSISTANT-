@@ -74,14 +74,14 @@ ${activeProducts.map((p, i) => `${i + 1}. ${p.fullName}
    - Puissance : ${p.specs.puissance} · Coffre : ${p.specs.coffre}L
    - Segment : ${p.segment}`).join('\n\n')}
 
-Rédige un verdict comparatif expert et chiffré :
-**Gagnant global** : lequel recommander et pourquoi (2-3 phrases, avec chiffres)
-**Rapport qualité-prix** : positionnement prix VN vs prestations, et coût réel malus inclus
-**Valeur résiduelle / VO** : lequel décote le moins à 3 ans (estimation % de la valeur conservée), tension du marché de l'occasion
-**BtoB** : meilleur choix pour flottes/entreprises (TCO, fiscalité, récupération TVA)
-**BtoC** : meilleur choix pour particuliers (budget, financement, malus, garantie)
+Rédige un comparatif expert, chiffré et NEUTRE. N'élis PAS un « gagnant » unique : montre les forces/faiblesses de chacun et à quel besoin chacun correspond. Couvre ces deux usages :
 
-Sois direct, argumenté et chiffré.`
+**Forces & faiblesses** : pour chaque véhicule, 2-3 points forts et 1-2 limites, chiffrés.
+**Choix d'achat pour la revente (pro)** : lequel tourne le mieux en VO et pourquoi — demande, décote à 3 ans (% de valeur conservée), tension du marché de l'occasion, malus à la charge du client final. Donne les critères selon la stratégie de stock, sans trancher absolument.
+**Aider un client qui hésite** : selon le profil/usage (budget, kilométrage annuel, famille, fiscalité, financement), vers lequel orienter — expose les critères de décision, pas un verdict imposé.
+**Qualité-prix & coût réel** : positionnement prix VN vs prestations, coût réel malus inclus pour le client final.
+
+Reste neutre, factuel et chiffré : montre à qui chaque véhicule convient, sans désigner de « meilleur » absolu.`
 
       const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 6000, expert: true, temperature: 0.3, tool: 'comparateur', stream: true })
       setVerdict(result)
