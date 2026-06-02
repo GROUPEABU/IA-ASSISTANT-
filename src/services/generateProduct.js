@@ -85,7 +85,7 @@ Règles importantes :
 - garantie : durées constructeur officielles réelles de la marque
 - Pour les versions multiples (ex: essence + hybride), prendre la version essence de base`
 
-  const raw = await sendMessage([{ role: 'user', content: prompt }], { maxTokens: 4096, expert: true, temperature: 0.25, tool: 'ficheIA' })
+  const raw = await sendMessage([{ role: 'user', content: prompt }], { maxTokens: 6000, expert: true, temperature: 0.25, tool: 'ficheIA', stream: true })
 
   // Extraire le JSON de la réponse
   const match = raw.match(/\{[\s\S]*\}/)

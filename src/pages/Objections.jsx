@@ -132,7 +132,7 @@ Réponds UNIQUEMENT avec un tableau JSON valide, sans aucun texte ni balise mark
 
 Les objections doivent être réalistes, variées, couvrir : prix, marque inconnue, fiabilité, valeur de revente, malus, financement, SAV, concurrence. Sois concis pour que le JSON reste complet.`
 
-      const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 6000, expert: true, temperature: 0.55, tool: 'objections', stream: true })
+      const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 8192, expert: true, temperature: 0.55, tool: 'objections', stream: true })
       const data = extractJSON(raw, 'array')
       const label = `${vehicleName} · ${segLabel}`
       setObjections(data)

@@ -101,7 +101,7 @@ Prix catalogue : ${formatNumber(product.prix.base)}€ · Malus : ${malus > 0 ? 
 RÈGLE AUTOBUYUNION : nos partenaires se positionnent toujours parmi les prix les plus compétitifs du marché, jamais sur la moyenne haute. Intègre cet avantage concurrentiel dans le pitch.
 Sois percutant, concret et adapté au marché français.`
 
-      const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 2500, expert: true, temperature: 0.7, tool: 'rapportcommercial' })
+      const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 5000, expert: true, temperature: 0.7, tool: 'rapportcommercial', stream: true })
       setPitch(result)
     } catch (err) {
       setError(err.message)
