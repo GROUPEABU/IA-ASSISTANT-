@@ -6,6 +6,7 @@ import { getMalus } from '@/utils/malus'
 import { formatNumber } from '@/utils/formatters'
 import { sendMessage } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
+import AIProgress from '@/components/ui/AIProgress'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useSessionState } from '@/hooks/useSessionState'
 import { useToast } from '@/components/ui/Toast'
@@ -196,9 +197,12 @@ Sois direct, argumenté et chiffré.`
           </div>
 
           {loadingVerdict && (
-            <div className="flex items-center gap-3 py-4">
-              <Spinner size="sm" />
-              <p className="text-sm text-slate-400">{t('compare_analyzing_progress')}</p>
+            <div className="py-4">
+              <AIProgress
+                active={loadingVerdict}
+                stages={[t('ai_progress_connect'), t('compare_analyzing_progress'), t('ai_progress_format')]}
+                estimatedMs={16000}
+              />
             </div>
           )}
 

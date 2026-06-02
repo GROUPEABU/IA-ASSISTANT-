@@ -6,6 +6,7 @@ import { getMalus } from '@/utils/malus'
 import { useSettings } from '@/contexts/SettingsContext'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
+import AIProgress from '@/components/ui/AIProgress'
 
 function SegmentBlock({ icon: Icon, color, title, targets, strengths, objections, extra }) {
   const { t } = useSettings()
@@ -176,9 +177,8 @@ Sois percutant, concret et adapté au marché français.`
         )}
 
         {loading && (
-          <div className="flex flex-col items-center gap-3 py-8">
-            <Spinner size="md" />
-            <p className="text-xs text-slate-500">{t('sales_pitch_loading')}</p>
+          <div className="py-8">
+            <AIProgress active={loading} label={t('sales_pitch_loading')} estimatedMs={12000} />
           </div>
         )}
 

@@ -3,6 +3,7 @@ import { TrendingUp, TrendingDown, AlertTriangle, Lightbulb, RefreshCw, Globe, E
 import { sendMessage } from '@/services/claude'
 import { fetchMarketData, buildMarketPrompt } from '@/services/marketSearch'
 import Spinner from '@/components/ui/Spinner'
+import AIProgress from '@/components/ui/AIProgress'
 import Button from '@/components/ui/Button'
 import { formatNumber } from '@/utils/formatters'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -191,12 +192,8 @@ export default function MarketAnalysis({ product }) {
 
         {/* Loading */}
         {loading && (
-          <div className="flex flex-col items-center gap-3 py-8">
-            <Spinner size="md" />
-            <p className="text-xs text-slate-400 text-center max-w-xs">{loadingStep}</p>
-            <div className="w-48 h-1 bg-navy-700 rounded-full overflow-hidden">
-              <div className="h-full bg-cyan-400 rounded-full animate-pulse" style={{ width: '70%' }} />
-            </div>
+          <div className="py-8">
+            <AIProgress active={loading} label={loadingStep} estimatedMs={30000} />
           </div>
         )}
 

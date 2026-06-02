@@ -3,6 +3,7 @@ import { Search, X, Sparkles, Loader2, AlertCircle } from 'lucide-react'
 import { generateProductFromWeb } from '@/services/generateProduct'
 import { useSettings } from '@/contexts/SettingsContext'
 import useFocusTrap from '@/hooks/useFocusTrap'
+import AIProgress from '@/components/ui/AIProgress'
 
 const SUGGESTIONS = [
   'Toyota Yaris Cross 2024',
@@ -118,8 +119,8 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
                   </p>
                 </div>
               </div>
-              <div className="mt-3 h-1 bg-navy-700 rounded-full overflow-hidden">
-                <div className="h-full bg-cyan-400 rounded-full animate-pulse w-3/4" />
+              <div className="mt-3">
+                <AIProgress active={loading} compact estimatedMs={16000} />
               </div>
             </div>
           )}

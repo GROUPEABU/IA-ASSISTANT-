@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { Mic, Copy, Check, RefreshCw, RotateCcw, AlertCircle, ChevronRight, Users, Car, Wrench, Building2, Briefcase, Download, History, Trash2 } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
+import AIProgress from '@/components/ui/AIProgress'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -276,8 +277,11 @@ Réponds UNIQUEMENT en JSON valide :
 
       {loading && (
         <div className="glass-card p-10 flex flex-col items-center gap-3">
-          <Spinner size="lg" />
-          <p className="text-sm text-slate-400">{t('generating')}</p>
+          <AIProgress
+            active={loading}
+            stages={[t('ai_progress_connect'), t('ai_progress_analyze'), t('ai_progress_format')]}
+            estimatedMs={14000}
+          />
         </div>
       )}
 

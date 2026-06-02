@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { sendMessage, extractJSON } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
+import AIProgress from '@/components/ui/AIProgress'
 import { formatNumber } from '@/utils/formatters'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
@@ -491,8 +492,11 @@ export default function PriceWatch() {
       {/* ── Loading ──────────────────────────────────────────────────────────── */}
       {loading && (
         <div className="glass-card p-8 flex flex-col items-center gap-3">
-          <Spinner size="lg" />
-          <p className="text-sm text-slate-400 text-center">{step}</p>
+          <AIProgress
+            active={loading}
+            stages={[t('price_step_collecting'), t('ai_progress_search'), t('ai_progress_analyze'), t('ai_progress_format')]}
+            estimatedMs={38000}
+          />
         </div>
       )}
 
