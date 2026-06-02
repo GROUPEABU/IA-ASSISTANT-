@@ -42,10 +42,13 @@ export async function exportToPdf(ref, filename, meta = {}) {
 
   const PRINT_CSS = `
     .pdf-root, .pdf-root * {
-      color: #1e293b !important;
-      border-color: #e2e8f0 !important;
+      color: #0f172a !important;
+      border-color: #cbd5e1 !important;
       box-shadow: none !important;
       text-shadow: none !important;
+      -webkit-font-smoothing: antialiased !important;
+      -moz-osx-font-smoothing: grayscale !important;
+      text-rendering: optimizeLegibility !important;
     }
     .pdf-root { background: #ffffff !important; padding: 4px !important; }
     .pdf-root .glass-card,
@@ -55,11 +58,14 @@ export async function exportToPdf(ref, filename, meta = {}) {
       border: 1px solid #e2e8f0 !important;
     }
     .pdf-root [class*="bg-"] { background-color: #f8fafc !important; }
-    .pdf-root .text-cyan-400, .pdf-root .text-cyan-300 { color: #0891b2 !important; }
-    .pdf-root .text-emerald-400, .pdf-root .text-emerald-300 { color: #059669 !important; }
-    .pdf-root .text-violet-400, .pdf-root .text-violet-300 { color: #7c3aed !important; }
-    .pdf-root .text-warn { color: #B07D18 !important; }
-    .pdf-root .text-red-400, .pdf-root .text-red-300 { color: #dc2626 !important; }
+    .pdf-root .text-cyan-400, .pdf-root .text-cyan-300 { color: #0369a1 !important; }
+    .pdf-root .text-emerald-400, .pdf-root .text-emerald-300 { color: #047857 !important; }
+    .pdf-root .text-violet-400, .pdf-root .text-violet-300 { color: #6d28d9 !important; }
+    .pdf-root .text-warn { color: #92400e !important; }
+    .pdf-root .text-red-400, .pdf-root .text-red-300 { color: #b91c1c !important; }
+    .pdf-root .text-slate-200, .pdf-root .text-slate-300 { color: #1e293b !important; }
+    .pdf-root .text-slate-400 { color: #334155 !important; }
+    .pdf-root .text-slate-500 { color: #475569 !important; }
     .pdf-root svg { overflow: visible !important; }
   `
   const EXTRA_CSS = `
@@ -68,9 +74,9 @@ export async function exportToPdf(ref, filename, meta = {}) {
       background: #ffffff !important; border: 1px solid #e2e8f0 !important;
     }`
 
-  const RENDER_W = 720
+  const RENDER_W = 760
   const renderNode = (node) => html2canvas(node, {
-    scale: 2,
+    scale: 3,
     backgroundColor: '#ffffff',
     useCORS: true,
     allowTaint: false,
@@ -229,7 +235,7 @@ export async function exportToPdf(ref, filename, meta = {}) {
         ctx.drawImage(it.canvas, 0, it.srcY, it.canvas.width, it.srcH, 0, 0, it.canvas.width, it.srcH)
         img = slice
       }
-      const imgData = img.toDataURL('image/jpeg', 0.92)
+      const imgData = img.toDataURL('image/jpeg', 0.96)
       pdf.addImage(imgData, 'JPEG', margin, headerH + it.atMm, usableW, it.hMm)
     }
   })
