@@ -106,18 +106,22 @@ async function analyzePrices(filters, fuels, gearboxes, bodies, lang = 'fr', wit
     ? `\n⚠️ FILTRE FINITION STRICT : Analyse UNIQUEMENT la finition/version "${filters.finition}".`
     : ''
 
+  const kilometrageFilter = filters.mileageMax
+    ? `\n⚠️ FILTRE KILOMÉTRAGE STRICT : Analyse UNIQUEMENT les annonces avec ≤ ${Number(filters.mileageMax).toLocaleString()} km réels au compteur. Les véhicules quasi-neufs ou mandataires (< 5 000 km) ne sont PAS la référence "premier du net" pour cette recherche — exclus-les de l'analyse même s'ils sont moins chers.`
+    : ''
+
   const dataSection = withWebSearch
-    ? `RECHERCHE WEB OBLIGATOIRE — utilise l'outil de recherche web (plusieurs requêtes) AVANT toute estimation. Cherche en priorité les annonces les MOINS CHÈRES du marché ("premiers du net"), ex :
-- "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.yearMin || ''} occasion prix lacentrale"
-- "${filters.make} ${filters.model} ${filters.finition || ''} leboncoin occasion pas cher"
-- "${filters.make} ${filters.model} ${filters.finition || ''} autoscout24 moins cher"
-OBJECTIF PRINCIPAL : identifier les 10–20% des annonces les moins chères réellement disponibles. Les partenaires Autobuyunion achètent en volume à prix HT compétitif et doivent se positionner PARMI LES PREMIERS DU NET — jamais sur la moyenne haute. Lis les prix réels, repère la fourchette basse du marché, et fixe le prix conseillé vente TTC dans cette fourchette compétitive.
+    ? `RECHERCHE WEB OBLIGATOIRE — utilise l'outil de recherche web (plusieurs requêtes) AVANT toute estimation. Cherche en priorité les annonces les MOINS CHÈRES correspondant EXACTEMENT aux filtres (kilométrage inclus) :
+- "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.yearMin || ''} ${filters.mileageMax ? `< ${Number(filters.mileageMax).toLocaleString()} km` : ''} occasion lacentrale prix"
+- "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.mileageMax ? `${Number(filters.mileageMax).toLocaleString()} km` : ''} leboncoin occasion moins cher"
+- "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.mileageMax ? `occasion kilométrage` : ''} autoscout24 pas cher"
+OBJECTIF PRINCIPAL : identifier les 10–20% des annonces les moins chères réellement disponibles ET correspondant au filtre km. Les partenaires Autobuyunion achètent en volume à prix HT compétitif et doivent se positionner PARMI LES PREMIERS DU NET — jamais sur la moyenne haute. Lis les prix réels, repère la fourchette basse du marché, et fixe le prix conseillé vente TTC dans cette fourchette compétitive.
 N'invente JAMAIS d'erreur "403/404" : décris ce que tu as réellement trouvé. Si aucune annonce exploitable après recherche, bascule sur ta connaissance experte et l'indique dans "alerte".`
-    : `ESTIMATION PRÉLIMINAIRE EXPERTE (aucune recherche web — connaissance marché 2024-2025 uniquement) :
-RÈGLE ABSOLUE : ancre-toi sur le BAS de la fourchette ("premiers du net", 10–20% des annonces les moins chères). Ne prends JAMAIS le prix moyen comme référence. En cas de doute, préfère la valeur basse : une sous-estimation est moins pénalisante qu'une surestimation pour l'acheteur pro. Mets impérativement dans "alerte" : "Estimation préliminaire sans données marché en temps réel — actualisation en cours."`
+    : `ESTIMATION EXPERTE (connaissance marché 2024-2025, sans recherche web) :
+RÈGLE ABSOLUE : ancre-toi sur le BAS de la fourchette ("premiers du net", 10–20% des annonces les moins chères correspondant aux filtres). Ne prends JAMAIS le prix moyen comme référence. En cas de doute, préfère la valeur basse. Mets dans "alerte" : "Estimation sans données marché en temps réel."`
 
   const prompt = `Tu es expert en cote et marché automobile ${filters.type === 'vn' ? 'VN (véhicule neuf)' : 'VO (occasion)'} pour Autobuyunion, centrale d'achat européenne.
-Véhicule cible : "${vehicleDesc}"${finitionFilter}
+Véhicule cible : "${vehicleDesc}"${finitionFilter}${kilometrageFilter}
 
 ${dataSection}
 
@@ -279,7 +283,7 @@ export default function PriceWatch() {
   const [error, setError]         = useState(null)
   const [centraleUrl, setCentraleUrl] = useState('')
   const [searchLabel, setSearchLabel] = useState('')
-  const [isPartial, setIsPartial] = useState(false)
+  // isPartial supprimé : on n'affiche plus de résultat intermédiaire Phase 1
   const { history, add: addHistory, clear: clearHistory } = useHistory('pricewatch')
   const { save: saveLastVehicle } = useLastVehicle()
   const { exporting, withExporting } = useExport()
@@ -315,52 +319,35 @@ export default function PriceWatch() {
     setError(null)
     setResult(null)
 
-    let hasPartial = false // une estimation rapide est-elle déjà affichée ?
+    let partialResult = null // fallback si Phase 2 échoue
     try {
       setStep(t('price_step_collecting'))
       const raw = await fetchPrices(filters)
       setFetchedAt(raw.fetchedAt)
       setCentraleUrl(raw.centraleUrl || '')
 
-      // Phase 1 — estimation experte rapide (sans recherche web, ~5-8 s)
-      // On affiche une première réponse pendant que la recherche web tourne.
+      // Phase 1 — estimation rapide en mémoire (NON affichée — fallback seulement)
       setStep(t('price_step_calculating'))
       try {
         const fastRaw = await analyzePrices(filters, FUELS, GEARBOXES, BODIES, lang, false)
         const fastAnalysis = applyPricingRules(fastRaw)
-        setResult({ ...fastAnalysis, sources: raw.sources, hasLiveData: false, isPartial: true,
-          alerte: fastAnalysis.alerte || t('price_phase1_alerte'),
-        })
-        setIsPartial(true)
-        setLoading(false) // libère l'UI mais continue en arrière-plan
-        setStep('')
-        hasPartial = true
-      } catch { /* phase rapide optionnelle : on continue vers la phase complète */ }
+        partialResult = { ...fastAnalysis, sources: raw.sources, hasLiveData: false, isPartial: false,
+          alerte: fastAnalysis.alerte || t('price_live_failed'),
+        }
+      } catch { /* optionnel */ }
 
-      // Phase 2 — analyse complète avec recherche web réelle.
-      // Si l'estimation rapide est déjà à l'écran, on NE re-bloque PAS l'UI :
-      // la MAJ « live » se fait en arrière-plan (badge « actualisation »), bien
-      // plus fluide. La grande barre ne réapparaît que faute d'estimation.
-      if (!hasPartial) setLoading(true)
+      // Phase 2 — données live (recherche web) : c'est le seul résultat affiché
       setStep(t('ai_progress_search'))
       const rawAnalysis = await analyzePrices(filters, FUELS, GEARBOXES, BODIES, lang, true)
-      // Achat pro + marge recalculés de façon déterministe (jamais l'arithmétique
-      // approximative de l'IA) : Vente HT − 450 transport − 3 000 marge partenaire.
       const analysis = applyPricingRules(rawAnalysis)
-      // hasLiveData = vrai uniquement si Claude a réellement effectué une
-      // recherche web (server_tool_use), sinon estimation experte.
       const finalResult = { ...analysis, sources: raw.sources, hasLiveData: analysis.usedWebSearch, isPartial: false }
       setResult(finalResult)
-      setIsPartial(false)
-      // Mémorise aussi le prix conseillé → préremplissage TCO (nom + prix d'achat).
       saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '), { price: analysis.prix_conseille_vente })
       addHistory({ searchLabel: label, type: filters.type, result: finalResult })
     } catch (err) {
-      if (hasPartial) {
-        // Une estimation est déjà à l'écran : ne pas la masquer par une erreur
-        // bloquante. On retire le badge « live » (l'estimation experte reste
-        // affichée et son badge violet la qualifie) et on informe sans bloquer.
-        setIsPartial(false)
+      if (partialResult) {
+        // Phase 2 KO → fallback sur l'estimation Phase 1
+        setResult(partialResult)
         toast(t('price_live_failed'), 'error')
       } else {
         setError(err.message)
@@ -567,7 +554,7 @@ export default function PriceWatch() {
           <AIProgress
             active={loading}
             stages={[t('price_step_collecting'), t('ai_progress_search'), t('ai_progress_analyze'), t('ai_progress_format')]}
-            estimatedMs={42000}
+            estimatedMs={52000}
             persistKey="pricewatch"
             resume
           />
@@ -578,7 +565,7 @@ export default function PriceWatch() {
       {!loading && <ErrorAlert message={error} onRetry={() => search()} />}
 
       {/* ── Résultats ────────────────────────────────────────────────────────── */}
-      {result && (!loading || isPartial) && (
+      {result && !loading && (
         <>
           {/* Header */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -600,11 +587,6 @@ export default function PriceWatch() {
                   </span>
                 )}
 
-                {result.isPartial && (
-                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/20 animate-pulse">
-                    <RefreshCw size={9} /> {t('price_live_partial')}
-                  </span>
-                )}
 
                 {fetchedAt && (
                   <div className="flex items-center gap-1">
