@@ -1,21 +1,18 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Bell, Search, RefreshCw, RotateCcw, TrendingUp, TrendingDown, Minus,
-  AlertCircle, ExternalLink, Clock, SlidersHorizontal, Download,
-  Wifi, WifiOff, ShieldCheck, Zap, Tag, FileText, Calculator,
+  Bell, Search, RotateCcw, ExternalLink, Clock, Download, FileText,
+  Wifi, WifiOff, Calculator, Sparkles,
 } from 'lucide-react'
-import { sendMessage, extractJSON } from '@/services/claude'
+import { sendMessage } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
-import AIProgress from '@/components/ui/AIProgress'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
-import { formatNumber } from '@/utils/formatters'
+import { mdToHtml } from '@/utils/mdToHtml'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
 import { useLastVehicle } from '@/hooks/useLastVehicle'
 import { useExport } from '@/hooks/useExport'
-import { useResultFocus } from '@/hooks/useResultFocus'
 import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
 import { useToast } from '@/components/ui/Toast'
 
@@ -48,39 +45,8 @@ const MAKES = [
 
 const YEARS = Array.from({ length: 27 }, (_, i) => 2026 - i)
 
-// ── Règles de cotation Autobuyunion (figées, déterministes) ─────────────────────
-// Achat pro HT = Vente HT − transport − marge partenaire.
-//   • Vente HT          = prix de vente conseillé TTC ÷ 1,20 (TVA 20%)
-//   • Transport UE      = 450 € HT / véhicule
-//   • Marge partenaire  = 3 000 € HT (FIXE)
-//   • La marge groupe (550 €) est prise EN AMONT → jamais déduite ici.
-//   • Le malus est à la charge du client final B2C → jamais déduit ici.
-const TVA = 1.20
-const TRANSPORT_HT = 450
-const MARGE_PARTENAIRE_MIN_HT = 3000 // marge partenaire PLANCHER (au moins 3 000 €)
-
-function applyPricingRules(analysis) {
-  const venteTTC = Number(analysis?.prix_conseille_vente) || 0
-  if (!venteTTC) return analysis
-
-  // PLAFOND = prix d'achat max pour garder AU MOINS 3 000 € de marge :
-  // Vente HT − transport − marge partenaire mini. Acheter en dessous = marge ↑.
-  const achatMax = Math.max(0, Math.round(venteTTC / TVA - TRANSPORT_HT - MARGE_PARTENAIRE_MIN_HT))
-  // Bas de fourchette = fenêtre réaliste ~1 000 € sous le plafond (cible idéale).
-  // On ne descend pas plus bas, sinon le prix devient introuvable sur le marché.
-  const FOURCHETTE_BAND = 1000
-  const achatMin = Math.max(0, achatMax - FOURCHETTE_BAND)
-
-  return {
-    ...analysis,
-    fourchette_achat_pro_min: achatMin,
-    fourchette_achat_pro_max: achatMax,
-    marge_brute_potentielle: MARGE_PARTENAIRE_MIN_HT, // marge au prix d'achat plafond
-  }
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
-async function fetchPrices(filters) {
+async function fetchSources(filters) {
   const params = new URLSearchParams(
     Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== ''))
   )
@@ -89,101 +55,61 @@ async function fetchPrices(filters) {
   return res.json()
 }
 
-async function analyzePrices(filters, fuels, gearboxes, bodies, lang = 'fr', withWebSearch = true) {
-  const vehicleDesc = [
-    filters.make, filters.model,
-    filters.finition || '',
-    filters.yearMin && filters.yearMax ? `${filters.yearMin}–${filters.yearMax}`
-      : filters.yearMin ? `depuis ${filters.yearMin}`
-      : filters.yearMax ? `jusqu'en ${filters.yearMax}` : '',
-    filters.mileageMax ? `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km` : '',
-    filters.fuel ? fuels.find(f => f.code === filters.fuel)?.label : '',
-    filters.gearbox ? gearboxes.find(g => g.code === filters.gearbox)?.label : '',
-    filters.carrosserie ? bodies.find(b => b.code === filters.carrosserie)?.label : '',
-  ].filter(Boolean).join(' · ')
-
+// Construit le prompt de l'analyse streamée (rapport Markdown, pas de JSON).
+function buildPrompt(filters, vehicleDesc) {
+  const kmTxt = filters.mileageMax ? `${Number(filters.mileageMax).toLocaleString('fr-FR')} km` : null
   const finitionFilter = filters.finition
-    ? `\n⚠️ FILTRE FINITION STRICT : Analyse UNIQUEMENT la finition/version "${filters.finition}".`
-    : ''
+    ? `\n⚠️ FINITION STRICTE : analyse UNIQUEMENT la version "${filters.finition}".` : ''
+  const kmFilter = kmTxt
+    ? `\n⚠️ KILOMÉTRAGE STRICT : analyse UNIQUEMENT les annonces avec ≤ ${kmTxt} réels au compteur. EXCLUS les véhicules quasi-neufs / mandataires (< 5 000 km) — ce ne sont PAS la référence « premier du net » ici, même s'ils sont moins chers.` : ''
 
-  const kilometrageFilter = filters.mileageMax
-    ? `\n⚠️ FILTRE KILOMÉTRAGE STRICT : Analyse UNIQUEMENT les annonces avec ≤ ${Number(filters.mileageMax).toLocaleString('fr-FR')} km réels au compteur. Les véhicules quasi-neufs ou mandataires (< 5 000 km) ne sont PAS la référence "premier du net" pour cette recherche — exclus-les de l'analyse même s'ils sont moins chers.`
-    : ''
+  return `Tu es l'analyste cote & marché automobile ${filters.type === 'vn' ? 'VN (neuf)' : 'VO (occasion)'} d'Autobuyunion, centrale d'achat européenne. Tu réponds comme dans une conversation : un rapport clair, direct, en Markdown, prêt à lire.
 
-  const dataSection = withWebSearch
-    ? `RECHERCHE WEB OBLIGATOIRE — utilise l'outil de recherche web (plusieurs requêtes) AVANT toute estimation. Cherche en priorité les annonces les MOINS CHÈRES correspondant EXACTEMENT aux filtres (kilométrage inclus) :
-- "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.yearMin || ''} ${filters.mileageMax ? `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km` : ''} occasion lacentrale prix"
-- "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.mileageMax ? `${Number(filters.mileageMax).toLocaleString('fr-FR')} km` : ''} leboncoin occasion moins cher"
-- "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.mileageMax ? `occasion kilométrage` : ''} autoscout24 pas cher"
-OBJECTIF PRINCIPAL : identifier les 10–20% des annonces les moins chères réellement disponibles ET correspondant au filtre km. Les partenaires Autobuyunion achètent en volume à prix HT compétitif et doivent se positionner PARMI LES PREMIERS DU NET — jamais sur la moyenne haute. Lis les prix réels, repère la fourchette basse du marché, et fixe le prix conseillé vente TTC dans cette fourchette compétitive.
-N'invente JAMAIS d'erreur "403/404" : décris ce que tu as réellement trouvé. Si aucune annonce exploitable après recherche, bascule sur ta connaissance experte et l'indique dans "alerte".`
-    : `ESTIMATION EXPERTE (connaissance marché 2024-2025, sans recherche web) :
-RÈGLE ABSOLUE : ancre-toi sur le BAS de la fourchette ("premiers du net", 10–20% des annonces les moins chères correspondant aux filtres). Ne prends JAMAIS le prix moyen comme référence. En cas de doute, préfère la valeur basse. Mets dans "alerte" : "Estimation sans données marché en temps réel."`
+VÉHICULE CIBLE : "${vehicleDesc}"${finitionFilter}${kmFilter}
 
-  const prompt = `Tu es expert en cote et marché automobile ${filters.type === 'vn' ? 'VN (véhicule neuf)' : 'VO (occasion)'} pour Autobuyunion, centrale d'achat européenne.
-Véhicule cible : "${vehicleDesc}"${finitionFilter}${kilometrageFilter}
+RECHERCHE WEB : utilise l'outil de recherche web (2-3 requêtes max) pour relever les annonces réelles les MOINS CHÈRES correspondant EXACTEMENT aux filtres (kilométrage inclus) sur La Centrale, LeBonCoin, AutoScout24. Vise les 10-20 % d'annonces les moins chères ("premiers du net"), jamais la moyenne haute. Si rien d'exploitable, base-toi sur ta connaissance experte du marché français 2024-2025 et signale-le.
 
-${dataSection}
+MÉTHODE DE COTATION (applique-la précisément, par véhicule) :
+1. PREMIER PRIX DU NET = annonce la moins chère réellement dispo correspondant aux filtres.
+2. Prix de revente conseillé TTC = ce premier prix du net (ou légèrement en dessous) → être 1er du net, vendre vite.
+3. Cascade vers le prix d'achat pro HT (deal B2B Autobuyunion → partenaire) :
+   • Vente HT = revente TTC ÷ 1,20  • − 450 € HT transport UE  • − 3 000 € HT marge partenaire MINIMUM.
+   → Prix d'achat pro PLAFOND HT = Vente HT − 450 − 3 000. Acheter en dessous augmente la marge.
+   Ne déduis JAMAIS de marge groupe ni le malus de cette cascade.
+4. Le MALUS écologique est à la charge du CLIENT FINAL (B2C) — info seule, jamais déduit de l'achat/marge.
+5. Plus le kilométrage monte, plus le prix d'achat cible BAISSE (préserve ≥ 3 000 € de marge, TTC plus compétitif). Ne déconseille jamais le fort km.
 
-MÉTHODE DE COTATION AUTOBUYUNION (applique-la précisément, raisonne PAR VÉHICULE) :
-1. PREMIER PRIX DU NET : l'annonce la moins chère réellement disponible (jamais la moyenne).
-2. "prix_conseille_vente" TTC = ce premier prix du net (ou légèrement en dessous) pour être 1er du net et vendre vite.
-3. CASCADE DE COÛTS pour obtenir le prix d'achat HT recommandé (deal B2B Autobuyunion → partenaire) :
-   a. Vente HT = prix_conseille_vente ÷ 1,20 (retrait TVA 20%).
-   b. Transport UE = 450 € HT par véhicule.
-   c. Marge partenaire = 3 000 € HT MINIMUM (plancher : au moins 3 000 €, jamais moins).
-   → fourchette_achat_pro (HT) = prix PLAFOND à payer = Vente HT − 450 (transport) − 3 000 (marge mini). Acheter en dessous augmente la marge.
-   NE soustrais PAS de marge groupe ici : la marge Autobuyunion (550 €) est déjà prise EN AMONT, hors de ce calcul.
-   Le MALUS n'entre JAMAIS dans cette cascade : il est à la charge du CLIENT FINAL (B2C), pas du deal B2B.
-4. "marge_brute_potentielle" = 3 000 € (marge plancher au prix d'achat plafond).
-5. "malus_estime" = information pour l'acheteur FINAL B2C uniquement (jamais déduit de l'achat ni de la marge).
-6. Écart minimum viable d'un deal ≈ 4 500–5 000 € (davantage sur premium).
+RÈGLES :
+- Vouvoiement, ton mesuré et pro. Pas d'avis trop tranché.
+- Ne cite JAMAIS de nom de réseau/mandataire/enseigne/concession/label ni de ville précise (tu les inventerais).
+- Chiffres réalistes en €, fourchettes si incertain. Jamais de chiffre inventé donné comme certain.
 
-RÈGLES DE FORMULATION STRICTES :
-- Autobuyunion vend PAR CAMION COMPLET au partenaire : ne recommande JAMAIS un nombre d'unités ni "lots de X unités". Raisonne par camion / par véhicule, jamais en quantité conseillée.
-- Le MALUS écologique est à la charge du CLIENT FINAL (B2C) à la 1re immat. française — il N'EST JAMAIS déduit du prix d'achat pro ni de la marge partenaire (deal B2B). Affiche-le seulement à titre informatif. N'écris jamais qu'il est "déjà absorbé", "inclus" ou "amorti".
-- NE cite JAMAIS de noms de réseaux, mandataires, enseignes, concessions, labels (type Spoticar) ni de villes/codes postaux précis (tu les inventerais → risque de crédibilité). Reste sur des formulations génériques et chiffrées.
-- KILOMÉTRAGE : ne déconseille JAMAIS les véhicules à fort kilométrage. Plus le kilométrage est élevé, plus le prix d'acquisition cible BAISSE sous le plafond — ce qui PRÉSERVE la marge de 3 000 € HT minimum ET offre un coût TTC plus bas au client final. Adapte le prix à la baisse, ne rejette pas ces unités.
-- "conseil_achat" : COURT et SIMPLE (3–4 phrases max, pas de §1/§2, pas de pavé). Ton mesuré et nuancé — évite les avis trop tranchés ("irréprochable", "doit", "le meilleur du marché"). Dis simplement : le type de véhicule à privilégier, et que le prix d'achat HT cible descend quand le kilométrage monte pour garder ≥ 3 000 € de marge et un TTC plus compétitif. Une seule fourchette de prix indicative suffit.
+FORMAT DE SORTIE — Markdown, sections aérées, dans cet ordre EXACT :
 
-Génère une analyse experte complète de type fiche pro. Tous les prix sont en euros TTC sauf indication HT.
+## 🎯 L'essentiel
+- **Marge dégageable** : … € HT (≥ 3 000 €)
+- **Prix d'achat pro conseillé** : … – … € HT
+- **Revente conseillée (1er du net)** : … € TTC
 
-Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise markdown) :
-{
-  "prix_moyen": <prix moyen marché TTC>,
-  "prix_median": <prix médian TTC>,
-  "prix_q1": <25e percentile TTC>,
-  "prix_q3": <75e percentile TTC>,
-  "nb_annonces_estim": <nombre annonces estimé sur marché FR>,
-  "tendance": "hausse|baisse|stable",
-  "tendance_pct": <variation 3 mois en %, ex: 2.5>,
-  "prix_neuf_catalogue": <PVC neuf TTC catalogue actuel ou à l'époque>,
-  "decote_annuelle_pct": <décote annuelle moyenne en %, ex: 12>,
-  "valeur_residuelle_1an": <valeur estimée dans 1 an TTC>,
-  "valeur_residuelle_3ans": <valeur estimée dans 3 ans TTC>,
-  "fourchette_achat_pro_min": <prix achat pro recommandé minimum HT>,
-  "fourchette_achat_pro_max": <prix achat pro recommandé maximum HT>,
-  "malus_estime": <malus écologique CO2+masse à la charge du CLIENT FINAL B2C à la 1re immat. française, en € (info seule, JAMAIS déduit de l'achat/marge)>,
-  "marge_brute_potentielle": <toujours 3000 (marge partenaire fixe)>,
-  "prix_meilleur_marche": <prix des 10% annonces les moins chères observées TTC — référence "premier du net">,
-  "prix_conseille_vente": <prix de vente conseillé TTC pour se positionner parmi les 20% moins chers du marché : compétitif et rapide à vendre>,
-  "cote_argus_min": <cote Argus basse TTC>,
-  "cote_argus_max": <cote Argus haute TTC>,
-  "alerte": <"texte si données insuffisantes ou anomalie" | null>,
-  "analyse": "<3-4 phrases expertes : positionnement marché, demande, liquidité, points clés>",
-  "conseil_achat": "<COURT (3-4 phrases), simple et nuancé : type de véhicule à privilégier + le prix d'achat HT cible baisse quand le km monte (garder ≥ 3 000 € de marge, TTC plus compétitif). Pas de pavé, pas d'avis tranché, aucun nom de réseau/ville/label inventé.>",
-  "conseil_vente": "<stratégie PREMIERS DU NET : prix exact conseillé TTC, écart vs prix moyen marché, argument face aux concurrents en ligne, délai rotation estimé si bien positionné>",
-  "equipements_recherches": ["<équip1 très recherché>", "<équip2>", "<équip3>", "<équip4>"],
-  "arguments_commerciaux": ["<argument fort 1 avec chiffre>", "<argument fort 2>", "<argument fort 3>"],
-  "points_vigilance": ["<point vigilance 1>", "<point vigilance 2>", "<point vigilance 3>"],
-  "annonces_par_source": [{"source": "<nom source>", "prix_min": 0, "prix_moy": 0, "prix_max": 0, "nb": 0}]
-}`
+## 📊 Repères marché
+Tableau Markdown : Prix moyen | Prix médian | Fourchette courante | Nb annonces estimé (tous en TTC).
 
-  const { text: raw, usedWebSearch } = await sendMessage(
-    [{ role: 'user', content: prompt }],
-    { lang, maxTokens: withWebSearch ? 4096 : 2500, expert: true, temperature: 0.3, tool: 'veilleprix', webSearch: withWebSearch, maxSearches: 3, returnMeta: true }
-  )
-  return { ...extractJSON(raw, 'object'), usedWebSearch }
+## 💶 Cotation & décote
+PVC neuf catalogue, décote annuelle %, valeur résiduelle 1 an / 3 ans, cote Argus indicative.
+
+## 🏷️ Stratégie de vente "1er du net"
+Prix exact conseillé TTC, écart vs moyenne marché, argument face aux concurrents en ligne, délai de rotation estimé.
+
+## ✅ Arguments commerciaux
+3 puces fortes avec chiffres.
+
+## ⚠️ Points de vigilance
+3 puces.
+
+## 🔋 Malus écologique (client final B2C)
+Montant estimé + rappel qu'il n'entre pas dans le calcul d'achat pro. Renvoie vers le calculateur CO₂ & Malus du site.
+
+Commence directement par "## 🎯 L'essentiel". Aucune phrase d'introduction.`
 }
 
 // ── Composants UI ─────────────────────────────────────────────────────────────
@@ -197,25 +123,6 @@ function FilterSelect({ label, value, onChange, children }) {
       <select value={value} onChange={e => onChange(e.target.value)} className={selectClass}>
         {children}
       </select>
-    </div>
-  )
-}
-
-function KpiCard({ label, value, highlight, sub, small }) {
-  return (
-    <div className="glass-card p-3 text-center">
-      <p className={`font-bold ${small ? 'text-sm' : 'text-lg'} ${highlight ? 'text-cyan-400' : 'text-white'}`}>{value}</p>
-      {sub && <p className="text-[10px] text-emerald-400 font-semibold mt-0.5">{sub}</p>}
-      <p className="text-[10px] text-slate-500 mt-0.5">{label}</p>
-    </div>
-  )
-}
-
-function SectionTitle({ icon: Icon, label, color = 'text-slate-500' }) {
-  return (
-    <div className="flex items-center gap-1.5 mb-2">
-      {Icon && <Icon size={11} className={color} />}
-      <p className={`text-[10px] font-bold uppercase tracking-wider ${color}`}>{label}</p>
     </div>
   )
 }
@@ -276,18 +183,19 @@ export default function PriceWatch() {
   const [mileageMax, setMileageMax] = useState(() => readPwSession('mileageMax', ''))
   const [fuel, setFuel]           = useState(() => readPwSession('fuel', ''))
   const [gearbox, setGearbox]     = useState(() => readPwSession('gearbox', ''))
-  const [loading, setLoading]     = useState(false)
-  const [step, setStep]           = useState('')
-  const [result, setResult]       = useState(null)
+
+  const [loading, setLoading]     = useState(false)   // avant le 1er token
+  const [streaming, setStreaming] = useState(false)   // tokens en cours d'arrivée
+  const [report, setReport]       = useState('')      // texte Markdown streamé
+  const [hasLiveData, setHasLiveData] = useState(false)
   const [fetchedAt, setFetchedAt] = useState(null)
+  const [sources, setSources]     = useState([])
   const [error, setError]         = useState(null)
   const [centraleUrl, setCentraleUrl] = useState('')
   const [searchLabel, setSearchLabel] = useState('')
-  const [isPartial, setIsPartial] = useState(false)
   const { history, add: addHistory, clear: clearHistory } = useHistory('pricewatch')
   const { save: saveLastVehicle } = useLastVehicle()
   const { exporting, withExporting } = useExport()
-  const headingRef = useResultFocus(!!result && !loading)
 
   // Persist filter state across page navigations (session-scoped)
   useEffect(() => {
@@ -306,137 +214,87 @@ export default function PriceWatch() {
     const matchedMake = MAKES.find(m => m.label.toLowerCase() === rawMake.toLowerCase())
     const resolvedMake = matchedMake ? matchedMake.code : rawMake
     const filters = { make: resolvedMake, model, finition, carrosserie, type, yearMin, yearMax, mileageMax, fuel, gearbox, ...overrides }
+
+    const vehicleDesc = [
+      rawMake, filters.model, filters.finition,
+      filters.yearMin && filters.yearMax ? `${filters.yearMin}–${filters.yearMax}`
+        : filters.yearMin ? `depuis ${filters.yearMin}` : filters.yearMax ? `jusqu'en ${filters.yearMax}` : '',
+      filters.mileageMax ? `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km` : '',
+      filters.fuel ? FUELS.find(f => f.code === filters.fuel)?.label : '',
+      filters.gearbox ? GEARBOXES.find(g => g.code === filters.gearbox)?.label : '',
+      filters.carrosserie ? BODIES.find(b => b.code === filters.carrosserie)?.label : '',
+    ].filter(Boolean).join(' · ')
+
     const label = [filters.make, filters.model, filters.finition,
       filters.yearMin && `${filters.yearMin}${filters.yearMax ? '–'+filters.yearMax : '+'}`,
       filters.mileageMax && `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km`,
     ].filter(Boolean).join(' · ')
 
-    // Mémorise le véhicule pour préremplir les autres outils (pitch, objections).
     saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '))
-
     setSearchLabel(label)
     setLoading(true)
+    setStreaming(false)
     setError(null)
-    setResult(null)
+    setReport('')
+    setHasLiveData(false)
 
-    let hasFast = false // une estimation rapide est-elle déjà affichée ?
     try {
-      setStep(t('price_step_collecting'))
-      const raw = await fetchPrices(filters)
-      setFetchedAt(raw.fetchedAt)
-      setCentraleUrl(raw.centraleUrl || '')
+      // Liens de référence (La Centrale, etc.) — affichage immédiat.
+      const meta = await fetchSources(filters)
+      setFetchedAt(meta.fetchedAt)
+      setCentraleUrl(meta.centraleUrl || '')
+      setSources(meta.sources || [])
 
-      // Phase 1 — estimation experte RAPIDE (sans web, ~8 s) : AFFICHÉE TOUT DE
-      // SUITE pour ne pas faire attendre. Les chiffres se rafraîchissent ensuite.
-      setStep(t('price_step_calculating'))
-      try {
-        const fastRaw = await analyzePrices(filters, FUELS, GEARBOXES, BODIES, lang, false)
-        const fastAnalysis = applyPricingRules(fastRaw)
-        setResult({ ...fastAnalysis, sources: raw.sources, hasLiveData: false, isPartial: true })
-        setIsPartial(true)
-        setLoading(false) // libère l'UI : résultat visible en ~8 s
-        setStep('')
-        hasFast = true
-      } catch { /* phase rapide optionnelle */ }
-
-      // Phase 2 — actualisation live (recherche web) EN ARRIÈRE-PLAN, sans
-      // re-bloquer l'écran si une estimation est déjà là.
-      if (!hasFast) setLoading(true)
-      setStep(t('ai_progress_search'))
-      const rawAnalysis = await analyzePrices(filters, FUELS, GEARBOXES, BODIES, lang, true)
-      const analysis = applyPricingRules(rawAnalysis)
-      const finalResult = { ...analysis, sources: raw.sources, hasLiveData: analysis.usedWebSearch, isPartial: false }
-      setResult(finalResult)
-      setIsPartial(false)
-      saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '), { price: analysis.prix_conseille_vente })
-      addHistory({ searchLabel: label, type: filters.type, result: finalResult })
+      // Analyse streamée en direct (comme le chat) — le texte s'affiche au fil
+      // de l'eau dès le 1er token reçu.
+      let first = true
+      const { text, usedWebSearch } = await sendMessage(
+        [{ role: 'user', content: buildPrompt(filters, vehicleDesc) }],
+        {
+          lang, expert: true, temperature: 0.3, tool: 'veilleprix',
+          webSearch: true, maxSearches: 3, maxTokens: 3500,
+          returnMeta: true, stream: true,
+          onChunk: (full) => {
+            if (first) { first = false; setLoading(false); setStreaming(true) }
+            setReport(full)
+          },
+        }
+      )
+      setReport(text)
+      setHasLiveData(!!usedWebSearch)
+      setStreaming(false)
+      saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '))
+      addHistory({ searchLabel: label, type: filters.type, report: text, hasLiveData: !!usedWebSearch, fetchedAt: meta.fetchedAt, sources: meta.sources, centraleUrl: meta.centraleUrl })
     } catch (err) {
-      if (hasFast) {
-        // L'estimation reste affichée : on retire juste l'état « actualisation ».
-        setIsPartial(false)
-        toast(t('price_live_failed'), 'error')
-      } else {
-        setError(err.message)
-        toast(err.message, 'error')
-      }
+      setError(err.message)
+      toast(err.message, 'error')
     } finally {
       setLoading(false)
-      setStep('')
+      setStreaming(false)
     }
   }
-
-  const handleCsv = () => {
-    if (!result) return
-    const rows = [
-      ['Véhicule', searchLabel],
-      ['Type', type === 'vo' ? 'Occasion' : 'Neuf'],
-      ['Date', fetchedAt ? new Date(fetchedAt).toLocaleString('fr-FR') : new Date().toLocaleString('fr-FR')],
-      ['Prix moyen TTC (€)', result.prix_moyen ?? ''],
-      ['Prix médian TTC (€)', result.prix_median ?? ''],
-      ['Quartile bas Q1 (€)', result.prix_q1 ?? ''],
-      ['Quartile haut Q3 (€)', result.prix_q3 ?? ''],
-      ['Nb annonces estimé', result.nb_annonces_estim ?? ''],
-      ['Tendance', result.tendance ?? ''],
-      ['Évolution (%)', result.tendance_pct ?? ''],
-      ['Meilleur prix du net (€)', result.prix_meilleur_marche ?? ''],
-      ['Prix conseillé vente (€)', result.prix_conseille_vente ?? ''],
-      ['Achat HT min (€)', result.prix_achat_ht_min ?? ''],
-      ['Achat HT max (€)', result.prix_achat_ht_max ?? ''],
-      ['Cote Argus min (€)', result.cote_argus_min ?? ''],
-      ['Cote Argus max (€)', result.cote_argus_max ?? ''],
-      ['Malus client final B2C (€)', result.malus_estime ?? ''],
-      ['Marge brute potentielle (€)', result.marge_brute_potentielle ?? ''],
-    ]
-    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n')
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = pdfFileName(searchLabel).replace('.pdf', '.csv')
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const TrendIcon   = result?.tendance === 'hausse' ? TrendingUp : result?.tendance === 'baisse' ? TrendingDown : Minus
-  const trendColor  = result?.tendance === 'hausse' ? 'text-red-400' : result?.tendance === 'baisse' ? 'text-emerald-400' : 'text-slate-400'
-  const trendBg     = result?.tendance === 'hausse' ? 'bg-red-400/10' : result?.tendance === 'baisse' ? 'bg-emerald-400/10' : 'bg-slate-700/40'
-  const trendLabel  = result?.tendance === 'hausse' ? t('market_up') : result?.tendance === 'baisse' ? t('market_down') : t('market_stable')
-
-  // ── Priorités terrain (ordre voulu : marge, achat pro, revente, marché) ──
-  // Marge = fourchette HT : plancher 3 000 € (achat au plafond) → plus on achète
-  // bas, plus la marge monte (delta de la fourchette d'achat pro).
-  const margeMin = result?.marge_brute_potentielle || 3000
-  const achatMin = result?.fourchette_achat_pro_min
-  const achatMax = result?.fourchette_achat_pro_max
-  const margeMax = (achatMin && achatMax) ? margeMin + Math.max(0, achatMax - achatMin) : margeMin
-  const margeFourchette = margeMax > margeMin
-    ? `${formatNumber(margeMin)} – ${formatNumber(margeMax)} € HT`
-    : `≥ ${formatNumber(margeMin)} € HT`
-  const achatProFourchette = (achatMin && achatMax)
-    ? `${formatNumber(achatMin)} – ${formatNumber(achatMax)} € HT`
-    : 'N/D'
-
-  const fmtEur = (v) => v ? `${formatNumber(v)} €` : 'N/D'
-  const fmtHT  = (v) => v ? `${formatNumber(v)} € HT` : 'N/D'
-  const fmtPct = (v) => v ? `${v}%` : 'N/D'
 
   const handlePdf = () => withExporting(() =>
     exportToPdf(resultRef, pdfFileName(searchLabel), { title: t('tool_price_title'), subtitle: searchLabel })
   )
 
   const reset = () => {
-    setResult(null); setMake(''); setModel(''); setFinition(''); setCarrosserie('')
+    setReport(''); setMake(''); setModel(''); setFinition(''); setCarrosserie('')
     setYearMin(''); setYearMax(''); setMileageMax(''); setFuel(''); setGearbox('')
-    setSearchLabel(''); setCentraleUrl(''); setFetchedAt(null)
+    setSearchLabel(''); setCentraleUrl(''); setFetchedAt(null); setSources([]); setHasLiveData(false)
   }
 
   const restore = (item) => {
-    setResult(item.result)
+    setReport(item.report || '')
     setSearchLabel(item.searchLabel)
     setType(item.type)
-    setFetchedAt(null)
-    setCentraleUrl('')
+    setHasLiveData(!!item.hasLiveData)
+    setFetchedAt(item.fetchedAt || null)
+    setSources(item.sources || [])
+    setCentraleUrl(item.centraleUrl || '')
   }
+
+  const showResult = (loading || streaming || report) && !error
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -536,15 +394,15 @@ export default function PriceWatch() {
         {/* Bouton */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => search()} disabled={!canSearch || loading}
+            onClick={() => search()} disabled={!canSearch || loading || streaming}
             className="flex items-center gap-2 px-5 py-2.5 bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
                        hover:bg-cyan-300 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
           >
-            {loading ? <Spinner size="sm" /> : <Search size={14} />}
-            {loading ? t('analyzing') : t('analyze_btn')}
+            {(loading || streaming) ? <Spinner size="sm" /> : <Search size={14} />}
+            {(loading || streaming) ? t('analyzing') : t('analyze_btn')}
           </button>
 
-          {centraleUrl && !loading && (
+          {centraleUrl && !loading && !streaming && (
             <a href={centraleUrl} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
                          px-3 py-2.5 rounded-xl hover:text-cyan-400 hover:border-cyan-400/30 transition">
@@ -554,49 +412,36 @@ export default function PriceWatch() {
         </div>
       </div>
 
-      {/* ── Loading ──────────────────────────────────────────────────────────── */}
-      {loading && (
-        <div className="glass-card p-8 flex flex-col items-center gap-3">
-          <AIProgress
-            active={loading}
-            stages={[t('price_step_collecting'), t('ai_progress_search'), t('ai_progress_analyze'), t('ai_progress_format')]}
-            estimatedMs={9000}
-            persistKey="pricewatch"
-            resume
-          />
-        </div>
-      )}
-
       {/* ── Error ────────────────────────────────────────────────────────────── */}
-      {!loading && <ErrorAlert message={error} onRetry={() => search()} />}
+      {error && <ErrorAlert message={error} onRetry={() => search()} />}
 
-      {/* ── Résultats ────────────────────────────────────────────────────────── */}
-      {result && !loading && (
+      {/* ── Résultat streamé ─────────────────────────────────────────────────── */}
+      {showResult && (
         <>
-          {/* Header */}
+          {/* Header + actions */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="min-w-0">
-              <h3 ref={headingRef} tabIndex={-1} className="text-base font-bold text-white outline-none">{searchLabel}</h3>
+              <h3 className="text-base font-bold text-white">{searchLabel || t('tool_price_title')}</h3>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   type === 'vo' ? 'bg-warn/10 text-warn' : 'bg-emerald-400/10 text-emerald-400'
                 }`}>{type === 'vo' ? t('used_vehicle') : t('new_vehicle')}</span>
 
-                {/* Badge source : actualisation en cours → live → expertise */}
-                {isPartial ? (
+                {streaming ? (
                   <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-400/10 text-cyan-400 border border-cyan-400/20 animate-pulse">
-                    <RefreshCw size={9} className="animate-spin" /> {t('price_live_refreshing')}
+                    <Sparkles size={9} /> {t('price_live_refreshing')}
                   </span>
-                ) : result.hasLiveData ? (
-                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/10 text-emerald-400 border border-emerald-400/20">
-                    <Wifi size={9} /> {t('price_live_badge')}
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-400/10 text-violet-400 border border-violet-400/20">
-                    <WifiOff size={9} /> {t('price_knowledge_badge')}
-                  </span>
-                )}
-
+                ) : report ? (
+                  hasLiveData ? (
+                    <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/10 text-emerald-400 border border-emerald-400/20">
+                      <Wifi size={9} /> {t('price_live_badge')}
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-400/10 text-violet-400 border border-violet-400/20">
+                      <WifiOff size={9} /> {t('price_knowledge_badge')}
+                    </span>
+                  )
+                ) : null}
 
                 {fetchedAt && (
                   <div className="flex items-center gap-1">
@@ -606,264 +451,86 @@ export default function PriceWatch() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2 overflow-x-auto pb-0.5 w-full sm:w-auto">
-              <button onClick={handleCsv}
-                className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
-                           px-3 py-1.5 rounded-lg hover:text-emerald-400 hover:border-emerald-400/30 hover:bg-emerald-400/5 transition flex-shrink-0">
-                <FileText size={12} />
-                {t('csv_export')}
-              </button>
-              <button onClick={handlePdf} disabled={exporting}
-                className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
-                           px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition flex-shrink-0">
-                {exporting ? <Spinner size="sm" /> : <Download size={12} />}
-                {t('download_pdf')}
-              </button>
-              <button onClick={() => search()}
-                className="flex items-center gap-1.5 text-xs text-cyan-400 border border-cyan-400/30
-                           px-3 py-2 rounded-lg hover:bg-cyan-400/10 transition flex-shrink-0">
-                <RefreshCw size={12} /> {t('analyze_btn')}
-              </button>
-              <button onClick={reset}
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30 flex-shrink-0">
-                <RotateCcw size={11} /> {t('new_analysis_btn')}
-              </button>
-            </div>
+
+            {report && !streaming && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-0.5 w-full sm:w-auto">
+                <button onClick={handlePdf} disabled={exporting}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                             px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition flex-shrink-0">
+                  {exporting ? <Spinner size="sm" /> : <Download size={12} />}
+                  {t('download_pdf')}
+                </button>
+                <button onClick={() => search()}
+                  className="flex items-center gap-1.5 text-xs text-cyan-400 border border-cyan-400/30
+                             px-3 py-2 rounded-lg hover:bg-cyan-400/10 transition flex-shrink-0">
+                  <Search size={12} /> {t('analyze_btn')}
+                </button>
+                <button onClick={reset}
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30 flex-shrink-0">
+                  <RotateCcw size={11} /> {t('new_analysis_btn')}
+                </button>
+              </div>
+            )}
           </div>
 
-          <div ref={resultRef} className="space-y-3">
-
-          {/* Alerte */}
-          {result.alerte && (
-            <div className="flex gap-2 p-3 rounded-xl bg-warn/10 border border-warn/20">
-              <AlertCircle size={14} className="text-warn flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-warn font-medium">{result.alerte}</p>
+          {/* Loading avant 1er token */}
+          {loading && !report && (
+            <div className="glass-card p-8 flex flex-col items-center gap-3 text-center">
+              <Spinner />
+              <p className="text-sm text-slate-400">{t('price_step_calculating')}</p>
+              <p className="text-xs text-slate-600">{t('price_step_collecting')}</p>
             </div>
           )}
 
-          {/* L'essentiel — bloc clair en tête : les 3 chiffres de décision */}
-          <div className="glass-card p-4 border border-cyan-400/20">
-            <SectionTitle icon={Zap} label={t('price_essential_title')} color="text-cyan-400" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <KpiCard label={t('price_prio_margin')} value={margeFourchette} highlight sub={t('price_prio_margin_sub')} />
-              <KpiCard label={t('price_prio_achat')} value={achatProFourchette} sub={t('price_prio_achat_sub')} />
-              <KpiCard label={t('price_prio_revente')} value={fmtEur(result.prix_conseille_vente)} sub={t('price_prio_revente_sub')} />
-            </div>
-          </div>
-
-          {/* Repères marché — données de base */}
-          <SectionTitle label={t('price_market_ref_title')} />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <KpiCard label={t('avg_price')} value={fmtEur(result.prix_moyen)} highlight sub={t('excl_outliers')} />
-            <KpiCard label={t('median_price')} value={fmtEur(result.prix_median)} />
-            <KpiCard
-              label={t('price_range')}
-              value={result.prix_q1 && result.prix_q3
-                ? `${formatNumber(result.prix_q1)} – ${formatNumber(result.prix_q3)} €`
-                : 'N/D'}
-              sub={t('percentile')}
-            />
-            <KpiCard label={t('listings_est')} value={result.nb_annonces_estim ? `~${result.nb_annonces_estim}` : 'N/D'} />
-          </div>
-
-          {/* Analyse expert + pro en 2 colonnes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-
-            {/* Cotation expert */}
-            <div className="glass-card p-4">
-              <SectionTitle icon={Tag} label={t('price_expert_section')} color="text-cyan-400" />
-              <div className="grid grid-cols-2 gap-2">
-                <KpiCard label={t('price_catalogue_label')} value={fmtEur(result.prix_neuf_catalogue)} small />
-                <KpiCard label={t('price_decote_label')} value={fmtPct(result.decote_annuelle_pct)} small />
-                <KpiCard label={t('price_vr_1an')} value={fmtEur(result.valeur_residuelle_1an)} small />
-                <KpiCard label={t('price_vr_3ans')} value={fmtEur(result.valeur_residuelle_3ans)} small />
-              </div>
-              {(result.cote_argus_min || result.cote_argus_max) && (
-                <div className="mt-2 px-3 py-2 bg-navy-900/40 rounded-lg border border-navy-700/30">
-                  <p className="text-[10px] text-slate-500 mb-0.5">{t('price_argus_range')}</p>
-                  <p className="text-sm font-bold text-white">
-                    {formatNumber(result.cote_argus_min)} – {formatNumber(result.cote_argus_max)} €
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Pricing pro */}
-            <div className="glass-card p-4">
-              <SectionTitle icon={Zap} label={t('price_pro_section')} color="text-emerald-400" />
-              {/* Prix compétitifs — priorité absolue */}
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                <KpiCard label={t('price_best_market')} value={fmtEur(result.prix_meilleur_marche)} sub="TOP 10% marché" small />
-                <KpiCard label={t('price_conseille_vente')} value={fmtEur(result.prix_conseille_vente)} highlight sub="TTC compétitif" small />
-              </div>
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                <KpiCard
-                  label={t('price_pro_range')}
-                  value={result.fourchette_achat_pro_min && result.fourchette_achat_pro_max
-                    ? `${formatNumber(result.fourchette_achat_pro_min)} – ${formatNumber(result.fourchette_achat_pro_max)} €`
-                    : 'N/D'}
-                  sub={t('price_pro_range_sub')} small
-                />
-                <KpiCard
-                  label={t('price_margin_label')}
-                  value={fmtEur(result.marge_brute_potentielle)}
-                  sub={result.fourchette_achat_pro_max
-                    ? t('price_margin_sub').replace('{p}', formatNumber(result.fourchette_achat_pro_max))
-                    : t('price_margin_sub_generic')}
-                  small
-                />
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">{result.conseil_achat}</p>
-            </div>
-          </div>
-
-          {/* Malus client final — lien centré vers le calculateur du site */}
-          <div className="glass-card p-4 flex justify-center">
-            <Link
-              to="/co2-malus"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-warn/10 border border-warn/30
-                         text-sm font-bold text-warn hover:bg-warn/20 active:scale-95 transition-all"
-            >
-              <Calculator size={15} /> {t('price_malus_calc_link')}
-            </Link>
-          </div>
-
-          {/* Tendance */}
-          <div className="glass-card p-4 flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${trendBg}`}>
-              <TrendIcon size={22} className={trendColor} />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className={`text-base font-bold ${trendColor}`}>{trendLabel}</p>
-                {result.tendance_pct !== 0 && (
-                  <span className={`text-sm font-semibold ${trendColor}`}>
-                    {result.tendance === 'hausse' ? '+' : result.tendance === 'baisse' ? '-' : ''}
-                    {Math.abs(result.tendance_pct)}%
-                  </span>
+          {/* Rapport Markdown streamé */}
+          {report && (
+            <div ref={resultRef} className="space-y-3">
+              <div className="glass-card p-4 md:p-5">
+                <div className="chat-md text-sm text-slate-200 leading-relaxed"
+                     dangerouslySetInnerHTML={{ __html: mdToHtml(report) }} />
+                {streaming && (
+                  <span className="inline-block w-0.5 h-[1em] bg-cyan-400 animate-pulse align-middle ml-0.5 opacity-80" />
                 )}
               </div>
-              <p className="text-sm text-slate-200 mt-1 leading-relaxed">{result.analyse}</p>
-            </div>
-          </div>
 
-          {/* Annonces par source */}
-          {result.annonces_par_source?.length > 0 && (
-            <div className="glass-card p-4">
-              <SectionTitle label={t('price_per_source')} />
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-navy-700/30">
-                      <th className="text-left text-slate-500 font-semibold pb-1.5 pr-3">{t('sources_consulted')}</th>
-                      <th className="text-right text-slate-500 font-semibold pb-1.5 px-2">{t('import_price_min')}</th>
-                      <th className="text-right text-slate-500 font-semibold pb-1.5 px-2">{t('import_price_avg')}</th>
-                      <th className="text-right text-slate-500 font-semibold pb-1.5 px-2">{t('import_price_max')}</th>
-                      <th className="text-right text-slate-500 font-semibold pb-1.5 pl-2">{t('listings_est')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {result.annonces_par_source.map((s, i) => (
-                      <tr key={i} className="border-b border-navy-700/20 last:border-0">
-                        <td className="py-1.5 pr-3 text-slate-300 font-medium">{s.source}</td>
-                        <td className="py-1.5 px-2 text-right text-slate-400">{s.prix_min ? formatNumber(s.prix_min) + ' €' : '—'}</td>
-                        <td className="py-1.5 px-2 text-right text-cyan-400 font-semibold">{s.prix_moy ? formatNumber(s.prix_moy) + ' €' : '—'}</td>
-                        <td className="py-1.5 px-2 text-right text-slate-400">{s.prix_max ? formatNumber(s.prix_max) + ' €' : '—'}</td>
-                        <td className="py-1.5 pl-2 text-right text-slate-500">{s.nb ? `~${s.nb}` : '—'}</td>
-                      </tr>
+              {/* Malus — lien centré vers le calculateur */}
+              {!streaming && (
+                <div className="glass-card p-4 flex justify-center">
+                  <Link to="/co2-malus"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-warn/10 border border-warn/30
+                               text-sm font-bold text-warn hover:bg-warn/20 active:scale-95 transition-all">
+                    <Calculator size={15} /> {t('price_malus_calc_link')}
+                  </Link>
+                </div>
+              )}
+
+              {/* Sources */}
+              {!streaming && (sources.length > 0 || centraleUrl) && (
+                <div className="glass-card p-4">
+                  <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">{t('sources_consulted')}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {sources.map(s => (
+                      <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-slate-400 bg-navy-700/40 border border-navy-600/30
+                                   px-2.5 py-1 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 transition">
+                        {s.name} <ExternalLink size={10} />
+                      </a>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                    {!hasLiveData && (
+                      <span className="flex items-center gap-1 text-xs text-violet-400 bg-violet-400/5 border border-violet-400/20 px-2.5 py-1 rounded-lg">
+                        <WifiOff size={10} /> {t('price_knowledge_badge')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
-
-          {/* Conseil vente */}
-          <div className="glass-card p-4">
-            <SectionTitle label={t('sell_advice')} color="text-cyan-400" />
-            <p className="text-sm text-slate-200 leading-relaxed">{result.conseil_vente}</p>
-          </div>
-
-          {/* Équipements + Arguments + Vigilance en grille */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-
-            {/* Équipements recherchés */}
-            {result.equipements_recherches?.length > 0 && (
-              <div className="glass-card p-4">
-                <SectionTitle icon={Tag} label={t('price_equipements_label')} color="text-violet-400" />
-                <div className="flex flex-wrap gap-1.5">
-                  {result.equipements_recherches.map((eq, i) => (
-                    <span key={i} className="text-[11px] px-2 py-0.5 rounded-full bg-violet-400/10 text-violet-300 border border-violet-400/20">
-                      {eq}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Arguments commerciaux */}
-            {result.arguments_commerciaux?.length > 0 && (
-              <div className="glass-card p-4">
-                <SectionTitle icon={Zap} label={t('price_arguments_label')} color="text-emerald-400" />
-                <ul className="space-y-1.5">
-                  {result.arguments_commerciaux.map((arg, i) => (
-                    <li key={i} className="flex items-start gap-1.5">
-                      <span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span>
-                      <span className="text-xs text-slate-200 leading-relaxed">{arg}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Points de vigilance */}
-            {result.points_vigilance?.length > 0 && (
-              <div className="glass-card p-4">
-                <SectionTitle icon={ShieldCheck} label={t('price_vigilance_label')} color="text-warn" />
-                <ul className="space-y-1.5">
-                  {result.points_vigilance.map((pt, i) => (
-                    <li key={i} className="flex items-start gap-1.5">
-                      <span className="text-warn mt-0.5 flex-shrink-0">⚠</span>
-                      <span className="text-xs text-slate-200 leading-relaxed">{pt}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {/* Sources + lien La Centrale */}
-          <div className="glass-card p-4">
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">{t('sources_consulted')}</p>
-            <div className="flex flex-wrap gap-2">
-              {result.sources?.map(s => (
-                <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs text-slate-400 bg-navy-700/40 border border-navy-600/30
-                             px-2.5 py-1 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 transition">
-                  {s.name} <ExternalLink size={10} />
-                </a>
-              ))}
-              {!result.hasLiveData && (
-                <span className="flex items-center gap-1 text-xs text-violet-400 bg-violet-400/5 border border-violet-400/20 px-2.5 py-1 rounded-lg">
-                  <WifiOff size={10} /> {t('price_knowledge_badge')}
-                </span>
-              )}
-              {centraleUrl && (
-                <a href={centraleUrl} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs text-cyan-400 bg-cyan-400/5 border border-cyan-400/20
-                             px-2.5 py-1 rounded-lg hover:bg-cyan-400/10 transition ml-auto">
-                  <SlidersHorizontal size={10} /> {t('open_la_centrale')}
-                </a>
-              )}
-            </div>
-          </div>
-
-          </div>{/* end resultRef */}
         </>
       )}
 
       {/* ── Empty state ──────────────────────────────────────────────────────── */}
-      {!result && !loading && !error && (
+      {!showResult && !error && (
         <div className="glass-card p-10 text-center">
           <Bell size={36} className="text-slate-700 mx-auto mb-3" />
           <p className="text-sm text-slate-400 mb-1">{t('select_brand_model')}</p>

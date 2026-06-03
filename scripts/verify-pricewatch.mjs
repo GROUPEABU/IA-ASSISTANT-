@@ -15,40 +15,32 @@ import { spawn } from 'node:child_process'
 import { chromium } from 'playwright'
 import { setTimeout as sleep } from 'node:timers/promises'
 
-const PORT = 4296
+const PORT = 4302
 const BASE = `http://localhost:${PORT}`
 
-// Réponse veilleprix réaliste : premier du net 26 000 TTC pour un C5 Aircross
-// MAX < 50 000 km. Achat pro attendu = round(26000/1.2) - 450 - 3000 = 18 217.
-const VENTE_TTC = 26000
-const FAKE_VEILLE = {
-  prix_moyen: 28500, prix_median: 27500, prix_q1: 26000, prix_q3: 30500,
-  nb_annonces_estim: 58, tendance: 'baisse', tendance_pct: 3.2,
-  prix_neuf_catalogue: 42800, decote_annuelle_pct: 14,
-  valeur_residuelle_1an: 24000, valeur_residuelle_3ans: 18500,
-  fourchette_achat_pro_min: 99999, fourchette_achat_pro_max: 99999, // doit être ÉCRASÉ par applyPricingRules
-  malus_estime: 0, marge_brute_potentielle: 99999,
-  prix_meilleur_marche: 26000, prix_conseille_vente: VENTE_TTC,
-  cote_argus_min: 24500, cote_argus_max: 29000, alerte: null,
-  analyse: 'Marché en léger repli, bonne liquidité sur cette finition.',
-  conseil_achat: 'Privilégier les unités < 50 000 km bien équipées.',
-  conseil_vente: 'Se positionner à 26 000 € TTC pour être 1er du net.',
-  equipements_recherches: ['GPS', 'Caméra', 'Toit pano', 'Sièges chauffants'],
-  arguments_commerciaux: ['Décote déjà absorbée', 'Finition haute', 'Hybride sobre'],
-  points_vigilance: ['Vérifier carnet', 'Pneus', 'Batterie hybride'],
-  annonces_par_source: [{ source: 'La Centrale', prix_min: 26000, prix_moy: 28500, prix_max: 32000, nb: 30 }],
-}
+// Rapport Markdown streamé (le nouveau format "comme le chat"), avec les 3
+// chiffres clés et un tableau de repères marché, pour un C5 Aircross MAX
+// < 50 000 km. On streame en PLUSIEURS deltas pour vérifier l'affichage live.
+const REPORT_CHUNKS = [
+  '## 🎯 L\'essentiel\n',
+  '- **Marge dégageable** : 3 000 – 4 000 € HT\n',
+  '- **Prix d\'achat pro conseillé** : 17 217 – 18 217 € HT\n',
+  '- **Revente conseillée (1er du net)** : 26 000 € TTC\n\n',
+  '## 📊 Repères marché\n\n',
+  '| Prix moyen | Prix médian | Fourchette | Annonces |\n|---|---|---|---|\n',
+  '| 28 500 € | 27 500 € | 26 000 – 30 500 € | ~58 |\n\n',
+  '## ✅ Arguments commerciaux\n- Décote déjà absorbée\n- Finition haute\n',
+]
 
-// SSE qui émet la réponse JSON en un bloc texte, avec un server_tool_use
-// web_search en amont (→ usedWebSearch = true → badge vert « Données live »).
-function sseFor(jsonObj) {
-  const txt = JSON.stringify(jsonObj)
+// SSE multi-deltas avec un server_tool_use web_search en amont
+// (→ usedWebSearch = true → badge vert « Données live »).
+function sseReport(chunks) {
   const events = [
     { type: 'message_start', message: { content: [] } },
     { type: 'content_block_start', index: 0, content_block: { type: 'server_tool_use', name: 'web_search' } },
     { type: 'content_block_stop', index: 0 },
     { type: 'content_block_start', index: 1, content_block: { type: 'text', text: '' } },
-    { type: 'content_block_delta', index: 1, delta: { type: 'text_delta', text: txt } },
+    ...chunks.map(c => ({ type: 'content_block_delta', index: 1, delta: { type: 'text_delta', text: c } })),
     { type: 'content_block_stop', index: 1 },
     { type: 'message_delta', delta: { stop_reason: 'end_turn' } },
     { type: 'message_stop' },
@@ -87,16 +79,13 @@ async function main() {
       })
     })
 
-    // ── Mock /api/chat (Phase 1 sans web + Phase 2 avec web) ──
+    // ── Mock /api/chat (un seul appel : streaming markdown + web search) ──
     await page.route('**/api/chat**', async (route) => {
       const body = JSON.parse(route.request().postData() || '{}')
       capturedChatBodies.push(body)
-      const isWebSearch = Array.isArray(body.tools) && body.tools.some(t => t.type?.startsWith('web_search'))
-      // Phase 2 (web) : badge vert. Phase 1 (sans web) : on renvoie aussi un JSON
-      // mais on s'attend à ce qu'il ne soit PAS affiché (pas de badge violet).
       route.fulfill({
         status: 200, contentType: 'text/event-stream',
-        body: sseFor(isWebSearch ? FAKE_VEILLE : { ...FAKE_VEILLE, prix_conseille_vente: 31000 }),
+        body: sseReport(REPORT_CHUNKS),
       })
     })
 
@@ -121,54 +110,51 @@ async function main() {
     // cliquer Analyser
     await page.locator('button:has-text("Analyser les prix")').first().click()
 
-    // attendre le résultat (badge "Données live")
-    await page.waitForSelector('text=/Données live|Live data/', { timeout: 15000 })
-    await sleep(600)
+    // attendre que le rapport streamé s'affiche (titre L'essentiel)
+    await page.waitForSelector('text=/L.essentiel/', { timeout: 15000 })
+    // puis le badge vert « Données live » a la fin du stream
+    await page.waitForSelector('text=/Données live|Live data/', { timeout: 8000 })
+    await sleep(400)
 
-    // ── Vérif 1 : badge violet (estimation hors-ligne) NE doit PAS apparaître ──
-    const violetCount = await page.locator('text=/Expertise IA · données marché|AI expertise/').count()
-
-    // ── Vérif 2 : prix d'achat pro affiché ──
     const bodyText = await page.locator('body').innerText()
+    const stripWs = (x) => x.replace(/\s/g, '')
+    const bodyNoWs = stripWs(bodyText)
 
-    // ── Vérif 3 : maths attendues ──
-    const venteHT = Math.round(VENTE_TTC / 1.2)
-    const achatMax = venteHT - 450 - 3000      // 18 217
-    const achatMin = achatMax - 1000           // 17 217
-    const fmt = (n) => n.toLocaleString('fr-FR').replace(/ | /g, ' ')
+    const hasTitre  = /L.essentiel/i.test(bodyText)
+    const hasAchat  = bodyNoWs.includes('17217') && bodyNoWs.includes('18217')
+    const hasTable  = /Prix médian/i.test(bodyText) && bodyNoWs.includes('27500')
+    const hasPdfBtn = await page.locator('button:has-text("PDF"), button:has-text("Télécharger")').count() > 0
 
-    // ── Vérif 4 : km filter dans le prompt web ──
     const webBody = capturedChatBodies.find(b => Array.isArray(b.tools) && b.tools.some(t => t.type?.startsWith('web_search')))
     const promptText = webBody ? JSON.stringify(webBody.messages) : ''
-    const stripWs = (s) => s.replace(/\s/g, '')
     const promptNoWs = stripWs(promptText)
-    const hasKmFilter = /50.?000km/i.test(promptNoWs) && /KILOM[ÉE]TRAGESTRICT/i.test(promptNoWs)
+    const hasKmFilter = /50.?000km/i.test(promptNoWs) && /KILOM[\u00c9E]TRAGESTRICT/i.test(promptNoWs)
     const fs = await import('node:fs')
     fs.writeFileSync('/tmp/pw-webprompt.txt', promptText)
     fs.writeFileSync('/tmp/pw-bodytext.txt', bodyText)
 
     await page.screenshot({ path: '/tmp/pricewatch-result.png', fullPage: true })
 
-    // ── RAPPORT ──
-    console.log('\n══════════ RÉSULTAT VÉRIFICATION VEILLE PRIX ══════════')
-    console.log(`Phase 2 (web) prix conseillé vente : ${VENTE_TTC} € TTC`)
-    console.log(`Achat pro attendu (maths)          : ${fmt(achatMin)} – ${fmt(achatMax)} € HT`)
-    const achatOk = stripWs(bodyText).includes(stripWs(fmt(achatMax))) && stripWs(bodyText).includes(stripWs(fmt(achatMin)))
-    console.log(`  → fourchette affichée trouvée ?  : ${achatOk ? '✅' : '❌'}`)
-    console.log(`Badge "Données live" (vert)        : ✅ (attendu pour déclencher la suite)`)
-    console.log(`Badge violet hors-ligne affiché ?  : ${violetCount === 0 ? '✅ non (correct)' : '❌ OUI (' + violetCount + ')'}`)
-    console.log(`Filtre km strict dans prompt web ? : ${hasKmFilter ? '✅' : '❌'}`)
-    console.log(`Nb d'appels /api/chat              : ${capturedChatBodies.length} (Phase1 + Phase2 attendus)`)
+    console.log('\n========== RESULTAT VERIFICATION VEILLE PRIX (streaming) ==========')
+    console.log(`Rapport streame affiche (titre)    : ${hasTitre ? 'OK' : 'KO'}`)
+    console.log(`Achat pro 17 217 - 18 217 EUR HT   : ${hasAchat ? 'OK' : 'KO'}`)
+    console.log(`Tableau reperes marche rendu       : ${hasTable ? 'OK' : 'KO'}`)
+    console.log(`Badge Donnees live (vert)          : OK`)
+    console.log(`Bouton PDF present                 : ${hasPdfBtn ? 'OK' : 'KO'}`)
+    console.log(`Filtre km strict dans prompt web   : ${hasKmFilter ? 'OK' : 'KO'}`)
+    console.log(`Nb appels /api/chat                : ${capturedChatBodies.length} (1 attendu)`)
     console.log('Screenshot : /tmp/pricewatch-result.png')
-    console.log('═══════════════════════════════════════════════════════\n')
+    console.log('==================================================================\n')
 
     await browser.close()
     preview.kill('SIGTERM')
 
-    if (!achatOk) fail('Fourchette achat pro incorrecte ou absente')
-    if (violetCount !== 0) fail('Badge violet hors-ligne affiché (Phase 1 ne doit pas s\'afficher)')
+    if (!hasTitre) fail('Rapport streamé non affiché')
+    if (!hasAchat) fail('Fourchette achat pro absente du rapport')
+    if (!hasTable) fail('Tableau repères marché non rendu')
+    if (!hasPdfBtn) fail('Bouton PDF absent')
     if (!hasKmFilter) fail('Filtre km absent du prompt web')
-    console.log('✅ VEILLE PRIX OK — flux complet, badge live, maths achat pro, filtre km.')
+    console.log('✅ VEILLE PRIX OK — rapport streamé, badge live, achat pro, tableau, PDF, filtre km.')
     process.exit(0)
   } catch (e) {
     console.error(e)

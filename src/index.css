@@ -756,6 +756,12 @@ html, body, .glass-card, header, nav, aside, main {
 .chat-md pre code { background: none; padding: 0; color: #cbd5e1; font-size: 0.82em;
                     white-space: pre; display: block; line-height: 1.45; }
 .chat-md hr      { border: 0; border-top: 1px solid rgba(148,163,184,0.20); margin: 0.75em 0; }
+.chat-md h4      { font-weight: 700; font-size: 0.9em; margin: 0.6em 0 0.2em; color: #50E5E5; }
+.chat-md table   { width: 100%; border-collapse: collapse; margin: 0.6em 0; font-size: 0.85em; }
+.chat-md th, .chat-md td { border: 1px solid rgba(148,163,184,0.20); padding: 0.35em 0.6em; text-align: left; }
+.chat-md th      { background: rgba(80,229,229,0.08); color: #67e8f9; font-weight: 700; }
+html.light .chat-md th { background: rgba(3,105,161,0.06); color: #0369a1; }
+html.light .chat-md th, html.light .chat-md td { border-color: rgba(0,0,0,0.12); }
 html.light .chat-md code { background: rgba(0,0,0,0.08); color: #0369a1; }
 html.light .chat-md pre  { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.10); }
 html.light .chat-md pre code { color: #334155; }
