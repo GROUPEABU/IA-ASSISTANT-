@@ -181,7 +181,7 @@ Réponds UNIQUEMENT en JSON strict (aucun texte avant/après, aucune balise mark
 
   const { text: raw, usedWebSearch } = await sendMessage(
     [{ role: 'user', content: prompt }],
-    { lang, maxTokens: withWebSearch ? 4096 : 3000, expert: true, temperature: 0.3, tool: 'veilleprix', webSearch: withWebSearch, maxSearches: 5, returnMeta: true }
+    { lang, maxTokens: withWebSearch ? 4096 : 2500, expert: true, temperature: 0.3, tool: 'veilleprix', webSearch: withWebSearch, maxSearches: 3, returnMeta: true }
   )
   return { ...extractJSON(raw, 'object'), usedWebSearch }
 }
@@ -283,7 +283,7 @@ export default function PriceWatch() {
   const [error, setError]         = useState(null)
   const [centraleUrl, setCentraleUrl] = useState('')
   const [searchLabel, setSearchLabel] = useState('')
-  // isPartial supprimé : on n'affiche plus de résultat intermédiaire Phase 1
+  const [isPartial, setIsPartial] = useState(false)
   const { history, add: addHistory, clear: clearHistory } = useHistory('pricewatch')
   const { save: saveLastVehicle } = useLastVehicle()
   const { exporting, withExporting } = useExport()
@@ -319,35 +319,41 @@ export default function PriceWatch() {
     setError(null)
     setResult(null)
 
-    let partialResult = null // fallback si Phase 2 échoue
+    let hasFast = false // une estimation rapide est-elle déjà affichée ?
     try {
       setStep(t('price_step_collecting'))
       const raw = await fetchPrices(filters)
       setFetchedAt(raw.fetchedAt)
       setCentraleUrl(raw.centraleUrl || '')
 
-      // Phase 1 — estimation rapide en mémoire (NON affichée — fallback seulement)
+      // Phase 1 — estimation experte RAPIDE (sans web, ~8 s) : AFFICHÉE TOUT DE
+      // SUITE pour ne pas faire attendre. Les chiffres se rafraîchissent ensuite.
       setStep(t('price_step_calculating'))
       try {
         const fastRaw = await analyzePrices(filters, FUELS, GEARBOXES, BODIES, lang, false)
         const fastAnalysis = applyPricingRules(fastRaw)
-        partialResult = { ...fastAnalysis, sources: raw.sources, hasLiveData: false, isPartial: false,
-          alerte: fastAnalysis.alerte || t('price_live_failed'),
-        }
-      } catch { /* optionnel */ }
+        setResult({ ...fastAnalysis, sources: raw.sources, hasLiveData: false, isPartial: true })
+        setIsPartial(true)
+        setLoading(false) // libère l'UI : résultat visible en ~8 s
+        setStep('')
+        hasFast = true
+      } catch { /* phase rapide optionnelle */ }
 
-      // Phase 2 — données live (recherche web) : c'est le seul résultat affiché
+      // Phase 2 — actualisation live (recherche web) EN ARRIÈRE-PLAN, sans
+      // re-bloquer l'écran si une estimation est déjà là.
+      if (!hasFast) setLoading(true)
       setStep(t('ai_progress_search'))
       const rawAnalysis = await analyzePrices(filters, FUELS, GEARBOXES, BODIES, lang, true)
       const analysis = applyPricingRules(rawAnalysis)
       const finalResult = { ...analysis, sources: raw.sources, hasLiveData: analysis.usedWebSearch, isPartial: false }
       setResult(finalResult)
+      setIsPartial(false)
       saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '), { price: analysis.prix_conseille_vente })
       addHistory({ searchLabel: label, type: filters.type, result: finalResult })
     } catch (err) {
-      if (partialResult) {
-        // Phase 2 KO → fallback sur l'estimation Phase 1
-        setResult(partialResult)
+      if (hasFast) {
+        // L'estimation reste affichée : on retire juste l'état « actualisation ».
+        setIsPartial(false)
         toast(t('price_live_failed'), 'error')
       } else {
         setError(err.message)
@@ -554,7 +560,7 @@ export default function PriceWatch() {
           <AIProgress
             active={loading}
             stages={[t('price_step_collecting'), t('ai_progress_search'), t('ai_progress_analyze'), t('ai_progress_format')]}
-            estimatedMs={52000}
+            estimatedMs={9000}
             persistKey="pricewatch"
             resume
           />
@@ -576,8 +582,12 @@ export default function PriceWatch() {
                   type === 'vo' ? 'bg-warn/10 text-warn' : 'bg-emerald-400/10 text-emerald-400'
                 }`}>{type === 'vo' ? t('used_vehicle') : t('new_vehicle')}</span>
 
-                {/* Data source badge — piloté par hasLiveData (API), pas par l'IA */}
-                {result.hasLiveData ? (
+                {/* Badge source : actualisation en cours → live → expertise */}
+                {isPartial ? (
+                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-400/10 text-cyan-400 border border-cyan-400/20 animate-pulse">
+                    <RefreshCw size={9} className="animate-spin" /> {t('price_live_refreshing')}
+                  </span>
+                ) : result.hasLiveData ? (
                   <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/10 text-emerald-400 border border-emerald-400/20">
                     <Wifi size={9} /> {t('price_live_badge')}
                   </span>

@@ -15,7 +15,7 @@ import { spawn } from 'node:child_process'
 import { chromium } from 'playwright'
 import { setTimeout as sleep } from 'node:timers/promises'
 
-const PORT = 4291
+const PORT = 4296
 const BASE = `http://localhost:${PORT}`
 
 // Réponse veilleprix réaliste : premier du net 26 000 TTC pour un C5 Aircross
