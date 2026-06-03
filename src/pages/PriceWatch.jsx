@@ -89,13 +89,16 @@ MÉTHODE DE COTATION (applique-la précisément, par véhicule) :
    marge groupe ni le malus de cette cascade.
 
    ⚠️ FOURCHETTE PILOTÉE PAR LE KILOMÉTRAGE (point clé) — applique la formule aux DEUX bornes :
-   - Borne BASSE = fort km : pars de la revente 1er du net fort km (plus basse).
-   - Borne HAUTE = faible km : pars de la revente 1er du net faible km (plus haute).
+   - Borne BASSE = FORT km : prends la revente 1er du net au HAUT de la plage de km autorisée (ex. proche du
+     plafond km du filtre, ~40 000–50 000 km), donc la revente la PLUS BASSE. N'utilise PAS une annonce à
+     20 000 km pour la borne fort km : ce serait trop haut.
+   - Borne HAUTE = FAIBLE km : revente 1er du net faible km (~5 000–12 000 km), la plus haute.
+   Les 3 000 € de marge doivent être SÉCURISÉS aux deux bornes (pile 3 000 € à ce prix d'achat).
 
    EXEMPLE (Citroën C5 Aircross MAX hybride, méthode à reproduire À L'IDENTIQUE) :
-   • Fort km : 1er du net ~23 300 € TTC → 23 300 ÷ 1,20 − 450 − 3 000 ≈ 15 950 € HT.
-   • Faible km : 1er du net ~25 200 € TTC → 25 200 ÷ 1,20 − 450 − 3 000 ≈ 17 550 € HT.
-   → Prix d'achat pro CONSEILLÉ : 15 950 – 17 550 € HT (marge 3 000 € à ce prix).
+   • Fort km (~50 000 km) : 1er du net ~24 000 € TTC → 24 000 ÷ 1,20 − 450 − 3 000 = 16 550 € HT.
+   • Faible km (~10 000 km) : 1er du net ~25 200 € TTC → 25 200 ÷ 1,20 − 450 − 3 000 = 17 550 € HT.
+   → Prix d'achat pro CONSEILLÉ : 16 550 – 17 550 € HT (3 000 € de marge sécurisés à chaque borne).
 
    POUR AUGMENTER LA MARGE (conseil, jamais en bradant) : on peut soit négocier l'achat un peu PLUS BAS que
    ces valeurs, soit positionner la revente un peu PLUS HAUT (toujours parmi les premiers du net). Chaque euro
