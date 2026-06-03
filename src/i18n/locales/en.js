@@ -748,6 +748,7 @@ export default {
   price_live_badge: 'Live data',
   price_live_partial: 'Live update…',
   price_live_failed: 'Live update unavailable — expert estimate shown. Retry for live data.',
+  price_phase1_alerte: 'Preliminary estimate (no live market data) — indicative lower-range prices. Wait for the final values.',
   price_expert_section: 'Valuation & Depreciation',
   price_pro_section: 'Pro Pricing',
   price_catalogue_label: 'New list price',

@@ -106,12 +106,15 @@ async function analyzePrices(filters, fuels, gearboxes, bodies, lang = 'fr', wit
     ? `\n⚠️ FILTRE FINITION STRICT : Analyse UNIQUEMENT la finition/version "${filters.finition}".`
     : ''
 
-  const dataSection = `RECHERCHE WEB OBLIGATOIRE — utilise l'outil de recherche web (plusieurs requêtes) AVANT toute estimation. Cherche en priorité les annonces les MOINS CHÈRES du marché ("premiers du net"), ex :
+  const dataSection = withWebSearch
+    ? `RECHERCHE WEB OBLIGATOIRE — utilise l'outil de recherche web (plusieurs requêtes) AVANT toute estimation. Cherche en priorité les annonces les MOINS CHÈRES du marché ("premiers du net"), ex :
 - "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.yearMin || ''} occasion prix lacentrale"
 - "${filters.make} ${filters.model} ${filters.finition || ''} leboncoin occasion pas cher"
 - "${filters.make} ${filters.model} ${filters.finition || ''} autoscout24 moins cher"
 OBJECTIF PRINCIPAL : identifier les 10–20% des annonces les moins chères réellement disponibles. Les partenaires Autobuyunion achètent en volume à prix HT compétitif et doivent se positionner PARMI LES PREMIERS DU NET — jamais sur la moyenne haute. Lis les prix réels, repère la fourchette basse du marché, et fixe le prix conseillé vente TTC dans cette fourchette compétitive.
 N'invente JAMAIS d'erreur "403/404" : décris ce que tu as réellement trouvé. Si aucune annonce exploitable après recherche, bascule sur ta connaissance experte et l'indique dans "alerte".`
+    : `ESTIMATION PRÉLIMINAIRE EXPERTE (aucune recherche web — connaissance marché 2024-2025 uniquement) :
+RÈGLE ABSOLUE : ancre-toi sur le BAS de la fourchette ("premiers du net", 10–20% des annonces les moins chères). Ne prends JAMAIS le prix moyen comme référence. En cas de doute, préfère la valeur basse : une sous-estimation est moins pénalisante qu'une surestimation pour l'acheteur pro. Mets impérativement dans "alerte" : "Estimation préliminaire sans données marché en temps réel — actualisation en cours."`
 
   const prompt = `Tu es expert en cote et marché automobile ${filters.type === 'vn' ? 'VN (véhicule neuf)' : 'VO (occasion)'} pour Autobuyunion, centrale d'achat européenne.
 Véhicule cible : "${vehicleDesc}"${finitionFilter}
@@ -325,7 +328,9 @@ export default function PriceWatch() {
       try {
         const fastRaw = await analyzePrices(filters, FUELS, GEARBOXES, BODIES, lang, false)
         const fastAnalysis = applyPricingRules(fastRaw)
-        setResult({ ...fastAnalysis, sources: raw.sources, hasLiveData: false, isPartial: true })
+        setResult({ ...fastAnalysis, sources: raw.sources, hasLiveData: false, isPartial: true,
+          alerte: fastAnalysis.alerte || t('price_phase1_alerte'),
+        })
         setIsPartial(true)
         setLoading(false) // libère l'UI mais continue en arrière-plan
         setStep('')
