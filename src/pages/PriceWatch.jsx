@@ -13,7 +13,8 @@ import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
 import { useLastVehicle } from '@/hooks/useLastVehicle'
 import { useExport } from '@/hooks/useExport'
-import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
+import { pdfFileName } from '@/utils/exportPdf'
+import { exportReportPdf } from '@/utils/exportReportPdf'
 import { useToast } from '@/components/ui/Toast'
 
 const PW_SESSION = 'abu_pw_filters'
@@ -72,12 +73,26 @@ RECHERCHE WEB : utilise l'outil de recherche web (2-3 requêtes max) pour releve
 MÉTHODE DE COTATION (applique-la précisément, par véhicule) :
 1. PREMIER PRIX DU NET = annonce la moins chère réellement dispo correspondant aux filtres.
 2. Prix de revente conseillé TTC = ce premier prix du net (ou légèrement en dessous) → être 1er du net, vendre vite.
-3. Cascade vers le prix d'achat pro HT (deal B2B Autobuyunion → partenaire) :
-   • Vente HT = revente TTC ÷ 1,20  • − 450 € HT transport UE  • − 3 000 € HT marge partenaire MINIMUM.
-   → Prix d'achat pro PLAFOND HT = Vente HT − 450 − 3 000. Acheter en dessous augmente la marge.
+3. RÈGLE DE BASE = la MARGE. Le partenaire doit garder ~3 000 € HT de marge MINIMUM par véhicule.
+   Formule : pour une revente TTC donnée (1er du net),
+     prix d'achat pro HT = revente TTC ÷ 1,20 − 450 (transport UE) − 3 000 (marge mini).
    Ne déduis JAMAIS de marge groupe ni le malus de cette cascade.
+
+   ⚠️ LE PRIX D'ACHAT EST UNE FOURCHETTE PILOTÉE PAR LE KILOMÉTRAGE (point clé) :
+   - Beaucoup de km → revente 1er du net plus BASSE → prix d'achat cible = BAS de fourchette.
+   - Peu de km → revente 1er du net plus HAUTE → prix d'achat cible = HAUT de fourchette.
+   Donne donc le prix d'achat pro comme une FOURCHETTE HT : [prix fort km ; prix faible km].
+   CHAQUE borne doit garder ≥ 3 000 € de marge face à SA revente correspondante.
+   ⛔ Ne propose JAMAIS un prix d'achat qui laisserait MOINS de 3 000 € de marge (vérifie :
+      marge = revente HT − 450 − prix d'achat ; elle doit rester ≥ 3 000 €).
+
+   EXEMPLE (Citroën C5 Aircross MAX hybride, méthode à reproduire) :
+   Revente 1er du net ~23 300 € TTC (fort km) à ~25 200 € TTC (faible km).
+   → achat pro ~15 950 € HT (fort km) à ~17 550 € HT (faible km) — marge ~3 000 € HT préservée aux deux bouts.
+   Au-delà (ex. 19 000 € HT), la marge tomberait sous 3 000 € → deal mauvais, à proscrire.
+
 4. Le MALUS écologique est à la charge du CLIENT FINAL (B2C) — info seule, jamais déduit de l'achat/marge.
-5. Plus le kilométrage monte, plus le prix d'achat cible BAISSE (préserve ≥ 3 000 € de marge, TTC plus compétitif). Ne déconseille jamais le fort km.
+5. Ne déconseille jamais le fort km : il fait simplement BAISSER le prix d'achat cible (bas de fourchette) tout en préservant la marge et en offrant un TTC plus compétitif au client final.
 
 RÈGLES :
 - Vouvoiement, ton mesuré et pro. Pas d'avis trop tranché.
@@ -87,9 +102,11 @@ RÈGLES :
 FORMAT DE SORTIE — Markdown, sections aérées, dans cet ordre EXACT :
 
 ## 🎯 L'essentiel
-- **Marge dégageable** : … € HT (≥ 3 000 €)
-- **Prix d'achat pro conseillé** : … – … € HT
-- **Revente conseillée (1er du net)** : … € TTC
+- **Marge dégageable** : ~3 000 € HT par véhicule (objectif plancher)
+- **Prix d'achat pro conseillé** : … – … € HT (bas = fort km, haut = faible km)
+- **Revente conseillée (1er du net)** : … € TTC (plus haute si faible km)
+
+**À retenir** : le prix d'achat monte quand le kilométrage baisse ; à chaque niveau on garde ~3 000 € HT de marge. Au-delà du haut de fourchette, la marge passe sous 3 000 € → deal à éviter.
 
 ## 📊 Repères marché
 Tableau Markdown : Prix moyen | Prix médian | Fourchette courante | Nb annonces estimé (tous en TTC).
@@ -275,7 +292,7 @@ export default function PriceWatch() {
   }
 
   const handlePdf = () => withExporting(() =>
-    exportToPdf(resultRef, pdfFileName(searchLabel), { title: t('tool_price_title'), subtitle: searchLabel })
+    exportReportPdf(report, pdfFileName(searchLabel), { title: t('tool_price_title'), subtitle: searchLabel })
   )
 
   const reset = () => {
