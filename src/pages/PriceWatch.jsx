@@ -63,10 +63,16 @@ function buildPrompt(filters, vehicleDesc) {
     ? `\n⚠️ FINITION STRICTE : analyse UNIQUEMENT la version "${filters.finition}".` : ''
   const kmFilter = kmTxt
     ? `\n⚠️ KILOMÉTRAGE STRICT : analyse UNIQUEMENT les annonces avec ≤ ${kmTxt} réels au compteur. EXCLUS les véhicules quasi-neufs / mandataires (< 5 000 km) — ce ne sont PAS la référence « premier du net » ici, même s'ils sont moins chers.` : ''
+  const anneeTxt = filters.yearMin && filters.yearMax
+    ? (filters.yearMin === filters.yearMax ? `millésime ${filters.yearMin}` : `millésimes ${filters.yearMin} à ${filters.yearMax}`)
+    : filters.yearMin ? `millésime ${filters.yearMin} ou plus récent`
+    : filters.yearMax ? `millésime ${filters.yearMax} ou plus ancien` : null
+  const anneeFilter = anneeTxt
+    ? `\n⚠️ ANNÉE STRICTE : le véhicule analysé est de ${anneeTxt}. Raisonne EXCLUSIVEMENT sur ce millésime. N'écris JAMAIS une autre année (ex. 2024) si elle ne correspond pas au filtre — utilise l'année demandée pour la cote, la décote et les prix.` : ''
 
   return `Tu es l'analyste cote & marché automobile ${filters.type === 'vn' ? 'VN (neuf)' : 'VO (occasion)'} d'Autobuyunion, centrale d'achat européenne. Tu réponds comme dans une conversation : un rapport clair, direct, en Markdown, prêt à lire.
 
-VÉHICULE CIBLE : "${vehicleDesc}"${finitionFilter}${kmFilter}
+VÉHICULE CIBLE : "${vehicleDesc}"${finitionFilter}${kmFilter}${anneeFilter}
 
 RECHERCHE WEB : utilise l'outil de recherche web (2-3 requêtes max) pour relever les annonces réelles les MOINS CHÈRES correspondant EXACTEMENT aux filtres (kilométrage inclus) sur La Centrale, LeBonCoin, AutoScout24. Vise les 10-20 % d'annonces les moins chères ("premiers du net"), jamais la moyenne haute. Si rien d'exploitable, base-toi sur ta connaissance experte du marché français 2024-2025 et signale-le.
 
@@ -117,7 +123,7 @@ Tableau Markdown : Prix moyen | Prix médian | Fourchette courante | Nb annonces
 PVC neuf catalogue, décote annuelle %, valeur résiduelle 1 an / 3 ans, cote Argus indicative.
 
 ## Stratégie de vente "1er du net"
-Prix exact conseillé TTC, écart vs moyenne marché, argument face aux concurrents en ligne, délai de rotation estimé.
+Prix exact conseillé TTC, écart vs moyenne marché, argument face aux concurrents en ligne. NE DONNE PAS de délai de rotation (donnée inconnue).
 
 ## Arguments commerciaux
 3 puces fortes avec chiffres.
