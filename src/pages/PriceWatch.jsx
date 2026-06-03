@@ -305,7 +305,7 @@ export default function PriceWatch() {
   }
 
   const handlePdf = () => withExporting(() =>
-    exportReportPdf(report, pdfFileName(searchLabel), { title: t('tool_price_title'), subtitle: searchLabel })
+    exportReportPdf(report, pdfFileName(searchLabel, t('tool_price_title')), { title: t('tool_price_title'), subtitle: searchLabel })
   )
 
   const reset = () => {

@@ -120,7 +120,8 @@ Segment : ${selectedProduct.segment}`
       const prompt = `Tu es expert commercial automobile pour Autobuyunion.
 
 Génère exactement 10 objections clients fréquentes pour le ${vehicleName}, segment ${segLabel}.
-${detailsLine ? `Détails véhicule : ${detailsLine}. Tiens-en compte pour des objections et réponses PRÉCISES (motorisation, âge, kilométrage, finition).\n` : ''}${productContext}
+${detailsLine ? `Détails véhicule : ${detailsLine}. Tiens-en compte pour des objections et réponses PRÉCISES (motorisation, âge, kilométrage, finition).\n` : ''}⚠️ MOTORISATION EXACTE : respecte STRICTEMENT la motorisation du nom du véhicule et des détails. Un « hybride » simple/micro-hybride/full hybrid n'est PAS un « hybride rechargeable » (plug-in/PHEV) : ne parle de recharge, de prise ou d'autonomie 100% électrique que si le véhicule est EXPLICITEMENT rechargeable. Ne substitue jamais une autre variante.
+${productContext}
 
 Réponds UNIQUEMENT avec un tableau JSON valide, sans aucun texte ni balise markdown avant ou après :
 [
@@ -156,7 +157,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
     // Laisse React rendre l'état déplié avant le snapshot html2canvas.
     await new Promise((r) => setTimeout(r, 60))
     try {
-      await exportToPdf(objRef, pdfFileName(vehicleName), { title: t('page_objections_title'), subtitle: vehicleName })
+      await exportToPdf(objRef, pdfFileName(vehicleName, t('page_objections_title')), { title: t('page_objections_title'), subtitle: vehicleName })
     } finally {
       setForceOpenAll(false)
     }

@@ -48,7 +48,7 @@ export default function ProductDetail() {
   const malusColor = getMalusColor(product.specs.co2_wltp)
 
   const handlePDF = async () => {
-    await exportToPdf(printRef, pdfFileName(product.fullName), {
+    await exportToPdf(printRef, pdfFileName(product.fullName, t('page_products_title')), {
       title: t('page_products_title'),
       subtitle: product.fullName,
     })

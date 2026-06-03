@@ -78,6 +78,7 @@ export default function PitchGenerator() {
 
 Génère un pitch de vente structuré et percutant pour le ${vehicleName}, destiné à : ${t(profile.subKey)} — ${t(profile.labelKey)}.
 ${formatVehicleDetails(details) ? `Détails véhicule : ${formatVehicleDetails(details)}. Appuie-toi dessus pour des arguments PRÉCIS (motorisation, âge, kilométrage, finition).` : ''}
+⚠️ MOTORISATION EXACTE : respecte STRICTEMENT la motorisation indiquée dans le nom du véhicule et les détails. Ne la remplace JAMAIS par une autre variante. En particulier, un « hybride » simple / micro-hybride / full hybrid n'est PAS un « hybride rechargeable » (plug-in / PHEV) : ne parle de recharge, de prise, de batterie plug-in ou d'autonomie 100% électrique que si le véhicule est EXPLICITEMENT rechargeable. En cas de doute, reste sur la motorisation littéralement indiquée.
 ${context ? `\nContexte client : ${context}` : ''}
 ${productContext}
 
@@ -128,7 +129,7 @@ Réponds UNIQUEMENT en JSON valide :
   }
 
   const handlePdf = () => withExporting(() =>
-    exportToPdf(pitchRef, pdfFileName(vehicleName), { title: t('page_pitch_title'), subtitle: vehicleName })
+    exportToPdf(pitchRef, pdfFileName(vehicleName, t('page_pitch_title')), { title: t('page_pitch_title'), subtitle: vehicleName })
   )
 
   const reset = () => { setPitch(null); setVehicleId(''); setCustomVehicle(''); setContext(''); setGeneratedFor('') }

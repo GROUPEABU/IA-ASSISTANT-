@@ -1,20 +1,24 @@
 /**
- * Construit un nom de fichier PDF lisible et homogène :
- *   ABU {Modèle} - JJ.MM.AAAA.pdf
- * Ex. "ABU Citroën C5 Aircross - 01.06.2026.pdf"
+ * Construit un nom de fichier PDF lisible et homogène, avec le NOM DE L'OUTIL
+ * pour distinguer les exports (Veille prix, Pitch, Objections…) :
+ *   ABU {Outil} - {Modèle} - JJ.MM.AAAA.pdf
+ * Ex. "ABU Veille prix - Citroën C5 Aircross - 01.06.2026.pdf"
+ *
+ * @param {string} label  — véhicule / sujet
+ * @param {string} [tool] — nom de l'outil (ex. "Veille prix", "Pitch")
  */
-export function pdfFileName(label) {
+export function pdfFileName(label, tool = '') {
   const date = new Date()
     .toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
     .replace(/\//g, '.')
-  const name = (label || 'Export')
+  const clean = (s) => (s || '')
     .replace(/[·|/]+/g, ' ')
     .replace(/[^a-zA-Z0-9À-ÿ\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 40)
-    .trim()
-  return `ABU ${name} - ${date}.pdf`
+  const name = clean(label || 'Export').slice(0, 40).trim()
+  const toolName = clean(tool)
+  return `ABU ${toolName ? toolName + ' - ' : ''}${name} - ${date}.pdf`
 }
 
 /**
