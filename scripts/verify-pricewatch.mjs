@@ -15,7 +15,7 @@ import { spawn } from 'node:child_process'
 import { chromium } from 'playwright'
 import { setTimeout as sleep } from 'node:timers/promises'
 
-const PORT = 4320
+const PORT = 4326
 const BASE = `http://localhost:${PORT}`
 
 // Rapport Markdown streamé (le nouveau format "comme le chat"), avec les 3

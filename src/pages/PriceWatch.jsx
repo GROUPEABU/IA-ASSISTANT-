@@ -74,28 +74,31 @@ function buildPrompt(filters, vehicleDesc) {
 
 VÉHICULE CIBLE : "${vehicleDesc}"${finitionFilter}${kmFilter}${anneeFilter}
 
-RECHERCHE WEB : utilise l'outil de recherche web (2-3 requêtes max) pour relever les annonces réelles les MOINS CHÈRES correspondant EXACTEMENT aux filtres (kilométrage inclus) sur La Centrale, LeBonCoin, AutoScout24. Vise les 10-20 % d'annonces les moins chères ("premiers du net"), jamais la moyenne haute. Si rien d'exploitable, base-toi sur ta connaissance experte du marché français 2024-2025 et signale-le.
+RECHERCHE WEB : utilise l'outil de recherche web (2-3 requêtes max) pour relever les annonces réelles correspondant EXACTEMENT aux filtres (kilométrage inclus) sur La Centrale, LeBonCoin, AutoScout24, et repérer le niveau des « premiers du net » (annonces les moins chères réellement disponibles). Si rien d'exploitable, base-toi sur ta connaissance experte du marché français et signale-le.
+
+PHILOSOPHIE (à respecter absolument) : l'OBJECTIF est de GÉNÉRER DE LA MARGE, pas de brader. Le partenaire se positionne PARMI LES PREMIERS DU NET (offre attractive, vend bien) et, de temps en temps seulement, légèrement EN DESSOUS du 1er du net pour accélérer — sans jamais casser les prix.
 
 MÉTHODE DE COTATION (applique-la précisément, par véhicule) :
 1. PREMIER PRIX DU NET = annonce la moins chère réellement dispo correspondant aux filtres.
-2. Prix de revente conseillé TTC = ce premier prix du net (ou légèrement en dessous) → être 1er du net, vendre vite.
-3. RÈGLE DE BASE = la MARGE. Le partenaire doit garder ~3 000 € HT de marge MINIMUM par véhicule.
-   Formule : pour une revente TTC donnée (1er du net),
-     prix d'achat pro HT = revente TTC ÷ 1,20 − 450 (transport UE) − 3 000 (marge mini).
+2. Prix de revente conseillé TTC = se positionner parmi les premiers du net (au niveau, ou légèrement en dessous pour vendre vite) — JAMAIS brader.
+3. RÈGLE DE BASE = la MARGE PLANCHER de 3 000 € HT par véhicule, INDISPENSABLE.
+   Formule : pour une revente TTC donnée, marge = revente TTC ÷ 1,20 − 450 (transport UE) − prix d'achat pro HT.
+   • 3 000 € HT est un MINIMUM ABSOLU : ne propose JAMAIS, dans le calcul de base, un prix d'achat
+     qui laisserait MOINS de 3 000 € de marge.
+   • SI le marché permet PLUS de 3 000 € de marge (achat possible plus bas, revente solide), TANT MIEUX :
+     vise alors une marge plus élevée. Ne plafonne pas artificiellement à 3 000 €.
    Ne déduis JAMAIS de marge groupe ni le malus de cette cascade.
 
    ⚠️ LE PRIX D'ACHAT EST UNE FOURCHETTE PILOTÉE PAR LE KILOMÉTRAGE (point clé) :
-   - Beaucoup de km → revente 1er du net plus BASSE → prix d'achat cible = BAS de fourchette.
-   - Peu de km → revente 1er du net plus HAUTE → prix d'achat cible = HAUT de fourchette.
-   Donne donc le prix d'achat pro comme une FOURCHETTE HT : [prix fort km ; prix faible km].
-   CHAQUE borne doit garder ≥ 3 000 € de marge face à SA revente correspondante.
-   ⛔ Ne propose JAMAIS un prix d'achat qui laisserait MOINS de 3 000 € de marge (vérifie :
-      marge = revente HT − 450 − prix d'achat ; elle doit rester ≥ 3 000 €).
+   - Beaucoup de km → revente plus BASSE → prix d'achat cible = BAS de fourchette.
+   - Peu de km → revente plus HAUTE → prix d'achat cible = HAUT de fourchette.
+   Donne le prix d'achat pro comme une FOURCHETTE HT : [prix fort km ; prix faible km].
+   CHAQUE borne garde AU MOINS 3 000 € de marge (idéalement plus) face à SA revente correspondante.
 
    EXEMPLE (Citroën C5 Aircross MAX hybride, méthode à reproduire) :
-   Revente 1er du net ~23 300 € TTC (fort km) à ~25 200 € TTC (faible km).
-   → achat pro ~15 950 € HT (fort km) à ~17 550 € HT (faible km) — marge ~3 000 € HT préservée aux deux bouts.
-   Au-delà (ex. 19 000 € HT), la marge tomberait sous 3 000 € → deal mauvais, à proscrire.
+   Revente parmi les premiers du net ~23 300 € TTC (fort km) à ~25 200 € TTC (faible km).
+   → achat pro ~15 950 € HT (fort km) à ~17 550 € HT (faible km) — marge ≥ 3 000 € HT préservée, davantage si l'achat se négocie plus bas.
+   Un achat trop élevé (ex. 19 000 € HT ici) ferait passer la marge sous 3 000 € → à proscrire.
 
 4. Le MALUS écologique est à la charge du CLIENT FINAL (B2C) — info seule, jamais déduit de l'achat/marge.
 5. Ne déconseille jamais le fort km : il fait simplement BAISSER le prix d'achat cible (bas de fourchette) tout en préservant la marge et en offrant un TTC plus compétitif au client final.
@@ -110,11 +113,11 @@ STYLE DE RÉDACTION : professionnel, sobre et posé. AUCUN emoji, aucune icône,
 FORMAT DE SORTIE — Markdown épuré, sections aérées, dans cet ordre EXACT (titres en ## SANS emoji) :
 
 ## L'essentiel
-- **Marge dégageable** : ~3 000 € HT par véhicule (objectif plancher)
+- **Marge dégageable** : 3 000 € HT minimum par véhicule (davantage si l'achat se négocie plus bas)
 - **Prix d'achat pro conseillé** : … – … € HT (bas = fort km, haut = faible km)
 - **Revente conseillée (1er du net)** : … € TTC (plus haute si faible km)
 
-**À retenir** : le prix d'achat monte quand le kilométrage baisse ; à chaque niveau on garde ~3 000 € HT de marge. Au-delà du haut de fourchette, la marge passe sous 3 000 € et le deal n'est plus intéressant.
+**À retenir** : objectif = générer de la marge, pas brader. On se positionne parmi les premiers du net et on garde au moins 3 000 € HT de marge — plus quand le marché le permet. Le prix d'achat monte quand le kilométrage baisse.
 
 ## Repères marché
 Tableau Markdown : Prix moyen | Prix médian | Fourchette courante | Nb annonces estimé (tous en TTC).
