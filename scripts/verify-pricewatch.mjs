@@ -15,21 +15,21 @@ import { spawn } from 'node:child_process'
 import { chromium } from 'playwright'
 import { setTimeout as sleep } from 'node:timers/promises'
 
-const PORT = 4308
+const PORT = 4314
 const BASE = `http://localhost:${PORT}`
 
 // Rapport Markdown streamé (le nouveau format "comme le chat"), avec les 3
 // chiffres clés et un tableau de repères marché, pour un C5 Aircross MAX
 // < 50 000 km. On streame en PLUSIEURS deltas pour vérifier l'affichage live.
 const REPORT_CHUNKS = [
-  '## 🎯 L\'essentiel\n',
+  '## L\'essentiel\n',
   '- **Marge dégageable** : 3 000 – 4 000 € HT\n',
   '- **Prix d\'achat pro conseillé** : 17 217 – 18 217 € HT\n',
   '- **Revente conseillée (1er du net)** : 26 000 € TTC\n\n',
-  '## 📊 Repères marché\n\n',
+  '## Repères marché\n\n',
   '| Prix moyen | Prix médian | Fourchette | Annonces |\n|---|---|---|---|\n',
   '| 28 500 € | 27 500 € | 26 000 – 30 500 € | ~58 |\n\n',
-  '## ✅ Arguments commerciaux\n- Décote déjà absorbée\n- Finition haute\n',
+  '## Arguments commerciaux\n- Décote déjà absorbée\n- Finition haute\n',
 ]
 
 // SSE multi-deltas avec un server_tool_use web_search en amont

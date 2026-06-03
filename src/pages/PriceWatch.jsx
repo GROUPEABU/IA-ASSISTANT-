@@ -99,34 +99,33 @@ RÈGLES :
 - Ne cite JAMAIS de nom de réseau/mandataire/enseigne/concession/label ni de ville précise (tu les inventerais).
 - Chiffres réalistes en €, fourchettes si incertain. Jamais de chiffre inventé donné comme certain.
 
-FORMAT DE SORTIE — Markdown, sections aérées, dans cet ordre EXACT :
+STYLE DE RÉDACTION : professionnel, sobre et posé. AUCUN emoji, aucune icône, aucun symbole décoratif. Phrases claires et aérées, vouvoiement. Le rendu doit faire haut de gamme.
 
-## 🎯 L'essentiel
+FORMAT DE SORTIE — Markdown épuré, sections aérées, dans cet ordre EXACT (titres en ## SANS emoji) :
+
+## L'essentiel
 - **Marge dégageable** : ~3 000 € HT par véhicule (objectif plancher)
 - **Prix d'achat pro conseillé** : … – … € HT (bas = fort km, haut = faible km)
 - **Revente conseillée (1er du net)** : … € TTC (plus haute si faible km)
 
-**À retenir** : le prix d'achat monte quand le kilométrage baisse ; à chaque niveau on garde ~3 000 € HT de marge. Au-delà du haut de fourchette, la marge passe sous 3 000 € → deal à éviter.
+**À retenir** : le prix d'achat monte quand le kilométrage baisse ; à chaque niveau on garde ~3 000 € HT de marge. Au-delà du haut de fourchette, la marge passe sous 3 000 € et le deal n'est plus intéressant.
 
-## 📊 Repères marché
+## Repères marché
 Tableau Markdown : Prix moyen | Prix médian | Fourchette courante | Nb annonces estimé (tous en TTC).
 
-## 💶 Cotation & décote
+## Cotation & décote
 PVC neuf catalogue, décote annuelle %, valeur résiduelle 1 an / 3 ans, cote Argus indicative.
 
-## 🏷️ Stratégie de vente "1er du net"
+## Stratégie de vente "1er du net"
 Prix exact conseillé TTC, écart vs moyenne marché, argument face aux concurrents en ligne, délai de rotation estimé.
 
-## ✅ Arguments commerciaux
+## Arguments commerciaux
 3 puces fortes avec chiffres.
 
-## ⚠️ Points de vigilance
+## Points de vigilance
 3 puces.
 
-## 🔋 Malus écologique (client final B2C)
-Montant estimé + rappel qu'il n'entre pas dans le calcul d'achat pro. Renvoie vers le calculateur CO₂ & Malus du site.
-
-Commence directement par "## 🎯 L'essentiel". Aucune phrase d'introduction.`
+NE PARLE PAS du malus dans ce rapport (un bouton dédié renvoie déjà vers le calculateur). Commence directement par "## L'essentiel", sans phrase d'introduction.`
 }
 
 // ── Composants UI ─────────────────────────────────────────────────────────────
@@ -502,8 +501,8 @@ export default function PriceWatch() {
           {/* Rapport Markdown streamé */}
           {report && (
             <div ref={resultRef} className="space-y-3">
-              <div className="glass-card p-4 md:p-5">
-                <div className="chat-md text-sm text-slate-200 leading-relaxed"
+              <div className="glass-card p-6 md:p-8">
+                <div className="report-md text-slate-200"
                      dangerouslySetInnerHTML={{ __html: mdToHtml(report) }} />
                 {streaming && (
                   <span className="inline-block w-0.5 h-[1em] bg-cyan-400 animate-pulse align-middle ml-0.5 opacity-80" />
