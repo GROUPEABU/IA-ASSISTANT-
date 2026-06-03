@@ -96,7 +96,7 @@ async function analyzePrices(filters, fuels, gearboxes, bodies, lang = 'fr', wit
     filters.yearMin && filters.yearMax ? `${filters.yearMin}–${filters.yearMax}`
       : filters.yearMin ? `depuis ${filters.yearMin}`
       : filters.yearMax ? `jusqu'en ${filters.yearMax}` : '',
-    filters.mileageMax ? `< ${Number(filters.mileageMax).toLocaleString()} km` : '',
+    filters.mileageMax ? `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km` : '',
     filters.fuel ? fuels.find(f => f.code === filters.fuel)?.label : '',
     filters.gearbox ? gearboxes.find(g => g.code === filters.gearbox)?.label : '',
     filters.carrosserie ? bodies.find(b => b.code === filters.carrosserie)?.label : '',
@@ -107,13 +107,13 @@ async function analyzePrices(filters, fuels, gearboxes, bodies, lang = 'fr', wit
     : ''
 
   const kilometrageFilter = filters.mileageMax
-    ? `\n⚠️ FILTRE KILOMÉTRAGE STRICT : Analyse UNIQUEMENT les annonces avec ≤ ${Number(filters.mileageMax).toLocaleString()} km réels au compteur. Les véhicules quasi-neufs ou mandataires (< 5 000 km) ne sont PAS la référence "premier du net" pour cette recherche — exclus-les de l'analyse même s'ils sont moins chers.`
+    ? `\n⚠️ FILTRE KILOMÉTRAGE STRICT : Analyse UNIQUEMENT les annonces avec ≤ ${Number(filters.mileageMax).toLocaleString('fr-FR')} km réels au compteur. Les véhicules quasi-neufs ou mandataires (< 5 000 km) ne sont PAS la référence "premier du net" pour cette recherche — exclus-les de l'analyse même s'ils sont moins chers.`
     : ''
 
   const dataSection = withWebSearch
     ? `RECHERCHE WEB OBLIGATOIRE — utilise l'outil de recherche web (plusieurs requêtes) AVANT toute estimation. Cherche en priorité les annonces les MOINS CHÈRES correspondant EXACTEMENT aux filtres (kilométrage inclus) :
-- "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.yearMin || ''} ${filters.mileageMax ? `< ${Number(filters.mileageMax).toLocaleString()} km` : ''} occasion lacentrale prix"
-- "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.mileageMax ? `${Number(filters.mileageMax).toLocaleString()} km` : ''} leboncoin occasion moins cher"
+- "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.yearMin || ''} ${filters.mileageMax ? `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km` : ''} occasion lacentrale prix"
+- "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.mileageMax ? `${Number(filters.mileageMax).toLocaleString('fr-FR')} km` : ''} leboncoin occasion moins cher"
 - "${filters.make} ${filters.model} ${filters.finition || ''} ${filters.mileageMax ? `occasion kilométrage` : ''} autoscout24 pas cher"
 OBJECTIF PRINCIPAL : identifier les 10–20% des annonces les moins chères réellement disponibles ET correspondant au filtre km. Les partenaires Autobuyunion achètent en volume à prix HT compétitif et doivent se positionner PARMI LES PREMIERS DU NET — jamais sur la moyenne haute. Lis les prix réels, repère la fourchette basse du marché, et fixe le prix conseillé vente TTC dans cette fourchette compétitive.
 N'invente JAMAIS d'erreur "403/404" : décris ce que tu as réellement trouvé. Si aucune annonce exploitable après recherche, bascule sur ta connaissance experte et l'indique dans "alerte".`
@@ -308,7 +308,7 @@ export default function PriceWatch() {
     const filters = { make: resolvedMake, model, finition, carrosserie, type, yearMin, yearMax, mileageMax, fuel, gearbox, ...overrides }
     const label = [filters.make, filters.model, filters.finition,
       filters.yearMin && `${filters.yearMin}${filters.yearMax ? '–'+filters.yearMax : '+'}`,
-      filters.mileageMax && `< ${Number(filters.mileageMax).toLocaleString()} km`,
+      filters.mileageMax && `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km`,
     ].filter(Boolean).join(' · ')
 
     // Mémorise le véhicule pour préremplir les autres outils (pitch, objections).
