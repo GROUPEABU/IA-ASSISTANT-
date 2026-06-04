@@ -102,6 +102,13 @@ RECHERCHE WEB : utilise l'outil de recherche web (2-3 requêtes max) pour releve
 
 PHILOSOPHIE (à respecter absolument) : l'OBJECTIF est de GÉNÉRER DE LA MARGE, pas de brader. Le partenaire se positionne PARMI LES PREMIERS DU NET (offre attractive, vend bien) et, de temps en temps seulement, légèrement EN DESSOUS du 1er du net pour accélérer — sans jamais casser les prix.
 
+⚠️ GARDE-FOU RÉALISME & COHÉRENCE (IMPÉRATIF — vérifie AVANT de fixer le moindre prix) :
+- DÉCOTE OBLIGATOIRE : une occasion ne se revend JAMAIS au prix du neuf. Dès la sortie de concession la décote est d'au moins 10–15 %, et de 15 à 35 % sur la 1re année pour un modèle de grande diffusion. Donc TOUT prix d'occasion ≥ 90 % du prix catalogue neuf est ABERRANT : l'annonce est un quasi-neuf premium surcoté, une erreur de finition/génération ou une mauvaise saisie — ÉCARTE-la, ne l'utilise JAMAIS comme 1er du net.
+- ANCRAGE SUR LE CLUSTER, PAS SUR UNE ANNONCE ISOLÉE : identifie le GROS des annonces comparables (le cluster réaliste) et ancre-toi dessus. Une annonce nettement au-dessus du lot est un OUTLIER : ignore-la. N'ancre JAMAIS une borne sur une seule annonce atypique.
+- ATTENTION AUX GÉNÉRATIONS : si le modèle a connu un changement de génération récent, ne confonds pas le catalogue neuf de la NOUVELLE génération avec les OCCASIONS de la génération précédente réellement présentes sur le marché. Reste sur la génération effectivement disponible en occasion aux filtres demandés.
+- SI les annonces réelles sont trop rares ou incohérentes : NE force PAS une cotation sur un prix atypique. Appuie-toi sur la décote experte (PVC neuf − décote réaliste) et signale l'incertitude — mieux vaut une fourchette experte cohérente qu'un chiffre faux ancré sur une annonce isolée.
+- COHÉRENCE FINALE (relis-toi) : si la revente faible km ressort ≈ au prix neuf, ou si la décote affichée est < 10 % sur un modèle de grande série, ou si le prix d'achat pro dépasse ~75 % du prix neuf catalogue, c'est une ERREUR — recommence le raisonnement avant de répondre.
+
 MÉTHODE DE COTATION (applique-la précisément, par véhicule) :
 1. PREMIER PRIX DU NET = annonce la moins chère réellement dispo correspondant aux filtres.
 2. Prix de revente conseillé TTC = se positionner parmi les premiers du net (au niveau, ou légèrement en dessous pour vendre vite) — JAMAIS brader.
@@ -317,7 +324,7 @@ export default function PriceWatch() {
       const { text, usedWebSearch } = await sendMessage(
         [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry) }],
         {
-          lang, expert: true, temperature: 0.3, tool: 'veilleprix',
+          lang, expert: true, temperature: 0.2, tool: 'veilleprix',
           webSearch: true, maxSearches: 3, maxTokens: 3500,
           returnMeta: true, stream: true,
           onChunk: (full) => {
