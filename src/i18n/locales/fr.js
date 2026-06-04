@@ -782,10 +782,10 @@ export default {
   dim_seats: 'places',
   dim_with_mirrors: 'rétros déployés',
   dim_turning: 'Rayon de braquage',
-  dim_progress_photos: 'Recherche des photos et dimensions réelles…',
+  dim_progress_photos: 'Recherche des dimensions officielles…',
   dim_photo_interior: 'Habitacle',
   dim_photo_trunk: 'Coffre',
-  dim_disclaimer: 'Photos et données issues de sources publiques web — vérifiez sur le site du constructeur.',
+  dim_disclaimer: 'Données issues de sources publiques web — vérifiez sur le site du constructeur. Silhouettes schématiques (non contractuelles).',
   // TCO
   tco_on_years: 'TCO sur {n}',
   tco_km_year: 'km/an',

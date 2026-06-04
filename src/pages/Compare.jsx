@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Ruler, AlertCircle, RefreshCw, RotateCcw, Info, ImageOff, Sparkles, History, FileDown } from 'lucide-react'
+import { Ruler, AlertCircle, RefreshCw, RotateCcw, Info, Sparkles, History, FileDown } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { useSettings } from '@/contexts/SettingsContext'
 import AIProgress from '@/components/ui/AIProgress'
@@ -19,49 +19,83 @@ function parseAIJson(raw) {
   return JSON.parse(s)
 }
 
+// Détecte une carrosserie haute (SUV/monospace) pour choisir la bonne silhouette.
+const TALL_RE = /suv|crossover|4x4|monospace|ludospace|\bvan\b|pick.?up|tout.?terrain|baroudeur|aircross|duster|bigster/i
+const isTall = (...parts) => TALL_RE.test(parts.filter(Boolean).join(' '))
+
 /**
- * URL d'image MÊME ORIGINE via notre proxy `/api/car-image`, qui résout la vraie
- * photo de la GÉNÉRATION exacte côté serveur (recherche d'images sur "Marque
- * Modèle Année", repli Wikipédia). Same-origin = passe la CSP (`img-src 'self'`)
- * ET évite le « taint » du canvas à l'export PDF (html2canvas).
- *
- * L'ANNÉE est déterminante : sans elle, une recherche "Renault Espace" renvoie
- * le monospace de 1984 ; "Renault Espace 2023" renvoie bien le SUV actuel.
+ * Silhouette véhicule générique (profil, avant à droite). Tracé en `currentColor`
+ * : piloté par la couleur de texte du parent (cyan à l'écran, sombre à l'impression
+ * PDF). Remplace avantageusement une photo : 100 % fiable, charte respectée.
  */
-function carImg(c) {
-  const q = [c?.make, c?.model, c?.year].filter(Boolean).join(' ').trim()
-  if (!q) return null
-  const p = new URLSearchParams()
-  p.set('q', q)
-  if (c?.wiki) p.set('wiki', c.wiki)
-  return `/api/car-image?${p.toString()}`
-}
-
-/** Renseigne `_img` (URL proxy) sur chaque véhicule. */
-function attachImages(parsed) {
-  const cars = [
-    parsed.vehicle,
-    ...(parsed.comparablesNew || []),
-    ...(parsed.comparablesPrevious || []),
-  ].filter(Boolean)
-  cars.forEach((c) => { c._img = carImg(c) })
-  return parsed
-}
-
-/** Image with graceful fallback. Pass `contain` prop for the hero (full car visible). */
-function Photo({ src, alt, className, contain }) {
-  const [err, setErr] = useState(false)
-  if (!src || err) {
-    return (
-      <div className={`flex items-center justify-center bg-navy-900/70 ${className}`}>
-        <ImageOff size={20} className="text-slate-700" />
-      </div>
-    )
-  }
+function SilhouettePaths({ tall }) {
+  const body = tall
+    ? 'M14 70 L14 56 Q14 49 23 47 L46 45 L64 30 Q69 25 78 25 L150 25 Q161 25 167 32 L184 46 L200 48 Q208 50 208 59 L208 70 Z'
+    : 'M12 70 L12 61 Q12 55 20 53 L44 51 L70 35 Q77 30 88 30 L142 30 Q156 30 163 37 L192 52 L202 54 Q210 56 210 63 L210 70 Z'
   return (
-    <img src={src} alt={alt} loading="lazy" crossOrigin="anonymous"
-      onError={() => setErr(true)}
-      className={`${contain ? 'object-contain' : 'object-cover'} bg-navy-900/70 ${className}`} />
+    <>
+      <path d={body} fill="currentColor" fillOpacity="0.10" stroke="currentColor"
+        strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+      {[64, 168].map((cx) => (
+        <g key={cx}>
+          <circle cx={cx} cy="70" r="16" fill="currentColor" fillOpacity="0.16" stroke="currentColor" strokeWidth="3" />
+          <circle cx={cx} cy="70" r="6" fill="none" stroke="currentColor" strokeWidth="2.5" />
+        </g>
+      ))}
+    </>
+  )
+}
+
+function CarSilhouette({ tall, className }) {
+  return (
+    <svg viewBox="0 0 220 92" className={className} fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <SilhouettePaths tall={tall} />
+    </svg>
+  )
+}
+
+/**
+ * Schéma « blueprint » : silhouette à l'échelle + cotes longueur (bas) et
+ * hauteur (gauche). Visuel signature de la page, sans photo.
+ */
+function DimensionDiagram({ veh }) {
+  const tall = isTall(veh.body, veh.segment, veh.model)
+  const len = veh.length
+  const hgt = veh.height
+  return (
+    <div className="dim-blueprint relative rounded-xl border border-cyan-400/15 bg-navy-900/40 overflow-hidden text-cyan-400"
+      style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '16px 16px' }}>
+      <svg viewBox="0 0 440 200" className="w-full h-auto" fill="none" xmlns="http://www.w3.org/2000/svg">
+        {/* Silhouette imbriquée, mise à l'échelle automatiquement */}
+        <svg x="80" y="22" width="300" height="125" viewBox="0 0 220 92" preserveAspectRatio="xMidYMid meet">
+          <SilhouettePaths tall={tall} />
+        </svg>
+        {/* Sol */}
+        <line x1="70" y1="140" x2="380" y2="140" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1.5" strokeDasharray="2 5" />
+        {/* Cote LONGUEUR (bas) */}
+        <g stroke="currentColor" strokeWidth="1.5">
+          <line x1="96" y1="160" x2="366" y2="160" />
+          <line x1="96" y1="154" x2="96" y2="166" />
+          <line x1="366" y1="154" x2="366" y2="166" />
+        </g>
+        {len != null && (
+          <text x="231" y="181" textAnchor="middle" fontSize="13" fontWeight="700" fill="currentColor">
+            {len.toLocaleString('fr-FR')} mm
+          </text>
+        )}
+        {/* Cote HAUTEUR (gauche) */}
+        <g stroke="currentColor" strokeWidth="1.5">
+          <line x1="58" y1="55" x2="58" y2="139" />
+          <line x1="52" y1="55" x2="64" y2="55" />
+          <line x1="52" y1="139" x2="64" y2="139" />
+        </g>
+        {hgt != null && (
+          <text x="42" y="97" textAnchor="middle" fontSize="13" fontWeight="700" fill="currentColor" transform="rotate(-90 42 97)">
+            {hgt.toLocaleString('fr-FR')} mm
+          </text>
+        )}
+      </svg>
+    </div>
   )
 }
 
@@ -91,10 +125,14 @@ function CompCard({ car, refLen }) {
   const barW = Math.round(Math.min(100, Math.max(35, ratio * 100)))
   const delta = refLen > 0 && car.length > 0 ? car.length - refLen : null
 
+  const tall = isTall(car.body, car.model)
+
   return (
     <div className="glass-card overflow-hidden hover:border-cyan-400/25 transition-colors group">
-      <Photo src={car._img} alt={`${car.make} ${car.model}`} className="w-full h-28" />
-      <div className="p-3">
+      <div className="flex items-center justify-center bg-navy-900/40 px-4 pt-3 pb-1">
+        <CarSilhouette tall={tall} className="h-12 w-auto text-slate-500 group-hover:text-cyan-400/80 transition-colors" />
+      </div>
+      <div className="p-3 pt-2">
         <p className="text-xs font-bold text-white leading-tight group-hover:text-cyan-400 transition-colors">
           {car.make} {car.model}
         </p>
@@ -182,16 +220,15 @@ L'ÉQUIVALENCE se fait UNIQUEMENT sur le GABARIT (longueur, largeur, hauteur pro
 
 ÉTAPES :
 1. Dimensions OFFICIELLES EXACTES de la génération précise demandée (largeur HORS rétroviseurs ; champ widthMirrors séparé pour rétros déployés) + caractéristiques. Ne mélange JAMAIS les chiffres de générations différentes. Indique s'il s'agit d'un modèle ACTUELLEMENT commercialisé ("current") ou d'une génération REMPLACÉE ("previous"), et par quoi il a été remplacé le cas échéant.
-2. "comparablesNew" : 6 à 8 véhicules NEUFS actuellement en vente, RIVAUX DIRECTS du même segment et gabarit (longueur à ±15 cm), toutes marques. Génération actuellement commercialisée UNIQUEMENT. Chaque entrée doit avoir une "year" récente (modèle 2023-2026) — c'est cette année qui sert à retrouver la BONNE photo.
-3. "comparablesPrevious" : 3 à 5 GÉNÉRATIONS PRÉCÉDENTES DU MÊME VÉHICULE EXACT demandé. Exemple : pour "Citroën C5 Aircross 2025 (2e génération)" → 1ère génération C5 Aircross (et son restylage). Pour "Volkswagen Golf 8" → Golf 7, Golf 6… JAMAIS d'autres marques ici. Mets dans "year" l'année médiane de la génération (ex. 2019) pour retrouver la bonne photo.
+2. "comparablesNew" : 6 à 8 véhicules NEUFS actuellement en vente, RIVAUX DIRECTS du même segment et gabarit (longueur à ±15 cm), toutes marques. Génération actuellement commercialisée UNIQUEMENT, "year" récente (2023-2026).
+3. "comparablesPrevious" : 3 à 5 GÉNÉRATIONS PRÉCÉDENTES DU MÊME VÉHICULE EXACT demandé. Exemple : pour "Citroën C5 Aircross 2025 (2e génération)" → 1ère génération C5 Aircross (et son restylage). Pour "Volkswagen Golf 8" → Golf 7, Golf 6… JAMAIS d'autres marques ici. Mets dans "year" l'année médiane de la génération.
 
-Le champ "year" de CHAQUE véhicule est CRUCIAL : il identifie la génération et sert à récupérer la vraie photo. Donne aussi "wiki" = titre d'article Wikipedia en repli.
+Pour CHAQUE véhicule, "body" = type de carrosserie en un mot ("SUV", "berline", "break", "citadine", "monospace", "coupé").
 
 Réponds ENSUITE UNIQUEMENT en JSON valide (aucun texte autour, pas de backticks) :
 {
   "vehicle": {
     "make": "string", "model": "string", "year": number, "version": "string|null",
-    "wiki": "Titre exact de l'article Wikipedia",
     "status": "current|previous", "replacedBy": "string|null",
     "segment": "string", "body": "string", "seats": number,
     "length": number, "width": number, "widthMirrors": number|null, "height": number,
@@ -201,13 +238,11 @@ Réponds ENSUITE UNIQUEMENT en JSON valide (aucun texte autour, pas de backticks
   },
   "comparablesNew": [
     { "make": "string", "model": "string", "year": number, "version": "string|null",
-      "wiki": "Titre exact de l'article Wikipedia",
-      "length": number, "width": number, "height": number }
+      "body": "string", "length": number, "width": number, "height": number }
   ],
   "comparablesPrevious": [
     { "make": "string", "model": "string", "year": number, "version": "string|null",
-      "wiki": "Titre exact de l'article Wikipedia",
-      "length": number, "width": number, "height": number }
+      "body": "string", "length": number, "width": number, "height": number }
   ]
 }
 Dimensions en mm, poids en kg, coffre en litres, braquage en m, puissance en ch, couple en Nm, CO₂ en g/km WLTP. Valeur inconnue = null. JSON pur uniquement.`
@@ -216,7 +251,7 @@ Dimensions en mm, poids en kg, coffre en litres, braquage en m, puissance en ch,
         [{ role: 'user', content: prompt }],
         { lang, maxTokens: 4500, expert: true, temperature: 0, tool: 'comparateur', webSearch: true, maxSearches: 6 },
       )
-      setData(attachImages(parseAIJson(result)))
+      setData(parseAIJson(result))
     } catch (err) {
       setError(err.message || 'Erreur lors de l\'analyse')
     } finally {
@@ -372,9 +407,9 @@ Dimensions en mm, poids en kg, coffre en litres, braquage en m, puissance en ch,
             </div>
           </div>
 
-          {/* Real photo — object-contain so the full car is always visible */}
+          {/* Schéma dimensions (silhouette + cotes) — remplace la photo */}
           <div className="mb-5">
-            <Photo src={veh._img} alt={`${veh.make} ${veh.model}`} className="w-full h-48 sm:h-64 rounded-xl" contain />
+            <DimensionDiagram veh={veh} />
           </div>
 
           {/* L × l × H */}

@@ -754,10 +754,10 @@ export default {
   dim_seats: 'seats',
   dim_with_mirrors: 'mirrors out',
   dim_turning: 'Turning circle',
-  dim_progress_photos: 'Searching real photos and dimensions…',
+  dim_progress_photos: 'Searching official dimensions…',
   dim_photo_interior: 'Interior',
   dim_photo_trunk: 'Boot',
-  dim_disclaimer: 'Photos and data from public web sources — verify on the manufacturer\'s website.',
+  dim_disclaimer: 'Data from public web sources — verify on the manufacturer\'s website. Schematic silhouettes (non-contractual).',
   // TCO
   tco_on_years: 'TCO over {n}',
   tco_km_year: 'km/year',
