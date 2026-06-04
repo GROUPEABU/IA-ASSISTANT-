@@ -14,7 +14,7 @@ export default {
     nav_pitch: 'Générateur de pitch',
     nav_tco: 'Calculateur TCO',
     nav_chat: 'Assistant IA',
-    nav_compare: 'Dimensions',
+    nav_compare: 'Comparateur',
   
 
     nav_settings: 'Paramètres',
@@ -756,8 +756,8 @@ export default {
   dim_empty_hint2: 'et les modèles de gabarit équivalent',
   dim_comparables_new: 'Modèles neufs équivalents',
   dim_comparables_new_sub: 'En vente · gabarit similaire · toutes marques',
-  dim_comparables_prev: 'Modèles précédents équivalents',
-  dim_comparables_prev_sub: 'Générations remplacées · gabarit similaire',
+  dim_comparables_prev: 'Générations précédentes',
+  dim_comparables_prev_sub: 'Anciennes versions du même véhicule',
   dim_status_new: 'Modèle actuel',
   dim_status_previous: 'Modèle précédent',
   dim_replaced_by: 'Remplacé par',

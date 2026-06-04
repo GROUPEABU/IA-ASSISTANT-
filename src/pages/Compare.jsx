@@ -1,11 +1,10 @@
 import { useState, useRef } from 'react'
-import { Ruler, AlertCircle, RefreshCw, RotateCcw, Info, ImageOff, Sparkles, History, FileDown, Receipt } from 'lucide-react'
+import { Ruler, AlertCircle, RefreshCw, RotateCcw, Info, ImageOff, Sparkles, History, FileDown } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { useSettings } from '@/contexts/SettingsContext'
 import AIProgress from '@/components/ui/AIProgress'
 import Spinner from '@/components/ui/Spinner'
 import { MAKES, YEARS } from '@/data/vehicleFilters'
-import { getMalus, getMalusLabel } from '@/utils/malus'
 import { useExport } from '@/hooks/useExport'
 import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
 
@@ -46,8 +45,8 @@ function attachImages(parsed) {
   return parsed
 }
 
-/** Image with graceful fallback to a placeholder when the URL is dead/blocked. */
-function Photo({ src, alt, className }) {
+/** Image with graceful fallback. Pass `contain` prop for the hero (full car visible). */
+function Photo({ src, alt, className, contain }) {
   const [err, setErr] = useState(false)
   if (!src || err) {
     return (
@@ -59,7 +58,7 @@ function Photo({ src, alt, className }) {
   return (
     <img src={src} alt={alt} loading="lazy" crossOrigin="anonymous"
       onError={() => setErr(true)}
-      className={`object-cover bg-navy-900/70 ${className}`} />
+      className={`${contain ? 'object-contain' : 'object-cover'} bg-navy-900/70 ${className}`} />
   )
 }
 
@@ -180,10 +179,10 @@ L'ÉQUIVALENCE se fait UNIQUEMENT sur le GABARIT (longueur, largeur, hauteur pro
 
 ÉTAPES :
 1. Dimensions officielles exactes + caractéristiques du modèle demandé. Indique s'il s'agit d'un modèle ACTUELLEMENT commercialisé ("current") ou d'une génération REMPLACÉE ("previous"), et par quoi il a été remplacé le cas échéant.
-2. "comparablesNew" : 6 à 8 véhicules NEUFS actuellement commercialisés, de gabarit similaire (toutes marques).
-3. "comparablesPrevious" : 4 à 6 modèles de générations PRÉCÉDENTES/anciennes (jusqu'à ~15 ans) de gabarit similaire.
+2. "comparablesNew" : 6 à 8 véhicules NEUFS actuellement commercialisés, de gabarit similaire (toutes marques). Utilise UNIQUEMENT la génération actuelle en vente (pas d'anciennes versions).
+3. "comparablesPrevious" : 3 à 5 GÉNÉRATIONS PRÉCÉDENTES DU MÊME VÉHICULE EXACT demandé. Exemple : si on cherche "Citroën C5 Aircross 2025 (2e génération)", mets ici la 1ère génération C5 Aircross (2017-2022). Si on cherche "Volkswagen Golf 8", mets Golf 7, Golf 6, etc. JAMAIS d'autres marques ici — uniquement les anciennes versions du véhicule demandé.
 
-Pour CHAQUE véhicule (modèle demandé ET chaque comparable), donne le champ "wiki" = le TITRE EXACT de l'article Wikipedia du modèle (ex : "Peugeot 3008", "Renault Austral", "Alpine A290"). Ce titre sert à récupérer la vraie photo — il doit être précis et correspondre à un article Wikipedia existant.
+Pour CHAQUE véhicule (modèle demandé ET chaque comparable), donne le champ "wiki" = le TITRE EXACT de l'article Wikipedia de CETTE génération précise (ex : "Peugeot 3008 (2016)", "Renault Austral", "Alpine A290"). Ce titre sert à récupérer la vraie photo — il doit correspondre à un article Wikipedia existant et à la BONNE génération.
 
 Réponds ENSUITE UNIQUEMENT en JSON valide (aucun texte autour, pas de backticks) :
 {
@@ -228,7 +227,6 @@ Dimensions en mm, poids en kg, coffre en litres, braquage en m, puissance en ch,
   const compsN = data?.comparablesNew ?? []
   const compsP = data?.comparablesPrevious ?? []
   const isPrev = veh?.status === 'previous'
-  const malus  = veh?.co2 != null ? getMalus(veh.co2) : null
   const vehLabel = veh ? `${veh.make} ${veh.model}${veh.year ? ' ' + veh.year : ''}` : vehicleName
 
   const handlePdf = () => withExporting(() =>
@@ -371,9 +369,9 @@ Dimensions en mm, poids en kg, coffre en litres, braquage en m, puissance en ch,
             </div>
           </div>
 
-          {/* Real photo */}
+          {/* Real photo — object-contain so the full car is always visible */}
           <div className="mb-5">
-            <Photo src={veh._img} alt={`${veh.make} ${veh.model}`} className="w-full h-48 sm:h-64 rounded-xl" />
+            <Photo src={veh._img} alt={`${veh.make} ${veh.model}`} className="w-full h-48 sm:h-64 rounded-xl" contain />
           </div>
 
           {/* L × l × H */}
@@ -382,22 +380,6 @@ Dimensions en mm, poids en kg, coffre en litres, braquage en m, puissance en ch,
             <DimStat label={t('dim_width')}  value={veh.width}  unit={veh.widthMirrors ? `mm · ${veh.widthMirrors.toLocaleString('fr-FR')} ${t('dim_with_mirrors')}` : 'mm'} accent="text-emerald-400" />
             <DimStat label={t('dim_height')} value={veh.height} unit="mm" accent="text-purple-400" />
           </div>
-
-          {/* Malus écologique France 2025 */}
-          {malus != null && (
-            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-navy-900/60 border border-navy-700/40 mb-3">
-              <div className="w-9 h-9 rounded-lg bg-amber-400/10 border border-amber-400/20 flex items-center justify-center flex-shrink-0">
-                <Receipt size={16} className="text-amber-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold leading-tight">{t('dim_malus')}</p>
-                <p className="text-[11px] text-slate-500">{veh.co2} g/km · {getMalusLabel(veh.co2)}</p>
-              </div>
-              <p className={`text-lg font-black tabular-nums ${malus > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                {malus > 0 ? `${malus.toLocaleString('fr-FR')} €` : t('dim_malus_exempt')}
-              </p>
-            </div>
-          )}
 
           {/* Specs grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">

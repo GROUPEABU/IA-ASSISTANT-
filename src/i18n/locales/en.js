@@ -12,7 +12,7 @@ export default {
     nav_pitch: 'Pitch Generator',
     nav_tco: 'TCO Calculator',
     nav_chat: 'AI Assistant',
-    nav_compare: 'Dimensions',
+    nav_compare: 'Comparator',
   
 
     nav_settings: 'Settings',
@@ -728,8 +728,8 @@ export default {
   dim_empty_hint2: 'and equivalent-size competing models',
   dim_comparables_new: 'Equivalent new models',
   dim_comparables_new_sub: 'On sale · similar size · all brands',
-  dim_comparables_prev: 'Equivalent previous models',
-  dim_comparables_prev_sub: 'Replaced generations · similar size',
+  dim_comparables_prev: 'Previous generations',
+  dim_comparables_prev_sub: 'Older versions of this same vehicle',
   dim_status_new: 'Current model',
   dim_status_previous: 'Previous model',
   dim_replaced_by: 'Replaced by',
