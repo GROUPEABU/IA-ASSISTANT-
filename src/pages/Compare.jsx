@@ -1,277 +1,352 @@
 import { useState } from 'react'
-import { GitCompare, Plus, X, Trophy, RefreshCw, RotateCcw, AlertCircle } from 'lucide-react'
-import { PRODUCTS } from '@/services/products'
-import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
-import { getMalus } from '@/utils/malus'
-import { formatNumber } from '@/utils/formatters'
+import { Ruler, AlertCircle, RefreshCw, RotateCcw, Info } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
-import Spinner from '@/components/ui/Spinner'
-import AIProgress from '@/components/ui/AIProgress'
-import HistoryPanel from '@/components/ui/HistoryPanel'
 import { useSettings } from '@/contexts/SettingsContext'
-import { useSessionState } from '@/hooks/useSessionState'
-import { useToast } from '@/components/ui/Toast'
-import { useHistory } from '@/hooks/useHistory'
-import { useResultFocus } from '@/hooks/useResultFocus'
+import AIProgress from '@/components/ui/AIProgress'
+import VehicleDetails, { EMPTY_DETAILS, vehicleNameOf, formatVehicleDetails } from '@/components/ui/VehicleDetails'
 
-function getBestIndex(row, products) {
-  if (!row.rawVal || !row.better) return -1
-  const vals = products.map((p) => row.rawVal(p))
-  const best = row.better === 'min' ? Math.min(...vals) : Math.max(...vals)
-  const idx = vals.indexOf(best)
-  return vals.filter((v) => v === best).length === 1 ? idx : -1
+function parseAIJson(raw) {
+  const s = raw.trim()
+  const fenced = s.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+  if (fenced) return JSON.parse(fenced[1])
+  const obj = s.match(/(\{[\s\S]*\})/)
+  if (obj) return JSON.parse(obj[1])
+  return JSON.parse(s)
 }
+
+function CarSilhouette() {
+  const c = '#50E5E5'
+  return (
+    <svg viewBox="0 0 280 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full max-w-lg mx-auto block" aria-hidden="true">
+      <line x1="8" y1="84" x2="272" y2="84" stroke={c} strokeWidth="1" strokeDasharray="5,4" opacity="0.2" />
+      <path d="M20,78 L20,57 Q24,40 46,32 L92,22 L158,19 L183,22 L206,38 L228,57 L228,78 Z"
+        stroke={c} strokeWidth="2" fill={`${c}0C`} />
+      <line x1="92" y1="22" x2="104" y2="56" stroke={c} strokeWidth="1.8" />
+      <line x1="183" y1="22" x2="172" y2="56" stroke={c} strokeWidth="1.8" />
+      <line x1="92" y1="22" x2="183" y2="19" stroke={c} strokeWidth="1.5" />
+      <path d="M107,25 L170,22 L172,54 L104,56 Z" fill={`${c}10`} stroke={c} strokeWidth="1" />
+      <line x1="134" y1="22" x2="134" y2="56" stroke={c} strokeWidth="0.8" opacity="0.4" />
+      <line x1="152" y1="21" x2="152" y2="55" stroke={c} strokeWidth="0.8" opacity="0.4" />
+      <path d="M20,78 Q12,78 10,70 L20,57" stroke={c} strokeWidth="1.5" />
+      <path d="M228,78 Q236,78 238,70 L228,57" stroke={c} strokeWidth="1.5" />
+      <path d="M46,78 Q46,62 63,62 Q80,62 80,78" stroke={c} strokeWidth="1.8" fill={`${c}0A`} />
+      <path d="M172,78 Q172,62 189,62 Q206,62 206,78" stroke={c} strokeWidth="1.8" fill={`${c}0A`} />
+      <circle cx="63" cy="80" r="10" stroke={c} strokeWidth="2.2" />
+      <circle cx="63" cy="80" r="4" stroke={c} strokeWidth="1.5" fill={`${c}20`} />
+      <circle cx="189" cy="80" r="10" stroke={c} strokeWidth="2.2" />
+      <circle cx="189" cy="80" r="4" stroke={c} strokeWidth="1.5" fill={`${c}20`} />
+    </svg>
+  )
+}
+
+function DimStat({ label, value, unit, accent = 'text-cyan-400' }) {
+  return (
+    <div className="flex flex-col items-center gap-0.5 min-w-0">
+      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider leading-tight text-center">{label}</span>
+      <span className={`text-2xl font-black tabular-nums leading-tight ${accent}`}>
+        {typeof value === 'number' ? value.toLocaleString('fr-FR') : (value ?? '—')}
+      </span>
+      <span className="text-[11px] text-slate-500">{unit}</span>
+    </div>
+  )
+}
+
+function SpecCell({ label, value }) {
+  return (
+    <div className="bg-navy-900/50 rounded-xl px-3 py-2.5 border border-navy-700/40">
+      <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-0.5 leading-tight">{label}</p>
+      <p className="text-sm font-semibold text-white">{value ?? '—'}</p>
+    </div>
+  )
+}
+
+function CompCard({ car, refVehicle }) {
+  const lenRatio = refVehicle?.length > 0 ? car.length / refVehicle.length : 1
+  const hRatio   = refVehicle?.height > 0 ? car.height / refVehicle.height : 1
+  const barW = Math.round(Math.min(100, lenRatio * 100))
+  const barH = Math.round(Math.max(10, Math.min(32, hRatio * 28)))
+
+  return (
+    <div className="glass-card p-3.5 hover:border-cyan-400/25 transition-colors group">
+      <p className="text-xs font-bold text-white truncate group-hover:text-cyan-400 transition-colors">
+        {car.make} {car.model}
+      </p>
+      <p className="text-[10px] text-slate-500 mb-2.5 truncate">
+        {[car.year, car.version, car.power ? `${car.power} ch` : null].filter(Boolean).join(' · ')}
+      </p>
+
+      <div className="relative mb-2.5" style={{ height: '38px' }}>
+        <div className="absolute bottom-0 left-0 w-full rounded border border-dashed border-slate-700/40"
+          style={{ height: '28px' }} />
+        <div className="absolute bottom-0 left-0 rounded border border-cyan-400/30"
+          style={{ width: `${barW}%`, height: `${barH}px`, background: 'rgba(80,229,229,0.08)' }} />
+      </div>
+
+      <div className="flex items-baseline gap-1 flex-wrap">
+        <span className="text-[11px] font-semibold text-cyan-400">{car.length?.toLocaleString('fr-FR')}</span>
+        <span className="text-[10px] text-slate-600">×</span>
+        <span className="text-[10px] text-slate-400">{car.width?.toLocaleString('fr-FR')}</span>
+        <span className="text-[10px] text-slate-600">×</span>
+        <span className="text-[10px] text-slate-400">{car.height?.toLocaleString('fr-FR')} mm</span>
+      </div>
+      {car.segment && <p className="text-[10px] text-slate-600 mt-0.5 truncate">{car.segment}</p>}
+    </div>
+  )
+}
+
+const SUGGESTIONS = [
+  'Toyota Yaris Cross 2024', 'Renault Austral E-Tech 2024', 'Volkswagen ID.4 2024',
+  'Peugeot 308 2024', 'BMW X1 2024', 'Mercedes GLC 2024', 'Dacia Duster 2024',
+]
 
 export default function Compare() {
   const { t, lang } = useSettings()
-  const { toast } = useToast()
-  const [selected, setSelected] = useSessionState('abu_compare_sel', [null, null])
-  const [verdict, setVerdict] = useState('')
-  const [loadingVerdict, setLoadingVerdict] = useState(false)
-  const [error, setError] = useState(null)
-  const { generated } = useGeneratedProducts()
-  const allProducts = [...PRODUCTS, ...generated]
-  const { history, add: addHistory, clear: clearHistory } = useHistory('compare')
-  const headingRef = useResultFocus(!!verdict && !loadingVerdict)
+  const [details, setDetails]   = useState(EMPTY_DETAILS)
+  const [loading, setLoading]   = useState(false)
+  const [data, setData]         = useState(null)
+  const [error, setError]       = useState(null)
 
-  const ROWS = [
-    { key: 'prix_base', label: t('compare_row_prix_base'), format: (p) => `${formatNumber(p.prix.base)} €`, better: 'min' },
-    { key: 'prix_haut', label: t('compare_row_prix_max'), format: (p) => `${formatNumber(p.prix.haut)} €`, better: 'min' },
-    { key: 'malus', label: t('compare_row_malus'), format: (p) => { const m = getMalus(p.specs.co2_wltp, p.prix.haut); return m > 0 ? `+${formatNumber(m)} €` : t('compare_malus_exempt') }, rawVal: (p) => getMalus(p.specs.co2_wltp, p.prix.haut), better: 'min' },
-    { key: 'budget_total', label: t('compare_row_budget'), format: (p) => `${formatNumber(p.prix.base + getMalus(p.specs.co2_wltp, p.prix.haut))} €`, rawVal: (p) => p.prix.base + getMalus(p.specs.co2_wltp, p.prix.haut), better: 'min' },
-    { key: 'co2', label: 'CO₂ WLTP', format: (p) => `${p.specs.co2_wltp} g/km`, rawVal: (p) => p.specs.co2_wltp, better: 'min' },
-    { key: 'puissance', label: t('compare_row_power'), format: (p) => p.specs.puissance, rawVal: (p) => parseInt(p.specs.puissance), better: 'max' },
-    { key: 'couple', label: t('compare_row_torque'), format: (p) => p.specs.couple, rawVal: (p) => parseInt(p.specs.couple), better: 'max' },
-    { key: 'coffre', label: t('compare_row_trunk'), format: (p) => `${p.specs.coffre} L`, rawVal: (p) => p.specs.coffre, better: 'max' },
-    { key: 'conso', label: t('compare_row_conso'), format: (p) => p.specs.consommation, rawVal: (p) => parseFloat(p.specs.consommation), better: 'min' },
-    { key: 'longueur', label: t('compare_row_length'), format: (p) => `${p.specs.longueur} mm`, rawVal: (p) => p.specs.longueur, better: null },
-    { key: 'segment', label: t('compare_row_segment'), format: (p) => p.segment, better: null },
-    { key: 'origine', label: t('compare_row_origin'), format: (p) => p.origin, better: null },
-  ]
+  const vehicleName = vehicleNameOf(details)
 
-  const reset = () => { setVerdict(''); setSelected([null, null]); setError(null) }
+  const analyze = async (overrideName) => {
+    const name = (overrideName || vehicleName).trim()
+    if (!name) return
+    const descriptor = overrideName ? '' : formatVehicleDetails(details)
+    const fullLabel  = [name, descriptor].filter(Boolean).join(' — ')
 
-  const addSlot = () => { if (selected.length < 3) setSelected([...selected, null]) }
-  const removeSlot = (i) => setSelected(selected.filter((_, idx) => idx !== i))
-  const setSlot = (i, id) => {
-    const next = [...selected]
-    next[i] = id || null
-    setSelected(next)
-  }
-
-  const activeProducts = selected.map((id) => allProducts.find((p) => p.id === id)).filter(Boolean)
-  const canCompare = activeProducts.length >= 2
-
-  const generateVerdict = async () => {
-    setLoadingVerdict(true)
+    setLoading(true)
     setError(null)
+    setData(null)
+
     try {
-      const prompt = `Tu es expert automobile pour Autobuyunion. Compare ces ${activeProducts.length} véhicules :
+      const prompt = `Tu es expert automobile. Pour le véhicule "${fullLabel}", fournis:
+1. Ses dimensions exactes et spécifications techniques
+2. 6 à 8 modèles concurrents/équivalents de gabarit similaire (même segment) avec leurs dimensions
 
-${activeProducts.map((p, i) => `${i + 1}. ${p.fullName}
-   - Prix : ${formatNumber(p.prix.base)}€ – ${formatNumber(p.prix.haut)}€
-   - CO₂ : ${p.specs.co2_wltp} g/km · Malus : ${getMalus(p.specs.co2_wltp, p.prix.haut) > 0 ? formatNumber(getMalus(p.specs.co2_wltp, p.prix.haut)) + '€' : 'exonéré'}
-   - Puissance : ${p.specs.puissance} · Coffre : ${p.specs.coffre}L
-   - Segment : ${p.segment}`).join('\n\n')}
+Réponds UNIQUEMENT en JSON valide (sans aucun texte autour, sans backticks markdown) avec exactement cette structure:
+{
+  "vehicle": {
+    "make": "string",
+    "model": "string",
+    "year": number,
+    "version": "string ou null",
+    "segment": "string",
+    "body": "string",
+    "length": number,
+    "width": number,
+    "height": number,
+    "wheelbase": number,
+    "weight": number,
+    "trunk": number,
+    "engine": "string",
+    "power": number,
+    "torque": number,
+    "co2": number_ou_null,
+    "fuel": "string",
+    "gearbox": "string",
+    "acceleration": number,
+    "topSpeed": number
+  },
+  "comparables": [
+    {
+      "make": "string",
+      "model": "string",
+      "year": number,
+      "version": "string ou null",
+      "segment": "string",
+      "length": number,
+      "width": number,
+      "height": number,
+      "wheelbase": number,
+      "weight": number_ou_null,
+      "power": number_ou_null
+    }
+  ]
+}
+Dimensions en mm, poids en kg, volumes en litres, puissance en ch, CO₂ en g/km WLTP.
+Si une valeur est inconnue, mets null. JSON pur, rien d'autre.`
 
-Rédige un comparatif expert, chiffré et NEUTRE. N'élis PAS un « gagnant » unique : montre les forces/faiblesses de chacun et à quel besoin chacun correspond. Couvre ces deux usages :
-
-**Forces & faiblesses** : pour chaque véhicule, 2-3 points forts et 1-2 limites, chiffrés.
-**Choix d'achat pour la revente (pro)** : lequel tourne le mieux en VO et pourquoi — demande, décote à 3 ans (% de valeur conservée), tension du marché de l'occasion, malus à la charge du client final. Donne les critères selon la stratégie de stock, sans trancher absolument.
-**Aider un client qui hésite** : selon le profil/usage (budget, kilométrage annuel, famille, fiscalité, financement), vers lequel orienter — expose les critères de décision, pas un verdict imposé.
-**Qualité-prix & coût réel** : positionnement prix VN vs prestations, coût réel malus inclus pour le client final.
-
-Reste neutre, factuel et chiffré : montre à qui chaque véhicule convient, sans désigner de « meilleur » absolu.`
-
-      // Affichage au fil de l'eau (comme le chat) : le verdict s'écrit en direct.
-      const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 6000, expert: true, temperature: 0.3, tool: 'comparateur', stream: true, onChunk: (t) => setVerdict(t) })
-      setVerdict(result)
-      addHistory({ label: selected.filter(Boolean).map(id => allProducts.find(p => p.id === id)?.name).join(' vs '), verdict: result })
+      const result = await sendMessage(
+        [{ role: 'user', content: prompt }],
+        { lang, maxTokens: 3000, expert: true, temperature: 0, tool: 'dimensions', stream: false },
+      )
+      setData(parseAIJson(result))
     } catch (err) {
-      setError(err.message)
-      toast(err.message, 'error')
+      setError(err.message || 'Erreur lors de l\'analyse')
     } finally {
-      setLoadingVerdict(false)
+      setLoading(false)
     }
   }
 
+  const reset = () => { setData(null); setError(null) }
+
+  const veh   = data?.vehicle
+  const comps = data?.comparables ?? []
+
   return (
     <div className="space-y-5 animate-fade-in">
-      {/* Header */}
+
+      {/* Search card */}
       <div className="glass-card p-4 md:p-5">
         <div className="flex items-center gap-2 mb-4">
-          <GitCompare size={16} className="text-cyan-400" />
-          <h2 className="text-sm font-semibold text-white">{t('compare_title')}</h2>
-          <span className="text-xs text-slate-500">{t('compare_subtitle')}</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {selected.map((id, i) => (
-            <div key={i} className="relative">
-              <select
-                value={id || ''}
-                onChange={(e) => setSlot(i, e.target.value)}
-                aria-label={t('compare_vehicle_n').replace('{n}', i + 1)}
-                className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-                           text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition pr-8"
-              >
-                <option value="">{`-- ${t('compare_vehicle_n').replace('{n}', i + 1)} --`}</option>
-                {allProducts
-                  .filter((p) => !selected.includes(p.id) || p.id === id)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>{p.fullName}</option>
-                  ))}
-              </select>
-              {selected.length > 2 && (
-                <button onClick={() => removeSlot(i)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 hover:text-red-400 transition">
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          ))}
-
-          {selected.length < 3 && (
-            <button onClick={addSlot}
-              className="flex items-center justify-center gap-2 border border-dashed border-navy-600/60
-                         rounded-xl py-2.5 text-sm text-slate-600 hover:text-cyan-400 hover:border-cyan-400/30 transition">
-              <Plus size={14} /> {t('compare_add_third')}
+          <Ruler size={16} className="text-cyan-400" />
+          <div className="flex-1 min-w-0">
+            <h2 className="text-sm font-semibold text-white">{t('dim_title')}</h2>
+            <p className="text-xs text-slate-500">{t('dim_subtitle')}</p>
+          </div>
+          {data && (
+            <button onClick={reset}
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30 flex-shrink-0">
+              <RotateCcw size={11} /> {t('dim_new_search')}
             </button>
           )}
         </div>
 
-        {canCompare && (
-          <button
-            onClick={generateVerdict}
-            disabled={loadingVerdict}
-            className="mt-3 flex items-center gap-2 px-4 py-2.5 bg-cyan-400 text-navy-900
-                       text-sm font-bold rounded-xl hover:bg-cyan-300 active:scale-95 transition-all
-                       disabled:opacity-40 disabled:pointer-events-none"
-          >
-            {loadingVerdict ? <Spinner size="sm" /> : <Trophy size={14} />}
-            {loadingVerdict ? t('compare_analyzing') : t('compare_verdict_btn')}
-          </button>
+        {!loading && (
+          <>
+            <VehicleDetails value={details} onChange={setDetails} />
+            <button
+              onClick={() => analyze()}
+              disabled={!vehicleName.trim()}
+              className="w-full px-4 py-3 bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
+                         hover:bg-cyan-300 active:scale-95 transition-all
+                         disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
+            >
+              <Ruler size={16} />
+              {t('dim_analyze_btn')}
+            </button>
+          </>
+        )}
+
+        {loading && (
+          <div className="p-4 rounded-xl bg-cyan-400/5 border border-cyan-400/10">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse flex-shrink-0" />
+              <p className="text-sm text-white font-medium">{t('dim_analyzing')}</p>
+            </div>
+            <AIProgress active={loading} compact estimatedMs={10000} persistKey="dimensions" />
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex gap-2 items-start">
+            <AlertCircle size={14} className="text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-red-400 flex-1 min-w-0">{error}</p>
+            <button onClick={() => analyze()}
+              className="text-xs text-red-400 hover:text-white flex items-center gap-1 flex-shrink-0">
+              <RefreshCw size={11} /> {t('dim_regenerate')}
+            </button>
+          </div>
+        )}
+
+        {!loading && !data && (
+          <div className="mt-4">
+            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">
+              {t('modal_suggestions')}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {SUGGESTIONS.map(s => (
+                <button key={s} onClick={() => analyze(s)}
+                  className="text-xs text-slate-400 bg-navy-700/50 border border-navy-600/50
+                             px-2.5 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 transition">
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Tableau comparatif */}
-      {canCompare && (
-        <div className="glass-card overflow-hidden">
-          {/* Headers produits */}
-          <div className={`grid border-b border-navy-700/50`}
-            style={{ gridTemplateColumns: `180px repeat(${activeProducts.length}, 1fr)` }}>
-            <div className="p-3" />
-            {activeProducts.map((p) => (
-              <div key={p.id} className="p-3 text-center border-l border-navy-700/30">
-                <p className="text-xs font-bold text-white">{p.fullName}</p>
-                <p className="text-[10px] text-slate-500">{p.year}</p>
-              </div>
-            ))}
+      {/* Vehicle hero */}
+      {veh && (
+        <div className="glass-card p-4 md:p-6">
+          <div className="flex items-start justify-between gap-3 mb-5">
+            <div>
+              <h3 className="text-xl font-black text-white leading-tight">
+                {veh.make} {veh.model}
+                {veh.year && <span className="text-slate-400 font-normal text-base ml-2">{veh.year}</span>}
+              </h3>
+              {veh.version && <p className="text-sm text-cyan-400 font-medium mt-0.5">{veh.version}</p>}
+            </div>
+            <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+              {veh.segment && (
+                <span className="text-[10px] font-bold bg-cyan-400/10 text-cyan-400 border border-cyan-400/20
+                                 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  {veh.segment}
+                </span>
+              )}
+              {veh.body && <span className="text-[10px] text-slate-500">{veh.body}</span>}
+            </div>
           </div>
 
-          {/* Rows */}
-          {ROWS.map((row) => {
-            const bestIdx = getBestIndex(row, activeProducts)
-            return (
-              <div key={row.key}
-                className="grid border-b border-navy-700/20 last:border-0 hover:bg-navy-700/10 transition-colors"
-                style={{ gridTemplateColumns: `180px repeat(${activeProducts.length}, 1fr)` }}>
-                <div className="px-3 py-2.5 flex items-center">
-                  <span className="text-xs text-slate-500">{row.label}</span>
-                </div>
-                {activeProducts.map((p, i) => (
-                  <div key={p.id}
-                    className={`px-3 py-2.5 text-center border-l border-navy-700/20 flex items-center justify-center gap-1
-                                ${bestIdx === i ? 'bg-emerald-400/5' : ''}`}>
-                    <span className={`text-xs font-semibold ${bestIdx === i ? 'text-emerald-400' : 'text-slate-300'}`}>
-                      {row.format(p)}
-                    </span>
-                    {bestIdx === i && <Trophy size={10} className="text-emerald-400" />}
-                  </div>
-                ))}
-              </div>
-            )
-          })}
+          {/* Car silhouette */}
+          <div className="mb-4">
+            <CarSilhouette />
+          </div>
+
+          {/* Wheelbase */}
+          {veh.wheelbase && (
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-700/60 to-slate-700/60" />
+              <span className="text-[10px] text-slate-500 font-medium px-2 whitespace-nowrap">
+                {t('dim_wheelbase')} {veh.wheelbase?.toLocaleString('fr-FR')} mm
+              </span>
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent via-slate-700/60 to-slate-700/60" />
+            </div>
+          )}
+
+          {/* L × l × H */}
+          <div className="grid grid-cols-3 gap-3 p-4 rounded-xl bg-navy-900/60 border border-navy-700/40 mb-4">
+            <DimStat label={t('dim_length')} value={veh.length} unit="mm" accent="text-cyan-400" />
+            <DimStat label={t('dim_width')}  value={veh.width}  unit="mm" accent="text-emerald-400" />
+            <DimStat label={t('dim_height')} value={veh.height} unit="mm" accent="text-purple-400" />
+          </div>
+
+          {/* Specs grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {veh.power        != null && <SpecCell label={t('dim_power')}        value={`${veh.power} ch`} />}
+            {veh.torque       != null && <SpecCell label={t('dim_torque')}       value={`${veh.torque} Nm`} />}
+            {veh.co2          != null && <SpecCell label={t('dim_co2')}          value={`${veh.co2} g/km`} />}
+            {veh.acceleration != null && <SpecCell label={t('dim_acceleration')} value={`${veh.acceleration} s`} />}
+            {veh.fuel              && <SpecCell label={t('dim_fuel')}        value={veh.fuel} />}
+            {veh.gearbox           && <SpecCell label={t('dim_gearbox')}     value={veh.gearbox} />}
+            {veh.trunk        != null && <SpecCell label={t('dim_trunk')}        value={`${veh.trunk} L`} />}
+            {veh.weight       != null && <SpecCell label={t('dim_weight')}       value={`${veh.weight?.toLocaleString('fr-FR')} kg`} />}
+            {veh.topSpeed     != null && <SpecCell label={t('dim_top_speed')}    value={`${veh.topSpeed} km/h`} />}
+            {veh.engine            && <SpecCell label={t('dim_engine')}      value={veh.engine} />}
+          </div>
         </div>
       )}
 
-      {/* Verdict IA */}
-      {(verdict || loadingVerdict || error) && (
-        <div className="glass-card p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Trophy size={15} className="text-warn" />
-            <h3 ref={headingRef} tabIndex={-1} className="text-sm font-semibold text-white outline-none">{t('compare_verdict_title')}</h3>
+      {/* Comparables */}
+      {comps.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-baseline gap-3 px-0.5">
+            <h3 className="text-sm font-bold text-white">{t('dim_comparables_title')}</h3>
+            <span className="text-xs text-slate-500">{t('dim_comparables_subtitle')}</span>
           </div>
 
-          {/* Barre uniquement avant le 1er mot ; ensuite, écriture en direct. */}
-          {loadingVerdict && !verdict && (
-            <div className="py-4">
-              <AIProgress
-                active={loadingVerdict}
-                stages={[t('ai_progress_connect'), t('compare_analyzing_progress'), t('ai_progress_format')]}
-                estimatedMs={16000}
-                persistKey="compare"
-              />
-            </div>
-          )}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {comps.map((car, i) => (
+              <CompCard key={i} car={car} refVehicle={veh} />
+            ))}
+          </div>
 
-          {error && (
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-              <AlertCircle size={14} className="text-red-400 flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-red-400">{error}</p>
-              </div>
-              <button
-                onClick={generateVerdict}
-                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-white border border-red-500/40
-                           px-2.5 py-1 rounded-lg hover:bg-red-500/20 transition flex-shrink-0"
-              >
-                <RefreshCw size={10} /> {t('regenerate')}
-              </button>
-            </div>
-          )}
-
-          {verdict && (
-            <div className="space-y-1">
-              {verdict.split('\n').map((line, i) => {
-                if (line.startsWith('**') && line.endsWith('**')) {
-                  return <h4 key={i} className="text-sm font-bold text-warn mt-4 mb-1 first:mt-0">{line.replace(/\*\*/g, '')}</h4>
-                }
-                if (line.trim() === '') return <div key={i} className="h-1" />
-                return <p key={i} className="text-sm text-slate-300 leading-relaxed">{line}</p>
-              })}
-              {loadingVerdict ? (
-                /* Curseur d'écriture pendant le streaming */
-                <span className="inline-block w-1.5 h-4 bg-cyan-400 rounded-sm animate-pulse align-middle ml-0.5" />
-              ) : (
-                <div className="flex items-center gap-2 mt-3">
-                  <button onClick={generateVerdict}
-                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition">
-                    <RefreshCw size={11} /> {t('compare_regenerate')}
-                  </button>
-                  <button
-                    onClick={reset}
-                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30"
-                  >
-                    <RotateCcw size={11} /> {t('new_analysis_btn')}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+          <p className="text-[10px] text-slate-600 flex items-center gap-1.5">
+            <Info size={10} className="flex-shrink-0" />
+            {t('dim_disclaimer')}
+          </p>
         </div>
       )}
 
       {/* Empty state */}
-      {!canCompare && (
+      {!data && !loading && !error && (
         <div className="glass-card p-10 text-center">
-          <GitCompare size={36} className="text-slate-700 mx-auto mb-3" />
-          <p className="text-sm text-slate-400 mb-1">{t('compare_empty_hint1')}</p>
-          <p className="text-xs text-slate-600">{t('compare_empty_hint2')}</p>
+          <Ruler size={36} className="text-slate-700 mx-auto mb-3" />
+          <p className="text-sm text-slate-400 mb-1">{t('dim_empty_hint1')}</p>
+          <p className="text-xs text-slate-600">{t('dim_empty_hint2')}</p>
         </div>
       )}
-
-      <HistoryPanel items={history} onRestore={(item) => setVerdict(item.verdict)} onClear={clearHistory} primary={(item) => item.label} />
     </div>
   )
 }

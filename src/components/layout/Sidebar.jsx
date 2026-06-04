@@ -1,7 +1,7 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import {
   MessageSquare, Zap, X, Home, BookOpen, Gauge, Bell, ShieldCheck, Mic, LogOut,
-  Calculator, GitCompare,
+  Calculator, Ruler,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '@/contexts/AuthContext'
@@ -29,7 +29,7 @@ export default function Sidebar({ isOpen, onClose }) {
         { to: '/objections',  icon: ShieldCheck, labelKey: 'nav_objections' },
         { to: '/pitch',       icon: Mic,         labelKey: 'nav_pitch' },
         { to: '/tco',         icon: Calculator,  labelKey: 'nav_tco' },
-        { to: '/compare',     icon: GitCompare,  labelKey: 'nav_compare' },
+        { to: '/compare',     icon: Ruler,       labelKey: 'nav_compare' },
       ],
     },
     {
