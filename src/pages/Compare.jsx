@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { Ruler, AlertCircle, RefreshCw, RotateCcw, Info, ImageOff } from 'lucide-react'
+import { Ruler, AlertCircle, RefreshCw, RotateCcw, Info, ImageOff, Sparkles, History } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { useSettings } from '@/contexts/SettingsContext'
 import AIProgress from '@/components/ui/AIProgress'
-import { MAKES, YEARS, BODY_OPTS, FUEL_OPTS } from '@/data/vehicleFilters'
+import { MAKES, YEARS } from '@/data/vehicleFilters'
 
-const EMPTY = { make: '', model: '', year: '', version: '', carrosserie: '', fuel: '' }
+const EMPTY = { make: '', model: '', year: '', version: '' }
 
 function parseAIJson(raw) {
   const s = raw.trim()
@@ -14,6 +14,43 @@ function parseAIJson(raw) {
   const obj = s.match(/(\{[\s\S]*\})/)
   if (obj) return JSON.parse(obj[1])
   return JSON.parse(s)
+}
+
+/**
+ * Résout une VRAIE photo via l'API pageimages de Wikipedia (Wikimedia est
+ * CORS-ouvert et autorise le hotlink — contrairement aux URLs constructeur).
+ * Essaie fr puis en, puis se rabat sur "Marque Modèle".
+ */
+async function resolveWikiImage(title, fallbackTitle) {
+  const candidates = [title, fallbackTitle].filter(Boolean)
+  for (const cand of candidates) {
+    for (const wlang of ['fr', 'en']) {
+      try {
+        const url = `https://${wlang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(cand)}` +
+                    `&prop=pageimages&piprop=thumbnail&pithumbsize=800&format=json&redirects=1&origin=*`
+        const r = await fetch(url)
+        if (!r.ok) continue
+        const d = await r.json()
+        const page = Object.values(d?.query?.pages || {})[0]
+        const src = page?.thumbnail?.source
+        if (src) return src
+      } catch { /* essaie le candidat suivant */ }
+    }
+  }
+  return null
+}
+
+/** Renseigne `_img` (photo réelle) sur chaque véhicule, en parallèle. */
+async function resolveAllImages(parsed) {
+  const cars = [
+    parsed.vehicle,
+    ...(parsed.comparablesNew || []),
+    ...(parsed.comparablesPrevious || []),
+  ].filter(Boolean)
+  await Promise.all(cars.map(async (c) => {
+    c._img = await resolveWikiImage(c.wiki, `${c.make || ''} ${c.model || ''}`.trim())
+  }))
+  return parsed
 }
 
 /** Image with graceful fallback to a placeholder when the URL is dead/blocked. */
@@ -61,7 +98,7 @@ function CompCard({ car, refLen }) {
 
   return (
     <div className="glass-card overflow-hidden hover:border-cyan-400/25 transition-colors group">
-      <Photo src={car.photo} alt={`${car.make} ${car.model}`} className="w-full h-24" />
+      <Photo src={car._img} alt={`${car.make} ${car.model}`} className="w-full h-28" />
       <div className="p-3">
         <p className="text-xs font-bold text-white truncate group-hover:text-cyan-400 transition-colors">
           {car.make} {car.model}
@@ -93,9 +130,26 @@ function CompCard({ car, refLen }) {
   )
 }
 
+function CompGroup({ icon: Icon, title, subtitle, cars, refLen }) {
+  if (!cars?.length) return null
+  return (
+    <div className="space-y-3">
+      <div className="flex items-baseline gap-3 px-0.5">
+        <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+          <Icon size={14} className="text-cyan-400" /> {title}
+        </h3>
+        <span className="text-xs text-slate-500">{subtitle}</span>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {cars.map((car, i) => <CompCard key={i} car={car} refLen={refLen} />)}
+      </div>
+    </div>
+  )
+}
+
 const SUGGESTIONS = [
   'Alpine A290', 'Renault 5 E-Tech', 'Peugeot 308', 'Volkswagen Golf',
-  'BMW Série 1', 'Toyota Yaris Cross', 'Dacia Duster', 'Tesla Model 3',
+  'Dacia Duster', 'BMW Série 1', 'Toyota Yaris Cross', 'Tesla Model 3',
 ]
 
 const inputCls  = 'w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition'
@@ -117,8 +171,6 @@ export default function Compare() {
     const ctx = override ? '' : [
       form.year && `année ${form.year}`,
       form.version && `version ${form.version}`,
-      form.carrosserie && (BODY_OPTS.find(b => b.code === form.carrosserie) ? t(BODY_OPTS.find(b => b.code === form.carrosserie).key) : ''),
-      form.fuel && (FUEL_OPTS.find(f => f.code === form.fuel) ? t(FUEL_OPTS.find(f => f.code === form.fuel).key) : ''),
     ].filter(Boolean).join(', ')
     const label = [name, ctx].filter(Boolean).join(' — ')
 
@@ -129,35 +181,46 @@ export default function Compare() {
     try {
       const prompt = `Tu es expert automobile. En t'appuyant sur des recherches web RÉELLES, analyse le véhicule "${label}".
 
+L'ÉQUIVALENCE se fait UNIQUEMENT sur le GABARIT (longueur, largeur, hauteur proches), toutes marques confondues — exactement comme automobiledimension.com.
+
 ÉTAPES :
-1. Recherche les dimensions officielles exactes et les caractéristiques techniques de ce modèle.
-2. Recherche des PHOTOS RÉELLES de ce modèle (URLs d'images directes .jpg/.png/.webp accessibles publiquement) : une vue extérieure 3/4, une vue de l'habitacle/tableau de bord, une vue du coffre.
-3. Identifie 6 à 8 modèles concurrents de gabarit similaire (longueur proche, même segment) et pour chacun trouve une photo extérieure réelle (URL d'image directe).
+1. Dimensions officielles exactes + caractéristiques du modèle demandé. Indique s'il s'agit d'un modèle ACTUELLEMENT commercialisé ("current") ou d'une génération REMPLACÉE ("previous"), et par quoi il a été remplacé le cas échéant.
+2. "comparablesNew" : 6 à 8 véhicules NEUFS actuellement commercialisés, de gabarit similaire (toutes marques).
+3. "comparablesPrevious" : 4 à 6 modèles de générations PRÉCÉDENTES/anciennes (jusqu'à ~15 ans) de gabarit similaire.
+
+Pour CHAQUE véhicule (modèle demandé ET chaque comparable), donne le champ "wiki" = le TITRE EXACT de l'article Wikipedia du modèle (ex : "Peugeot 3008", "Renault Austral", "Alpine A290"). Ce titre sert à récupérer la vraie photo — il doit être précis et correspondre à un article Wikipedia existant.
 
 Réponds ENSUITE UNIQUEMENT en JSON valide (aucun texte autour, pas de backticks) :
 {
   "vehicle": {
     "make": "string", "model": "string", "year": number, "version": "string|null",
+    "wiki": "Titre exact de l'article Wikipedia",
+    "status": "current|previous", "replacedBy": "string|null",
     "segment": "string", "body": "string", "seats": number,
     "length": number, "width": number, "widthMirrors": number|null, "height": number,
     "wheelbase": number, "weight": number, "trunk": number, "turningCircle": number|null,
     "engine": "string", "power": number, "torque": number, "co2": number|null,
-    "fuel": "string", "gearbox": "string", "acceleration": number|null, "topSpeed": number|null,
-    "photos": { "exterior": "url|null", "interior": "url|null", "trunk": "url|null" }
+    "fuel": "string", "gearbox": "string", "acceleration": number|null, "topSpeed": number|null
   },
-  "comparables": [
+  "comparablesNew": [
     { "make": "string", "model": "string", "year": number, "version": "string|null",
-      "segment": "string", "length": number, "width": number, "height": number,
-      "photo": "url|null" }
+      "wiki": "Titre exact de l'article Wikipedia",
+      "length": number, "width": number, "height": number }
+  ],
+  "comparablesPrevious": [
+    { "make": "string", "model": "string", "year": number, "version": "string|null",
+      "wiki": "Titre exact de l'article Wikipedia",
+      "length": number, "width": number, "height": number }
   ]
 }
-Dimensions en mm, poids en kg, volume coffre en litres, rayon de braquage en m, puissance en ch, couple en Nm, CO₂ en g/km WLTP. Si une valeur est inconnue, mets null. Les URLs de photos doivent être réelles et directes. JSON pur uniquement.`
+Dimensions en mm, poids en kg, coffre en litres, braquage en m, puissance en ch, couple en Nm, CO₂ en g/km WLTP. Valeur inconnue = null. JSON pur uniquement.`
 
       const result = await sendMessage(
         [{ role: 'user', content: prompt }],
-        { lang, maxTokens: 4000, expert: true, temperature: 0, tool: 'comparateur', webSearch: true, maxSearches: 6 },
+        { lang, maxTokens: 4500, expert: true, temperature: 0, tool: 'comparateur', webSearch: true, maxSearches: 6 },
       )
-      setData(parseAIJson(result))
+      const parsed = await resolveAllImages(parseAIJson(result))
+      setData(parsed)
     } catch (err) {
       setError(err.message || 'Erreur lors de l\'analyse')
     } finally {
@@ -167,9 +230,10 @@ Dimensions en mm, poids en kg, volume coffre en litres, rayon de braquage en m, 
 
   const reset = () => { setData(null); setError(null) }
 
-  const veh   = data?.vehicle
-  const comps = data?.comparables ?? []
-  const photos = veh?.photos || {}
+  const veh    = data?.vehicle
+  const compsN = data?.comparablesNew ?? []
+  const compsP = data?.comparablesPrevious ?? []
+  const isPrev = veh?.status === 'previous'
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -192,7 +256,7 @@ Dimensions en mm, poids en kg, volume coffre en litres, rayon de braquage en m, 
 
         {!loading && (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
               <div>
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('make_label')}</label>
                 <input type="text" value={form.make} onChange={set('make')} list="dim-makes"
@@ -216,20 +280,6 @@ Dimensions en mm, poids en kg, volume coffre en litres, rayon de braquage en m, 
                 <input type="text" value={form.version} onChange={set('version')}
                   placeholder={t('price_finition_ph')} className={inputCls} />
               </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('price_body_label')}</label>
-                <select value={form.carrosserie} onChange={set('carrosserie')} className={selectCls}>
-                  <option value="">{t('veh_any')}</option>
-                  {BODY_OPTS.map(b => <option key={b.code} value={b.code}>{t(b.key)}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('fuel_label')}</label>
-                <select value={form.fuel} onChange={set('fuel')} className={selectCls}>
-                  <option value="">{t('veh_any')}</option>
-                  {FUEL_OPTS.map(f => <option key={f.code} value={f.code}>{t(f.key)}</option>)}
-                </select>
-              </div>
             </div>
             <button
               onClick={() => analyze()}
@@ -252,7 +302,7 @@ Dimensions en mm, poids en kg, volume coffre en litres, rayon de braquage en m, 
             </div>
             <AIProgress active={loading}
               stages={[t('ai_progress_connect'), t('dim_progress_photos'), t('ai_progress_format')]}
-              estimatedMs={22000} persistKey="dimensions" />
+              estimatedMs={24000} persistKey="dimensions" />
           </div>
         )}
 
@@ -289,29 +339,30 @@ Dimensions en mm, poids en kg, volume coffre en litres, rayon de braquage en m, 
       {veh && (
         <div className="glass-card p-4 md:p-6">
           <div className="flex items-start justify-between gap-3 mb-5">
-            <div>
+            <div className="min-w-0">
               <h3 className="text-xl font-black text-white leading-tight">
                 {veh.make} {veh.model}
                 {veh.year && <span className="text-slate-400 font-normal text-base ml-2">{veh.year}</span>}
               </h3>
               {veh.version && <p className="text-sm text-cyan-400 font-medium mt-0.5">{veh.version}</p>}
+              {isPrev && veh.replacedBy && (
+                <p className="text-[11px] text-amber-400/90 mt-1">{t('dim_replaced_by')} {veh.replacedBy}</p>
+              )}
             </div>
             <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-              {veh.segment && (
-                <span className="text-[10px] font-bold bg-cyan-400/10 text-cyan-400 border border-cyan-400/20
-                                 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  {veh.segment}
-                </span>
-              )}
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                isPrev ? 'bg-amber-400/10 text-amber-400 border-amber-400/20'
+                       : 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20'}`}>
+                {isPrev ? t('dim_status_previous') : t('dim_status_new')}
+              </span>
+              {veh.segment && <span className="text-[10px] text-slate-500">{veh.segment}</span>}
               {veh.body && <span className="text-[10px] text-slate-500">{veh.body}{veh.seats ? ` · ${veh.seats} ${t('dim_seats')}` : ''}</span>}
             </div>
           </div>
 
-          {/* Real photos */}
-          <div className="grid grid-cols-3 gap-2 mb-5">
-            <Photo src={photos.exterior} alt={`${veh.make} ${veh.model}`} className="w-full h-28 sm:h-40 rounded-xl col-span-3 sm:col-span-2 row-span-2" />
-            <Photo src={photos.interior} alt={t('dim_photo_interior')} className="w-full h-[52px] sm:h-[76px] rounded-xl" />
-            <Photo src={photos.trunk}    alt={t('dim_photo_trunk')}    className="w-full h-[52px] sm:h-[76px] rounded-xl" />
+          {/* Real photo */}
+          <div className="mb-5">
+            <Photo src={veh._img} alt={`${veh.make} ${veh.model}`} className="w-full h-48 sm:h-64 rounded-xl" />
           </div>
 
           {/* L × l × H */}
@@ -339,25 +390,19 @@ Dimensions en mm, poids en kg, volume coffre en litres, rayon de braquage en m, 
         </div>
       )}
 
-      {/* Comparables */}
-      {comps.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-baseline gap-3 px-0.5">
-            <h3 className="text-sm font-bold text-white">{t('dim_comparables_title')}</h3>
-            <span className="text-xs text-slate-500">{t('dim_comparables_subtitle')}</span>
-          </div>
+      {/* Comparables — neufs */}
+      <CompGroup icon={Sparkles} title={t('dim_comparables_new')} subtitle={t('dim_comparables_new_sub')}
+        cars={compsN} refLen={veh?.length} />
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {comps.map((car, i) => (
-              <CompCard key={i} car={car} refLen={veh?.length} />
-            ))}
-          </div>
+      {/* Comparables — modèles précédents */}
+      <CompGroup icon={History} title={t('dim_comparables_prev')} subtitle={t('dim_comparables_prev_sub')}
+        cars={compsP} refLen={veh?.length} />
 
-          <p className="text-[10px] text-slate-600 flex items-center gap-1.5">
-            <Info size={10} className="flex-shrink-0" />
-            {t('dim_disclaimer')}
-          </p>
-        </div>
+      {(compsN.length > 0 || compsP.length > 0) && (
+        <p className="text-[10px] text-slate-600 flex items-center gap-1.5">
+          <Info size={10} className="flex-shrink-0" />
+          {t('dim_disclaimer')}
+        </p>
       )}
 
       {/* Empty state */}
