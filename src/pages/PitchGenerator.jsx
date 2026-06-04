@@ -152,27 +152,6 @@ Réponds UNIQUEMENT en JSON valide :
           </div>
         </div>
 
-        {/* Catalog shortcuts */}
-        {allProducts.length > 0 && (
-          <div className="mb-4">
-            <p className="section-label block mb-1.5">{t('catalog_shortcuts')}</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-              {allProducts.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => { setVehicleId(p.id); setDetails((d) => ({ ...d, make: p.brand, model: p.model })) }}
-                  className={`text-xs px-2.5 py-1.5 rounded-lg border transition truncate text-left ${
-                    vehicleId === p.id
-                      ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/40'
-                      : 'text-slate-400 border-navy-600/50 hover:text-cyan-400 hover:border-cyan-400/30'
-                  }`}
-                >
-                  {p.fullName}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         <VehicleDetails value={details} onChange={setDetails} />
 
