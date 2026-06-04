@@ -12,10 +12,7 @@
  */
 export const USERS = [
   { id: 1, username: 'hubert.saget@aafgroup.eu', passwordHash: 'ed74e595563f0f76da37eebc8eeb20afb8fac7ee82d8e550104392fe975d4dcb', name: 'HUBERT SAGET', role: 'admin',  initials: 'HS' },
-  { id: 2, username: 'membre',               passwordHash: '456bbbd4072ea05afaf60893679dfd6240273b2f6485fb3a3a8fa669aa9b3fe8', name: 'Membre',         role: 'membre', initials: 'MB' },
   { id: 3, username: 'demo@autobuyunion.eu', passwordHash: '092c365fd32a2be2ef2631fafc3a8df0e75aaafbc1b87f69480abc170f8816e8', name: 'Compte Démo',    role: 'membre', initials: 'DM' },
-  { id: 4, username: 'demo1',                passwordHash: '3b25cc9e7c13cf93677b34666192de4f4139c1039ba7615036dd4853d6f534dc', name: 'Démo 24h',       role: 'membre', initials: 'D1', expiresAt: '2026-05-29T23:59:59Z' },
-  { id: 5, username: 'demo2',                passwordHash: 'e7272f82a9e97b0ff98a1b47a5bdf1791c5ec133b330609b5285aa4a41b74009', name: 'Démo 48h',       role: 'membre', initials: 'D2', expiresAt: '2026-05-30T23:59:59Z' },
 ]
 
 // Salt prefix applied before hashing. Versioned so it can be rotated later.
