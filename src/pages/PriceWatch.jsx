@@ -110,7 +110,7 @@ MÉTHODE DE COTATION (applique-la précisément, par véhicule) :
      prix d'achat pro HT = (revente 1er du net TTC ÷ ${tvaFmt}) − ${transport} (${transportNote}) − 3 000 (marge plancher).
    N'invente PAS un prix d'achat plus bas pour gonfler la marge : le prix d'achat CONSEILLÉ est celui qui
    sécurise pile 3 000 € de marge tout en se positionnant parmi les premiers du net. Ne déduis JAMAIS de
-   marge groupe ni le malus de cette cascade.
+   marge groupe de cette cascade.
 
    ⚠️ FOURCHETTE PILOTÉE PAR LE KILOMÉTRAGE (point clé) — applique la formule aux DEUX bornes :
    - Borne BASSE = FORT km : prends la revente 1er du net au HAUT de la plage de km autorisée (ex. proche du
@@ -129,8 +129,7 @@ MÉTHODE DE COTATION (applique-la précisément, par véhicule) :
    gagné à l'achat ou à la vente s'ajoute aux 3 000 €. Mais le prix d'achat AFFICHÉ reste celui de la formule
    ci-dessus (ancré sur le 1er du net réel), pas un prix artificiellement bas.
 
-4. Le MALUS écologique est à la charge du CLIENT FINAL (B2C) — info seule, jamais déduit de l'achat/marge.
-5. Ne déconseille jamais le fort km : il fait simplement BAISSER le prix d'achat cible (bas de fourchette) tout en préservant la marge et en offrant un TTC plus compétitif au client final.
+4. Ne déconseille jamais le fort km : il fait simplement BAISSER le prix d'achat cible (bas de fourchette) tout en préservant la marge et en offrant un TTC plus compétitif au client final.
 
 RÈGLES :
 - Vouvoiement, ton mesuré et pro. Pas d'avis trop tranché.
@@ -152,7 +151,7 @@ FORMAT DE SORTIE — Markdown épuré, sections aérées, dans cet ordre EXACT (
 Tableau Markdown : Prix moyen | Prix médian | Fourchette courante | Nb annonces estimé (tous en TTC).
 
 ## Cotation & décote
-PVC neuf catalogue, décote annuelle %, valeur résiduelle 1 an / 3 ans, cote Argus indicative.
+PVC neuf catalogue, décote annuelle %, valeur résiduelle 1 an / 3 ans, cote Argus indicative. N'inclus AUCUNE ligne, sous-titre ou phrase sur les émissions CO2, l'écotaxe, le malus écologique ou le malus au poids.
 
 ## Stratégie de vente "1er du net"
 Prix exact conseillé TTC, écart vs moyenne marché, argument face aux concurrents en ligne. NE DONNE PAS de délai de rotation (donnée inconnue).
@@ -161,9 +160,9 @@ Prix exact conseillé TTC, écart vs moyenne marché, argument face aux concurre
 3 puces fortes avec chiffres.
 
 ## Points de vigilance
-3 puces.
+3 puces. NE PARLE PAS de malus, d'émissions CO2, d'écotaxe ni de malus au poids ici non plus.
 
-NE PARLE PAS du malus dans ce rapport (un bouton dédié renvoie déjà vers le calculateur). Commence directement par "## L'essentiel", sans phrase d'introduction.`
+INTERDICTION ABSOLUE : n'écris JAMAIS le mot « malus », ni « émissions CO2 », « écotaxe », « malus écologique » ou « malus au poids » nulle part dans ce rapport — aucun chiffre, aucune ligne, aucune sous-section, aucune phrase à ce sujet. Un bouton dédié renvoie déjà vers le calculateur de malus. Commence directement par "## L'essentiel", sans phrase d'introduction.`
 }
 
 // ── Composants UI ─────────────────────────────────────────────────────────────
