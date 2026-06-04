@@ -126,6 +126,12 @@ MÉTHODE DE COTATION (applique-la précisément, par véhicule) :
    - Borne HAUTE = FAIBLE km : revente 1er du net faible km (~5 000–12 000 km), la plus haute.
    Les 3 000 € de marge doivent être SÉCURISÉS aux deux bornes (pile 3 000 € à ce prix d'achat).
 
+   ⚠️ RESSERRE LA BORNE HAUTE (impératif) : sur un même millésime, l'écart de prix entre faible km et fort km
+   reste MODÉRÉ. La revente faible km ne dépasse la revente fort km que de ~1 000–1 500 € TTC AU MAXIMUM.
+   Donc le prix d'achat BORNE HAUTE = borne BASSE + ~1 000 € HT (jamais +1 700 € ni +2 000 €). Si les annonces
+   faible km observées paraissent hautes, RAPPROCHE la borne haute de la borne basse — ne l'étire pas. La
+   fourchette d'achat doit rester SERRÉE (largeur ~1 000 € HT, 1 500 € HT grand maximum).
+
    EXEMPLE (Citroën C5 Aircross MAX hybride, méthode à reproduire À L'IDENTIQUE) :
    • Fort km (~50 000 km) : 1er du net ~24 000 € TTC → 24 000 ÷ ${tvaFmt} − ${transport} − 3 000 = ${ex1s} € HT.
    • Faible km (~10 000 km) : 1er du net ~25 200 € TTC → 25 200 ÷ ${tvaFmt} − ${transport} − 3 000 = ${ex2s} € HT.
@@ -194,7 +200,7 @@ MARCHÉ : ${countryLabel} — diviseur TVA ${tvaFmt}, transport ${transport} €
 CALCUL & MARGE
 1. FORMULE D'ACHAT (impérative) : prix d'achat pro HT = (revente 1er du net TTC ÷ ${tvaFmt}) − ${transport} − 3 000. Recalcule CHAQUE borne à partir de la revente affichée dans le rapport ; si le prix d'achat indiqué ne correspond pas au résultat de la formule, CORRIGE-le.
 2. MARGE PLANCHER : 3 000 € HT, sécurisée et JAMAIS en dessous aux deux bornes. La marge annoncée = 3 000 € HT à ce prix d'achat (davantage possible en négociant l'achat plus bas / la revente plus haut). Si une marge < 3 000 € apparaît, corrige.
-3. SENS DE LA FOURCHETTE : borne BASSE = FORT km (revente la plus basse) ; borne HAUTE = FAIBLE km (revente la plus haute). Si c'est inversé, corrige.
+3. SENS & RESSERREMENT DE LA FOURCHETTE : borne BASSE = FORT km (revente la plus basse) ; borne HAUTE = FAIBLE km (revente la plus haute) ; si c'est inversé, corrige. SURTOUT : l'écart entre les deux bornes d'ACHAT doit rester SERRÉ — environ 1 000 € HT, et JAMAIS plus de 1 500 € HT. Si la borne haute dépasse la borne basse de plus de 1 500 € HT (ou si la revente faible km dépasse la revente fort km de plus de ~1 500 € TTC), RABAISSE la borne haute (revente faible km) pour resserrer la fourchette : vise borne haute = borne basse + ~1 000 € HT.
 
 RÉALISME DES PRIX (anti-aberration)
 4. DÉCOTE OBLIGATOIRE : une occasion ne vaut JAMAIS ≥ 90 % du prix catalogue neuf. Si la revente 1er du net affichée frôle ou dépasse le prix neuf (décote < 10 %), elle a été ANCRÉE sur une annonce surcotée / un quasi-neuf / une mauvaise génération : ré-estime la revente sur une décote réaliste (PVC neuf − 15 à 35 % la 1re année pour un modèle de grande diffusion) puis RECALCULE le prix d'achat avec la formule.
