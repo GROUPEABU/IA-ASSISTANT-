@@ -67,8 +67,9 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-label={t('modal_generate_sheet')}
-        className="relative w-full sm:max-w-lg bg-navy-800 border border-navy-700/70
-                      rounded-t-2xl sm:rounded-2xl shadow-2xl animate-slide-up"
+        className="relative w-full sm:max-w-2xl bg-navy-800 border border-navy-700/70
+                      rounded-t-2xl sm:rounded-2xl shadow-2xl animate-slide-up
+                      max-h-[92dvh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-navy-700/50">

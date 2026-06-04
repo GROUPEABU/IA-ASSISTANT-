@@ -44,11 +44,13 @@ const inputCls  = 'w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px
 
 // Défini AU NIVEAU MODULE (jamais dans le rendu) : sinon React recrée le type à
 // chaque frappe, démonte/remonte le champ et le focus saute.
+// flex-col + min-h sur le label + mt-auto sur le champ : les contrôles restent
+// alignés sur une même ligne même quand un libellé passe sur deux lignes.
 function Field({ label, children }) {
   return (
-    <div>
-      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{label}</label>
-      {children}
+    <div className="flex flex-col">
+      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1 leading-tight min-h-[2.2em]">{label}</label>
+      <div className="mt-auto">{children}</div>
     </div>
   )
 }
@@ -64,8 +66,7 @@ export default function VehicleDetails({ value, onChange }) {
         {t('veh_details_title')}
       </label>
 
-      {/* Marque + Modèle + Finition */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         <Field label={t('make_label')}>
           <input type="text" value={value.make} onChange={set('make')} list="veh-makes-list"
             placeholder={t('make_ph')} aria-label={t('make_label')} className={inputCls} />
@@ -79,10 +80,6 @@ export default function VehicleDetails({ value, onChange }) {
           <input type="text" value={value.finition} onChange={set('finition')}
             placeholder={t('price_finition_ph')} className={inputCls} />
         </Field>
-      </div>
-
-      {/* Type + Carrosserie + Carburant + Boîte */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
         <Field label={t('veh_type_label')}>
           <select value={value.type} onChange={set('type')} className={selectCls}>
             <option value="">{t('veh_any')}</option>
@@ -108,10 +105,6 @@ export default function VehicleDetails({ value, onChange }) {
             {GEARBOX_OPTS.map(g => <option key={g.code} value={g.code}>{t(g.key)}</option>)}
           </select>
         </Field>
-      </div>
-
-      {/* Année min/max + Km min/max */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <Field label={t('year_min')}>
           <select value={value.yearMin} onChange={set('yearMin')} className={selectCls}>
             <option value="">{t('year_min')}</option>
