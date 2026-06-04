@@ -761,6 +761,8 @@ export default {
   dim_status_new: 'Modèle actuel',
   dim_status_previous: 'Modèle précédent',
   dim_replaced_by: 'Remplacé par',
+  dim_malus: 'Malus écologique France 2025',
+  dim_malus_exempt: 'Exonéré',
   dim_length: 'Longueur',
   dim_width: 'Largeur',
   dim_height: 'Hauteur',

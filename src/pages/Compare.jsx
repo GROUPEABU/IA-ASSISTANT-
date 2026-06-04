@@ -1,9 +1,13 @@
-import { useState } from 'react'
-import { Ruler, AlertCircle, RefreshCw, RotateCcw, Info, ImageOff, Sparkles, History } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Ruler, AlertCircle, RefreshCw, RotateCcw, Info, ImageOff, Sparkles, History, FileDown, Receipt } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { useSettings } from '@/contexts/SettingsContext'
 import AIProgress from '@/components/ui/AIProgress'
+import Spinner from '@/components/ui/Spinner'
 import { MAKES, YEARS } from '@/data/vehicleFilters'
+import { getMalus, getMalusLabel } from '@/utils/malus'
+import { useExport } from '@/hooks/useExport'
+import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
 
 const EMPTY = { make: '', model: '', year: '', version: '' }
 
@@ -17,39 +21,28 @@ function parseAIJson(raw) {
 }
 
 /**
- * Résout une VRAIE photo via l'API pageimages de Wikipedia (Wikimedia est
- * CORS-ouvert et autorise le hotlink — contrairement aux URLs constructeur).
- * Essaie fr puis en, puis se rabat sur "Marque Modèle".
+ * URL d'image MÊME ORIGINE via notre proxy `/api/car-image`, qui résout la vraie
+ * photo Wikipedia côté serveur. Same-origin = passe la CSP (`img-src 'self'`) ET
+ * évite le « taint » du canvas à l'export PDF (html2canvas).
  */
-async function resolveWikiImage(title, fallbackTitle) {
-  const candidates = [title, fallbackTitle].filter(Boolean)
-  for (const cand of candidates) {
-    for (const wlang of ['fr', 'en']) {
-      try {
-        const url = `https://${wlang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(cand)}` +
-                    `&prop=pageimages&piprop=thumbnail&pithumbsize=800&format=json&redirects=1&origin=*`
-        const r = await fetch(url)
-        if (!r.ok) continue
-        const d = await r.json()
-        const page = Object.values(d?.query?.pages || {})[0]
-        const src = page?.thumbnail?.source
-        if (src) return src
-      } catch { /* essaie le candidat suivant */ }
-    }
-  }
-  return null
+function carImg(c) {
+  const wiki = c?.wiki || ''
+  const q    = `${c?.make || ''} ${c?.model || ''}`.trim()
+  if (!wiki && !q) return null
+  const p = new URLSearchParams()
+  if (wiki) p.set('wiki', wiki)
+  if (q)    p.set('q', q)
+  return `/api/car-image?${p.toString()}`
 }
 
-/** Renseigne `_img` (photo réelle) sur chaque véhicule, en parallèle. */
-async function resolveAllImages(parsed) {
+/** Renseigne `_img` (URL proxy) sur chaque véhicule. */
+function attachImages(parsed) {
   const cars = [
     parsed.vehicle,
     ...(parsed.comparablesNew || []),
     ...(parsed.comparablesPrevious || []),
   ].filter(Boolean)
-  await Promise.all(cars.map(async (c) => {
-    c._img = await resolveWikiImage(c.wiki, `${c.make || ''} ${c.model || ''}`.trim())
-  }))
+  cars.forEach((c) => { c._img = carImg(c) })
   return parsed
 }
 
@@ -64,7 +57,7 @@ function Photo({ src, alt, className }) {
     )
   }
   return (
-    <img src={src} alt={alt} loading="lazy" referrerPolicy="no-referrer"
+    <img src={src} alt={alt} loading="lazy" crossOrigin="anonymous"
       onError={() => setErr(true)}
       className={`object-cover bg-navy-900/70 ${className}`} />
   )
@@ -161,6 +154,8 @@ export default function Compare() {
   const [loading, setLoading] = useState(false)
   const [data, setData]       = useState(null)
   const [error, setError]     = useState(null)
+  const { exporting, withExporting } = useExport()
+  const pdfRef = useRef(null)
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
   const vehicleName = [form.make, form.model].filter(Boolean).join(' ').trim()
@@ -219,8 +214,7 @@ Dimensions en mm, poids en kg, coffre en litres, braquage en m, puissance en ch,
         [{ role: 'user', content: prompt }],
         { lang, maxTokens: 4500, expert: true, temperature: 0, tool: 'comparateur', webSearch: true, maxSearches: 6 },
       )
-      const parsed = await resolveAllImages(parseAIJson(result))
-      setData(parsed)
+      setData(attachImages(parseAIJson(result)))
     } catch (err) {
       setError(err.message || 'Erreur lors de l\'analyse')
     } finally {
@@ -234,6 +228,12 @@ Dimensions en mm, poids en kg, coffre en litres, braquage en m, puissance en ch,
   const compsN = data?.comparablesNew ?? []
   const compsP = data?.comparablesPrevious ?? []
   const isPrev = veh?.status === 'previous'
+  const malus  = veh?.co2 != null ? getMalus(veh.co2) : null
+  const vehLabel = veh ? `${veh.make} ${veh.model}${veh.year ? ' ' + veh.year : ''}` : vehicleName
+
+  const handlePdf = () => withExporting(() =>
+    exportToPdf(pdfRef, pdfFileName(vehLabel, t('dim_title')), { title: t('dim_title'), subtitle: vehLabel })
+  )
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -247,10 +247,17 @@ Dimensions en mm, poids en kg, coffre en litres, braquage en m, puissance en ch,
             <p className="text-xs text-slate-500">{t('dim_subtitle')}</p>
           </div>
           {data && (
-            <button onClick={reset}
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30 flex-shrink-0">
-              <RotateCcw size={11} /> {t('dim_new_search')}
-            </button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button onClick={handlePdf} disabled={exporting}
+                className="flex items-center gap-1.5 text-xs font-semibold text-cyan-400 border border-cyan-400/30
+                           px-2.5 py-1.5 rounded-lg hover:bg-cyan-400/10 transition disabled:opacity-40 disabled:pointer-events-none">
+                {exporting ? <Spinner size="sm" /> : <FileDown size={12} />} {t('download_pdf')}
+              </button>
+              <button onClick={reset}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30">
+                <RotateCcw size={11} /> {t('dim_new_search')}
+              </button>
+            </div>
           )}
         </div>
 
@@ -335,6 +342,10 @@ Dimensions en mm, poids en kg, coffre en litres, braquage en m, puissance en ch,
         )}
       </div>
 
+      {/* ── Résultats (capturés dans le PDF) ─────────────────────────────── */}
+      {data && (
+      <div ref={pdfRef} className="space-y-5">
+
       {/* Vehicle hero */}
       {veh && (
         <div className="glass-card p-4 md:p-6">
@@ -372,6 +383,22 @@ Dimensions en mm, poids en kg, coffre en litres, braquage en m, puissance en ch,
             <DimStat label={t('dim_height')} value={veh.height} unit="mm" accent="text-purple-400" />
           </div>
 
+          {/* Malus écologique France 2025 */}
+          {malus != null && (
+            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-navy-900/60 border border-navy-700/40 mb-3">
+              <div className="w-9 h-9 rounded-lg bg-amber-400/10 border border-amber-400/20 flex items-center justify-center flex-shrink-0">
+                <Receipt size={16} className="text-amber-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold leading-tight">{t('dim_malus')}</p>
+                <p className="text-[11px] text-slate-500">{veh.co2} g/km · {getMalusLabel(veh.co2)}</p>
+              </div>
+              <p className={`text-lg font-black tabular-nums ${malus > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                {malus > 0 ? `${malus.toLocaleString('fr-FR')} €` : t('dim_malus_exempt')}
+              </p>
+            </div>
+          )}
+
           {/* Specs grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
             {veh.wheelbase     != null && <SpecCell label={t('dim_wheelbase')}    value={`${veh.wheelbase?.toLocaleString('fr-FR')} mm`} />}
@@ -403,6 +430,9 @@ Dimensions en mm, poids en kg, coffre en litres, braquage en m, puissance en ch,
           <Info size={10} className="flex-shrink-0" />
           {t('dim_disclaimer')}
         </p>
+      )}
+
+      </div>
       )}
 
       {/* Empty state */}

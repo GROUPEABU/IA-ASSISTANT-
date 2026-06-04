@@ -733,6 +733,8 @@ export default {
   dim_status_new: 'Current model',
   dim_status_previous: 'Previous model',
   dim_replaced_by: 'Replaced by',
+  dim_malus: 'France 2025 eco-malus',
+  dim_malus_exempt: 'Exempt',
   dim_length: 'Length',
   dim_width: 'Width',
   dim_height: 'Height',
