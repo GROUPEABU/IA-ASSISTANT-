@@ -1,8 +1,11 @@
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { SettingsProvider } from '@/contexts/SettingsContext'
 import { getSessionUserId } from '@/utils/userStorage'
+import { lazyWithReload, installPreloadErrorReload } from '@/utils/lazyWithReload'
+
+installPreloadErrorReload()
 
 // Apply saved theme immediately (before first render), using user-scoped key
 ;(() => {
@@ -32,18 +35,20 @@ import MentionsLegales from '@/pages/MentionsLegales'
 import PolitiqueConfidentialite from '@/pages/PolitiqueConfidentialite'
 import ConditionsUtilisation from '@/pages/ConditionsUtilisation'
 
-// Protected pages — lazy loaded to reduce initial bundle
-const Hub            = lazy(() => import('@/pages/Hub'))
-const Products       = lazy(() => import('@/pages/Products'))
-const ProductDetail  = lazy(() => import('@/pages/ProductDetail'))
-const CO2Malus       = lazy(() => import('@/pages/CO2Malus'))
-const Chat           = lazy(() => import('@/pages/Chat'))
-const Settings       = lazy(() => import('@/pages/Settings'))
-const PriceWatch     = lazy(() => import('@/pages/PriceWatch'))
-const Objections     = lazy(() => import('@/pages/Objections'))
-const PitchGenerator = lazy(() => import('@/pages/PitchGenerator'))
-const Tco            = lazy(() => import('@/pages/Tco'))
-const Compare        = lazy(() => import('@/pages/Compare'))
+// Protected pages — lazy loaded to reduce initial bundle.
+// `lazyWithReload` recharge une fois automatiquement si un chunk est périmé
+// après déploiement (cf. utils/lazyWithReload.js).
+const Hub            = lazyWithReload(() => import('@/pages/Hub'))
+const Products       = lazyWithReload(() => import('@/pages/Products'))
+const ProductDetail  = lazyWithReload(() => import('@/pages/ProductDetail'))
+const CO2Malus       = lazyWithReload(() => import('@/pages/CO2Malus'))
+const Chat           = lazyWithReload(() => import('@/pages/Chat'))
+const Settings       = lazyWithReload(() => import('@/pages/Settings'))
+const PriceWatch     = lazyWithReload(() => import('@/pages/PriceWatch'))
+const Objections     = lazyWithReload(() => import('@/pages/Objections'))
+const PitchGenerator = lazyWithReload(() => import('@/pages/PitchGenerator'))
+const Tco            = lazyWithReload(() => import('@/pages/Tco'))
+const Compare        = lazyWithReload(() => import('@/pages/Compare'))
 
 function S({ children }) {
   return (
