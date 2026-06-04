@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Bell, Search, RotateCcw, ExternalLink, Clock, Download, FileText,
-  Wifi, WifiOff, Calculator, Sparkles,
+  Wifi, WifiOff, Calculator, Sparkles, ShieldCheck,
 } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
@@ -172,6 +172,58 @@ Prix exact conseillé TTC, écart vs moyenne marché, argument face aux concurre
 INTERDICTION ABSOLUE : n'écris JAMAIS le mot « malus », ni « émissions CO2 », « écotaxe », « malus écologique » ou « malus au poids » nulle part dans ce rapport — aucun chiffre, aucune ligne, aucune sous-section, aucune phrase à ce sujet. Un bouton dédié renvoie déjà vers le calculateur de malus. Commence directement par "## L'essentiel", sans phrase d'introduction.`
 }
 
+// Agent GARDE-FOU (2e passe) : relit le rapport produit, contrôle les 14 règles
+// et corrige les écarts. AUCUNE recherche web — il s'appuie sur le rapport et
+// son expertise marché. Sortie = le rapport FINAL corrigé, prêt à afficher.
+function buildGuardrailPrompt(report, filters, vehicleDesc, ctry) {
+  const { label: countryLabel, tva, transport } = ctry
+  const tvaFmt = tva.toFixed(2).replace('.', ',')
+  const kmTxt = filters.mileageMax ? `${Number(filters.mileageMax).toLocaleString('fr-FR')} km` : null
+  const anneeTxt = filters.yearMin && filters.yearMax
+    ? (filters.yearMin === filters.yearMax ? `${filters.yearMin}` : `${filters.yearMin}–${filters.yearMax}`)
+    : filters.yearMin ? `${filters.yearMin} ou plus récent`
+    : filters.yearMax ? `${filters.yearMax} ou plus ancien` : null
+
+  return `Tu es le CONTRÔLEUR QUALITÉ « garde-fou » de la Veille Prix d'Autobuyunion. On te remet un RAPPORT déjà rédigé par un premier analyste. Ta mission : le RELIRE ligne par ligne, détecter toute violation de la charte ci-dessous, et le CORRIGER. Tu ne fais AUCUNE recherche web : tu corriges à partir du rapport lui-même et de ton expertise marché.
+
+VÉHICULE : "${vehicleDesc}"${kmTxt ? `\nKILOMÉTRAGE MAX : ${kmTxt}` : ''}${anneeTxt ? `\nMILLÉSIME(S) : ${anneeTxt}` : ''}${filters.finition ? `\nFINITION : ${filters.finition}` : ''}
+MARCHÉ : ${countryLabel} — diviseur TVA ${tvaFmt}, transport ${transport} € HT.
+
+═══ CHARTE GARDE-FOU — 14 RÈGLES À FAIRE RESPECTER ═══
+
+CALCUL & MARGE
+1. FORMULE D'ACHAT (impérative) : prix d'achat pro HT = (revente 1er du net TTC ÷ ${tvaFmt}) − ${transport} − 3 000. Recalcule CHAQUE borne à partir de la revente affichée dans le rapport ; si le prix d'achat indiqué ne correspond pas au résultat de la formule, CORRIGE-le.
+2. MARGE PLANCHER : 3 000 € HT, sécurisée et JAMAIS en dessous aux deux bornes. La marge annoncée = 3 000 € HT à ce prix d'achat (davantage possible en négociant l'achat plus bas / la revente plus haut). Si une marge < 3 000 € apparaît, corrige.
+3. SENS DE LA FOURCHETTE : borne BASSE = FORT km (revente la plus basse) ; borne HAUTE = FAIBLE km (revente la plus haute). Si c'est inversé, corrige.
+
+RÉALISME DES PRIX (anti-aberration)
+4. DÉCOTE OBLIGATOIRE : une occasion ne vaut JAMAIS ≥ 90 % du prix catalogue neuf. Si la revente 1er du net affichée frôle ou dépasse le prix neuf (décote < 10 %), elle a été ANCRÉE sur une annonce surcotée / un quasi-neuf / une mauvaise génération : ré-estime la revente sur une décote réaliste (PVC neuf − 15 à 35 % la 1re année pour un modèle de grande diffusion) puis RECALCULE le prix d'achat avec la formule.
+5. PLAFOND ACHAT : le prix d'achat pro ne doit pas dépasser ~75 % du prix neuf catalogue. Au-delà, c'est une erreur : corrige.
+6. COHÉRENCE : la revente faible km ne peut pas ≈ prix neuf ; une décote visible est obligatoire. Vérifie que tous les chiffres se tiennent entre eux.
+
+FILTRES STRICTS
+7. MILLÉSIME : uniquement ${anneeTxt || 'le millésime demandé'}. Remplace/supprime toute autre année (ex. 2024) dans les prix, la cote et la décote.
+8. KILOMÉTRAGE : raisonnement sur ≤ ${kmTxt || 'le plafond demandé'} réels ; les quasi-neufs < 5 000 km ne sont PAS la référence « 1er du net ».
+9. FINITION : ${filters.finition || '(celle demandée)'} uniquement.
+10. MOTORISATION EXACTE : respecte STRICTEMENT la motorisation de « ${vehicleDesc} ». Un hybride simple / micro-hybride / full hybrid n'est PAS un hybride rechargeable (plug-in / PHEV). Supprime toute mention de recharge, prise, batterie plug-in ou autonomie 100 % électrique SAUF si le véhicule est EXPLICITEMENT rechargeable.
+
+CONTENU INTERDIT
+11. MALUS : AUCUNE mention de malus, émissions CO2, écotaxe, malus écologique ni malus au poids — supprime toute ligne, phrase ou sous-section à ce sujet (un bouton dédié existe ailleurs).
+12. ROTATION : AUCUN délai de rotation (donnée inconnue) — supprime.
+13. ANONYMAT : AUCUN nom de réseau, mandataire, enseigne, concession, label, ni ville précise — supprime ou anonymise.
+
+FORME
+14. SOBRIÉTÉ & STRUCTURE : aucun emoji, aucune icône, aucun symbole décoratif. Titres de section en « ## » sans emoji. Le rapport DOIT commencer DIRECTEMENT par « ## L'essentiel » : SUPPRIME toute introduction ou préambule (ex. « Note méthodologique préalable », « Lecture des sources », « cadrage préalable »). Ordre exact des sections : L'essentiel, Repères marché, Cotation & décote, Stratégie de vente "1er du net", Arguments commerciaux, Points de vigilance.
+
+═══ SORTIE ═══
+Renvoie UNIQUEMENT le rapport FINAL corrigé, en Markdown, dans le format exact ci-dessus. PAS de préambule, PAS de « voici », PAS de liste de corrections, AUCUN commentaire : SEULEMENT le rapport prêt à afficher. S'il est déjà parfaitement conforme, renvoie-le tel quel (en retirant tout de même une éventuelle introduction).
+
+RAPPORT À CONTRÔLER ET CORRIGER :
+"""
+${report}
+"""`
+}
+
 // ── Composants UI ─────────────────────────────────────────────────────────────
 const selectClass = `w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
   text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition`
@@ -247,6 +299,7 @@ export default function PriceWatch() {
 
   const [loading, setLoading]     = useState(false)   // avant le 1er token
   const [streaming, setStreaming] = useState(false)   // tokens en cours d'arrivée
+  const [verifying, setVerifying] = useState(false)   // 2e passe : agent garde-fou
   const [report, setReport]       = useState('')      // texte Markdown streamé
   const [hasLiveData, setHasLiveData] = useState(false)
   const [fetchedAt, setFetchedAt] = useState(null)
@@ -336,14 +389,43 @@ export default function PriceWatch() {
       setReport(text)
       setHasLiveData(!!usedWebSearch)
       setStreaming(false)
+
+      // ── 2e passe : AGENT GARDE-FOU ────────────────────────────────────
+      // Relit le rapport, contrôle les 14 règles et corrige les écarts.
+      // Pas de recherche web, température 0 (déterministe). Si la passe échoue,
+      // on conserve le rapport initial (déjà valide) — le garde-fou est un plus.
+      let finalReport = text
+      try {
+        setVerifying(true)
+        const { text: verified } = await sendMessage(
+          [{ role: 'user', content: buildGuardrailPrompt(text, filters, vehicleDesc, ctry) }],
+          {
+            lang, expert: true, temperature: 0, tool: 'veilleprix',
+            webSearch: false, maxTokens: 3500, returnMeta: true, stream: true,
+            onChunk: (full) => setReport(full),
+          }
+        )
+        if (verified && verified.trim().length > 40) {
+          finalReport = verified
+          setReport(verified)
+        } else {
+          setReport(text) // garde-fou vide/inexploitable → on garde l'original
+        }
+      } catch (gerrErr) {
+        setReport(text) // échec garde-fou → rapport initial conservé
+      } finally {
+        setVerifying(false)
+      }
+
       saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '))
-      addHistory({ searchLabel: label, country: ctry.code, type: filters.type, report: text, hasLiveData: !!usedWebSearch, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '' })
+      addHistory({ searchLabel: label, country: ctry.code, type: filters.type, report: finalReport, hasLiveData: !!usedWebSearch, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '' })
     } catch (err) {
       setError(err.message)
       toast(err.message, 'error')
     } finally {
       setLoading(false)
       setStreaming(false)
+      setVerifying(false)
     }
   }
 
@@ -471,15 +553,15 @@ export default function PriceWatch() {
         {/* Bouton */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => search()} disabled={!canSearch || loading || streaming}
+            onClick={() => search()} disabled={!canSearch || loading || streaming || verifying}
             className="flex items-center gap-2 px-5 py-2.5 bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
                        hover:bg-cyan-300 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
           >
-            {(loading || streaming) ? <Spinner size="sm" /> : <Search size={14} />}
-            {(loading || streaming) ? t('analyzing') : t('analyze_btn')}
+            {(loading || streaming || verifying) ? <Spinner size="sm" /> : <Search size={14} />}
+            {verifying ? t('price_guardrail_checking') : (loading || streaming) ? t('analyzing') : t('analyze_btn')}
           </button>
 
-          {centraleUrl && !loading && !streaming && (
+          {centraleUrl && !loading && !streaming && !verifying && (
             <a href={centraleUrl} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
                          px-3 py-2.5 rounded-xl hover:text-cyan-400 hover:border-cyan-400/30 transition">
@@ -509,16 +591,25 @@ export default function PriceWatch() {
                   <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-400/10 text-cyan-400 border border-cyan-400/20 animate-pulse">
                     <Sparkles size={9} /> {t('price_live_refreshing')}
                   </span>
+                ) : verifying ? (
+                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/20 animate-pulse">
+                    <ShieldCheck size={9} /> {t('price_guardrail_checking')}
+                  </span>
                 ) : report ? (
-                  hasLiveData ? (
+                  <>
+                    {hasLiveData ? (
+                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/10 text-emerald-400 border border-emerald-400/20">
+                        <Wifi size={9} /> {t('price_live_badge')}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-400/10 text-violet-400 border border-violet-400/20">
+                        <WifiOff size={9} /> {t('price_knowledge_badge')}
+                      </span>
+                    )}
                     <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/10 text-emerald-400 border border-emerald-400/20">
-                      <Wifi size={9} /> {t('price_live_badge')}
+                      <ShieldCheck size={9} /> {t('price_guardrail_done')}
                     </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-400/10 text-violet-400 border border-violet-400/20">
-                      <WifiOff size={9} /> {t('price_knowledge_badge')}
-                    </span>
-                  )
+                  </>
                 ) : null}
 
                 {fetchedAt && (
@@ -530,7 +621,7 @@ export default function PriceWatch() {
               </div>
             </div>
 
-            {report && !streaming && (
+            {report && !streaming && !verifying && (
               <div className="flex items-center gap-2 overflow-x-auto pb-0.5 w-full sm:w-auto">
                 <button onClick={handlePdf} disabled={exporting}
                   className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
@@ -566,13 +657,13 @@ export default function PriceWatch() {
               <div className="glass-card p-6 md:p-8">
                 <div className="report-md text-slate-200"
                      dangerouslySetInnerHTML={{ __html: mdToHtml(report) }} />
-                {streaming && (
-                  <span className="inline-block w-0.5 h-[1em] bg-cyan-400 animate-pulse align-middle ml-0.5 opacity-80" />
+                {(streaming || verifying) && (
+                  <span className={`inline-block w-0.5 h-[1em] animate-pulse align-middle ml-0.5 opacity-80 ${verifying ? 'bg-amber-400' : 'bg-cyan-400'}`} />
                 )}
               </div>
 
               {/* Malus — lien centré vers le calculateur */}
-              {!streaming && (
+              {!streaming && !verifying && (
                 <div className="glass-card p-4 flex justify-center">
                   <Link to="/co2-malus"
                     className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-warn/10 border border-warn/30
@@ -583,7 +674,7 @@ export default function PriceWatch() {
               )}
 
               {/* Sources */}
-              {!streaming && (sources.length > 0 || centraleUrl) && (
+              {!streaming && !verifying && (sources.length > 0 || centraleUrl) && (
                 <div className="glass-card p-4">
                   <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">{t('sources_consulted')}</p>
                   <div className="flex flex-wrap gap-2">

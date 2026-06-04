@@ -751,6 +751,8 @@ export default {
   price_live_failed: 'Live update unavailable — expert estimate shown. Retry for live data.',
   price_phase1_alerte: 'Preliminary estimate (no live market data) — indicative lower-range prices. Wait for the final values.',
   price_live_refreshing: 'Refreshing live…',
+  price_guardrail_checking: 'Guardrail check…',
+  price_guardrail_done: 'Verified',
   price_expert_section: 'Valuation & Depreciation',
   price_pro_section: 'Pro Pricing',
   price_catalogue_label: 'New list price',

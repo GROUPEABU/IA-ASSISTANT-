@@ -776,6 +776,8 @@ export default {
   price_live_failed: 'Mise à jour live indisponible — estimation experte affichée. Réessayez pour les données en direct.',
   price_phase1_alerte: 'Estimation préliminaire (sans données marché en temps réel) — prix indicatifs bas de fourchette. Patientez pour les valeurs définitives.',
   price_live_refreshing: 'Actualisation en direct…',
+  price_guardrail_checking: 'Contrôle garde-fou…',
+  price_guardrail_done: 'Vérifié',
   price_expert_section: 'Cotation & Décote',
   price_pro_section: 'Pricing Pro',
   price_catalogue_label: 'PVC neuf catalogue',
