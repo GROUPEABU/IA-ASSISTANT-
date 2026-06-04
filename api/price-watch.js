@@ -98,6 +98,7 @@ export default async function handler(req) {
   if (type === 'vn') asParams.push('atype=N')
   if (yearMin)    asParams.push(`fregfrom=${yearMin}`)
   if (yearMax)    asParams.push(`fregto=${yearMax}`)
+  if (mileageMin) asParams.push(`kmfrom=${mileageMin}`)
   if (mileageMax) asParams.push(`kmto=${mileageMax}`)
   const asQuery = asParams.length ? `?${asParams.join('&')}` : ''
   const autoScoutUrl = makeSlug && modelSlug
@@ -119,7 +120,7 @@ export default async function handler(req) {
       hasLiveData: false, // la donnée live vient de web_search côté client
       fetchedAt: new Date().toISOString(),
       centraleUrl,
-      filters: { make, model, finition, carrosserie, type, yearMin, yearMax, mileageMax, fuel, gearbox },
+      filters: { make, model, finition, carrosserie, type, yearMin, yearMax, mileageMin, mileageMax, fuel, gearbox },
     }),
     { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
   )

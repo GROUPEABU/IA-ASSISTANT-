@@ -47,15 +47,29 @@ const MAKES = [
 const YEARS = Array.from({ length: 27 }, (_, i) => 2026 - i)
 
 const COUNTRIES = [
-  { code: 'FR', label: 'France',     tva: 1.20, transport: 450, tld: 'fr', sites: 'La Centrale, LeBonCoin, AutoScout24.fr' },
-  { code: 'BE', label: 'Belgique',   tva: 1.21, transport: 450, tld: 'be', sites: 'AutoScout24.be, 2dehands.be, Vroom.be' },
-  { code: 'LU', label: 'Luxembourg', tva: 1.17, transport: 450, tld: 'lu', sites: 'AutoScout24.lu, Luxauto.lu' },
-  { code: 'DE', label: 'Allemagne',  tva: 1.19, transport: 450, tld: 'de', sites: 'mobile.de, AutoScout24.de' },
-  { code: 'NL', label: 'Pays-Bas',   tva: 1.21, transport: 450, tld: 'nl', sites: 'AutoScout24.nl, Marktplaats.nl' },
-  { code: 'ES', label: 'Espagne',    tva: 1.21, transport: 450, tld: 'es', sites: 'AutoScout24.es, Coches.net' },
-  { code: 'IT', label: 'Italie',     tva: 1.22, transport: 450, tld: 'it', sites: 'AutoScout24.it, Subito.it' },
-  { code: 'PT', label: 'Portugal',   tva: 1.23, transport: 450, tld: 'pt', sites: 'AutoScout24.pt, CustoJusto.pt' },
+  { code: 'FR', label: 'France',     tva: 1.20, transport: 450, tld: 'fr', as24cy: 'F',  sites: 'La Centrale, LeBonCoin, AutoScout24.fr' },
+  { code: 'BE', label: 'Belgique',   tva: 1.21, transport: 450, tld: 'be', as24cy: 'B',  sites: 'AutoScout24.be, 2dehands.be, Vroom.be' },
+  { code: 'LU', label: 'Luxembourg', tva: 1.17, transport: 450, tld: 'lu', as24cy: 'L',  sites: 'AutoScout24.lu, Luxauto.lu' },
+  { code: 'DE', label: 'Allemagne',  tva: 1.19, transport: 450, tld: 'de', as24cy: 'D',  sites: 'mobile.de, AutoScout24.de' },
+  { code: 'NL', label: 'Pays-Bas',   tva: 1.21, transport: 450, tld: 'nl', as24cy: 'NL', sites: 'AutoScout24.nl, Marktplaats.nl' },
+  { code: 'ES', label: 'Espagne',    tva: 1.21, transport: 450, tld: 'es', as24cy: 'E',  sites: 'AutoScout24.es, Coches.net' },
+  { code: 'IT', label: 'Italie',     tva: 1.22, transport: 450, tld: 'it', as24cy: 'I',  sites: 'AutoScout24.it, Subito.it' },
+  { code: 'PT', label: 'Portugal',   tva: 1.23, transport: 450, tld: 'pt', as24cy: 'P',  sites: 'AutoScout24.pt, CustoJusto.pt' },
 ]
+
+const AS24_FUEL = { ES: '1', GO: '2', GP: '3', EL: '6', HY: '8', GH: '10' }
+function buildAs24Url(ctry, filters) {
+  const makeSlug = (filters.make || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const modelSlug = (filters.model || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const p = ['atype=C', `cy=${ctry.as24cy}`, 'damaged_listing=exclude', 'sort=standard', 'ustate=N%2CU']
+  if (filters.yearMin)    p.push(`fregfrom=${filters.yearMin}`)
+  if (filters.yearMax)    p.push(`fregto=${filters.yearMax}`)
+  if (filters.mileageMin) p.push(`kmfrom=${filters.mileageMin}`)
+  if (filters.mileageMax) p.push(`kmto=${filters.mileageMax}`)
+  if (filters.fuel && AS24_FUEL[filters.fuel]) p.push(`fuel=${AS24_FUEL[filters.fuel]}`)
+  const base = makeSlug ? `https://www.autoscout24.${ctry.tld}/lst/${makeSlug}${modelSlug ? '/' + modelSlug : ''}` : `https://www.autoscout24.${ctry.tld}/`
+  return `${base}?${p.join('&')}`
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 async function fetchSources(filters) {
@@ -81,11 +95,23 @@ function buildPrompt(filters, vehicleDesc, ctry) {
   const ex1s = ex1.toLocaleString('fr-FR')
   const ex2s = ex2.toLocaleString('fr-FR')
 
-  const kmTxt = filters.mileageMax ? `${Number(filters.mileageMax).toLocaleString('fr-FR')} km` : null
+  const kmMin = filters.mileageMin ? Number(filters.mileageMin) : null
+  const kmMax = filters.mileageMax ? Number(filters.mileageMax) : null
+  const kmMinTxt = kmMin ? `${kmMin.toLocaleString('fr-FR')} km` : null
+  const kmMaxTxt = kmMax ? `${kmMax.toLocaleString('fr-FR')} km` : null
   const finitionFilter = filters.finition
     ? `\n⚠️ FINITION STRICTE : analyse UNIQUEMENT la version "${filters.finition}".` : ''
-  const kmFilter = kmTxt
-    ? `\n⚠️ KILOMÉTRAGE STRICT : analyse UNIQUEMENT les annonces avec ≤ ${kmTxt} réels au compteur. EXCLUS les véhicules quasi-neufs / mandataires (< 5 000 km) — ce ne sont PAS la référence « premier du net » ici, même s'ils sont moins chers.` : ''
+  const kmFilter = (kmMin || kmMax)
+    ? `\n⚠️ KILOMÉTRAGE STRICT : analyse UNIQUEMENT les annonces dont le compteur réel est ${
+        kmMin && kmMax ? `entre ${kmMinTxt} et ${kmMaxTxt}`
+        : kmMin ? `≥ ${kmMinTxt}` : `≤ ${kmMaxTxt}`
+      }. EXCLUS toute annonce hors de cette plage${kmMin ? ` (notamment les quasi-neufs / mandataires sous ${kmMinTxt}, qui ne sont PAS le « premier du net » ici)` : ' (notamment les quasi-neufs / mandataires < 5 000 km, qui ne sont PAS le « premier du net » ici)'}.` : ''
+  const carrosserieFilter = filters.carrosserieLabel
+    ? `\n⚠️ CARROSSERIE STRICTE : uniquement des véhicules de type "${filters.carrosserieLabel}".` : ''
+  const fuelFilter = filters.fuelLabel
+    ? `\n⚠️ CARBURANT STRICT : uniquement la motorisation "${filters.fuelLabel}". N'inclus AUCUNE autre énergie (ne mélange pas essence, diesel, hybride simple, hybride rechargeable ou électrique).` : ''
+  const gearboxFilter = filters.gearboxLabel
+    ? `\n⚠️ BOÎTE STRICTE : uniquement la boîte "${filters.gearboxLabel}".` : ''
   const anneeTxt = filters.yearMin && filters.yearMax
     ? (filters.yearMin === filters.yearMax ? `millésime ${filters.yearMin}` : `millésimes ${filters.yearMin} à ${filters.yearMax}`)
     : filters.yearMin ? `millésime ${filters.yearMin} ou plus récent`
@@ -96,7 +122,7 @@ function buildPrompt(filters, vehicleDesc, ctry) {
 
   return `Tu es l'analyste cote & marché automobile ${filters.type === 'vn' ? 'VN (neuf)' : 'VO (occasion)'} d'Autobuyunion, centrale d'achat européenne. Tu réponds comme dans une conversation : un rapport clair, direct, en Markdown, prêt à lire.
 
-VÉHICULE CIBLE : "${vehicleDesc}"${finitionFilter}${kmFilter}${anneeFilter}${countryCtx}
+VÉHICULE CIBLE : "${vehicleDesc}"${finitionFilter}${carrosserieFilter}${fuelFilter}${gearboxFilter}${kmFilter}${anneeFilter}${countryCtx}
 
 RECHERCHE WEB : utilise l'outil de recherche web (2-3 requêtes max) pour relever les annonces réelles correspondant EXACTEMENT aux filtres (kilométrage inclus) sur ${sites}, et repérer le niveau des « premiers du net » (annonces les moins chères réellement disponibles). Si rien d'exploitable, base-toi sur ta connaissance experte du marché et signale-le.
 
@@ -183,15 +209,19 @@ INTERDICTION ABSOLUE : n'écris JAMAIS le mot « malus », ni « émissions CO2 
 function buildGuardrailPrompt(report, filters, vehicleDesc, ctry) {
   const { label: countryLabel, tva, transport } = ctry
   const tvaFmt = tva.toFixed(2).replace('.', ',')
-  const kmTxt = filters.mileageMax ? `${Number(filters.mileageMax).toLocaleString('fr-FR')} km` : null
+  const kmMin = filters.mileageMin ? Number(filters.mileageMin) : null
+  const kmMax = filters.mileageMax ? Number(filters.mileageMax) : null
+  const kmRangeTxt = kmMin && kmMax ? `entre ${kmMin.toLocaleString('fr-FR')} et ${kmMax.toLocaleString('fr-FR')} km`
+    : kmMin ? `≥ ${kmMin.toLocaleString('fr-FR')} km`
+    : kmMax ? `≤ ${kmMax.toLocaleString('fr-FR')} km` : null
   const anneeTxt = filters.yearMin && filters.yearMax
     ? (filters.yearMin === filters.yearMax ? `${filters.yearMin}` : `${filters.yearMin}–${filters.yearMax}`)
     : filters.yearMin ? `${filters.yearMin} ou plus récent`
     : filters.yearMax ? `${filters.yearMax} ou plus ancien` : null
 
-  return `Tu es le CONTRÔLEUR QUALITÉ « garde-fou » de la Veille Prix d'Autobuyunion. On te remet un RAPPORT déjà rédigé par un premier analyste. Ta mission : le RELIRE ligne par ligne, détecter toute violation de la charte ci-dessous, et le CORRIGER. Tu ne fais AUCUNE recherche web : tu corriges à partir du rapport lui-même et de ton expertise marché.
+  return `Tu es le CONTRÔLEUR QUALITÉ de la Veille Prix d'Autobuyunion. On te remet un RAPPORT déjà rédigé par un premier analyste. Ta mission : le RELIRE ligne par ligne, détecter toute violation de la charte ci-dessous, et le CORRIGER. Tu ne fais AUCUNE recherche web : tu corriges à partir du rapport lui-même et de ton expertise marché.
 
-VÉHICULE : "${vehicleDesc}"${kmTxt ? `\nKILOMÉTRAGE MAX : ${kmTxt}` : ''}${anneeTxt ? `\nMILLÉSIME(S) : ${anneeTxt}` : ''}${filters.finition ? `\nFINITION : ${filters.finition}` : ''}
+VÉHICULE : "${vehicleDesc}"${kmRangeTxt ? `\nKILOMÉTRAGE : ${kmRangeTxt}` : ''}${anneeTxt ? `\nMILLÉSIME(S) : ${anneeTxt}` : ''}${filters.finition ? `\nFINITION : ${filters.finition}` : ''}${filters.carrosserieLabel ? `\nCARROSSERIE : ${filters.carrosserieLabel}` : ''}${filters.fuelLabel ? `\nCARBURANT : ${filters.fuelLabel}` : ''}${filters.gearboxLabel ? `\nBOÎTE : ${filters.gearboxLabel}` : ''}
 MARCHÉ : ${countryLabel} — diviseur TVA ${tvaFmt}, transport ${transport} € HT.
 
 ═══ CHARTE GARDE-FOU — 14 RÈGLES À FAIRE RESPECTER ═══
@@ -208,9 +238,9 @@ RÉALISME DES PRIX (anti-aberration)
 
 FILTRES STRICTS
 7. MILLÉSIME : uniquement ${anneeTxt || 'le millésime demandé'}. Remplace/supprime toute autre année (ex. 2024) dans les prix, la cote et la décote.
-8. KILOMÉTRAGE : raisonnement sur ≤ ${kmTxt || 'le plafond demandé'} réels ; les quasi-neufs < 5 000 km ne sont PAS la référence « 1er du net ».
+8. KILOMÉTRAGE : raisonnement UNIQUEMENT sur des compteurs ${kmRangeTxt || 'dans la plage demandée'} ; toute annonce hors de cette plage est écartée (les quasi-neufs sous le plancher km ne sont PAS la référence « 1er du net »).
 9. FINITION : ${filters.finition || '(celle demandée)'} uniquement.
-10. MOTORISATION EXACTE : respecte STRICTEMENT la motorisation de « ${vehicleDesc} ». Un hybride simple / micro-hybride / full hybrid n'est PAS un hybride rechargeable (plug-in / PHEV). Supprime toute mention de recharge, prise, batterie plug-in ou autonomie 100 % électrique SAUF si le véhicule est EXPLICITEMENT rechargeable.
+10. MOTORISATION EXACTE : respecte STRICTEMENT la motorisation ${filters.fuelLabel ? `« ${filters.fuelLabel} »` : `de « ${vehicleDesc} »`}. Un hybride simple / micro-hybride / full hybrid n'est PAS un hybride rechargeable (plug-in / PHEV). Supprime toute mention de recharge, prise, batterie plug-in ou autonomie 100 % électrique SAUF si le véhicule est EXPLICITEMENT rechargeable.${filters.carrosserieLabel ? `\n10b. CARROSSERIE : uniquement le type « ${filters.carrosserieLabel} » ; écarte toute autre carrosserie.` : ''}${filters.gearboxLabel ? `\n10c. BOÎTE : uniquement « ${filters.gearboxLabel} » ; écarte toute annonce d'une autre boîte.` : ''}
 
 CONTENU INTERDIT
 11. MALUS : AUCUNE mention de malus, émissions CO2, écotaxe, malus écologique ni malus au poids — supprime toute ligne, phrase ou sous-section à ce sujet (un bouton dédié existe ailleurs).
@@ -278,8 +308,17 @@ export default function PriceWatch() {
     { label: t('price_body_pickup'), code: 'pickup' },
   ]
 
-  const MILEAGE_OPTS = [
-    { label: t('price_mileage_all'), value: '' },
+  const MILEAGE_MIN_OPTS = [
+    { label: t('km_min'), value: '' },
+    { label: '≥ 500 km', value: '500' },
+    { label: '≥ 5 000 km', value: '5000' },
+    { label: '≥ 10 000 km', value: '10000' },
+    { label: '≥ 20 000 km', value: '20000' },
+    { label: '≥ 30 000 km', value: '30000' },
+    { label: '≥ 50 000 km', value: '50000' },
+  ]
+  const MILEAGE_MAX_OPTS = [
+    { label: t('km_max'), value: '' },
     { label: '< 10 000 km', value: '10000' },
     { label: '< 20 000 km', value: '20000' },
     { label: '< 30 000 km', value: '30000' },
@@ -297,6 +336,7 @@ export default function PriceWatch() {
   const [carrosserie, setCarrosserie] = useState(() => readPwSession('carrosserie', ''))
   const [yearMin, setYearMin]     = useState(() => readPwSession('yearMin', ''))
   const [yearMax, setYearMax]     = useState(() => readPwSession('yearMax', ''))
+  const [mileageMin, setMileageMin] = useState(() => readPwSession('mileageMin', ''))
   const [mileageMax, setMileageMax] = useState(() => readPwSession('mileageMax', ''))
   const [fuel, setFuel]           = useState(() => readPwSession('fuel', ''))
   const [gearbox, setGearbox]     = useState(() => readPwSession('gearbox', ''))
@@ -320,10 +360,10 @@ export default function PriceWatch() {
   useEffect(() => {
     try {
       sessionStorage.setItem(PW_SESSION, JSON.stringify(
-        { type, make, model, finition, carrosserie, yearMin, yearMax, mileageMax, fuel, gearbox, country }
+        { type, make, model, finition, carrosserie, yearMin, yearMax, mileageMin, mileageMax, fuel, gearbox, country }
       ))
     } catch {}
-  }, [type, make, model, finition, carrosserie, yearMin, yearMax, mileageMax, fuel, gearbox, country])
+  }, [type, make, model, finition, carrosserie, yearMin, yearMax, mileageMin, mileageMax, fuel, gearbox, country])
 
   const canSearch = make.trim() || model.trim()
 
@@ -332,14 +372,23 @@ export default function PriceWatch() {
     const rawMake = overrides.make ?? make
     const matchedMake = MAKES.find(m => m.label.toLowerCase() === rawMake.toLowerCase())
     const resolvedMake = matchedMake ? matchedMake.code : rawMake
-    const filters = { make: resolvedMake, model, finition, carrosserie, type, yearMin, yearMax, mileageMax, fuel, gearbox, ...overrides }
+    const filters = { make: resolvedMake, model, finition, carrosserie, type, yearMin, yearMax, mileageMin, mileageMax, fuel, gearbox, ...overrides }
+    // Libellés lisibles des filtres énumérés, pour que l'analyse les applique en STRICT.
+    filters.fuelLabel        = filters.fuel ? FUELS.find(f => f.code === filters.fuel)?.label || '' : ''
+    filters.gearboxLabel     = filters.gearbox ? GEARBOXES.find(g => g.code === filters.gearbox)?.label || '' : ''
+    filters.carrosserieLabel = filters.carrosserie ? BODIES.find(b => b.code === filters.carrosserie)?.label || '' : ''
     const ctry = COUNTRIES.find(c => c.code === (overrides.country ?? country)) ?? COUNTRIES[0]
 
     const vehicleDesc = [
       rawMake, filters.model, filters.finition,
       filters.yearMin && filters.yearMax ? `${filters.yearMin}–${filters.yearMax}`
         : filters.yearMin ? `depuis ${filters.yearMin}` : filters.yearMax ? `jusqu'en ${filters.yearMax}` : '',
-      filters.mileageMax ? `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km` : '',
+      (filters.mileageMin || filters.mileageMax)
+        ? filters.mileageMin && filters.mileageMax
+          ? `${Number(filters.mileageMin).toLocaleString('fr-FR')}–${Number(filters.mileageMax).toLocaleString('fr-FR')} km`
+          : filters.mileageMin ? `> ${Number(filters.mileageMin).toLocaleString('fr-FR')} km`
+          : `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km`
+        : '',
       filters.fuel ? FUELS.find(f => f.code === filters.fuel)?.label : '',
       filters.gearbox ? GEARBOXES.find(g => g.code === filters.gearbox)?.label : '',
       filters.carrosserie ? BODIES.find(b => b.code === filters.carrosserie)?.label : '',
@@ -348,8 +397,13 @@ export default function PriceWatch() {
     const label = [
       filters.make, filters.model, filters.finition,
       filters.yearMin && `${filters.yearMin}${filters.yearMax ? '–'+filters.yearMax : '+'}`,
-      filters.mileageMax && `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km`,
-      ctry.code !== 'FR' && ctry.label,
+      (filters.mileageMin || filters.mileageMax) && (
+        filters.mileageMin && filters.mileageMax
+          ? `${Number(filters.mileageMin).toLocaleString('fr-FR')}–${Number(filters.mileageMax).toLocaleString('fr-FR')} km`
+          : filters.mileageMin ? `> ${Number(filters.mileageMin).toLocaleString('fr-FR')} km`
+          : `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km`
+      ),
+      ctry.label,
     ].filter(Boolean).join(' · ')
 
     saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '))
@@ -368,12 +422,23 @@ export default function PriceWatch() {
         setCentraleUrl(meta.centraleUrl || '')
         setSources(meta.sources || [])
       } else {
-        const makeSlug = (filters.make || '').toLowerCase().replace(/\s+/g, '-')
-        const modelSlug = (filters.model || '').toLowerCase().replace(/\s+/g, '-')
-        const as24Url = `https://www.autoscout24.${ctry.tld}/lst/${makeSlug}${modelSlug ? '/' + modelSlug : ''}`
+        const as24Url = buildAs24Url(ctry, filters)
+        const q = encodeURIComponent([filters.make, filters.model].filter(Boolean).join(' '))
+        const SECONDARY = {
+          DE: { name: 'mobile.de', url: `https://suchen.mobile.de/auto/search.html?makeModelVariant1.makeName=${encodeURIComponent(filters.make || '')}&makeModelVariant1.searchText=${encodeURIComponent(filters.model || '')}` },
+          BE: { name: '2dehands.be', url: `https://www.2dehands.be/q/${q}/` },
+          NL: { name: 'Marktplaats.nl', url: `https://www.marktplaats.nl/q/${q}/` },
+          IT: { name: 'Subito.it', url: `https://www.subito.it/annunci-italia/vendita/usato/auto/?q=${q}` },
+          ES: { name: 'Coches.net', url: `https://www.coches.net/segunda-mano/?q=${q}` },
+          PT: { name: 'CustoJusto.pt', url: `https://www.custojusto.pt/portugal/carros-e-motos/carros/?q=${q}` },
+          LU: { name: 'Luxauto.lu', url: 'https://www.luxauto.lu/' },
+        }
         setFetchedAt(new Date().toISOString())
         setCentraleUrl(as24Url)
-        setSources([{ name: `AutoScout24 ${ctry.label}`, url: as24Url }])
+        setSources([
+          { name: `AutoScout24 ${ctry.label}`, url: as24Url },
+          ...(SECONDARY[ctry.code] ? [SECONDARY[ctry.code]] : []),
+        ])
       }
 
       // Analyse streamée en direct (comme le chat) — le texte s'affiche au fil
@@ -440,7 +505,7 @@ export default function PriceWatch() {
 
   const reset = () => {
     setReport(''); setMake(''); setModel(''); setFinition(''); setCarrosserie('')
-    setYearMin(''); setYearMax(''); setMileageMax(''); setFuel(''); setGearbox('')
+    setYearMin(''); setYearMax(''); setMileageMin(''); setMileageMax(''); setFuel(''); setGearbox('')
     setCountry('FR')
     setSearchLabel(''); setCentraleUrl(''); setFetchedAt(null); setSources([]); setHasLiveData(false)
   }
@@ -540,11 +605,16 @@ export default function PriceWatch() {
           </FilterSelect>
         </div>
 
-        {/* Ligne 2 : Km max (VO only) + Carburant + Boîte */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+        {/* Ligne 2 : Km min + Km max (VO only) + Carburant + Boîte */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+          {type === 'vo' && (
+            <FilterSelect label={t('km_min')} value={mileageMin} onChange={setMileageMin}>
+              {MILEAGE_MIN_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </FilterSelect>
+          )}
           {type === 'vo' && (
             <FilterSelect label={t('km_max')} value={mileageMax} onChange={setMileageMax}>
-              {MILEAGE_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              {MILEAGE_MAX_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </FilterSelect>
           )}
           <FilterSelect label={t('fuel_label')} value={fuel} onChange={setFuel}>
