@@ -21,16 +21,19 @@ function parseAIJson(raw) {
 
 /**
  * URL d'image MÊME ORIGINE via notre proxy `/api/car-image`, qui résout la vraie
- * photo Wikipedia côté serveur. Same-origin = passe la CSP (`img-src 'self'`) ET
- * évite le « taint » du canvas à l'export PDF (html2canvas).
+ * photo de la GÉNÉRATION exacte côté serveur (recherche d'images sur "Marque
+ * Modèle Année", repli Wikipédia). Same-origin = passe la CSP (`img-src 'self'`)
+ * ET évite le « taint » du canvas à l'export PDF (html2canvas).
+ *
+ * L'ANNÉE est déterminante : sans elle, une recherche "Renault Espace" renvoie
+ * le monospace de 1984 ; "Renault Espace 2023" renvoie bien le SUV actuel.
  */
 function carImg(c) {
-  const wiki = c?.wiki || ''
-  const q    = `${c?.make || ''} ${c?.model || ''}`.trim()
-  if (!wiki && !q) return null
+  const q = [c?.make, c?.model, c?.year].filter(Boolean).join(' ').trim()
+  if (!q) return null
   const p = new URLSearchParams()
-  if (wiki) p.set('wiki', wiki)
-  if (q)    p.set('q', q)
+  p.set('q', q)
+  if (c?.wiki) p.set('wiki', c.wiki)
   return `/api/car-image?${p.toString()}`
 }
 
@@ -92,10 +95,10 @@ function CompCard({ car, refLen }) {
     <div className="glass-card overflow-hidden hover:border-cyan-400/25 transition-colors group">
       <Photo src={car._img} alt={`${car.make} ${car.model}`} className="w-full h-28" />
       <div className="p-3">
-        <p className="text-xs font-bold text-white truncate group-hover:text-cyan-400 transition-colors">
+        <p className="text-xs font-bold text-white leading-tight group-hover:text-cyan-400 transition-colors">
           {car.make} {car.model}
         </p>
-        <p className="text-[10px] text-slate-500 mb-2 truncate">
+        <p className="text-[10px] leading-tight text-slate-500 mt-0.5 mb-2">
           {[car.year, car.version].filter(Boolean).join(' · ')}
         </p>
 
@@ -178,11 +181,11 @@ export default function Compare() {
 L'ÉQUIVALENCE se fait UNIQUEMENT sur le GABARIT (longueur, largeur, hauteur proches), toutes marques confondues — exactement comme automobiledimension.com.
 
 ÉTAPES :
-1. Dimensions officielles exactes + caractéristiques du modèle demandé. Indique s'il s'agit d'un modèle ACTUELLEMENT commercialisé ("current") ou d'une génération REMPLACÉE ("previous"), et par quoi il a été remplacé le cas échéant.
-2. "comparablesNew" : 6 à 8 véhicules NEUFS actuellement commercialisés, de gabarit similaire (toutes marques). Utilise UNIQUEMENT la génération actuelle en vente (pas d'anciennes versions).
-3. "comparablesPrevious" : 3 à 5 GÉNÉRATIONS PRÉCÉDENTES DU MÊME VÉHICULE EXACT demandé. Exemple : si on cherche "Citroën C5 Aircross 2025 (2e génération)", mets ici la 1ère génération C5 Aircross (2017-2022). Si on cherche "Volkswagen Golf 8", mets Golf 7, Golf 6, etc. JAMAIS d'autres marques ici — uniquement les anciennes versions du véhicule demandé.
+1. Dimensions OFFICIELLES EXACTES de la génération précise demandée (largeur HORS rétroviseurs ; champ widthMirrors séparé pour rétros déployés) + caractéristiques. Ne mélange JAMAIS les chiffres de générations différentes. Indique s'il s'agit d'un modèle ACTUELLEMENT commercialisé ("current") ou d'une génération REMPLACÉE ("previous"), et par quoi il a été remplacé le cas échéant.
+2. "comparablesNew" : 6 à 8 véhicules NEUFS actuellement en vente, RIVAUX DIRECTS du même segment et gabarit (longueur à ±15 cm), toutes marques. Génération actuellement commercialisée UNIQUEMENT. Chaque entrée doit avoir une "year" récente (modèle 2023-2026) — c'est cette année qui sert à retrouver la BONNE photo.
+3. "comparablesPrevious" : 3 à 5 GÉNÉRATIONS PRÉCÉDENTES DU MÊME VÉHICULE EXACT demandé. Exemple : pour "Citroën C5 Aircross 2025 (2e génération)" → 1ère génération C5 Aircross (et son restylage). Pour "Volkswagen Golf 8" → Golf 7, Golf 6… JAMAIS d'autres marques ici. Mets dans "year" l'année médiane de la génération (ex. 2019) pour retrouver la bonne photo.
 
-Pour CHAQUE véhicule (modèle demandé ET chaque comparable), donne le champ "wiki" = le TITRE EXACT de l'article Wikipedia de CETTE génération précise (ex : "Peugeot 3008 (2016)", "Renault Austral", "Alpine A290"). Ce titre sert à récupérer la vraie photo — il doit correspondre à un article Wikipedia existant et à la BONNE génération.
+Le champ "year" de CHAQUE véhicule est CRUCIAL : il identifie la génération et sert à récupérer la vraie photo. Donne aussi "wiki" = titre d'article Wikipedia en repli.
 
 Réponds ENSUITE UNIQUEMENT en JSON valide (aucun texte autour, pas de backticks) :
 {
