@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Search, X, Sparkles, Loader2, AlertCircle } from 'lucide-react'
+import { X, Sparkles, Loader2, AlertCircle } from 'lucide-react'
 import { generateProductFromWeb } from '@/services/generateProduct'
 import { useSettings } from '@/contexts/SettingsContext'
 import useFocusTrap from '@/hooks/useFocusTrap'
 import AIProgress from '@/components/ui/AIProgress'
+import VehicleDetails, { EMPTY_DETAILS, formatVehicleDetails, vehicleNameOf } from '@/components/ui/VehicleDetails'
 
 const SUGGESTIONS = [
   'Toyota Yaris Cross 2024',
@@ -18,11 +19,14 @@ const SUGGESTIONS = [
 
 export default function VehicleSearchModal({ onGenerated, onClose }) {
   const { t } = useSettings()
-  const [query, setQuery] = useState('')
+  const [details, setDetails] = useState(EMPTY_DETAILS)
+  const [searchLabel, setSearchLabel] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [step, setStep] = useState('idle') // idle | loading | done
   const trapRef = useFocusTrap()
+
+  const vehicleName = vehicleNameOf(details)
 
   // Close on Escape — standard dialog affordance for keyboard users.
   useEffect(() => {
@@ -31,16 +35,17 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const generate = async (q) => {
-    const search = q || query
-    if (!search.trim()) return
-    setQuery(search)
+  const generate = async (overrideName) => {
+    const name = (overrideName || vehicleName).trim()
+    if (!name) return
+    const descriptor = overrideName ? '' : formatVehicleDetails(details)
+    setSearchLabel(name)
     setLoading(true)
     setError(null)
     setStep('loading')
 
     try {
-      const product = await generateProductFromWeb(search.trim())
+      const product = await generateProductFromWeb(name, descriptor)
       onGenerated(product)
       onClose()
     } catch (err) {
@@ -79,43 +84,33 @@ export default function VehicleSearchModal({ onGenerated, onClose }) {
           </button>
         </div>
 
-        {/* Search input */}
+        {/* Filtres véhicule (identiques à la Veille Prix) */}
         <div className="p-4">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && generate()}
-                placeholder={t('modal_search_ph')}
-                className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl
-                           pl-9 pr-3 py-3 text-sm text-white placeholder-slate-600
-                           focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/20 transition"
-              />
-            </div>
-            <button
-              onClick={() => generate()}
-              disabled={!query.trim() || loading}
-              className="px-4 py-3 bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
-                         hover:bg-cyan-300 active:scale-95 transition-all
-                         disabled:opacity-40 disabled:pointer-events-none flex items-center gap-2 flex-shrink-0"
-            >
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              {loading ? t('modal_generating') : t('modal_generate_btn')}
-            </button>
-          </div>
+          {!loading && (
+            <>
+              <VehicleDetails value={details} onChange={setDetails} />
+              <button
+                onClick={() => generate()}
+                disabled={!vehicleName.trim() || loading}
+                className="w-full px-4 py-3 bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
+                           hover:bg-cyan-300 active:scale-95 transition-all
+                           disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
+              >
+                <Sparkles size={16} />
+                {t('modal_generate_btn')}
+              </button>
+            </>
+          )}
 
           {/* Loading state */}
           {loading && (
-            <div className="mt-4 p-4 rounded-xl bg-cyan-400/5 border border-cyan-400/10">
+            <div className="p-4 rounded-xl bg-cyan-400/5 border border-cyan-400/10">
               <div className="flex items-center gap-3">
                 <Loader2 size={16} className="text-cyan-400 animate-spin flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-white">{t('modal_analyzing')}</p>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {t('modal_analyzing_detail')} "{query}"
+                    {t('modal_analyzing_detail')} "{searchLabel}"
                   </p>
                 </div>
               </div>

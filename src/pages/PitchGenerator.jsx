@@ -5,7 +5,7 @@ import Spinner from '@/components/ui/Spinner'
 import AIProgress from '@/components/ui/AIProgress'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
-import VehicleDetails, { EMPTY_DETAILS, formatVehicleDetails } from '@/components/ui/VehicleDetails'
+import VehicleDetails, { EMPTY_DETAILS, formatVehicleDetails, vehicleNameOf } from '@/components/ui/VehicleDetails'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -28,9 +28,8 @@ export default function PitchGenerator() {
   const { t, lang } = useSettings()
   const pitchRef = useRef(null)
   const [vehicleId, setVehicleId] = useState('')
-  const [customVehicle, setCustomVehicle] = useState(() => readLastVehicleName())
   const [profileId, setProfileId] = useState('btoc_famille')
-  const [details, setDetails] = useState(EMPTY_DETAILS)
+  const [details, setDetails] = useState(() => ({ ...EMPTY_DETAILS, model: readLastVehicleName() }))
   const [context, setContext] = useState('')
   const [loading, setLoading] = useState(false)
   const [pitch, setPitch] = useState(null)
@@ -47,7 +46,7 @@ export default function PitchGenerator() {
   const headingRef = useResultFocus(pitch !== null && !loading)
 
   const selectedProduct = allProducts.find((p) => p.id === vehicleId)
-  const vehicleName = selectedProduct?.fullName || customVehicle
+  const vehicleName = selectedProduct?.fullName || vehicleNameOf(details)
   const profile = PROFILES.find((p) => p.id === profileId)
 
   const generate = async () => {
@@ -132,7 +131,7 @@ Réponds UNIQUEMENT en JSON valide :
     exportToPdf(pitchRef, pdfFileName(vehicleName, t('page_pitch_title')), { title: t('page_pitch_title'), subtitle: vehicleName })
   )
 
-  const reset = () => { setPitch(null); setVehicleId(''); setCustomVehicle(''); setContext(''); setGeneratedFor('') }
+  const reset = () => { setPitch(null); setVehicleId(''); setDetails(EMPTY_DETAILS); setContext(''); setGeneratedFor('') }
 
   const restore = (item) => {
     setPitch(item.pitch)
@@ -153,20 +152,6 @@ Réponds UNIQUEMENT en JSON valide :
           </div>
         </div>
 
-        {/* Vehicle */}
-        <div className="mb-3">
-          <label className="section-label block mb-1">{t('vehicle_label')}</label>
-          <input
-            type="text"
-            value={customVehicle}
-            onChange={(e) => { setCustomVehicle(e.target.value); setVehicleId('') }}
-            onKeyDown={(e) => e.key === 'Enter' && generate()}
-            placeholder={t('vehicle_ph')}
-            aria-label={t('vehicle_label')}
-            className="input-field"
-          />
-        </div>
-
         {/* Catalog shortcuts */}
         {allProducts.length > 0 && (
           <div className="mb-4">
@@ -175,7 +160,7 @@ Réponds UNIQUEMENT en JSON valide :
               {allProducts.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => { setVehicleId(p.id); setCustomVehicle(p.fullName) }}
+                  onClick={() => { setVehicleId(p.id); setDetails((d) => ({ ...d, make: p.brand, model: p.model })) }}
                   className={`text-xs px-2.5 py-1.5 rounded-lg border transition truncate text-left ${
                     vehicleId === p.id
                       ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/40'

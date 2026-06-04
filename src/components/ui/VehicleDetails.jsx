@@ -1,26 +1,41 @@
 import { useSettings } from '@/contexts/SettingsContext'
+import {
+  MAKES, YEARS, MILEAGE_MIN_VALUES, MILEAGE_MAX_VALUES,
+  FUEL_OPTS, GEARBOX_OPTS, BODY_OPTS, FUEL_FR, GEAR_FR, BODY_FR,
+} from '@/data/vehicleFilters'
 
 /**
- * Champs « détails véhicule » partagés (Pitch, Objections) — mêmes cases que la
- * Veille Prix pour préciser le contexte et améliorer la pertinence de l'IA.
- * Tous les champs sont OPTIONNELS.
+ * Filtres véhicule partagés (Pitch, Objections, Fiche IA) — EXACTEMENT les mêmes
+ * champs que la Veille Prix (hors pays/marché) : Type, Marque, Modèle, Finition,
+ * Carrosserie, Année min/max, Km min/max, Carburant, Boîte. Tous OPTIONNELS.
  */
 
-export const EMPTY_DETAILS = { type: '', fuel: '', gearbox: '', annee: '', km: '', finition: '' }
+export const EMPTY_DETAILS = {
+  type: '', make: '', model: '', finition: '', carrosserie: '',
+  yearMin: '', yearMax: '', mileageMin: '', mileageMax: '', fuel: '', gearbox: '',
+}
 
-const FUEL_FR = { ES: 'Essence', GO: 'Diesel', EL: 'Électrique', HY: 'Hybride', GH: 'Hybride rechargeable', GP: 'GPL' }
-const GEAR_FR = { M: 'Boîte manuelle', A: 'Boîte automatique' }
+/** Nom commercial = marque + modèle (ce qu'on envoie comme libellé véhicule). */
+export function vehicleNameOf(d) {
+  return [d?.make, d?.model].filter(Boolean).join(' ').trim()
+}
 
 /** Construit un descriptif court pour le prompt, en n'incluant que les champs remplis. */
 export function formatVehicleDetails(d) {
   if (!d) return ''
   const parts = []
   if (d.type) parts.push(d.type === 'vn' ? 'Véhicule neuf (VN)' : "Véhicule d'occasion (VO)")
+  if (d.finition) parts.push(`finition ${d.finition}`)
+  if (BODY_FR[d.carrosserie]) parts.push(BODY_FR[d.carrosserie])
   if (FUEL_FR[d.fuel]) parts.push(FUEL_FR[d.fuel])
   if (GEAR_FR[d.gearbox]) parts.push(GEAR_FR[d.gearbox])
-  if (d.annee) parts.push(`année ${d.annee}`)
-  if (d.km) parts.push(`${d.km} km`)
-  if (d.finition) parts.push(`finition ${d.finition}`)
+  if (d.yearMin && d.yearMax) parts.push(d.yearMin === d.yearMax ? `millésime ${d.yearMin}` : `millésimes ${d.yearMin}–${d.yearMax}`)
+  else if (d.yearMin) parts.push(`à partir de ${d.yearMin}`)
+  else if (d.yearMax) parts.push(`jusqu'à ${d.yearMax}`)
+  const km = (n) => Number(n).toLocaleString('fr-FR')
+  if (d.mileageMin && d.mileageMax) parts.push(`${km(d.mileageMin)}–${km(d.mileageMax)} km`)
+  else if (d.mileageMin) parts.push(`≥ ${km(d.mileageMin)} km`)
+  else if (d.mileageMax) parts.push(`≤ ${km(d.mileageMax)} km`)
   return parts.join(' · ')
 }
 
@@ -41,13 +56,33 @@ function Field({ label, children }) {
 export default function VehicleDetails({ value, onChange }) {
   const { t } = useSettings()
   const set = (k) => (e) => onChange({ ...value, [k]: e.target.value })
+  const km = (n) => Number(n).toLocaleString('fr-FR')
 
   return (
     <div className="mb-4">
       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
         {t('veh_details_title')}
       </label>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+
+      {/* Marque + Modèle + Finition */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+        <Field label={t('make_label')}>
+          <input type="text" value={value.make} onChange={set('make')} list="veh-makes-list"
+            placeholder={t('make_ph')} aria-label={t('make_label')} className={inputCls} />
+          <datalist id="veh-makes-list">{MAKES.map(m => <option key={m} value={m} />)}</datalist>
+        </Field>
+        <Field label={t('model_label')}>
+          <input type="text" value={value.model} onChange={set('model')}
+            placeholder={t('price_model_ph')} aria-label={t('model_label')} className={inputCls} />
+        </Field>
+        <Field label={t('price_finition_label')}>
+          <input type="text" value={value.finition} onChange={set('finition')}
+            placeholder={t('price_finition_ph')} className={inputCls} />
+        </Field>
+      </div>
+
+      {/* Type + Carrosserie + Carburant + Boîte */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
         <Field label={t('veh_type_label')}>
           <select value={value.type} onChange={set('type')} className={selectCls}>
             <option value="">{t('veh_any')}</option>
@@ -55,32 +90,51 @@ export default function VehicleDetails({ value, onChange }) {
             <option value="vn">{t('new_vehicle')}</option>
           </select>
         </Field>
+        <Field label={t('price_body_label')}>
+          <select value={value.carrosserie} onChange={set('carrosserie')} className={selectCls}>
+            <option value="">{t('veh_any')}</option>
+            {BODY_OPTS.map(b => <option key={b.code} value={b.code}>{t(b.key)}</option>)}
+          </select>
+        </Field>
         <Field label={t('fuel_label')}>
           <select value={value.fuel} onChange={set('fuel')} className={selectCls}>
             <option value="">{t('veh_any')}</option>
-            <option value="ES">{t('price_fuel_petrol')}</option>
-            <option value="GO">{t('price_fuel_diesel')}</option>
-            <option value="EL">{t('price_fuel_electric')}</option>
-            <option value="HY">{t('price_fuel_hybrid')}</option>
-            <option value="GH">{t('price_fuel_phev')}</option>
-            <option value="GP">{t('price_fuel_lpg')}</option>
+            {FUEL_OPTS.map(f => <option key={f.code} value={f.code}>{t(f.key)}</option>)}
           </select>
         </Field>
         <Field label={t('gearbox_label')}>
           <select value={value.gearbox} onChange={set('gearbox')} className={selectCls}>
             <option value="">{t('veh_any')}</option>
-            <option value="M">{t('price_gearbox_manual')}</option>
-            <option value="A">{t('price_gearbox_auto')}</option>
+            {GEARBOX_OPTS.map(g => <option key={g.code} value={g.code}>{t(g.key)}</option>)}
           </select>
         </Field>
-        <Field label={t('veh_year_label')}>
-          <input type="text" inputMode="numeric" value={value.annee} onChange={set('annee')} placeholder="2023" className={inputCls} />
+      </div>
+
+      {/* Année min/max + Km min/max */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <Field label={t('year_min')}>
+          <select value={value.yearMin} onChange={set('yearMin')} className={selectCls}>
+            <option value="">{t('year_min')}</option>
+            {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </Field>
+        <Field label={t('year_max')}>
+          <select value={value.yearMax} onChange={set('yearMax')} className={selectCls}>
+            <option value="">{t('year_max')}</option>
+            {YEARS.filter(y => !value.yearMin || y >= Number(value.yearMin)).map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </Field>
+        <Field label={t('km_min')}>
+          <select value={value.mileageMin} onChange={set('mileageMin')} className={selectCls}>
+            <option value="">{t('km_min')}</option>
+            {MILEAGE_MIN_VALUES.map(v => <option key={v} value={v}>≥ {km(v)} km</option>)}
+          </select>
         </Field>
         <Field label={t('km_max')}>
-          <input type="text" inputMode="numeric" value={value.km} onChange={set('km')} placeholder="45 000" className={inputCls} />
-        </Field>
-        <Field label={t('price_finition_label')}>
-          <input type="text" value={value.finition} onChange={set('finition')} placeholder={t('price_finition_ph')} className={inputCls} />
+          <select value={value.mileageMax} onChange={set('mileageMax')} className={selectCls}>
+            <option value="">{t('km_max')}</option>
+            {MILEAGE_MAX_VALUES.map(v => <option key={v} value={v}>&lt; {km(v)} km</option>)}
+          </select>
         </Field>
       </div>
     </div>

@@ -5,7 +5,7 @@ import Spinner from '@/components/ui/Spinner'
 import AIProgress from '@/components/ui/AIProgress'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
-import VehicleDetails, { EMPTY_DETAILS, formatVehicleDetails } from '@/components/ui/VehicleDetails'
+import VehicleDetails, { EMPTY_DETAILS, formatVehicleDetails, vehicleNameOf } from '@/components/ui/VehicleDetails'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -79,9 +79,8 @@ export default function Objections() {
   const { t, lang } = useSettings()
   const objRef = useRef(null)
   const [vehicleId, setVehicleId] = useState('')
-  const [customVehicle, setCustomVehicle] = useState(() => readLastVehicleName())
   const [segment, setSegment] = useState('btoc')
-  const [details, setDetails] = useState(EMPTY_DETAILS)
+  const [details, setDetails] = useState(() => ({ ...EMPTY_DETAILS, model: readLastVehicleName() }))
   const [loading, setLoading] = useState(false)
   const [objections, setObjections] = useState([])
   const [openIndex, setOpenIndex] = useState(0)
@@ -97,7 +96,7 @@ export default function Objections() {
 
   const allProducts = [...PRODUCTS, ...generated]
   const selectedProduct = allProducts.find((p) => p.id === vehicleId)
-  const vehicleName = selectedProduct?.fullName || customVehicle
+  const vehicleName = selectedProduct?.fullName || vehicleNameOf(details)
 
   const generate = async () => {
     if (!vehicleName.trim()) return
@@ -163,7 +162,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
     }
   })
 
-  const reset = () => { setObjections([]); setVehicleId(''); setCustomVehicle(''); setGeneratedFor('') }
+  const reset = () => { setObjections([]); setVehicleId(''); setDetails(EMPTY_DETAILS); setGeneratedFor('') }
 
   const restore = (item) => {
     setObjections(item.objections)
@@ -180,22 +179,6 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
           <h2 className="text-sm font-semibold text-white">{t('page_objections_title')}</h2>
         </div>
 
-        <div className="mb-3">
-          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-            {t('vehicle_label')}
-          </label>
-          <input
-            type="text"
-            value={customVehicle}
-            onChange={(e) => { setCustomVehicle(e.target.value); setVehicleId('') }}
-            onKeyDown={(e) => e.key === 'Enter' && generate()}
-            placeholder={t('vehicle_ph')}
-            className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-3
-                       text-sm text-white placeholder-slate-600
-                       focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/20 transition"
-          />
-        </div>
-
         {allProducts.length > 0 && (
           <div className="mb-4">
             <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">{t('catalog_shortcuts')}</p>
@@ -203,7 +186,7 @@ Les objections doivent être réalistes, variées, couvrir : prix, marque inconn
               {allProducts.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => { setVehicleId(p.id); setCustomVehicle(p.fullName) }}
+                  onClick={() => { setVehicleId(p.id); setDetails((d) => ({ ...d, make: p.brand, model: p.model })) }}
                   className={`text-xs px-2.5 py-1.5 rounded-lg border transition truncate text-left ${
                     vehicleId === p.id
                       ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/40'

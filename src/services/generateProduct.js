@@ -62,11 +62,11 @@ const SCHEMA = `{
   }
 }`
 
-export async function generateProductFromWeb(query) {
+export async function generateProductFromWeb(query, details = '') {
   const prompt = `Tu es expert automobile et analyste marché pour Autobuyunion, 1er groupement européen d'achat auto.
 
 L'utilisateur demande une fiche produit pour : "${query}"
-
+${details ? `Précisions à RESPECTER STRICTEMENT (motorisation, finition, carrosserie, millésime, kilométrage) : ${details}.\n` : ''}
 Génère une fiche produit automobile COMPLÈTE et PRÉCISE basée sur tes connaissances réelles de ce véhicule.
 Utilise les vraies caractéristiques techniques officielles (homologation WLTP, prix catalogue France 2024/2025, équipements de série, concurrents directs).
 
