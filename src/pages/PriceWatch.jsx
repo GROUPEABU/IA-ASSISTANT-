@@ -49,12 +49,12 @@ const YEARS = Array.from({ length: 27 }, (_, i) => 2026 - i)
 const COUNTRIES = [
   { code: 'FR', label: 'France',     tva: 1.20, transport: 450, tld: 'fr', sites: 'La Centrale, LeBonCoin, AutoScout24.fr' },
   { code: 'BE', label: 'Belgique',   tva: 1.21, transport: 450, tld: 'be', sites: 'AutoScout24.be, 2dehands.be, Vroom.be' },
-  { code: 'LU', label: 'Luxembourg', tva: 1.17, transport: 400, tld: 'lu', sites: 'AutoScout24.lu, Luxauto.lu' },
-  { code: 'DE', label: 'Allemagne',  tva: 1.19, transport: 500, tld: 'de', sites: 'mobile.de, AutoScout24.de' },
-  { code: 'NL', label: 'Pays-Bas',   tva: 1.21, transport: 500, tld: 'nl', sites: 'AutoScout24.nl, Marktplaats.nl' },
-  { code: 'ES', label: 'Espagne',    tva: 1.21, transport: 700, tld: 'es', sites: 'AutoScout24.es, Coches.net' },
-  { code: 'IT', label: 'Italie',     tva: 1.22, transport: 750, tld: 'it', sites: 'AutoScout24.it, Subito.it' },
-  { code: 'PT', label: 'Portugal',   tva: 1.23, transport: 800, tld: 'pt', sites: 'AutoScout24.pt, CustoJusto.pt' },
+  { code: 'LU', label: 'Luxembourg', tva: 1.17, transport: 450, tld: 'lu', sites: 'AutoScout24.lu, Luxauto.lu' },
+  { code: 'DE', label: 'Allemagne',  tva: 1.19, transport: 450, tld: 'de', sites: 'mobile.de, AutoScout24.de' },
+  { code: 'NL', label: 'Pays-Bas',   tva: 1.21, transport: 450, tld: 'nl', sites: 'AutoScout24.nl, Marktplaats.nl' },
+  { code: 'ES', label: 'Espagne',    tva: 1.21, transport: 450, tld: 'es', sites: 'AutoScout24.es, Coches.net' },
+  { code: 'IT', label: 'Italie',     tva: 1.22, transport: 450, tld: 'it', sites: 'AutoScout24.it, Subito.it' },
+  { code: 'PT', label: 'Portugal',   tva: 1.23, transport: 450, tld: 'pt', sites: 'AutoScout24.pt, CustoJusto.pt' },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
