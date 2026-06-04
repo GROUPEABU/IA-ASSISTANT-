@@ -620,6 +620,7 @@ export default {
     price_body_monospace: 'Minivan',
     price_body_citadine: 'City car',
     price_body_pickup: 'Pick-up',
+    price_country_label: 'Market / Country',
     // Vehicle search modal
     modal_ai_subtitle: 'AI searches real vehicle data',
     modal_generating: 'Generating...',

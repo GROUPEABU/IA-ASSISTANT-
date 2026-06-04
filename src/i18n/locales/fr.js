@@ -648,6 +648,7 @@ export default {
     price_body_monospace: 'Monospace',
     price_body_citadine: 'Citadine',
     price_body_pickup: 'Pick-up',
+    price_country_label: 'Marché / Pays',
     // Vehicle search modal
     modal_ai_subtitle: "L'IA recherche les vraies données du véhicule",
     modal_generating: 'Génération...',

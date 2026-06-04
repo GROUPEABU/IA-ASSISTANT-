@@ -46,6 +46,17 @@ const MAKES = [
 
 const YEARS = Array.from({ length: 27 }, (_, i) => 2026 - i)
 
+const COUNTRIES = [
+  { code: 'FR', label: 'France',     tva: 1.20, transport: 450, tld: 'fr', sites: 'La Centrale, LeBonCoin, AutoScout24.fr' },
+  { code: 'BE', label: 'Belgique',   tva: 1.21, transport: 450, tld: 'be', sites: 'AutoScout24.be, 2dehands.be, Vroom.be' },
+  { code: 'LU', label: 'Luxembourg', tva: 1.17, transport: 400, tld: 'lu', sites: 'AutoScout24.lu, Luxauto.lu' },
+  { code: 'DE', label: 'Allemagne',  tva: 1.19, transport: 500, tld: 'de', sites: 'mobile.de, AutoScout24.de' },
+  { code: 'NL', label: 'Pays-Bas',   tva: 1.21, transport: 500, tld: 'nl', sites: 'AutoScout24.nl, Marktplaats.nl' },
+  { code: 'ES', label: 'Espagne',    tva: 1.21, transport: 700, tld: 'es', sites: 'AutoScout24.es, Coches.net' },
+  { code: 'IT', label: 'Italie',     tva: 1.22, transport: 750, tld: 'it', sites: 'AutoScout24.it, Subito.it' },
+  { code: 'PT', label: 'Portugal',   tva: 1.23, transport: 800, tld: 'pt', sites: 'AutoScout24.pt, CustoJusto.pt' },
+]
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 async function fetchSources(filters) {
   const params = new URLSearchParams(
@@ -57,7 +68,19 @@ async function fetchSources(filters) {
 }
 
 // Construit le prompt de l'analyse streamée (rapport Markdown, pas de JSON).
-function buildPrompt(filters, vehicleDesc) {
+function buildPrompt(filters, vehicleDesc, ctry) {
+  const { code: countryCode, label: countryLabel, tva, transport, sites } = ctry
+  const isFrance = countryCode === 'FR'
+  const tvaFmt = tva.toFixed(2).replace('.', ',')
+  const tvaRate = Math.round((tva - 1) * 100)
+  const transportNote = isFrance ? 'transport UE' : `transport depuis ${countryLabel} vers France`
+
+  // Dynamic example values for the formula illustration
+  const ex1 = Math.round(24000 / tva - transport - 3000)
+  const ex2 = Math.round(25200 / tva - transport - 3000)
+  const ex1s = ex1.toLocaleString('fr-FR')
+  const ex2s = ex2.toLocaleString('fr-FR')
+
   const kmTxt = filters.mileageMax ? `${Number(filters.mileageMax).toLocaleString('fr-FR')} km` : null
   const finitionFilter = filters.finition
     ? `\n⚠️ FINITION STRICTE : analyse UNIQUEMENT la version "${filters.finition}".` : ''
@@ -69,12 +92,13 @@ function buildPrompt(filters, vehicleDesc) {
     : filters.yearMax ? `millésime ${filters.yearMax} ou plus ancien` : null
   const anneeFilter = anneeTxt
     ? `\n⚠️ ANNÉE STRICTE : le véhicule analysé est de ${anneeTxt}. Raisonne EXCLUSIVEMENT sur ce millésime. N'écris JAMAIS une autre année (ex. 2024) si elle ne correspond pas au filtre — utilise l'année demandée pour la cote, la décote et les prix.` : ''
+  const countryCtx = isFrance ? '' : `\n\nMARCHÉ ANALYSÉ : ${countryLabel} — recherche LES ANNONCES SUR ${sites}. Les prix affichés sont en euros TTC avec TVA locale ${tvaRate}%. Transport estimé vers la France : ${transport} € HT. Précise bien que les prix relevés sont ceux du marché ${countryLabel}.`
 
   return `Tu es l'analyste cote & marché automobile ${filters.type === 'vn' ? 'VN (neuf)' : 'VO (occasion)'} d'Autobuyunion, centrale d'achat européenne. Tu réponds comme dans une conversation : un rapport clair, direct, en Markdown, prêt à lire.
 
-VÉHICULE CIBLE : "${vehicleDesc}"${finitionFilter}${kmFilter}${anneeFilter}
+VÉHICULE CIBLE : "${vehicleDesc}"${finitionFilter}${kmFilter}${anneeFilter}${countryCtx}
 
-RECHERCHE WEB : utilise l'outil de recherche web (2-3 requêtes max) pour relever les annonces réelles correspondant EXACTEMENT aux filtres (kilométrage inclus) sur La Centrale, LeBonCoin, AutoScout24, et repérer le niveau des « premiers du net » (annonces les moins chères réellement disponibles). Si rien d'exploitable, base-toi sur ta connaissance experte du marché français et signale-le.
+RECHERCHE WEB : utilise l'outil de recherche web (2-3 requêtes max) pour relever les annonces réelles correspondant EXACTEMENT aux filtres (kilométrage inclus) sur ${sites}, et repérer le niveau des « premiers du net » (annonces les moins chères réellement disponibles). Si rien d'exploitable, base-toi sur ta connaissance experte du marché et signale-le.
 
 PHILOSOPHIE (à respecter absolument) : l'OBJECTIF est de GÉNÉRER DE LA MARGE, pas de brader. Le partenaire se positionne PARMI LES PREMIERS DU NET (offre attractive, vend bien) et, de temps en temps seulement, légèrement EN DESSOUS du 1er du net pour accélérer — sans jamais casser les prix.
 
@@ -83,7 +107,7 @@ MÉTHODE DE COTATION (applique-la précisément, par véhicule) :
 2. Prix de revente conseillé TTC = se positionner parmi les premiers du net (au niveau, ou légèrement en dessous pour vendre vite) — JAMAIS brader.
 3. CALCUL DU PRIX D'ACHAT PRO — il se déduit DIRECTEMENT du 1er du net, avec la marge plancher de 3 000 € HT.
    FORMULE (applique-la telle quelle) :
-     prix d'achat pro HT = (revente 1er du net TTC ÷ 1,20) − 450 (transport UE) − 3 000 (marge plancher).
+     prix d'achat pro HT = (revente 1er du net TTC ÷ ${tvaFmt}) − ${transport} (${transportNote}) − 3 000 (marge plancher).
    N'invente PAS un prix d'achat plus bas pour gonfler la marge : le prix d'achat CONSEILLÉ est celui qui
    sécurise pile 3 000 € de marge tout en se positionnant parmi les premiers du net. Ne déduis JAMAIS de
    marge groupe ni le malus de cette cascade.
@@ -96,9 +120,9 @@ MÉTHODE DE COTATION (applique-la précisément, par véhicule) :
    Les 3 000 € de marge doivent être SÉCURISÉS aux deux bornes (pile 3 000 € à ce prix d'achat).
 
    EXEMPLE (Citroën C5 Aircross MAX hybride, méthode à reproduire À L'IDENTIQUE) :
-   • Fort km (~50 000 km) : 1er du net ~24 000 € TTC → 24 000 ÷ 1,20 − 450 − 3 000 = 16 550 € HT.
-   • Faible km (~10 000 km) : 1er du net ~25 200 € TTC → 25 200 ÷ 1,20 − 450 − 3 000 = 17 550 € HT.
-   → Prix d'achat pro CONSEILLÉ : 16 550 – 17 550 € HT (3 000 € de marge sécurisés à chaque borne).
+   • Fort km (~50 000 km) : 1er du net ~24 000 € TTC → 24 000 ÷ ${tvaFmt} − ${transport} − 3 000 = ${ex1s} € HT.
+   • Faible km (~10 000 km) : 1er du net ~25 200 € TTC → 25 200 ÷ ${tvaFmt} − ${transport} − 3 000 = ${ex2s} € HT.
+   → Prix d'achat pro CONSEILLÉ : ${ex1s} – ${ex2s} € HT (3 000 € de marge sécurisés à chaque borne).
 
    POUR AUGMENTER LA MARGE (conseil, jamais en bradant) : on peut soit négocier l'achat un peu PLUS BAS que
    ces valeurs, soit positionner la revente un peu PLUS HAUT (toujours parmi les premiers du net). Chaque euro
@@ -122,7 +146,7 @@ FORMAT DE SORTIE — Markdown épuré, sections aérées, dans cet ordre EXACT (
 - **Prix d'achat pro conseillé** : … – … € HT (calculé sur le 1er du net, marge 3 000 € HT incluse)
 - **Marge dégageable** : 3 000 € HT à ce prix d'achat — davantage en négociant l'achat plus bas
 
-**À retenir** : le prix d'achat est calculé à partir du 1er du net (revente ÷ 1,20 − 450 transport − 3 000 marge). Objectif = générer de la marge, pas brader : on se positionne parmi les premiers du net. Pour gagner plus, on achète un peu plus bas ou on revend un peu plus haut, jamais en cassant les prix.
+**À retenir** : le prix d'achat est calculé à partir du 1er du net (revente ÷ ${tvaFmt} − ${transport} transport − 3 000 marge). Objectif = générer de la marge, pas brader : on se positionne parmi les premiers du net. Pour gagner plus, on achète un peu plus bas ou on revend un peu plus haut, jamais en cassant les prix.
 
 ## Repères marché
 Tableau Markdown : Prix moyen | Prix médian | Fourchette courante | Nb annonces estimé (tous en TTC).
@@ -213,6 +237,7 @@ export default function PriceWatch() {
   const [mileageMax, setMileageMax] = useState(() => readPwSession('mileageMax', ''))
   const [fuel, setFuel]           = useState(() => readPwSession('fuel', ''))
   const [gearbox, setGearbox]     = useState(() => readPwSession('gearbox', ''))
+  const [country, setCountry]     = useState(() => readPwSession('country', 'FR'))
 
   const [loading, setLoading]     = useState(false)   // avant le 1er token
   const [streaming, setStreaming] = useState(false)   // tokens en cours d'arrivée
@@ -231,10 +256,10 @@ export default function PriceWatch() {
   useEffect(() => {
     try {
       sessionStorage.setItem(PW_SESSION, JSON.stringify(
-        { type, make, model, finition, carrosserie, yearMin, yearMax, mileageMax, fuel, gearbox }
+        { type, make, model, finition, carrosserie, yearMin, yearMax, mileageMax, fuel, gearbox, country }
       ))
     } catch {}
-  }, [type, make, model, finition, carrosserie, yearMin, yearMax, mileageMax, fuel, gearbox])
+  }, [type, make, model, finition, carrosserie, yearMin, yearMax, mileageMax, fuel, gearbox, country])
 
   const canSearch = make.trim() || model.trim()
 
@@ -244,6 +269,7 @@ export default function PriceWatch() {
     const matchedMake = MAKES.find(m => m.label.toLowerCase() === rawMake.toLowerCase())
     const resolvedMake = matchedMake ? matchedMake.code : rawMake
     const filters = { make: resolvedMake, model, finition, carrosserie, type, yearMin, yearMax, mileageMax, fuel, gearbox, ...overrides }
+    const ctry = COUNTRIES.find(c => c.code === (overrides.country ?? country)) ?? COUNTRIES[0]
 
     const vehicleDesc = [
       rawMake, filters.model, filters.finition,
@@ -255,9 +281,11 @@ export default function PriceWatch() {
       filters.carrosserie ? BODIES.find(b => b.code === filters.carrosserie)?.label : '',
     ].filter(Boolean).join(' · ')
 
-    const label = [filters.make, filters.model, filters.finition,
+    const label = [
+      filters.make, filters.model, filters.finition,
       filters.yearMin && `${filters.yearMin}${filters.yearMax ? '–'+filters.yearMax : '+'}`,
       filters.mileageMax && `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km`,
+      ctry.code !== 'FR' && ctry.label,
     ].filter(Boolean).join(' · ')
 
     saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '))
@@ -269,17 +297,26 @@ export default function PriceWatch() {
     setHasLiveData(false)
 
     try {
-      // Liens de référence (La Centrale, etc.) — affichage immédiat.
-      const meta = await fetchSources(filters)
-      setFetchedAt(meta.fetchedAt)
-      setCentraleUrl(meta.centraleUrl || '')
-      setSources(meta.sources || [])
+      // Liens de référence — for non-France markets, use AutoScout24 country URL.
+      if (ctry.code === 'FR') {
+        const meta = await fetchSources(filters)
+        setFetchedAt(meta.fetchedAt)
+        setCentraleUrl(meta.centraleUrl || '')
+        setSources(meta.sources || [])
+      } else {
+        const makeSlug = (filters.make || '').toLowerCase().replace(/\s+/g, '-')
+        const modelSlug = (filters.model || '').toLowerCase().replace(/\s+/g, '-')
+        const as24Url = `https://www.autoscout24.${ctry.tld}/lst/${makeSlug}${modelSlug ? '/' + modelSlug : ''}`
+        setFetchedAt(new Date().toISOString())
+        setCentraleUrl(as24Url)
+        setSources([{ name: `AutoScout24 ${ctry.label}`, url: as24Url }])
+      }
 
       // Analyse streamée en direct (comme le chat) — le texte s'affiche au fil
       // de l'eau dès le 1er token reçu.
       let first = true
       const { text, usedWebSearch } = await sendMessage(
-        [{ role: 'user', content: buildPrompt(filters, vehicleDesc) }],
+        [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry) }],
         {
           lang, expert: true, temperature: 0.3, tool: 'veilleprix',
           webSearch: true, maxSearches: 3, maxTokens: 3500,
@@ -294,7 +331,7 @@ export default function PriceWatch() {
       setHasLiveData(!!usedWebSearch)
       setStreaming(false)
       saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '))
-      addHistory({ searchLabel: label, type: filters.type, report: text, hasLiveData: !!usedWebSearch, fetchedAt: meta.fetchedAt, sources: meta.sources, centraleUrl: meta.centraleUrl })
+      addHistory({ searchLabel: label, country: ctry.code, type: filters.type, report: text, hasLiveData: !!usedWebSearch, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '' })
     } catch (err) {
       setError(err.message)
       toast(err.message, 'error')
@@ -311,6 +348,7 @@ export default function PriceWatch() {
   const reset = () => {
     setReport(''); setMake(''); setModel(''); setFinition(''); setCarrosserie('')
     setYearMin(''); setYearMax(''); setMileageMax(''); setFuel(''); setGearbox('')
+    setCountry('FR')
     setSearchLabel(''); setCentraleUrl(''); setFetchedAt(null); setSources([]); setHasLiveData(false)
   }
 
@@ -318,6 +356,7 @@ export default function PriceWatch() {
     setReport(item.report || '')
     setSearchLabel(item.searchLabel)
     setType(item.type)
+    setCountry(item.country || 'FR')
     setHasLiveData(!!item.hasLiveData)
     setFetchedAt(item.fetchedAt || null)
     setSources(item.sources || [])
@@ -390,8 +429,8 @@ export default function PriceWatch() {
           </FilterSelect>
         </div>
 
-        {/* Ligne 1b : Finition + Carrosserie */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+        {/* Ligne 1b : Finition + Carrosserie + Marché */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('price_finition_label')}</label>
             <input
@@ -403,6 +442,9 @@ export default function PriceWatch() {
           </div>
           <FilterSelect label={t('price_body_label')} value={carrosserie} onChange={setCarrosserie}>
             {BODIES.map(b => <option key={b.code} value={b.code}>{b.label}</option>)}
+          </FilterSelect>
+          <FilterSelect label={t('price_country_label')} value={country} onChange={setCountry}>
+            {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
           </FilterSelect>
         </div>
 
@@ -436,7 +478,8 @@ export default function PriceWatch() {
             <a href={centraleUrl} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
                          px-3 py-2.5 rounded-xl hover:text-cyan-400 hover:border-cyan-400/30 transition">
-              <ExternalLink size={12} /> {t('price_see_listing')}
+              <ExternalLink size={12} />
+              {country === 'FR' ? t('price_see_listing') : `AutoScout24 ${COUNTRIES.find(c => c.code === country)?.label}`}
             </a>
           )}
         </div>
