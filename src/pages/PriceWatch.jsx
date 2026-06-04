@@ -373,7 +373,6 @@ export default function PriceWatch() {
         <div className="flex items-center gap-2 mb-4">
           <Bell size={15} className="text-cyan-400" />
           <h2 className="text-sm font-semibold text-white">{t('tool_price_title')}</h2>
-          <span className="text-xs text-slate-500 hidden sm:inline">{t('price_sources_label')}</span>
         </div>
 
         {/* VO / VN toggle */}
