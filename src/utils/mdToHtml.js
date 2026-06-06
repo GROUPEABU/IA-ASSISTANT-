@@ -72,8 +72,12 @@ export function mdToHtml(text) {
   s = s.replace(/<p>\s*(<pre>)/g, '$1').replace(/(<\/pre>)\s*<\/p>/g, '$1')
   s = s.replace(/<br>\s*(<pre>)/g, '$1').replace(/(<\/pre>)\s*<br>/g, '$1')
 
+  // Emballer chaque tableau dans un conteneur défilable horizontalement :
+  // sur mobile, le tableau scrolle dans sa boîte au lieu d'élargir la page.
+  s = s.replace(/<table>[\s\S]*?<\/table>/g, (m) => `<div class="report-table-wrap">${m}</div>`)
+
   return DOMPurify.sanitize(s, {
-    ALLOWED_TAGS: ['p','h1','h2','h3','h4','strong','em','code','ul','li','br','pre','hr','table','thead','tbody','tr','th','td'],
-    ALLOWED_ATTR: [],
+    ALLOWED_TAGS: ['p','h1','h2','h3','h4','strong','em','code','ul','li','br','pre','hr','table','thead','tbody','tr','th','td','div'],
+    ALLOWED_ATTR: ['class'],
   })
 }
