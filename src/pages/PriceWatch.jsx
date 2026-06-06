@@ -82,18 +82,13 @@ async function fetchSources(filters) {
 }
 
 // Construit le prompt de l'analyse streamée (rapport Markdown, pas de JSON).
+// UNE SEULE passe : relevé d'annonces → grille de prix par kilométrage → prix
+// d'achat → auto-vérification finale intégrée (plus de 2e passe garde-fou).
 function buildPrompt(filters, vehicleDesc, ctry) {
   const { code: countryCode, label: countryLabel, tva, transport, sites } = ctry
   const isFrance = countryCode === 'FR'
   const tvaFmt = tva.toFixed(2).replace('.', ',')
   const tvaRate = Math.round((tva - 1) * 100)
-  const transportNote = isFrance ? 'transport UE' : `transport depuis ${countryLabel} vers France`
-
-  // Dynamic example values for the formula illustration
-  const ex1 = Math.round(24000 / tva - transport - 3000)
-  const ex2 = Math.round(25200 / tva - transport - 3000)
-  const ex1s = ex1.toLocaleString('fr-FR')
-  const ex2s = ex2.toLocaleString('fr-FR')
 
   const kmMin = filters.mileageMin ? Number(filters.mileageMin) : null
   const kmMax = filters.mileageMax ? Number(filters.mileageMax) : null
@@ -101,162 +96,122 @@ function buildPrompt(filters, vehicleDesc, ctry) {
   const kmMaxTxt = kmMax ? `${kmMax.toLocaleString('fr-FR')} km` : null
   const finitionFilter = filters.finition
     ? `\n⚠️ FINITION STRICTE : analyse UNIQUEMENT la version "${filters.finition}".` : ''
-  const kmFilter = (kmMin || kmMax)
-    ? `\n⚠️ KILOMÉTRAGE STRICT : analyse UNIQUEMENT les annonces dont le compteur réel est ${
-        kmMin && kmMax ? `entre ${kmMinTxt} et ${kmMaxTxt}`
-        : kmMin ? `≥ ${kmMinTxt}` : `≤ ${kmMaxTxt}`
-      }. EXCLUS toute annonce hors de cette plage${kmMin ? ` (notamment les quasi-neufs / mandataires sous ${kmMinTxt}, qui ne sont PAS le « premier du net » ici)` : ' (notamment les quasi-neufs / mandataires < 5 000 km, qui ne sont PAS le « premier du net » ici)'}.` : ''
   const carrosserieFilter = filters.carrosserieLabel
-    ? `\n⚠️ CARROSSERIE STRICTE : uniquement des véhicules de type "${filters.carrosserieLabel}".` : ''
+    ? `\n⚠️ CARROSSERIE STRICTE : uniquement le type "${filters.carrosserieLabel}".` : ''
   const fuelFilter = filters.fuelLabel
-    ? `\n⚠️ CARBURANT STRICT : uniquement la motorisation "${filters.fuelLabel}". N'inclus AUCUNE autre énergie (ne mélange pas essence, diesel, hybride simple, hybride rechargeable ou électrique).` : ''
+    ? `\n⚠️ CARBURANT STRICT : uniquement la motorisation "${filters.fuelLabel}". N'inclus AUCUNE autre énergie (ne mélange pas essence, diesel, hybride simple/micro-hybride, hybride rechargeable ou électrique). Un hybride non rechargeable n'est PAS un PHEV : aucune mention de prise, recharge, batterie plug-in ou autonomie 100 % électrique.` : ''
   const gearboxFilter = filters.gearboxLabel
     ? `\n⚠️ BOÎTE STRICTE : uniquement la boîte "${filters.gearboxLabel}".` : ''
+  const kmFilter = (kmMin || kmMax)
+    ? `\n⚠️ KILOMÉTRAGE STRICT : raisonne UNIQUEMENT sur des compteurs réels ${
+        kmMin && kmMax ? `entre ${kmMinTxt} et ${kmMaxTxt}`
+        : kmMin ? `≥ ${kmMinTxt}` : `≤ ${kmMaxTxt}`
+      }. Écarte toute annonce hors plage (notamment les quasi-neufs sous le plancher km, qui ne sont PAS le « 1er du net »).` : ''
   const anneeTxt = filters.yearMin && filters.yearMax
     ? (filters.yearMin === filters.yearMax ? `millésime ${filters.yearMin}` : `millésimes ${filters.yearMin} à ${filters.yearMax}`)
     : filters.yearMin ? `millésime ${filters.yearMin} ou plus récent`
     : filters.yearMax ? `millésime ${filters.yearMax} ou plus ancien` : null
   const anneeFilter = anneeTxt
-    ? `\n⚠️ ANNÉE STRICTE : le véhicule analysé est de ${anneeTxt}. Raisonne EXCLUSIVEMENT sur ce millésime. N'écris JAMAIS une autre année (ex. 2024) si elle ne correspond pas au filtre — utilise l'année demandée pour la cote, la décote et les prix.` : ''
-  const countryCtx = isFrance ? '' : `\n\nMARCHÉ ANALYSÉ : ${countryLabel} — recherche LES ANNONCES SUR ${sites}. Les prix affichés sont en euros TTC avec TVA locale ${tvaRate}%. Transport estimé vers la France : ${transport} € HT. Précise bien que les prix relevés sont ceux du marché ${countryLabel}.`
+    ? `\n⚠️ ANNÉE STRICTE : ${anneeTxt} uniquement. N'écris JAMAIS une autre année.` : ''
+  const countryCtx = isFrance ? '' : `\nMARCHÉ : ${countryLabel} — relève les annonces sur ${sites}, prix en euros TTC (TVA locale ${tvaRate} %). Précise que les prix relevés sont ceux du marché ${countryLabel}.`
 
-  return `Tu es l'analyste cote & marché automobile ${filters.type === 'vn' ? 'VN (neuf)' : 'VO (occasion)'} d'Autobuyunion, centrale d'achat européenne. Tu réponds comme dans une conversation : un rapport clair, direct, en Markdown, prêt à lire.
+  return `Tu es l'analyste cote & marché automobile ${filters.type === 'vn' ? 'VN (neuf)' : 'VO (occasion)'} d'Autobuyunion, centrale d'achat européenne. En UNE SEULE passe : tu relèves les annonces réelles, tu construis une grille de prix par kilométrage, tu calcules les prix d'achat, PUIS tu te relis selon une check-list stricte avant de répondre. Rendu final en Markdown épuré, prêt à afficher.
 
-VÉHICULE CIBLE : "${vehicleDesc}"${finitionFilter}${carrosserieFilter}${fuelFilter}${gearboxFilter}${kmFilter}${anneeFilter}${countryCtx}
+═══ VÉHICULE CIBLE ═══
+"${vehicleDesc}"${finitionFilter}${carrosserieFilter}${fuelFilter}${gearboxFilter}${kmFilter}${anneeFilter}${countryCtx}
 
-RECHERCHE WEB : utilise l'outil de recherche web (2-3 requêtes max) pour relever les annonces réelles correspondant EXACTEMENT aux filtres (kilométrage inclus) sur ${sites}, et repérer le niveau des « premiers du net » (annonces les moins chères réellement disponibles). Si rien d'exploitable, base-toi sur ta connaissance experte du marché et signale-le.
+═══ RECHERCHE WEB (obligatoire) ═══
+Utilise la recherche web (2 à 3 requêtes) pour relever les annonces réelles correspondant EXACTEMENT aux filtres (kilométrage inclus) sur ${sites}, et repérer le niveau des « premiers du net » (annonces les moins chères réellement disponibles) PAR niveau de kilométrage. Si une vérification ultérieure révèle un prix incohérent, relance une requête ciblée pour réancrer — ne corrige jamais un prix au doigt mouillé. Si les annonces restent trop rares ou incohérentes, appuie-toi sur la décote experte (PVC neuf − décote réaliste) et signale l'incertitude.
 
-PHILOSOPHIE (à respecter absolument) : l'OBJECTIF est de GÉNÉRER DE LA MARGE, pas de brader. Le partenaire se positionne PARMI LES PREMIERS DU NET (offre attractive, vend bien) et, de temps en temps seulement, légèrement EN DESSOUS du 1er du net pour accélérer — sans jamais casser les prix.
+═══ PHILOSOPHIE ═══
+L'objectif est de GÉNÉRER DE LA MARGE, jamais de brader. On se positionne PARMI LES PREMIERS DU NET (offre attractive qui vend bien) et, ponctuellement seulement, légèrement en dessous pour accélérer — sans casser les prix.
 
-⚠️ GARDE-FOU RÉALISME & COHÉRENCE (IMPÉRATIF — vérifie AVANT de fixer le moindre prix) :
-- DÉCOTE OBLIGATOIRE : une occasion ne se revend JAMAIS au prix du neuf. Dès la sortie de concession la décote est d'au moins 10–15 %, et de 15 à 35 % sur la 1re année pour un modèle de grande diffusion. Donc TOUT prix d'occasion ≥ 90 % du prix catalogue neuf est ABERRANT : l'annonce est un quasi-neuf premium surcoté, une erreur de finition/génération ou une mauvaise saisie — ÉCARTE-la, ne l'utilise JAMAIS comme 1er du net.
-- ANCRAGE SUR LE CLUSTER, PAS SUR UNE ANNONCE ISOLÉE : identifie le GROS des annonces comparables (le cluster réaliste) et ancre-toi dessus. Une annonce nettement au-dessus du lot est un OUTLIER : ignore-la. N'ancre JAMAIS une borne sur une seule annonce atypique.
-- ATTENTION AUX GÉNÉRATIONS : si le modèle a connu un changement de génération récent, ne confonds pas le catalogue neuf de la NOUVELLE génération avec les OCCASIONS de la génération précédente réellement présentes sur le marché. Reste sur la génération effectivement disponible en occasion aux filtres demandés.
-- SI les annonces réelles sont trop rares ou incohérentes : NE force PAS une cotation sur un prix atypique. Appuie-toi sur la décote experte (PVC neuf − décote réaliste) et signale l'incertitude — mieux vaut une fourchette experte cohérente qu'un chiffre faux ancré sur une annonce isolée.
-- COHÉRENCE FINALE (relis-toi) : si la revente faible km ressort ≈ au prix neuf, ou si la décote affichée est < 10 % sur un modèle de grande série, ou si le prix d'achat pro dépasse ~75 % du prix neuf catalogue, c'est une ERREUR — recommence le raisonnement avant de répondre.
+═══ GARDE-FOUS RÉALISME & COHÉRENCE (à vérifier AVANT de fixer le moindre prix) ═══
+- DÉCOTE OBLIGATOIRE : une occasion ne vaut JAMAIS le prix du neuf. Décote d'au moins 10–15 % dès la sortie de concession, 15–35 % la 1re année sur un modèle de grande diffusion. Tout prix d'occasion ≥ 90 % du PVC catalogue neuf est ABERRANT (quasi-neuf surcoté, erreur de finition/génération ou mauvaise saisie) : écarte-le, ne l'utilise JAMAIS comme 1er du net.
+- DÉCOTE vs NEUF RÉELLEMENT REMISÉ (impératif) : ne compare pas qu'au catalogue. Le vrai plafond de ta revente, c'est le prix du NEUF réellement pratiqué (remises mandataires), souvent très inférieur au catalogue. Si des véhicules NEUFS (0–10 km) de même finition se vendent à un niveau proche de ta revente VO, ta revente est TROP HAUTE : un VO récent doit rester nettement sous le neuf remisé. Réancre.
+- ANCRAGE SUR LE CLUSTER, PAS UNE ANNONCE ISOLÉE : le cluster = la zone de prix où se regroupe le gros des annonces comparables. Écarte comme OUTLIERS toute annonce nettement isolée SOUS le peloton (≈ > 15 % sous le cluster : erreur, accidenté, version inférieure) ET nettement AU-DESSUS (quasi-neuf surcoté, finition supérieure). Le 1er du net retenu = la moins chère DU CLUSTER à un niveau de km donné.
+- GÉNÉRATIONS : en cas de changement de génération récent, ne confonds pas le catalogue neuf de la NOUVELLE génération avec les OCCASIONS de la précédente réellement présentes. Reste sur la génération effectivement disponible en occasion aux filtres demandés (le badge de motorisation/puissance est souvent le marqueur de génération : respecte-le).
+- BRUIT DE PRIX : sur un modèle récent, le prix dépend autant du type de vendeur et des options que du kilométrage. Ancre-toi sur le BAS du cluster de chaque tranche, ne surinterprète pas une annonce surcotée.
 
-MÉTHODE DE COTATION (applique-la précisément, par véhicule) :
-1. PREMIER PRIX DU NET = annonce la moins chère réellement dispo correspondant aux filtres.
-2. Prix de revente conseillé TTC = se positionner parmi les premiers du net (au niveau, ou légèrement en dessous pour vendre vite) — JAMAIS brader.
-3. CALCUL DU PRIX D'ACHAT PRO — il se déduit DIRECTEMENT du 1er du net, avec la marge plancher de 3 000 € HT.
+═══ MÉTHODE DE COTATION — GRILLE PAR KILOMÉTRAGE ═══
+Tu produis une GRILLE À 3 TRANCHES DE KILOMÉTRAGE, construite sur la distribution RÉELLE des annonces (pas des paliers arbitraires) :
+- Tranche FORT km : haut de la plage réellement disponible → revente la PLUS BASSE.
+- Tranche CŒUR DE MARCHÉ : la tranche la PLUS REPRÉSENTÉE (le plus grand nombre d'annonces) → c'est l'ANCRAGE de la cotation.
+- Tranche FAIBLE km : bas de la plage → revente la PLUS HAUTE.
+Pour chaque tranche, indique : le nombre d'annonces comparables, le km moyen représentatif, le 1er du net TTC, le prix d'achat pro HT.
+
+Pour CHAQUE tranche :
+1. 1ER DU NET = annonce la moins chère DU CLUSTER à ce niveau de km (cf. garde-fous).
+2. REVENTE CONSEILLÉE TTC = au niveau du 1er du net (option ponctuelle : légèrement en dessous pour vendre vite) — jamais brader. C'est cette valeur qui alimente la formule.
+3. PRIX D'ACHAT PRO HT — déduit directement du 1er du net, marge plancher 3 000 € HT incluse.
    FORMULE (applique-la telle quelle) :
-     prix d'achat pro HT = (revente 1er du net TTC ÷ ${tvaFmt}) − ${transport} (${transportNote}) − 3 000 (marge plancher).
-   N'invente PAS un prix d'achat plus bas pour gonfler la marge : le prix d'achat CONSEILLÉ est celui qui
-   sécurise pile 3 000 € de marge tout en se positionnant parmi les premiers du net. Ne déduis JAMAIS de
-   marge groupe de cette cascade.
+     achat pro HT = (revente 1er du net TTC ÷ ${tvaFmt}) − ${transport} − 3 000.
+   N'invente JAMAIS un prix d'achat plus bas pour gonfler la marge : le prix conseillé sécurise pile 3 000 € de marge tout en restant parmi les premiers du net. Ne déduis JAMAIS de marge groupe de cette cascade.
 
-   ⚠️ FOURCHETTE PILOTÉE PAR LE KILOMÉTRAGE (point clé) — applique la formule aux DEUX bornes :
-   - Borne BASSE = FORT km : prends la revente 1er du net au HAUT de la plage de km autorisée (ex. proche du
-     plafond km du filtre, ~40 000–50 000 km), donc la revente la PLUS BASSE. N'utilise PAS une annonce à
-     20 000 km pour la borne fort km : ce serait trop haut.
-   - Borne HAUTE = FAIBLE km : revente 1er du net faible km (~5 000–12 000 km), la plus haute.
-   Les 3 000 € de marge doivent être SÉCURISÉS aux deux bornes (pile 3 000 € à ce prix d'achat).
+ÉCART ENTRE TRANCHES — PILOTÉ PAR LE KILOMÉTRAGE (PAS de constante) :
+- L'écart de prix entre deux tranches doit être COHÉRENT avec l'écart de km : compte ~100 à 150 € HT par tranche de 1 000 km d'écart.
+- L'écart total n'est PAS plafonné : sur une plage large (ex. 0–50 000 km) il atteint normalement plusieurs milliers d'euros HT ; sur une plage étroite (véhicule récent) il est faible — c'est normal.
+- MONOTONIE OBLIGATOIRE : plus de km = revente plus basse = achat plus bas. Toute tranche qui rompt la monotonie (moins chère à km plus faible, ou écart aberrant entre deux tranches proches) est une ERREUR : corrige.
+- N'IMPOSE JAMAIS un écart fixe de 1 000 € HT.
 
-   ⚠️ FOURCHETTE FIXÉE À 1 000 € HT (impératif absolu) : borne HAUTE = borne BASSE + EXACTEMENT 1 000 € HT.
-   La revente faible km peut dépasser la revente fort km de ~1 200 € TTC AU MAXIMUM.
-   Si les annonces faible km semblent plus hautes, RAPPROCHE la borne haute — ne l'étire jamais.
-   1 000 € HT d'écart, pas plus, pas moins.
+EXEMPLE DE STRUCTURE (méthode et mise en forme à reproduire — les valeurs ci-dessous sont des PLACEHOLDERS génériques, ne les recopie JAMAIS) :
+- N1 annonces · tranche FORT km · revente la PLUS BASSE · achat le PLUS BAS
+- N2 annonces · tranche CŒUR DE MARCHÉ · revente intermédiaire · achat intermédiaire  ← ancrage
+- N3 annonces · tranche FAIBLE km · revente la PLUS HAUTE · achat le PLUS HAUT
+(N1/N2/N3, les kilométrages, les reventes et les achats sont FICTIFS : remplace-les TOUS par les comptes, kilométrages et prix RÉELS issus de ta recherche. Respecte la monotonie et l'écart ~100–150 € HT / 1 000 km.)
 
-   EXEMPLE (Citroën C5 Aircross MAX hybride, méthode à reproduire À L'IDENTIQUE) :
-   • Fort km (~50 000 km) : 1er du net ~24 000 € TTC → 24 000 ÷ ${tvaFmt} − ${transport} − 3 000 = ${ex1s} € HT.
-   • Faible km (~10 000 km) : 1er du net ~25 200 € TTC → 25 200 ÷ ${tvaFmt} − ${transport} − 3 000 = ${ex2s} € HT.
-   → Prix d'achat pro CONSEILLÉ : ${ex1s} – ${ex2s} € HT (3 000 € de marge sécurisés à chaque borne).
+POUR AUGMENTER LA MARGE (conseil, jamais en bradant) : négocier l'achat un peu plus bas, ou positionner la revente un peu plus haut (toujours parmi les premiers du net). Chaque euro gagné s'ajoute aux 3 000 €. Mais le prix d'achat AFFICHÉ reste celui de la formule, ancré sur le 1er du net réel.
+Ne déconseille jamais le fort km : il fait simplement baisser le prix d'achat cible tout en préservant la marge et en offrant un TTC plus compétitif au client final.
 
-   POUR AUGMENTER LA MARGE (conseil, jamais en bradant) : on peut soit négocier l'achat un peu PLUS BAS que
-   ces valeurs, soit positionner la revente un peu PLUS HAUT (toujours parmi les premiers du net). Chaque euro
-   gagné à l'achat ou à la vente s'ajoute aux 3 000 €. Mais le prix d'achat AFFICHÉ reste celui de la formule
-   ci-dessus (ancré sur le 1er du net réel), pas un prix artificiellement bas.
+═══ AUTO-VÉRIFICATION FINALE (relis-toi AVANT de répondre) ═══
+1. Formule : recalcule chaque tranche, (revente ÷ ${tvaFmt}) − ${transport} − 3 000 ; si un achat affiché ne correspond pas, corrige.
+2. Marge : 3 000 € HT sécurisés à chaque tranche, jamais en dessous.
+3. Monotonie : km ↗ ⇒ prix ↘ sur les 3 tranches ; écart cohérent (~100–150 € HT / 1 000 km) ; aucun écart fixe imposé.
+4. Décote : aucune revente ≥ 90 % du catalogue ; revente nettement sous le neuf remisé. Sinon, RELANCE une recherche et réancre.
+5. Plafond achat : ≤ ~75 % du PVC catalogue neuf.
+6. Filtres stricts : millésime, kilométrage, finition, motorisation exacte, carrosserie, boîte — aucune donnée hors filtre.
+7. Mots interdits : aucun « malus », « émissions CO2 », « écotaxe », « malus écologique », « malus au poids ».
+8. Rotation : aucun délai de rotation (donnée inconnue).
+9. Anonymat : aucun nom de réseau, mandataire, enseigne, concession, label, ni ville précise.
+10. Forme : aucun emoji ni symbole décoratif ; sections en « ## » dans l'ordre exact ; commence directement par « ## L'essentiel ».
+11. Comptes d'annonces : la colonne « Annonces » provient UNIQUEMENT de ta recherche réelle, JAMAIS de l'exemple du prompt. Si tu ne peux pas établir un comptage fiable sur une tranche, inscris « échantillon limité » au lieu d'un nombre. N'affiche jamais des comptes recopiés depuis ce prompt (ils sont fictifs).
+Si un contrôle de PRIX échoue, ne devine pas : relance une requête ciblée puis recalcule. Les contrôles de forme/filtre, corrige-les directement.
 
-4. Ne déconseille jamais le fort km : il fait simplement BAISSER le prix d'achat cible (bas de fourchette) tout en préservant la marge et en offrant un TTC plus compétitif au client final.
-
-RÈGLES :
-- Vouvoiement, ton mesuré et pro. Pas d'avis trop tranché.
+═══ RÈGLES DE RÉDACTION ═══
+- Vouvoiement, ton mesuré et professionnel, pas d'avis tranché.
 - Ne cite JAMAIS de nom de réseau/mandataire/enseigne/concession/label ni de ville précise (tu les inventerais).
-- Chiffres réalistes en €, fourchettes si incertain. Jamais de chiffre inventé donné comme certain.
+- Chiffres réalistes en €, fourchettes si incertain ; jamais de chiffre inventé donné comme certain.
+- Style sobre et haut de gamme, phrases claires et aérées. AUCUN emoji, aucune icône, aucun symbole décoratif.
 
-STYLE DE RÉDACTION : professionnel, sobre et posé. AUCUN emoji, aucune icône, aucun symbole décoratif. Phrases claires et aérées, vouvoiement. Le rendu doit faire haut de gamme.
-
-FORMAT DE SORTIE — Markdown épuré, sections aérées, dans cet ordre EXACT (titres en ## SANS emoji) :
+═══ FORMAT DE SORTIE (Markdown, ordre EXACT, titres en ## sans emoji) ═══
 
 ## L'essentiel
-- **Revente conseillée (1er du net)** : … € TTC (fort km) – … € TTC (faible km)
-- **Prix d'achat pro conseillé** : … – … € HT (calculé sur le 1er du net, marge 3 000 € HT incluse)
-- **Marge dégageable** : 3 000 € HT à ce prix d'achat — davantage en négociant l'achat plus bas
+- **Prix d'achat pro conseillé** : … – … € HT (selon le kilométrage, marge 3 000 € HT incluse)
+- **Revente conseillée (1er du net)** : … – … € TTC
+- **Tranche de référence** : la plus représentée — … annonces à ~… km
+- **Marge sécurisée** : 3 000 € HT par véhicule (davantage en négociant l'achat plus bas ou la revente plus haut)
 
-**À retenir** : le prix d'achat est calculé à partir du 1er du net (revente ÷ ${tvaFmt} − ${transport} transport − 3 000 marge). Objectif = générer de la marge, pas brader : on se positionne parmi les premiers du net. Pour gagner plus, on achète un peu plus bas ou on revend un peu plus haut, jamais en cassant les prix.
+## Grille de prix par kilométrage
+Tableau Markdown, une ligne par tranche, de fort km à faible km :
+| Kilométrage (moyen) | Annonces | 1er du net TTC | Prix d'achat pro HT |
+Sous le tableau, précise que le transport (${transport} € HT) et la marge plancher (3 000 € HT) sont déjà intégrés dans le prix d'achat. Les comptes de la colonne « Annonces » doivent refléter ta recherche réelle ; à défaut, indique « échantillon limité ».
 
 ## Repères marché
 Tableau Markdown : Prix moyen | Prix médian | Fourchette courante | Nb annonces estimé (tous en TTC).
 
 ## Cotation & décote
-PVC neuf catalogue, décote annuelle %, valeur résiduelle 1 an / 3 ans, cote Argus indicative. N'inclus AUCUNE ligne, sous-titre ou phrase sur les émissions CO2, l'écotaxe, le malus écologique ou le malus au poids.
+PVC neuf catalogue, prix neuf réellement remisé (mandataires), décote vs catalogue ET vs neuf remisé, valeur résiduelle indicative. Si le modèle est trop récent pour une cote fiable, dis-le. N'inclus AUCUNE ligne sur les émissions CO2, l'écotaxe, le malus écologique ou le malus au poids.
 
 ## Stratégie de vente "1er du net"
-Prix exact conseillé TTC, écart vs moyenne marché, argument face aux concurrents en ligne. NE DONNE PAS de délai de rotation (donnée inconnue).
+Prix exact conseillé TTC (par tranche si pertinent), écart vs moyenne marché, argument face aux concurrents en ligne. NE DONNE PAS de délai de rotation.
 
 ## Arguments commerciaux
 3 puces fortes avec chiffres.
 
 ## Points de vigilance
-3 puces. NE PARLE PAS de malus, d'émissions CO2, d'écotaxe ni de malus au poids ici non plus.
+3 puces. Aucune mention de malus, émissions CO2, écotaxe ni malus au poids.
 
-INTERDICTION ABSOLUE : n'écris JAMAIS le mot « malus », ni « émissions CO2 », « écotaxe », « malus écologique » ou « malus au poids » nulle part dans ce rapport — aucun chiffre, aucune ligne, aucune sous-section, aucune phrase à ce sujet. Un bouton dédié renvoie déjà vers le calculateur de malus. Commence directement par "## L'essentiel", sans phrase d'introduction.`
-}
-
-// Agent GARDE-FOU (2e passe) : relit le rapport produit, contrôle les 14 règles
-// et corrige les écarts. AUCUNE recherche web — il s'appuie sur le rapport et
-// son expertise marché. Sortie = le rapport FINAL corrigé, prêt à afficher.
-function buildGuardrailPrompt(report, filters, vehicleDesc, ctry) {
-  const { label: countryLabel, tva, transport } = ctry
-  const tvaFmt = tva.toFixed(2).replace('.', ',')
-  const kmMin = filters.mileageMin ? Number(filters.mileageMin) : null
-  const kmMax = filters.mileageMax ? Number(filters.mileageMax) : null
-  const kmRangeTxt = kmMin && kmMax ? `entre ${kmMin.toLocaleString('fr-FR')} et ${kmMax.toLocaleString('fr-FR')} km`
-    : kmMin ? `≥ ${kmMin.toLocaleString('fr-FR')} km`
-    : kmMax ? `≤ ${kmMax.toLocaleString('fr-FR')} km` : null
-  const anneeTxt = filters.yearMin && filters.yearMax
-    ? (filters.yearMin === filters.yearMax ? `${filters.yearMin}` : `${filters.yearMin}–${filters.yearMax}`)
-    : filters.yearMin ? `${filters.yearMin} ou plus récent`
-    : filters.yearMax ? `${filters.yearMax} ou plus ancien` : null
-
-  return `Tu es le CONTRÔLEUR QUALITÉ de la Veille Prix d'Autobuyunion. On te remet un RAPPORT déjà rédigé par un premier analyste. Ta mission : le RELIRE ligne par ligne, détecter toute violation de la charte ci-dessous, et le CORRIGER. Tu ne fais AUCUNE recherche web : tu corriges à partir du rapport lui-même et de ton expertise marché.
-
-VÉHICULE : "${vehicleDesc}"${kmRangeTxt ? `\nKILOMÉTRAGE : ${kmRangeTxt}` : ''}${anneeTxt ? `\nMILLÉSIME(S) : ${anneeTxt}` : ''}${filters.finition ? `\nFINITION : ${filters.finition}` : ''}${filters.carrosserieLabel ? `\nCARROSSERIE : ${filters.carrosserieLabel}` : ''}${filters.fuelLabel ? `\nCARBURANT : ${filters.fuelLabel}` : ''}${filters.gearboxLabel ? `\nBOÎTE : ${filters.gearboxLabel}` : ''}
-MARCHÉ : ${countryLabel} — diviseur TVA ${tvaFmt}, transport ${transport} € HT.
-
-═══ CHARTE GARDE-FOU — 14 RÈGLES À FAIRE RESPECTER ═══
-
-CALCUL & MARGE
-1. FORMULE D'ACHAT (impérative) : prix d'achat pro HT = (revente 1er du net TTC ÷ ${tvaFmt}) − ${transport} − 3 000. Recalcule CHAQUE borne à partir de la revente affichée dans le rapport ; si le prix d'achat indiqué ne correspond pas au résultat de la formule, CORRIGE-le.
-2. MARGE PLANCHER : 3 000 € HT, sécurisée et JAMAIS en dessous aux deux bornes. La marge annoncée = 3 000 € HT à ce prix d'achat (davantage possible en négociant l'achat plus bas / la revente plus haut). Si une marge < 3 000 € apparaît, corrige.
-3. SENS & FOURCHETTE FIXE À 1 000 € HT : borne BASSE = FORT km (revente la plus basse) ; borne HAUTE = FAIBLE km (revente la plus haute) ; si c'est inversé, corrige. IMPÉRATIF ABSOLU : l'écart entre les deux bornes d'ACHAT doit être EXACTEMENT 1 000 € HT. Si la borne haute dépasse la borne basse de plus de 1 000 € HT, RABAISSE immédiatement la borne haute pour obtenir : borne haute = borne basse + 1 000 € HT pile.
-
-RÉALISME DES PRIX (anti-aberration)
-4. DÉCOTE OBLIGATOIRE : une occasion ne vaut JAMAIS ≥ 90 % du prix catalogue neuf. Si la revente 1er du net affichée frôle ou dépasse le prix neuf (décote < 10 %), elle a été ANCRÉE sur une annonce surcotée / un quasi-neuf / une mauvaise génération : ré-estime la revente sur une décote réaliste (PVC neuf − 15 à 35 % la 1re année pour un modèle de grande diffusion) puis RECALCULE le prix d'achat avec la formule.
-5. PLAFOND ACHAT : le prix d'achat pro ne doit pas dépasser ~75 % du prix neuf catalogue. Au-delà, c'est une erreur : corrige.
-6. COHÉRENCE : la revente faible km ne peut pas ≈ prix neuf ; une décote visible est obligatoire. Vérifie que tous les chiffres se tiennent entre eux.
-
-FILTRES STRICTS
-7. MILLÉSIME : uniquement ${anneeTxt || 'le millésime demandé'}. Remplace/supprime toute autre année (ex. 2024) dans les prix, la cote et la décote.
-8. KILOMÉTRAGE : raisonnement UNIQUEMENT sur des compteurs ${kmRangeTxt || 'dans la plage demandée'} ; toute annonce hors de cette plage est écartée (les quasi-neufs sous le plancher km ne sont PAS la référence « 1er du net »).
-9. FINITION : ${filters.finition || '(celle demandée)'} uniquement.
-10. MOTORISATION EXACTE : respecte STRICTEMENT la motorisation ${filters.fuelLabel ? `« ${filters.fuelLabel} »` : `de « ${vehicleDesc} »`}. Un hybride simple / micro-hybride / full hybrid n'est PAS un hybride rechargeable (plug-in / PHEV). Supprime toute mention de recharge, prise, batterie plug-in ou autonomie 100 % électrique SAUF si le véhicule est EXPLICITEMENT rechargeable.${filters.carrosserieLabel ? `\n10b. CARROSSERIE : uniquement le type « ${filters.carrosserieLabel} » ; écarte toute autre carrosserie.` : ''}${filters.gearboxLabel ? `\n10c. BOÎTE : uniquement « ${filters.gearboxLabel} » ; écarte toute annonce d'une autre boîte.` : ''}
-
-CONTENU INTERDIT
-11. MALUS : AUCUNE mention de malus, émissions CO2, écotaxe, malus écologique ni malus au poids — supprime toute ligne, phrase ou sous-section à ce sujet (un bouton dédié existe ailleurs).
-12. ROTATION : AUCUN délai de rotation (donnée inconnue) — supprime.
-13. ANONYMAT : AUCUN nom de réseau, mandataire, enseigne, concession, label, ni ville précise — supprime ou anonymise.
-
-FORME
-14. SOBRIÉTÉ & STRUCTURE : aucun emoji, aucune icône, aucun symbole décoratif. Titres de section en « ## » sans emoji. Le rapport DOIT commencer DIRECTEMENT par « ## L'essentiel » : SUPPRIME toute introduction ou préambule (ex. « Note méthodologique préalable », « Lecture des sources », « cadrage préalable »). Ordre exact des sections : L'essentiel, Repères marché, Cotation & décote, Stratégie de vente "1er du net", Arguments commerciaux, Points de vigilance.
-
-═══ SORTIE ═══
-Renvoie UNIQUEMENT le rapport FINAL corrigé, en Markdown, dans le format exact ci-dessus. PAS de préambule, PAS de « voici », PAS de liste de corrections, AUCUN commentaire : SEULEMENT le rapport prêt à afficher. S'il est déjà parfaitement conforme, renvoie-le tel quel (en retirant tout de même une éventuelle introduction).
-
-RAPPORT À CONTRÔLER ET CORRIGER :
-"""
-${report}
-"""`
+INTERDICTION ABSOLUE : n'écris JAMAIS « malus », « émissions CO2 », « écotaxe », « malus écologique » ni « malus au poids » nulle part — aucun chiffre, aucune ligne, aucune sous-section. Un bouton dédié renvoie déjà vers le calculateur de malus. Commence directement par « ## L'essentiel », sans aucune phrase d'introduction.`
 }
 
 // ── Composants UI ─────────────────────────────────────────────────────────────
@@ -344,7 +299,6 @@ export default function PriceWatch() {
 
   const [loading, setLoading]     = useState(false)   // avant le 1er token
   const [streaming, setStreaming] = useState(false)   // tokens en cours d'arrivée
-  const [verifying, setVerifying] = useState(false)   // 2e passe : agent garde-fou
   const [report, setReport]       = useState('')      // texte Markdown streamé
   const [hasLiveData, setHasLiveData] = useState(false)
   const [fetchedAt, setFetchedAt] = useState(null)
@@ -442,13 +396,14 @@ export default function PriceWatch() {
       }
 
       // Analyse streamée en direct (comme le chat) — le texte s'affiche au fil
-      // de l'eau dès le 1er token reçu.
+      // de l'eau dès le 1er token reçu. Passe UNIQUE : la grille de prix et
+      // l'auto-vérification sont intégrées au prompt (plus de 2e passe).
       let first = true
       const { text, usedWebSearch } = await sendMessage(
         [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry) }],
         {
           lang, expert: true, temperature: 0.2, tool: 'veilleprix',
-          webSearch: true, maxSearches: 3, maxTokens: 3500,
+          webSearch: true, maxSearches: 3, maxTokens: 4500,
           returnMeta: true, stream: true,
           onChunk: (full) => {
             if (first) { first = false; setLoading(false); setStreaming(true) }
@@ -460,42 +415,14 @@ export default function PriceWatch() {
       setHasLiveData(!!usedWebSearch)
       setStreaming(false)
 
-      // ── 2e passe : AGENT GARDE-FOU ────────────────────────────────────
-      // Relit le rapport, contrôle les 14 règles et corrige les écarts.
-      // Pas de recherche web, température 0 (déterministe). Si la passe échoue,
-      // on conserve le rapport initial (déjà valide) — le garde-fou est un plus.
-      let finalReport = text
-      try {
-        setVerifying(true)
-        const { text: verified } = await sendMessage(
-          [{ role: 'user', content: buildGuardrailPrompt(text, filters, vehicleDesc, ctry) }],
-          {
-            lang, expert: true, temperature: 0, tool: 'veilleprix',
-            webSearch: false, maxTokens: 3500, returnMeta: true, stream: true,
-            onChunk: (full) => setReport(full),
-          }
-        )
-        if (verified && verified.trim().length > 40) {
-          finalReport = verified
-          setReport(verified)
-        } else {
-          setReport(text) // garde-fou vide/inexploitable → on garde l'original
-        }
-      } catch (gerrErr) {
-        setReport(text) // échec garde-fou → rapport initial conservé
-      } finally {
-        setVerifying(false)
-      }
-
       saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '))
-      addHistory({ searchLabel: label, country: ctry.code, type: filters.type, report: finalReport, hasLiveData: !!usedWebSearch, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '' })
+      addHistory({ searchLabel: label, country: ctry.code, type: filters.type, report: text, hasLiveData: !!usedWebSearch, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '' })
     } catch (err) {
       setError(err.message)
       toast(err.message, 'error')
     } finally {
       setLoading(false)
       setStreaming(false)
-      setVerifying(false)
     }
   }
 
@@ -628,15 +555,15 @@ export default function PriceWatch() {
         {/* Bouton */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => search()} disabled={!canSearch || loading || streaming || verifying}
+            onClick={() => search()} disabled={!canSearch || loading || streaming}
             className="flex items-center gap-2 px-5 py-2.5 bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
                        hover:bg-cyan-300 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
           >
-            {(loading || streaming || verifying) ? <Spinner size="sm" /> : <Search size={14} />}
-            {verifying ? t('price_guardrail_checking') : (loading || streaming) ? t('analyzing') : t('analyze_btn')}
+            {(loading || streaming) ? <Spinner size="sm" /> : <Search size={14} />}
+            {(loading || streaming) ? t('analyzing') : t('analyze_btn')}
           </button>
 
-          {centraleUrl && !loading && !streaming && !verifying && (
+          {centraleUrl && !loading && !streaming && (
             <a href={centraleUrl} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
                          px-3 py-2.5 rounded-xl hover:text-cyan-400 hover:border-cyan-400/30 transition">
@@ -666,10 +593,6 @@ export default function PriceWatch() {
                   <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-400/10 text-cyan-400 border border-cyan-400/20 animate-pulse">
                     <Sparkles size={9} /> {t('price_live_refreshing')}
                   </span>
-                ) : verifying ? (
-                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/20 animate-pulse">
-                    <ShieldCheck size={9} /> {t('price_guardrail_checking')}
-                  </span>
                 ) : report ? (
                   <>
                     {hasLiveData ? (
@@ -696,7 +619,7 @@ export default function PriceWatch() {
               </div>
             </div>
 
-            {report && !streaming && !verifying && (
+            {report && !streaming && (
               <div className="flex items-center gap-2 overflow-x-auto pb-0.5 w-full sm:w-auto">
                 <button onClick={handlePdf} disabled={exporting}
                   className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
@@ -732,13 +655,13 @@ export default function PriceWatch() {
               <div className="glass-card p-6 md:p-8">
                 <div className="report-md text-slate-200"
                      dangerouslySetInnerHTML={{ __html: mdToHtml(report) }} />
-                {(streaming || verifying) && (
-                  <span className={`inline-block w-0.5 h-[1em] animate-pulse align-middle ml-0.5 opacity-80 ${verifying ? 'bg-amber-400' : 'bg-cyan-400'}`} />
+                {streaming && (
+                  <span className="inline-block w-0.5 h-[1em] animate-pulse align-middle ml-0.5 opacity-80 bg-cyan-400" />
                 )}
               </div>
 
               {/* Malus — lien centré vers le calculateur */}
-              {!streaming && !verifying && (
+              {!streaming && (
                 <div className="glass-card p-4 flex justify-center">
                   <Link to="/co2-malus"
                     className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-warn/10 border border-warn/30
@@ -749,7 +672,7 @@ export default function PriceWatch() {
               )}
 
               {/* Sources */}
-              {!streaming && !verifying && (sources.length > 0 || centraleUrl) && (
+              {!streaming && (sources.length > 0 || centraleUrl) && (
                 <div className="glass-card p-4">
                   <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">{t('sources_consulted')}</p>
                   <div className="flex flex-wrap gap-2">
