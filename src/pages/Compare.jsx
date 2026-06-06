@@ -63,10 +63,19 @@ function DimensionDiagram({ veh }) {
   const len = veh.length
   const hgt = veh.height
   return (
+    // Hauteur fixée à 160 px : évite que le SVG h-auto devienne ~345 px dans
+    // le rendu PDF (windowWidth=760) et fasse déborder la carte de la page.
     <div className="dim-blueprint relative rounded-xl border border-cyan-400/15 bg-navy-900/40 overflow-hidden text-cyan-400"
-      style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '16px 16px' }}>
-      <svg viewBox="0 0 440 200" className="w-full h-auto" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Silhouette imbriquée, mise à l'échelle automatiquement */}
+      style={{
+        height: '160px',
+        backgroundImage: 'radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)',
+        backgroundSize: '16px 16px',
+      }}>
+      {/* preserveAspectRatio=xMidYMid meet : le viewBox 440×200 se redimensionne
+          pour tenir ENTIÈREMENT dans le conteneur 160 px, sans débordement.  */}
+      <svg viewBox="0 0 440 200" preserveAspectRatio="xMidYMid meet"
+        style={{ width: '100%', height: '100%', display: 'block' }}
+        fill="none" xmlns="http://www.w3.org/2000/svg">
         <svg x="80" y="22" width="300" height="125" viewBox="0 0 220 92" preserveAspectRatio="xMidYMid meet">
           <SilhouettePaths tall={tall} />
         </svg>
