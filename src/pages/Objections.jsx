@@ -28,8 +28,8 @@ const CATEGORY_COLORS = {
   financement: 'bg-blue-400/10 text-blue-400 border-blue-400/20',
   'après-vente': 'bg-warn/10 text-warn border-warn/20',
   revente: 'bg-red-400/10 text-red-400 border-red-400/20',
-  malus: 'bg-red-400/10 text-red-400 border-red-400/20',
   concurrence: 'bg-slate-400/10 text-slate-400 border-slate-400/20',
+  confiance: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20',
 }
 
 function ObjectionCard({ item, index, isOpen, onToggle, noAnimate }) {
@@ -116,23 +116,46 @@ Segment : ${selectedProduct.segment}`
         : ''
 
       const detailsLine = formatVehicleDetails(details)
-      const prompt = `Tu es expert commercial automobile pour Autobuyunion.
+      const prompt = `Tu es expert commercial automobile pour Autobuyunion, centrale d'achat européenne.
 
 Génère exactement 10 objections clients fréquentes pour le ${vehicleName}, segment ${segLabel}.
-${detailsLine ? `Détails véhicule : ${detailsLine}. Tiens-en compte pour des objections et réponses PRÉCISES (motorisation, âge, kilométrage, finition).\n` : ''}⚠️ MOTORISATION EXACTE : respecte STRICTEMENT la motorisation du nom du véhicule et des détails. Un « hybride » simple/micro-hybride/full hybrid n'est PAS un « hybride rechargeable » (plug-in/PHEV) : ne parle de recharge, de prise ou d'autonomie 100% électrique que si le véhicule est EXPLICITEMENT rechargeable. Ne substitue jamais une autre variante.
-${productContext}
+${detailsLine ? `Détails véhicule : ${detailsLine}. Tiens-en compte pour des objections et réponses PRÉCISES (motorisation, âge, kilométrage, finition).\n` : ''}⚠️ MOTORISATION EXACTE : respecte STRICTEMENT la motorisation du nom du véhicule et des détails. Un « hybride » simple/micro-hybride/full hybrid n'est PAS un « hybride rechargeable » (plug-in/PHEV) : ne parle de recharge, de prise ou d'autonomie 100 % électrique que si le véhicule est EXPLICITEMENT rechargeable. Ne substitue jamais une autre variante.
+${productContext ? productContext + '\n' : ''}
+ADAPTATION AU SEGMENT (sans tout dupliquer) : mêmes familles d'objections, mais cale le ton et les chiffres sur le type de client.
+- BtoC (particulier, utilisateur final) : budget personnel, usage familial/quotidien, fiabilité, coût d'usage, valeur de revente à titre privé, confiance dans un achat à distance.
+- BtoB (PARTENAIRE REVENDEUR — concession ou négociant qui RACHÈTE pour REVENDRE, PAS pour rouler) : raisonne MARGE et ROTATION, jamais usage ou confort. Objections typiques : marge insuffisante à la revente, prix d'achat trop haut pour se positionner au-dessus du 1er du net, modèle qui risque de tourner lentement sur son parc, régime de TVA (récupérable vs TVA sur marge), volume et capacité de réassort, état réel et frais de remise en route avant mise en vente, et pour un véhicule importé : conformité (COC), carte grise/immatriculation et délais. L'argumentaire vend de la RENTABILITÉ et de la FLUIDITÉ d'approvisionnement, pas du plaisir de conduite.
+
+DOUBLE USAGE : ces fiches servent à PRÉPARER le commercial en amont ET à être sorties FACE AU CLIENT. Donc « reponse » = argumentaire chiffré prêt à étudier ; « argument_cle » = la phrase massue, percutante, à dire telle quelle à l'oral.
 
 Réponds UNIQUEMENT avec un tableau JSON valide, sans aucun texte ni balise markdown avant ou après :
 [
   {
     "objection": "Texte de l'objection telle que la dit le client",
-    "categorie": "prix|marque|qualité|financement|après-vente|revente|malus|concurrence",
+    "categorie": "prix|marque|qualité|financement|après-vente|revente|concurrence|confiance",
     "reponse": "Réponse commerciale percutante et chiffrée (2-3 phrases max)",
     "argument_cle": "L'argument massue en une phrase"
   }
 ]
 
-Les objections doivent être réalistes, variées, couvrir : prix, marque inconnue, fiabilité, valeur de revente, malus, financement, SAV, concurrence. Sois concis pour que le JSON reste complet.`
+COUVERTURE DES 10 OBJECTIONS — varie les angles, adapte selon le segment, reste réaliste et concret :
+- prix → marge atteignable à la revente (BtoB) / rapport prix-prestations (BtoC)
+- modèle ou marque peu connu, image → en BtoB : « est-ce que ça se revend bien, est-ce que ça tourne »
+- fiabilité, qualité, état réel + frais de remise en route avant remise en vente (surtout BtoB)
+- valeur de revente future / tenue de la cote
+- financement → en BtoB : trésorerie, paiement, ligne de financement stock ; en BtoC : mensualité, LOA/LLD, reprise
+- après-vente, garantie : QUI la porte une fois le véhicule revendu (BtoB) / pour le client final (BtoC)
+- concurrence → en BtoB : autre grossiste, enchères pro, achat direct ; en BtoC : concession locale, autre mandataire, annonce particulier
+- confiance dans l'achat via Autobuyunion (centrale d'achat)
+- volume / réassort : capacité à fournir plusieurs unités et à réapprovisionner (surtout BtoB)
+- véhicule importé : conformité COC, carte grise, délais d'immatriculation
+OBLIGATOIRE : au moins UNE objection doit porter sur « pourquoi passer par Autobuyunion plutôt qu'en direct, aux enchères ou chez un autre grossiste » (BtoB) ou « plutôt qu'en concession près de chez moi » (BtoC). Traite frontalement la confiance, la livraison, le lieu de la garantie/SAV et, le cas échéant, le véhicule importé. C'est l'objection clé du métier.
+
+INTERDIT : aucune objection ni réponse sur le malus, l'écotaxe, le malus écologique, le malus au poids ou la taxation CO₂ — ce sujet est traité par un outil dédié. N'emploie aucun de ces termes.
+
+CONTRAINTES DE FORME :
+- Chaque champ doit rester COURT (réponse 2-3 phrases, argument_cle une seule phrase) pour que le JSON tienne en entier.
+- Le JSON DOIT être complet et valide : exactement 10 objets, tous les champs remplis, guillemets fermés, aucune virgule finale.
+- Aucun texte, aucun commentaire, aucune balise markdown avant ou après le tableau.`
 
       const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 8192, expert: true, temperature: 0.55, tool: 'objections', stream: true })
       const data = extractJSON(raw, 'array')
