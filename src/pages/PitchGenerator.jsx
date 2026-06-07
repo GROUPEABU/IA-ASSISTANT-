@@ -16,6 +16,44 @@ import { useResultFocus } from '@/hooks/useResultFocus'
 import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
 import { useToast } from '@/components/ui/Toast'
 
+const STATIC_PITCH = `⚠️ MOTORISATION EXACTE : respecte STRICTEMENT la motorisation indiquée dans le nom du véhicule et les détails. Ne la remplace JAMAIS par une autre variante. En particulier, un « hybride » simple / micro-hybride / full hybrid n'est PAS un « hybride rechargeable » (plug-in / PHEV) : ne parle de recharge, de prise, de batterie plug-in ou d'autonomie 100 % électrique que si le véhicule est EXPLICITEMENT rechargeable. En cas de doute, reste sur la motorisation littéralement indiquée.
+
+═══ À QUI S'ADRESSE LE PITCH (déterminant — cale TOUT le discours dessus) ═══
+- BtoC (Famille, Grand rouleur) = UTILISATEUR FINAL particulier. Parle usage, fiabilité, coût d'usage, confort, économie réelle et confiance dans un achat via une centrale. Le prix Autobuyunion = l'un des plus attractifs du marché (premiers du net, top 20 % les moins chers).
+- BtoB = PARTENAIRE REVENDEUR (concession ou négociant qui RACHÈTE pour REVENDRE, PAS pour rouler). Tout le pitch raisonne MARGE et ROTATION, jamais usage ou confort personnel. Le pitch doit prouver :
+  1. Le prix de cession HT laisse de la MARGE au revendeur tout en lui permettant de rester parmi les premiers du net à SA revente.
+  2. Le modèle TOURNE vite : forte demande sur le marché final, donc peu de risque de stock dormant.
+  3. Régime de TVA clair (récupérable vs TVA sur marge), annoncé d'avance.
+  4. VOLUME et réassort disponibles (centrale multi-pays).
+  5. État réel et frais de remise en route faibles avant remise en vente.
+  6. Si véhicule importé : COC fourni, carte grise et délais d'immatriculation cadrés.
+  Traduis TOUJOURS les caractéristiques produit en arguments de REVENTE (« se revend facilement, demande large, argument client final clé en main »), jamais en plaisir de conduite.
+
+RÈGLE AUTOBUYUNION : nos partenaires achètent en volume à prix HT compétitif. Cet avantage prix doit apparaître dans l'accroche ou les arguments.
+- En BtoB : l'avantage prix = marge sécurisée + capacité à rester premier du net à la revente.
+- En BtoC : l'avantage prix = l'un des prix les plus bas du marché, économie réelle vs prix marché moyen.
+
+INTERDIT : aucune mention du malus, de l'écotaxe, du malus écologique, du malus au poids ni de la taxation CO₂ — sujet traité par un outil dédié. La donnée CO₂ et la consommation ne servent QUE d'argument d'économie / sobriété, jamais d'argument fiscal.
+
+Réponds UNIQUEMENT en JSON valide :
+{
+  "accroche": "2-3 phrases d'accroche percutantes, adaptées au profil, avec chiffres et avantage prix Autobuyunion (marge+rotation si BtoB, économie si BtoC)",
+  "arguments": [
+    "Argument 1 concret avec données chiffrées (orienté revente/marge si BtoB, usage/économie si BtoC)",
+    "Argument 2 concret avec données chiffrées",
+    "Argument prix Autobuyunion : positionnement parmi les plus compétitifs du marché — marge dégageable et maintien premier du net (BtoB) ou économie réelle vs prix marché moyen (BtoC)"
+  ],
+  "objections": [
+    {"question": "Objection probable du profil ciblé", "reponse": "Réponse commerciale en 2-3 phrases avec argument concret et chiffré"},
+    {"question": "Deuxième objection probable", "reponse": "Réponse commerciale en 2-3 phrases avec argument concret et chiffré"}
+  ],
+  "closing": "Phrase de closing engageante avec appel à l'action (réserver le ou les véhicules) et rappel de l'avantage prix"
+}
+
+CONTRAINTES DE FORME :
+- JSON complet et valide : tous les champs remplis, guillemets fermés, aucune virgule finale, aucun texte ni balise markdown avant ou après.
+- Concis pour que le JSON tienne en entier.`
+
 const PROFILES = [
   { id: 'btoc_famille', labelKey: 'profile_family', subKey: 'profile_family_sub', icon: Users,     segment: 'btoc', color: '#50E5E5' },
   { id: 'btoc_rouleur', labelKey: 'profile_driver', subKey: 'profile_family_sub', icon: Car,       segment: 'btoc', color: '#7DD3FC' },
@@ -73,49 +111,15 @@ export default function PitchGenerator() {
           ].filter(Boolean).join('\n')
         : ''
 
-      const prompt = `Tu es un expert commercial automobile pour Autobuyunion — 1er groupement européen d'achat auto.
+      const prompt = `Génère un pitch de vente structuré et percutant pour le ${vehicleName}, destiné à : ${t(profile.subKey)} — ${t(profile.labelKey)}.
+${formatVehicleDetails(details) ? `Détails véhicule : ${formatVehicleDetails(details)}. Appuie-toi dessus pour des arguments PRÉCIS (motorisation, âge, kilométrage, finition).` : ''}
+${context ? `Contexte client : ${context}` : ''}
+${productContext || ''}`
 
-Génère un pitch de vente structuré et percutant pour le ${vehicleName}, destiné à : ${t(profile.subKey)} — ${t(profile.labelKey)}.
-${formatVehicleDetails(details) ? `Détails véhicule : ${formatVehicleDetails(details)}. Appuie-toi dessus pour des arguments PRÉCIS (motorisation, âge, kilométrage, finition).\n` : ''}⚠️ MOTORISATION EXACTE : respecte STRICTEMENT la motorisation indiquée dans le nom du véhicule et les détails. Ne la remplace JAMAIS par une autre variante. En particulier, un « hybride » simple / micro-hybride / full hybrid n'est PAS un « hybride rechargeable » (plug-in / PHEV) : ne parle de recharge, de prise, de batterie plug-in ou d'autonomie 100 % électrique que si le véhicule est EXPLICITEMENT rechargeable. En cas de doute, reste sur la motorisation littéralement indiquée.
-${context ? `\nContexte client : ${context}\n` : ''}${productContext ? '\n' + productContext : ''}
-
-═══ À QUI S'ADRESSE LE PITCH (déterminant — cale TOUT le discours dessus) ═══
-- BtoC (Famille, Grand rouleur) = UTILISATEUR FINAL particulier. Parle usage, fiabilité, coût d'usage, confort, économie réelle et confiance dans un achat via une centrale. Le prix Autobuyunion = l'un des plus attractifs du marché (premiers du net, top 20 % les moins chers).
-- BtoB = PARTENAIRE REVENDEUR (concession ou négociant qui RACHÈTE pour REVENDRE, PAS pour rouler). Tout le pitch raisonne MARGE et ROTATION, jamais usage ou confort personnel. Le pitch doit prouver :
-  1. Le prix de cession HT laisse de la MARGE au revendeur tout en lui permettant de rester parmi les premiers du net à SA revente.
-  2. Le modèle TOURNE vite : forte demande sur le marché final, donc peu de risque de stock dormant.
-  3. Régime de TVA clair (récupérable vs TVA sur marge), annoncé d'avance.
-  4. VOLUME et réassort disponibles (centrale multi-pays).
-  5. État réel et frais de remise en route faibles avant remise en vente.
-  6. Si véhicule importé : COC fourni, carte grise et délais d'immatriculation cadrés.
-  Traduis TOUJOURS les caractéristiques produit en arguments de REVENTE (« se revend facilement, demande large, argument client final clé en main »), jamais en plaisir de conduite.
-
-RÈGLE AUTOBUYUNION : nos partenaires achètent en volume à prix HT compétitif. Cet avantage prix doit apparaître dans l'accroche ou les arguments.
-- En BtoB : l'avantage prix = marge sécurisée + capacité à rester premier du net à la revente.
-- En BtoC : l'avantage prix = l'un des prix les plus bas du marché, économie réelle vs prix marché moyen.
-
-INTERDIT : aucune mention du malus, de l'écotaxe, du malus écologique, du malus au poids ni de la taxation CO₂ — sujet traité par un outil dédié. La donnée CO₂ et la consommation ne servent QUE d'argument d'économie / sobriété, jamais d'argument fiscal.
-
-Réponds UNIQUEMENT en JSON valide :
-{
-  "accroche": "2-3 phrases d'accroche percutantes, adaptées au profil, avec chiffres et avantage prix Autobuyunion (marge+rotation si BtoB, économie si BtoC)",
-  "arguments": [
-    "Argument 1 concret avec données chiffrées (orienté revente/marge si BtoB, usage/économie si BtoC)",
-    "Argument 2 concret avec données chiffrées",
-    "Argument prix Autobuyunion : positionnement parmi les plus compétitifs du marché — marge dégageable et maintien premier du net (BtoB) ou économie réelle vs prix marché moyen (BtoC)"
-  ],
-  "objections": [
-    {"question": "Objection probable du profil ciblé", "reponse": "Réponse commerciale en 2-3 phrases avec argument concret et chiffré"},
-    {"question": "Deuxième objection probable", "reponse": "Réponse commerciale en 2-3 phrases avec argument concret et chiffré"}
-  ],
-  "closing": "Phrase de closing engageante avec appel à l'action (réserver le ou les véhicules) et rappel de l'avantage prix"
-}
-
-CONTRAINTES DE FORME :
-- JSON complet et valide : tous les champs remplis, guillemets fermés, aucune virgule finale, aucun texte ni balise markdown avant ou après.
-- Concis pour que le JSON tienne en entier.`
-
-      const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 5000, expert: true, temperature: 0.85, tool: 'pitch', stream: true })
+      const raw = await sendMessage([{ role: 'user', content: prompt }], {
+        lang, maxTokens: 1500, expert: true, temperature: 0.85,
+        tool: 'pitch', stream: true, systemStatic: STATIC_PITCH,
+      })
       const data = extractJSON(raw, 'object')
       const label = `${vehicleName} · ${t(profile.subKey)} ${t(profile.labelKey)}`
       setPitch(data)

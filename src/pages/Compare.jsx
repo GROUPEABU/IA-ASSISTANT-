@@ -189,43 +189,7 @@ function CompGroup({ icon: Icon, title, subtitle, cars, refLen }) {
   )
 }
 
-const SUGGESTIONS = [
-  'Alpine A290', 'Renault 5 E-Tech', 'Peugeot 308', 'Volkswagen Golf',
-  'Dacia Duster', 'BMW Série 1', 'Toyota Yaris Cross', 'Tesla Model 3',
-]
-
-const inputCls  = 'w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition'
-const selectCls = 'w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition'
-
-export default function Compare() {
-  const { t, lang } = useSettings()
-  const [form, setForm]       = useState(EMPTY)
-  const [loading, setLoading] = useState(false)
-  const [data, setData]       = useState(null)
-  const [error, setError]     = useState(null)
-  const { exporting, withExporting } = useExport()
-  const pdfRef = useRef(null)
-
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
-  const vehicleName = [form.make, form.model].filter(Boolean).join(' ').trim()
-
-  const analyze = async (override) => {
-    const name = (override || vehicleName).trim()
-    if (!name) return
-    const ctx = override ? '' : [
-      form.year && `année ${form.year}`,
-      form.version && `version ${form.version}`,
-    ].filter(Boolean).join(', ')
-    const label = [name, ctx].filter(Boolean).join(' — ')
-
-    setLoading(true)
-    setError(null)
-    setData(null)
-
-    try {
-      const prompt = `Tu es expert automobile spécialiste des dimensions et gabarits. En t'appuyant sur des recherches web RÉELLES, analyse le véhicule "${label}".
-
-PRINCIPE D'ÉQUIVALENCE (exactement comme automobiledimension.com) : l'équivalence se fait sur le GABARIT, AVANT TOUT la LONGUEUR, toutes marques ET toutes carrosseries confondues. Critère premier : longueur proche (±15 cm, soit ±150 mm). À longueur comparable, privilégie les véhicules dont la largeur et la hauteur sont aussi proches (gabarit d'ensemble cohérent). Le segment commercial n'est PAS un filtre : un véhicule d'une autre carrosserie mais de même longueur EST une équivalence valable (indique simplement son "body"). N'exclus que les gabarits manifestement incohérents (ex. ne pas apparier un coupé bas à un fourgon haut de même longueur).
+const STATIC_COMPARE = `PRINCIPE D'ÉQUIVALENCE (exactement comme automobiledimension.com) : l'équivalence se fait sur le GABARIT, AVANT TOUT la LONGUEUR, toutes marques ET toutes carrosseries confondues. Critère premier : longueur proche (±15 cm, soit ±150 mm). À longueur comparable, privilégie les véhicules dont la largeur et la hauteur sont aussi proches (gabarit d'ensemble cohérent). Le segment commercial n'est PAS un filtre : un véhicule d'une autre carrosserie mais de même longueur EST une équivalence valable (indique simplement son "body"). N'exclus que les gabarits manifestement incohérents (ex. ne pas apparier un coupé bas à un fourgon haut de même longueur).
 
 ⚠️ GÉNÉRATION & MOTORISATION : ne mélange JAMAIS les chiffres de générations différentes — donne les cotes de la génération EXACTE demandée. Le "fuel"/"engine" doit refléter la version exacte ; ne confonds pas un hybride simple / micro-hybride / full hybrid avec un hybride rechargeable (plug-in / PHEV), car cela change poids, CO₂ et caractéristiques. Si aucune version n'est précisée, retiens la version la plus représentative (les dimensions sont en général identiques d'une motorisation à l'autre ; seuls poids / CO₂ / puissance varient) et renseigne "version" en conséquence.
 
@@ -260,9 +224,46 @@ Réponds ENSUITE UNIQUEMENT en JSON valide (aucun texte autour, pas de backticks
 }
 Dimensions en mm, poids en kg, coffre en litres, braquage en m, puissance en ch, couple en Nm, CO₂ en g/km WLTP. Valeur inconnue = null. JSON pur uniquement.`
 
+const SUGGESTIONS = [
+  'Alpine A290', 'Renault 5 E-Tech', 'Peugeot 308', 'Volkswagen Golf',
+  'Dacia Duster', 'BMW Série 1', 'Toyota Yaris Cross', 'Tesla Model 3',
+]
+
+const inputCls  = 'w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition'
+const selectCls = 'w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition'
+
+export default function Compare() {
+  const { t, lang } = useSettings()
+  const [form, setForm]       = useState(EMPTY)
+  const [loading, setLoading] = useState(false)
+  const [data, setData]       = useState(null)
+  const [error, setError]     = useState(null)
+  const { exporting, withExporting } = useExport()
+  const pdfRef = useRef(null)
+
+  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
+  const vehicleName = [form.make, form.model].filter(Boolean).join(' ').trim()
+
+  const analyze = async (override) => {
+    const name = (override || vehicleName).trim()
+    if (!name) return
+    const ctx = override ? '' : [
+      form.year && `année ${form.year}`,
+      form.version && `version ${form.version}`,
+    ].filter(Boolean).join(', ')
+    const label = [name, ctx].filter(Boolean).join(' — ')
+
+    setLoading(true)
+    setError(null)
+    setData(null)
+
+    try {
+      const prompt = `Analyse le véhicule "${label}". En t'appuyant sur des recherches web RÉELLES.`
+
       const result = await sendMessage(
         [{ role: 'user', content: prompt }],
-        { lang, maxTokens: 4500, expert: true, temperature: 0, tool: 'comparateur', webSearch: true, maxSearches: 6 },
+        { lang, maxTokens: 4500, expert: true, temperature: 0, tool: 'comparateur',
+          webSearch: true, maxSearches: 8, systemStatic: STATIC_COMPARE },
       )
       setData(parseAIJson(result))
     } catch (err) {

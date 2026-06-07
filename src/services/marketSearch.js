@@ -1,35 +1,8 @@
-export async function fetchMarketData(vehicle) {
-  const res = await fetch(`/api/market-data?vehicle=${encodeURIComponent(vehicle)}`)
-  if (!res.ok) throw new Error(`Server error: ${res.status}`)
-  return res.json()
-}
-
-export function buildMarketPrompt(vehicle, snippets, product, lang = 'fr') {
-  const LANG_NAMES = { fr: 'French', en: 'English', de: 'German', it: 'Italian', es: 'Spanish' }
-  const langName = LANG_NAMES[lang] || 'French'
-  const langInstruction = lang !== 'fr' ? `\n\nIMPORTANT: Write your entire response in ${langName}.` : ''
-  const webContext = snippets.length > 0
-    ? `\n\nDONNÉES COLLECTÉES EN TEMPS RÉEL (${snippets.map(s => s.source).join(', ')}) :\n\n` +
-      snippets.map((s) => `=== ${s.source} ===\n${s.content}`).join('\n\n') +
-      `\n\n→ Base ton analyse sur ces données réelles ; ne les contredis pas par des suppositions.`
-    : `\n\nRECHERCHE WEB : utilise ton outil de recherche web pour trouver les données marché actuelles (immatriculations, cotes L'Argus / La Centrale, prix VO, actualité du modèle) AVANT de rédiger. N'affiche jamais de message d'« erreur » ni de « données indisponibles ». Si une donnée précise reste introuvable, donne un ordre de grandeur clairement présenté comme une estimation et complète par ta connaissance experte du marché français — n'invente JAMAIS une statistique précise donnée comme certaine.`
-
-  return `Tu es expert marché automobile pour Autobuyunion, 1er groupement européen d'achat auto.
-
-Analyse le marché du ${vehicle} en France, sur la conjoncture actuelle et le millésime réel du véhicule.
-
-⚠️ MOTORISATION & GÉNÉRATION : respecte EXACTEMENT l'énergie et la version du véhicule analysé. Un hybride simple / micro-hybride / full hybrid n'est PAS un hybride rechargeable (plug-in / PHEV) : ne parle de recharge, de prise ou d'autonomie 100 % électrique que si le véhicule est EXPLICITEMENT rechargeable. En cas de changement de génération récent, ne confonds pas la nouvelle génération avec l'ancienne (le badge de puissance est souvent le marqueur de génération). L'énergie conditionne toute l'analyse (décote, demande, accès ZFE) : ne te trompe pas de motorisation.
+export const STATIC_MARKET = `⚠️ MOTORISATION & GÉNÉRATION : respecte EXACTEMENT l'énergie et la version du véhicule analysé. Un hybride simple / micro-hybride / full hybrid n'est PAS un hybride rechargeable (plug-in / PHEV) : ne parle de recharge, de prise ou d'autonomie 100 % électrique que si le véhicule est EXPLICITEMENT rechargeable. En cas de changement de génération récent, ne confonds pas la nouvelle génération avec l'ancienne (le badge de puissance est souvent le marqueur de génération). L'énergie conditionne toute l'analyse (décote, demande, accès ZFE) : ne te trompe pas de motorisation.
 
 RÈGLE DE SYNTHÈSE (toujours, quelle que soit la source) : reformule TOUJOURS avec tes propres mots. Ne recopie jamais verbatim un article, une annonce ou un tableau de cote propriétaire (Argus, La Centrale) : extrais et synthétise les chiffres clés. Ta sortie est une analyse rédigée, pas un copier-coller.
-${webContext}
 
-Données produit de référence :
-- Segment : ${product.segment}
-- CO₂ WLTP : ${product.specs.co2_wltp} g/km
-- Prix neuf : ${product.prix.base.toLocaleString('fr-FR')}€ – ${product.prix.haut.toLocaleString('fr-FR')}€
-- Concurrents : ${product.concurrents.map(c => `${c.nom} (${c.prix.toLocaleString('fr-FR')}€)`).join(', ')}
-
-Rédige une analyse COMPLÈTE et CHIFFRÉE en 5 parties, basée sur les vraies données ci-dessus :
+Rédige une analyse COMPLÈTE et CHIFFRÉE en 5 parties, basée sur les vraies données :
 
 **1. MARCHÉ VN — Véhicules Neufs**
 Volumes, tendance des immatriculations, part de marché, promotions concessionnaires, délais de livraison.
@@ -50,5 +23,29 @@ POSITIONNEMENT PRIX OBLIGATOIRE : identifie les prix les plus compétitifs du ma
 
 Sois précis, chiffré, sobre (aucun emoji, aucun symbole décoratif) et directement utilisable par nos équipes commerciales.
 
-INTERDIT : n'écris jamais « malus », « écotaxe », « malus écologique », « malus au poids » ni aucun calcul de taxation CO₂ — sujet traité par un outil dédié. Le CO₂ et la consommation ne servent que d'arguments d'économie / sobriété, jamais d'argument fiscal.${langInstruction}`
+INTERDIT : n'écris jamais « malus », « écotaxe », « malus écologique », « malus au poids » ni aucun calcul de taxation CO₂ — sujet traité par un outil dédié. Le CO₂ et la consommation ne servent que d'arguments d'économie / sobriété, jamais d'argument fiscal.`
+
+export async function fetchMarketData(vehicle) {
+  const res = await fetch(`/api/market-data?vehicle=${encodeURIComponent(vehicle)}`)
+  if (!res.ok) throw new Error(`Server error: ${res.status}`)
+  return res.json()
+}
+
+export function buildMarketPrompt(vehicle, snippets, product, lang = 'fr') {
+  const LANG_NAMES = { fr: 'French', en: 'English', de: 'German', it: 'Italian', es: 'Spanish' }
+  const langName = LANG_NAMES[lang] || 'French'
+  const langInstruction = lang !== 'fr' ? `\n\nIMPORTANT: Write your entire response in ${langName}.` : ''
+  const webContext = snippets.length > 0
+    ? `\n\nDONNÉES COLLECTÉES EN TEMPS RÉEL (${snippets.map(s => s.source).join(', ')}) :\n\n` +
+      snippets.map((s) => `=== ${s.source} ===\n${s.content}`).join('\n\n') +
+      `\n\n→ Base ton analyse sur ces données réelles ; ne les contredis pas par des suppositions.`
+    : `\n\nRECHERCHE WEB : utilise ton outil de recherche web pour trouver les données marché actuelles (immatriculations, cotes L'Argus / La Centrale, prix VO, actualité du modèle) AVANT de rédiger. N'affiche jamais de message d'« erreur » ni de « données indisponibles ». Si une donnée précise reste introuvable, donne un ordre de grandeur clairement présenté comme une estimation et complète par ta connaissance experte du marché français — n'invente JAMAIS une statistique précise donnée comme certaine.`
+
+  return `Analyse le marché du ${vehicle} en France, sur la conjoncture actuelle et le millésime réel du véhicule.${webContext}
+
+Données produit de référence :
+- Segment : ${product.segment}
+- CO₂ WLTP : ${product.specs.co2_wltp} g/km
+- Prix neuf : ${product.prix.base.toLocaleString('fr-FR')}€ – ${product.prix.haut.toLocaleString('fr-FR')}€
+- Concurrents : ${product.concurrents.map(c => `${c.nom} (${c.prix.toLocaleString('fr-FR')}€)`).join(', ')}${langInstruction}`
 }

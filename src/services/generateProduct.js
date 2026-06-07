@@ -1,11 +1,6 @@
 import { sendMessage } from './claude'
 
-export async function generateProductFromWeb(query, details = '') {
-  const prompt = `Tu es expert automobile et analyste marché pour Autobuyunion, 1er groupement européen d'achat auto.
-
-L'utilisateur demande une fiche produit pour : "${query}"
-${details ? `Précisions à RESPECTER STRICTEMENT (motorisation, finition, carrosserie, millésime, kilométrage) : ${details}.\n` : ''}
-⚠️ MOTORISATION EXACTE : si une motorisation est indiquée dans la requête ou les précisions, traite EXACTEMENT celle-là, jamais une autre variante. Un « hybride » simple / micro-hybride / full hybrid n'est PAS un « hybride rechargeable » (plug-in / PHEV) : ne parle de recharge, de prise, de batterie plug-in ou d'autonomie 100 % électrique QUE si le véhicule est EXPLICITEMENT rechargeable. UNIQUEMENT si AUCUNE motorisation n'est précisée et que le modèle existe en plusieurs versions, prends la version essence/thermique d'entrée de gamme.
+const STATIC_FICHEAI = `⚠️ MOTORISATION EXACTE : si une motorisation est indiquée dans la requête ou les précisions, traite EXACTEMENT celle-là, jamais une autre variante. Un « hybride » simple / micro-hybride / full hybrid n'est PAS un « hybride rechargeable » (plug-in / PHEV) : ne parle de recharge, de prise, de batterie plug-in ou d'autonomie 100 % électrique QUE si le véhicule est EXPLICITEMENT rechargeable. UNIQUEMENT si AUCUNE motorisation n'est précisée et que le modèle existe en plusieurs versions, prends la version essence/thermique d'entrée de gamme.
 
 ⚠️ GÉNÉRATIONS : en cas de changement de génération récent, ne confonds pas le catalogue de la nouvelle génération avec les caractéristiques/occasions de l'ancienne. Le badge de motorisation/puissance est souvent le marqueur de génération : respecte-le.
 
@@ -101,7 +96,16 @@ INTERDIT (champs texte générés : tagline, atouts, objections, argument_prix, 
 
 CONTRAINTES DE FORME : JSON complet et valide — tous les champs remplis, exactement 4 concurrents, guillemets fermés, aucune virgule finale, aucun texte / commentaire / citation / balise markdown avant ou après.`
 
-  const raw = await sendMessage([{ role: 'user', content: prompt }], { maxTokens: 6000, expert: true, temperature: 0.25, tool: 'ficheIA', stream: true })
+export async function generateProductFromWeb(query, details = '') {
+  const prompt = `L'utilisateur demande une fiche produit pour : "${query}"
+${details ? `Précisions à RESPECTER STRICTEMENT (motorisation, finition, carrosserie, millésime, kilométrage) : ${details}.` : ''}`
+
+  const raw = await sendMessage([{ role: 'user', content: prompt }], {
+    maxTokens: 6000, expert: true, temperature: 0.25,
+    tool: 'ficheIA', stream: true,
+    systemStatic: STATIC_FICHEAI,
+    webSearch: true, maxSearches: 3,
+  })
 
   // Extraire le JSON de la réponse
   const match = raw.match(/\{[\s\S]*\}/)

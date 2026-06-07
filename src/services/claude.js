@@ -19,6 +19,18 @@ const MODELS = {
   ultra:       'claude-opus-4-8',
 }
 
+// Modèle par outil — prioritaire sur le réglage utilisateur.
+// Opus : raisonnement prix critique · Sonnet : données web fiables · Haiku : JSON rapide
+const TOOL_MODELS = {
+  veilleprix:        'claude-opus-4-8',
+  ficheIA:           'claude-sonnet-4-6',
+  analysemarche:     'claude-sonnet-4-6',
+  comparateur:       'claude-sonnet-4-6',
+  objections:        'claude-haiku-4-5-20251001',
+  pitch:             'claude-haiku-4-5-20251001',
+  rapportcommercial: 'claude-haiku-4-5-20251001',
+}
+
 import { getSessionUserId, ukey } from '@/utils/userStorage'
 
 // Optional personal key override (never required — the server holds the key).
@@ -120,7 +132,8 @@ function proxyHeaders() {
   return headers
 }
 
-function getModel() {
+function getModel(tool = null) {
+  if (tool && TOOL_MODELS[tool]) return TOOL_MODELS[tool]
   try {
     const uid = getSessionUserId()
     const power = localStorage.getItem(ukey(uid, 'ai_power')) || 'performance'
@@ -276,18 +289,29 @@ function buildContent(text, attachment) {
  * @param {ChatMessage[]} messages
  * @returns {Promise<string>}
  */
-export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3, tool = null, webSearch = false, maxSearches = 5, returnMeta = false, stream = false, onChunk = null } = {}) {
+export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3, tool = null, systemStatic = null, webSearch = false, maxSearches = 5, returnMeta = false, stream = false, onChunk = null } = {}) {
   assertOnline()
   const apiMessages = messages.map(({ role, content, attachment }) => ({
     role,
     content: buildContent(content, attachment),
   }))
 
+  // Prompt caching : si systemStatic est fourni, le système devient un tableau
+  // de blocs — le dernier portant cache_control ephemeral. Cela couvre le bloc
+  // de base + les instructions statiques de l'outil en un seul point de cache.
+  const systemBase = buildSystemPrompt(lang, expert, tool)
+  const system = systemStatic
+    ? [
+        { type: 'text', text: systemBase },
+        { type: 'text', text: systemStatic, cache_control: { type: 'ephemeral' } },
+      ]
+    : systemBase
+
   const body = {
-    model:       getModel(),
+    model:       getModel(tool),
     max_tokens:  maxTokens,
     temperature,
-    system:      buildSystemPrompt(lang, expert, tool),
+    system,
     messages:    apiMessages,
   }
   // Pont vers la recherche web officielle (exécutée côté serveur,
