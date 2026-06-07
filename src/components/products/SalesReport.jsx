@@ -3,6 +3,10 @@ import { Building2, Users, Download, CheckCircle2, XCircle, RefreshCw } from 'lu
 import { sendMessage } from '@/services/claude'
 import { formatNumber } from '@/utils/formatters'
 import { useSettings } from '@/contexts/SettingsContext'
+import { useExport } from '@/hooks/useExport'
+import { mdToHtml } from '@/utils/mdToHtml'
+import { pdfFileName } from '@/utils/exportPdf'
+import { exportReportPdf } from '@/utils/exportReportPdf'
 import { veillePrixRefBlock } from '@/utils/veillePrix'
 
 const STATIC_SALESREPORT = `⚠️ MOTORISATION & GÉNÉRATION : respecte EXACTEMENT l'énergie et la version du véhicule demandé. Un hybride simple / micro-hybride / full hybrid n'est PAS un hybride rechargeable (plug-in / PHEV) : ne parle de recharge, de prise, de batterie plug-in ou d'autonomie 100 % électrique que si le véhicule est EXPLICITEMENT rechargeable. En cas de changement de génération récent, ne confonds pas la nouvelle génération avec l'ancienne (le badge de puissance est souvent le marqueur de génération).
@@ -96,11 +100,15 @@ export default function SalesReport({ product }) {
   const { t, lang } = useSettings()
   const [pitch, setPitch] = useState('')
   const [loading, setLoading] = useState(false)
+  const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState(null)
+  const { exporting, withExporting } = useExport()
 
   const generatePitch = async () => {
     setLoading(true)
+    setStreaming(false)
     setError(null)
+    setPitch('')
     try {
       const concurrents = product.concurrents || []
       const avgConc = concurrents.length
@@ -118,17 +126,28 @@ export default function SalesReport({ product }) {
 Données de référence :
 Prix catalogue : ${formatNumber(product.prix.base)}€ · CO₂ : ${product.specs.co2_wltp} g/km${priceAdvantageLine}${stockLine}${veillePrixRefBlock(product.fullName)}`
 
+      let first = true
       const result = await sendMessage([{ role: 'user', content: prompt }], {
         lang, maxTokens: 3500, expert: true, temperature: 0.7,
         tool: 'rapportcommercial', stream: true, systemStatic: STATIC_SALESREPORT,
+        onChunk: (full) => {
+          if (first) { first = false; setLoading(false); setStreaming(true) }
+          setPitch(full)
+        },
       })
       setPitch(result)
+      setStreaming(false)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
+      setStreaming(false)
     }
   }
+
+  const handlePdf = () => withExporting(() =>
+    exportReportPdf(pitch, pdfFileName(product.fullName, t('sales_pitch_title')), { title: t('sales_pitch_title'), subtitle: product.fullName })
+  )
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -183,19 +202,27 @@ Prix catalogue : ${formatNumber(product.prix.base)}€ · CO₂ : ${product.spec
             <h3 className="text-sm font-semibold text-white">{t('sales_pitch_title')}</h3>
             <p className="text-xs text-slate-500">{t('sales_pitch_subtitle')}</p>
           </div>
-          <Button size="sm" variant={pitch ? 'ghost' : 'primary'} onClick={generatePitch} disabled={loading}>
-            {loading ? <Spinner size="sm" /> : <RefreshCw size={13} />}
-            {pitch ? t('sales_pitch_refresh') : t('sales_pitch_generate')}
-          </Button>
+          <div className="flex items-center gap-2">
+            {pitch && !streaming && (
+              <Button size="sm" variant="ghost" onClick={handlePdf} disabled={exporting}>
+                {exporting ? <Spinner size="sm" /> : <Download size={13} />}
+                {t('download_pdf')}
+              </Button>
+            )}
+            <Button size="sm" variant={pitch ? 'ghost' : 'primary'} onClick={generatePitch} disabled={loading || streaming}>
+              {(loading || streaming) ? <Spinner size="sm" /> : <RefreshCw size={13} />}
+              {pitch ? t('sales_pitch_refresh') : t('sales_pitch_generate')}
+            </Button>
+          </div>
         </div>
 
-        {!pitch && !loading && !error && (
+        {!pitch && !loading && !streaming && !error && (
           <div className="text-center py-8">
             <p className="text-sm text-slate-500">{t('sales_pitch_cta')}</p>
           </div>
         )}
 
-        {loading && (
+        {loading && !pitch && (
           <div className="py-8">
             <AIProgress active={loading} label={t('sales_pitch_loading')} estimatedMs={12000} persistKey="salesreport" />
           </div>
@@ -208,8 +235,11 @@ Prix catalogue : ${formatNumber(product.prix.base)}€ · CO₂ : ${product.spec
         )}
 
         {pitch && (
-          <div className="prose prose-sm prose-invert max-w-none">
-            <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{pitch}</div>
+          <div>
+            <div className="report-md text-slate-200" dangerouslySetInnerHTML={{ __html: mdToHtml(pitch) }} />
+            {streaming && (
+              <span className="inline-block w-0.5 h-[1em] animate-pulse align-middle ml-0.5 opacity-80 bg-cyan-400" />
+            )}
           </div>
         )}
       </div>

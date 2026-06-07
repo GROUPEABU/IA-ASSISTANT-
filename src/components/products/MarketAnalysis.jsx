@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TrendingUp, TrendingDown, AlertTriangle, Lightbulb, RefreshCw, Globe, ExternalLink, Info, CheckCircle2 } from 'lucide-react'
+import { TrendingUp, TrendingDown, AlertTriangle, Lightbulb, RefreshCw, Globe, ExternalLink, Info, CheckCircle2, Download } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { fetchMarketData, buildMarketPrompt, STATIC_MARKET } from '@/services/marketSearch'
 import { veillePrixRefBlock } from '@/utils/veillePrix'
@@ -7,6 +7,10 @@ import Spinner from '@/components/ui/Spinner'
 import AIProgress from '@/components/ui/AIProgress'
 import Button from '@/components/ui/Button'
 import { formatNumber } from '@/utils/formatters'
+import { mdToHtml } from '@/utils/mdToHtml'
+import { useExport } from '@/hooks/useExport'
+import { pdfFileName } from '@/utils/exportPdf'
+import { exportReportPdf } from '@/utils/exportReportPdf'
 import { useSettings } from '@/contexts/SettingsContext'
 
 function StatCard({ label, value, sub, trend }) {
@@ -53,42 +57,20 @@ function SourceBadges({ snippets }) {
   )
 }
 
-function AnalysisText({ text }) {
-  return (
-    <div className="space-y-1">
-      {text.split('\n').map((line, i) => {
-        if (/^\*\*\d+\./.test(line) || (line.startsWith('**') && line.endsWith('**'))) {
-          return (
-            <h4 key={i} className="text-sm font-bold text-cyan-400 mt-5 mb-2 first:mt-0 pt-2 border-t border-navy-700/30 first:border-0 first:pt-0">
-              {line.replace(/\*\*/g, '')}
-            </h4>
-          )
-        }
-        if (line.startsWith('- ') || line.startsWith('• ')) {
-          return (
-            <p key={i} className="text-sm text-slate-300 pl-3 border-l-2 border-cyan-400/20 my-1 leading-relaxed">
-              {line.slice(2)}
-            </p>
-          )
-        }
-        if (line.trim() === '') return <div key={i} className="h-1" />
-        return <p key={i} className="text-sm text-slate-300 leading-relaxed">{line}</p>
-      })}
-    </div>
-  )
-}
-
 export default function MarketAnalysis({ product }) {
   const { t, lang } = useSettings()
   const [analysis, setAnalysis] = useState('')
   const [snippets, setSnippets] = useState([])
   const [loading, setLoading] = useState(false)
+  const [streaming, setStreaming] = useState(false)
   const [loadingStep, setLoadingStep] = useState('')
   const [error, setError] = useState(null)
   const [fetchedAt, setFetchedAt] = useState(null)
+  const { exporting, withExporting } = useExport()
 
   const generate = async () => {
     setLoading(true)
+    setStreaming(false)
     setError(null)
     setSnippets([])
     setAnalysis('')
@@ -108,19 +90,31 @@ export default function MarketAnalysis({ product }) {
 
       // Étape 2 : analyse IA
       const prompt = buildMarketPrompt(product.fullName, webData.snippets || [], product, lang) + veillePrixRefBlock(product.fullName)
+      let first = true
       const result = await sendMessage([{ role: 'user', content: prompt }], {
         lang, maxTokens: 4500, expert: true, temperature: 0.35,
         tool: 'analysemarche', webSearch: true, maxSearches: 4,
         systemStatic: STATIC_MARKET,
+        stream: true,
+        onChunk: (full) => {
+          if (first) { first = false; setLoading(false); setStreaming(true) }
+          setAnalysis(full)
+        },
       })
       setAnalysis(result)
+      setStreaming(false)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
+      setStreaming(false)
       setLoadingStep('')
     }
   }
+
+  const handlePdf = () => withExporting(() =>
+    exportReportPdf(analysis, pdfFileName(product.fullName, t('market_realtime_title')), { title: t('market_realtime_title'), subtitle: product.fullName })
+  )
 
   const localeDateString = (ts) => {
     const locale = lang === 'fr' ? 'fr-FR' : lang === 'de' ? 'de-DE' : lang === 'it' ? 'it-IT' : lang === 'es' ? 'es-ES' : 'en-GB'
@@ -183,20 +177,27 @@ export default function MarketAnalysis({ product }) {
               </p>
             )}
           </div>
-          <Button
-            size="sm"
-            variant={analysis ? 'ghost' : 'primary'}
-            onClick={generate}
-            disabled={loading}
-            className="flex-shrink-0"
-          >
-            {loading ? <Spinner size="sm" /> : <RefreshCw size={13} />}
-            {loading ? t('market_loading') : analysis ? t('market_refresh') : t('market_analyze')}
-          </Button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {analysis && !streaming && (
+              <Button size="sm" variant="ghost" onClick={handlePdf} disabled={exporting}>
+                {exporting ? <Spinner size="sm" /> : <Download size={13} />}
+                {t('download_pdf')}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant={analysis ? 'ghost' : 'primary'}
+              onClick={generate}
+              disabled={loading || streaming}
+            >
+              {(loading || streaming) ? <Spinner size="sm" /> : <RefreshCw size={13} />}
+              {(loading || streaming) ? t('market_loading') : analysis ? t('market_refresh') : t('market_analyze')}
+            </Button>
+          </div>
         </div>
 
         {/* Loading */}
-        {loading && (
+        {loading && !analysis && (
           <div className="py-8">
             <AIProgress active={loading} label={loadingStep} estimatedMs={30000} persistKey="marketanalysis" />
           </div>
@@ -211,7 +212,7 @@ export default function MarketAnalysis({ product }) {
         )}
 
         {/* Empty state */}
-        {!analysis && !loading && !error && (
+        {!analysis && !loading && !streaming && !error && (
           <div className="text-center py-10">
             <Globe size={32} className="text-slate-700 mx-auto mb-3" />
             <p className="text-sm text-slate-400 mb-1 font-medium">{t('market_empty_title')}</p>
@@ -223,7 +224,14 @@ export default function MarketAnalysis({ product }) {
         )}
 
         {/* Analyse */}
-        {analysis && !loading && <AnalysisText text={analysis} />}
+        {analysis && (
+          <div>
+            <div className="report-md text-slate-200" dangerouslySetInnerHTML={{ __html: mdToHtml(analysis) }} />
+            {streaming && (
+              <span className="inline-block w-0.5 h-[1em] animate-pulse align-middle ml-0.5 opacity-80 bg-cyan-400" />
+            )}
+          </div>
+        )}
       </div>
 
       {/* Disclaimer */}

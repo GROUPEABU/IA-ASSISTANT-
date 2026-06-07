@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react'
-import { ShieldCheck, RefreshCw, RotateCcw, ChevronDown, ChevronUp, Download } from 'lucide-react'
-import { sendMessage, extractJSON } from '@/services/claude'
+import { ShieldCheck, RefreshCw, RotateCcw, Download } from 'lucide-react'
+import { sendMessage } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import AIProgress from '@/components/ui/AIProgress'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
 import VehicleDetails, { EMPTY_DETAILS, formatVehicleDetails, vehicleNameOf } from '@/components/ui/VehicleDetails'
+import { mdToHtml } from '@/utils/mdToHtml'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -13,7 +14,8 @@ import { useHistory } from '@/hooks/useHistory'
 import { useLastVehicle } from '@/hooks/useLastVehicle'
 import { useExport } from '@/hooks/useExport'
 import { useResultFocus } from '@/hooks/useResultFocus'
-import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
+import { pdfFileName } from '@/utils/exportPdf'
+import { exportReportPdf } from '@/utils/exportReportPdf'
 import { useToast } from '@/components/ui/Toast'
 
 const SEGMENTS = [
@@ -21,7 +23,7 @@ const SEGMENTS = [
   { id: 'btob', labelKey: 'btob', subKey: 'btob_sub' },
 ]
 
-// Bloc statique caché côté système — instructions + schéma JSON invariants.
+// Bloc statique caché côté système — instructions invariantes + format Markdown.
 const STATIC_OBJECTIONS = `⚠️ MOTORISATION EXACTE : respecte STRICTEMENT la motorisation du nom du véhicule et des détails. Un « hybride » simple/micro-hybride/full hybrid n'est PAS un « hybride rechargeable » (plug-in/PHEV) : ne parle de recharge, de prise ou d'autonomie 100 % électrique que si le véhicule est EXPLICITEMENT rechargeable. Ne substitue jamais une autre variante.
 
 ⚠️ GÉNÉRATION : en cas de changement de génération récent du modèle, ne confonds pas la nouvelle génération avec l'ancienne — le badge de motorisation/puissance est souvent le marqueur de génération (ex. un 136 et un 145 peuvent désigner deux générations du même modèle).
@@ -30,17 +32,7 @@ ADAPTATION AU SEGMENT (sans tout dupliquer) : mêmes familles d'objections, mais
 - BtoC (particulier, utilisateur final) : budget personnel, usage familial/quotidien, fiabilité, coût d'usage, valeur de revente à titre privé, confiance dans un achat à distance.
 - BtoB (PARTENAIRE REVENDEUR — concession ou négociant qui RACHÈTE pour REVENDRE, PAS pour rouler) : raisonne MARGE et ROTATION, jamais usage ou confort. Objections typiques : marge insuffisante à la revente, prix d'achat trop haut pour se positionner au-dessus du 1er du net, modèle qui risque de tourner lentement sur son parc, régime de TVA (récupérable vs TVA sur marge), volume et capacité de réassort, état réel et frais de remise en route avant mise en vente, et pour un véhicule importé : conformité (COC), carte grise/immatriculation et délais. L'argumentaire vend de la RENTABILITÉ et de la FLUIDITÉ d'approvisionnement, pas du plaisir de conduite.
 
-DOUBLE USAGE : ces fiches servent à PRÉPARER le commercial en amont ET à être sorties FACE AU CLIENT. Donc « reponse » = argumentaire chiffré prêt à étudier ; « argument_cle » = la phrase massue, percutante, à dire telle quelle à l'oral.
-
-Réponds UNIQUEMENT avec un tableau JSON valide, sans aucun texte ni balise markdown avant ou après :
-[
-  {
-    "objection": "Texte de l'objection telle que la dit le client",
-    "categorie": "prix|marque|qualité|financement|après-vente|revente|concurrence|confiance",
-    "reponse": "Réponse commerciale percutante et chiffrée (2-3 phrases max)",
-    "argument_cle": "L'argument massue en une phrase"
-  }
-]
+DOUBLE USAGE : ces fiches servent à PRÉPARER le commercial en amont ET à être sorties FACE AU CLIENT. Donc la réponse = argumentaire chiffré prêt à étudier ; l'argument clé = la phrase massue, percutante, à dire telle quelle à l'oral.
 
 COUVERTURE DES 10 OBJECTIONS — varie les angles, adapte selon le segment, reste réaliste et concret :
 - prix → marge atteignable à la revente (BtoB) / rapport prix-prestations (BtoC)
@@ -57,64 +49,14 @@ OBLIGATOIRE : au moins UNE objection doit porter sur « pourquoi passer par Auto
 
 INTERDIT : aucune objection ni réponse sur le malus, l'écotaxe, le malus écologique, le malus au poids ou la taxation CO₂ — ce sujet est traité par un outil dédié. N'emploie aucun de ces termes.
 
-CONTRAINTES DE FORME :
-- Chaque champ doit rester COURT (réponse 2-3 phrases, argument_cle une seule phrase) pour que le JSON tienne en entier.
-- Le JSON DOIT être complet et valide : exactement 10 objets, tous les champs remplis, guillemets fermés, aucune virgule finale.
-- Aucun texte, aucun commentaire, aucune balise markdown avant ou après le tableau.`
+FORMAT DE SORTIE (Markdown épuré, AUCUN JSON, aucune phrase d'introduction, aucun emoji) :
+Commence directement par la première objection. Pour CHACUNE des 10 objections, reproduis EXACTEMENT ce bloc :
 
-const CATEGORY_COLORS = {
-  prix: 'bg-warn/10 text-warn border-warn/20',
-  marque: 'bg-violet-400/10 text-violet-400 border-violet-400/20',
-  qualité: 'bg-rose-400/10 text-rose-400 border-rose-400/20',
-  financement: 'bg-blue-400/10 text-blue-400 border-blue-400/20',
-  'après-vente': 'bg-warn/10 text-warn border-warn/20',
-  revente: 'bg-red-400/10 text-red-400 border-red-400/20',
-  concurrence: 'bg-slate-400/10 text-slate-400 border-slate-400/20',
-  confiance: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20',
-}
+## N. "<objection telle que dite par le client>"
+**Réponse :** <réponse commerciale chiffrée, 2-3 phrases max>
+**Argument clé :** <la phrase massue, à dire telle quelle>
 
-function ObjectionCard({ item, index, isOpen, onToggle, noAnimate }) {
-  const { t } = useSettings()
-  const catColor = CATEGORY_COLORS[item.categorie?.toLowerCase()] || CATEGORY_COLORS.concurrence
-
-  return (
-    <div className={`glass-card overflow-hidden transition-all duration-200 ${isOpen ? 'border-cyan-400/30' : ''}`}>
-      <button onClick={onToggle} className="w-full text-left p-4 flex items-start gap-3">
-        <span className="text-xs font-bold text-slate-600 w-5 flex-shrink-0 mt-0.5">{index + 1}</span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-medium text-slate-200 leading-snug">"{item.objection}"</p>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {item.categorie && (
-                <span className={`hidden sm:inline text-[10px] font-semibold px-2 py-0.5 rounded-full border ${catColor}`}>
-                  {item.categorie}
-                </span>
-              )}
-              {isOpen
-                ? <ChevronUp size={15} className="text-cyan-400" />
-                : <ChevronDown size={15} className="text-slate-500" />}
-            </div>
-          </div>
-        </div>
-      </button>
-
-      {isOpen && (
-        <div className={`px-4 pb-4 pl-8 ${noAnimate ? '' : 'animate-fade-in'}`}>
-          <div className="bg-emerald-400/5 border border-emerald-400/20 rounded-xl p-3">
-            <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2">{t('recommended_answer')}</p>
-            <p className="text-sm text-slate-300 leading-relaxed">{item.reponse}</p>
-          </div>
-          {item.argument_cle && (
-            <div className="mt-2 flex items-start gap-2">
-              <ShieldCheck size={13} className="text-cyan-400 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-cyan-300 italic">{item.argument_cle}</p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
+N va de 1 à 10. Rien avant le premier « ## », rien après le dernier bloc. Chaque réponse reste courte (2-3 phrases), chaque argument clé tient en une seule phrase.`
 
 export default function Objections() {
   const { t, lang } = useSettings()
@@ -123,17 +65,16 @@ export default function Objections() {
   const [segment, setSegment] = useState('btoc')
   const [details, setDetails] = useState(EMPTY_DETAILS)
   const [loading, setLoading] = useState(false)
-  const [objections, setObjections] = useState([])
-  const [openIndex, setOpenIndex] = useState(0)
+  const [streaming, setStreaming] = useState(false)
+  const [report, setReport] = useState('')
   const [error, setError] = useState(null)
   const [generatedFor, setGeneratedFor] = useState('')
-  const [forceOpenAll, setForceOpenAll] = useState(false)
   const { toast } = useToast()
   const { generated } = useGeneratedProducts()
   const { history, add: addHistory, clear: clearHistory } = useHistory('objections')
   const { save: saveLastVehicle } = useLastVehicle()
   const { exporting, withExporting } = useExport()
-  const headingRef = useResultFocus(objections.length > 0 && !loading)
+  const headingRef = useResultFocus(!!report && !loading && !streaming)
 
   const allProducts = [...PRODUCTS, ...generated]
   const selectedProduct = allProducts.find((p) => p.id === vehicleId)
@@ -143,8 +84,9 @@ export default function Objections() {
     if (!vehicleName.trim()) return
     saveLastVehicle(vehicleName)
     setLoading(true)
+    setStreaming(false)
     setError(null)
-    setObjections([])
+    setReport('')
 
     try {
       const seg = SEGMENTS.find((s) => s.id === segment)
@@ -161,43 +103,38 @@ Segment : ${selectedProduct.segment}`
 ${detailsLine ? `Détails véhicule : ${detailsLine}. Tiens-en compte pour des objections et réponses PRÉCISES (motorisation, âge, kilométrage, finition).` : ''}
 ${productContext || ''}`
 
-      const raw = await sendMessage([{ role: 'user', content: prompt }], {
-        lang, maxTokens: 1800, expert: true, temperature: 0.55,
+      let first = true
+      const text = await sendMessage([{ role: 'user', content: prompt }], {
+        lang, maxTokens: 2000, expert: true, temperature: 0.55,
         tool: 'objections', stream: true, systemStatic: STATIC_OBJECTIONS,
+        onChunk: (full) => {
+          if (first) { first = false; setLoading(false); setStreaming(true) }
+          setReport(full)
+        },
       })
-      const data = extractJSON(raw, 'array')
       const label = `${vehicleName} · ${segLabel}`
-      setObjections(data)
+      setReport(text)
+      setStreaming(false)
       setGeneratedFor(label)
-      setOpenIndex(0)
-      addHistory({ generatedFor: label, objections: data })
+      addHistory({ generatedFor: label, report: text })
     } catch (err) {
       setError(err.message)
       toast(err.message, 'error')
     } finally {
       setLoading(false)
+      setStreaming(false)
     }
   }
 
-  const handlePdf = () => withExporting(async () => {
-    // Déplie toutes les objections avant la capture : le PDF doit contenir
-    // chaque réponse, pas seulement la carte ouverte à l'écran.
-    setForceOpenAll(true)
-    // Laisse React rendre l'état déplié avant le snapshot html2canvas.
-    await new Promise((r) => setTimeout(r, 60))
-    try {
-      await exportToPdf(objRef, pdfFileName(vehicleName, t('page_objections_title')), { title: t('page_objections_title'), subtitle: vehicleName })
-    } finally {
-      setForceOpenAll(false)
-    }
-  })
+  const handlePdf = () => withExporting(() =>
+    exportReportPdf(report, pdfFileName(vehicleName, t('page_objections_title')), { title: t('page_objections_title'), subtitle: vehicleName })
+  )
 
-  const reset = () => { setObjections([]); setVehicleId(''); setDetails(EMPTY_DETAILS); setGeneratedFor('') }
+  const reset = () => { setReport(''); setVehicleId(''); setDetails(EMPTY_DETAILS); setGeneratedFor('') }
 
   const restore = (item) => {
-    setObjections(item.objections)
+    setReport(item.report || '')
     setGeneratedFor(item.generatedFor)
-    setOpenIndex(0)
   }
 
   return (
@@ -235,20 +172,20 @@ ${productContext || ''}`
 
         <button
           onClick={generate}
-          disabled={!vehicleName.trim() || loading}
+          disabled={!vehicleName.trim() || loading || streaming}
           className="flex items-center justify-center gap-2 px-5 py-2.5
                      bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
                      hover:bg-cyan-300 active:scale-95 transition-all
                      disabled:opacity-40 disabled:pointer-events-none"
         >
-          {loading ? <Spinner size="sm" /> : <ShieldCheck size={14} />}
-          {loading ? t('generating') : t('generate_obj_btn')}
+          {(loading || streaming) ? <Spinner size="sm" /> : <ShieldCheck size={14} />}
+          {(loading || streaming) ? t('generating') : t('generate_obj_btn')}
         </button>
       </div>
 
-      {!loading && <ErrorAlert message={error} onRetry={generate} />}
+      {!loading && !streaming && <ErrorAlert message={error} onRetry={generate} />}
 
-      {loading && (
+      {loading && !report && (
         <div className="glass-card p-8 flex flex-col items-center gap-3">
           <AIProgress
             active={loading}
@@ -259,47 +196,42 @@ ${productContext || ''}`
         </div>
       )}
 
-      {objections.length > 0 && !loading && (
+      {(report || streaming) && (
         <>
           <div className="flex items-center justify-between">
             <div>
-              <p ref={headingRef} tabIndex={-1} className="text-sm font-semibold text-white outline-none">{generatedFor}</p>
-              <p className="text-xs text-slate-500">{objections.length} {t('obj_count_hint')}</p>
+              <p ref={headingRef} tabIndex={-1} className="text-sm font-semibold text-white outline-none">{generatedFor || t('page_objections_title')}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handlePdf}
-                disabled={exporting}
-                className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
-                           px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition"
-              >
-                {exporting ? <Spinner size="sm" /> : <Download size={12} />}
-                {t('download_pdf')}
-              </button>
-              <button onClick={generate}
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition">
-                <RefreshCw size={11} /> {t('regenerate')}
-              </button>
-              <button
-                onClick={reset}
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30"
-              >
-                <RotateCcw size={11} /> {t('new_analysis_btn')}
-              </button>
-            </div>
+            {report && !streaming && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handlePdf}
+                  disabled={exporting}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                             px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition"
+                >
+                  {exporting ? <Spinner size="sm" /> : <Download size={12} />}
+                  {t('download_pdf')}
+                </button>
+                <button onClick={generate}
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition">
+                  <RefreshCw size={11} /> {t('regenerate')}
+                </button>
+                <button
+                  onClick={reset}
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30"
+                >
+                  <RotateCcw size={11} /> {t('new_analysis_btn')}
+                </button>
+              </div>
+            )}
           </div>
 
-          <div ref={objRef} className="space-y-2">
-            {objections.map((item, i) => (
-              <ObjectionCard
-                key={i}
-                item={item}
-                index={i}
-                isOpen={forceOpenAll || openIndex === i}
-                noAnimate={forceOpenAll}
-                onToggle={() => setOpenIndex(openIndex === i ? -1 : i)}
-              />
-            ))}
+          <div ref={objRef} className="glass-card p-6 md:p-8">
+            <div className="report-md text-slate-200" dangerouslySetInnerHTML={{ __html: mdToHtml(report) }} />
+            {streaming && (
+              <span className="inline-block w-0.5 h-[1em] animate-pulse align-middle ml-0.5 opacity-80 bg-cyan-400" />
+            )}
           </div>
         </>
       )}

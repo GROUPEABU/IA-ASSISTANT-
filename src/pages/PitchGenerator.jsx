@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react'
-import { Mic, Copy, Check, RefreshCw, RotateCcw, ChevronRight, Users, Car, Wrench, Building2, Briefcase, Download } from 'lucide-react'
-import { sendMessage, extractJSON } from '@/services/claude'
+import { Mic, RefreshCw, RotateCcw, Users, Car, Wrench, Building2, Briefcase, Download } from 'lucide-react'
+import { sendMessage } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
 import AIProgress from '@/components/ui/AIProgress'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
 import VehicleDetails, { EMPTY_DETAILS, formatVehicleDetails, vehicleNameOf } from '@/components/ui/VehicleDetails'
+import { mdToHtml } from '@/utils/mdToHtml'
 import { veillePrixRefBlock } from '@/utils/veillePrix'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
@@ -14,7 +15,8 @@ import { useHistory } from '@/hooks/useHistory'
 import { useLastVehicle, readLastVehicleName } from '@/hooks/useLastVehicle'
 import { useExport } from '@/hooks/useExport'
 import { useResultFocus } from '@/hooks/useResultFocus'
-import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
+import { pdfFileName } from '@/utils/exportPdf'
+import { exportReportPdf } from '@/utils/exportReportPdf'
 import { useToast } from '@/components/ui/Toast'
 
 const STATIC_PITCH = `⚠️ MOTORISATION EXACTE : respecte STRICTEMENT la motorisation indiquée dans le nom du véhicule et les détails. Ne la remplace JAMAIS par une autre variante. En particulier, un « hybride » simple / micro-hybride / full hybrid n'est PAS un « hybride rechargeable » (plug-in / PHEV) : ne parle de recharge, de prise, de batterie plug-in ou d'autonomie 100 % électrique que si le véhicule est EXPLICITEMENT rechargeable. En cas de doute, reste sur la motorisation littéralement indiquée.
@@ -38,24 +40,28 @@ RÈGLE AUTOBUYUNION : nos partenaires achètent en volume à prix HT compétitif
 
 INTERDIT : aucune mention du malus, de l'écotaxe, du malus écologique, du malus au poids ni de la taxation CO₂ — sujet traité par un outil dédié. La donnée CO₂ et la consommation ne servent QUE d'argument d'économie / sobriété, jamais d'argument fiscal.
 
-Réponds UNIQUEMENT en JSON valide :
-{
-  "accroche": "2-3 phrases d'accroche percutantes, adaptées au profil, avec chiffres et avantage prix Autobuyunion (marge+rotation si BtoB, économie si BtoC)",
-  "arguments": [
-    "Argument 1 concret avec données chiffrées (orienté revente/marge si BtoB, usage/économie si BtoC)",
-    "Argument 2 concret avec données chiffrées",
-    "Argument prix Autobuyunion : positionnement parmi les plus compétitifs du marché — marge dégageable et maintien premier du net (BtoB) ou économie réelle vs prix marché moyen (BtoC)"
-  ],
-  "objections": [
-    {"question": "Objection probable du profil ciblé", "reponse": "Réponse commerciale en 2-3 phrases avec argument concret et chiffré"},
-    {"question": "Deuxième objection probable", "reponse": "Réponse commerciale en 2-3 phrases avec argument concret et chiffré"}
-  ],
-  "closing": "Phrase de closing engageante avec appel à l'action (réserver le ou les véhicules) et rappel de l'avantage prix"
-}
+FORMAT DE SORTIE (Markdown épuré, AUCUN JSON, aucune phrase d'introduction, aucun emoji). Commence directement par « ## Accroche ». Reproduis EXACTEMENT cette structure, dans cet ordre :
+
+## Accroche
+2-3 phrases d'accroche percutantes, adaptées au profil, avec chiffres et avantage prix Autobuyunion (marge+rotation si BtoB, économie si BtoC).
+
+## Arguments clés
+- Argument 1 concret avec données chiffrées (orienté revente/marge si BtoB, usage/économie si BtoC)
+- Argument 2 concret avec données chiffrées
+- Argument prix Autobuyunion : positionnement parmi les plus compétitifs du marché — marge dégageable et maintien premier du net (BtoB) ou économie réelle vs prix marché moyen (BtoC)
+(3 à 4 puces au total, chacune commençant par « - ».)
+
+## Réponses aux objections
+Pour CHAQUE objection probable du profil ciblé (2 minimum), une ligne avec la question puis la réponse :
+**« Objection probable telle que dite par le client »**
+Réponse commerciale en 2-3 phrases avec argument concret et chiffré.
+
+## Closing
+Phrase de closing engageante avec appel à l'action (réserver le ou les véhicules) et rappel de l'avantage prix.
 
 CONTRAINTES DE FORME :
-- JSON complet et valide : tous les champs remplis, guillemets fermés, aucune virgule finale, aucun texte ni balise markdown avant ou après.
-- Concis pour que le JSON tienne en entier.`
+- Concis : chaque section va à l'essentiel.
+- Aucun texte avant « ## Accroche », rien après le Closing. Aucun emoji.`
 
 const PROFILES = [
   { id: 'btoc_famille', labelKey: 'profile_family', subKey: 'profile_family_sub', icon: Users,     segment: 'btoc', color: '#50E5E5' },
@@ -73,9 +79,9 @@ export default function PitchGenerator() {
   const [details, setDetails] = useState(() => ({ ...EMPTY_DETAILS, model: readLastVehicleName() }))
   const [context, setContext] = useState('')
   const [loading, setLoading] = useState(false)
-  const [pitch, setPitch] = useState(null)
+  const [streaming, setStreaming] = useState(false)
+  const [report, setReport] = useState('')
   const [error, setError] = useState(null)
-  const [copied, setCopied] = useState(false)
   const [generatedFor, setGeneratedFor] = useState('')
 
   const { toast } = useToast()
@@ -84,7 +90,7 @@ export default function PitchGenerator() {
   const { history, add: addHistory, clear: clearHistory } = useHistory('pitch')
   const { save: saveLastVehicle } = useLastVehicle()
   const { exporting, withExporting } = useExport()
-  const headingRef = useResultFocus(pitch !== null && !loading)
+  const headingRef = useResultFocus(!!report && !loading && !streaming)
 
   const selectedProduct = allProducts.find((p) => p.id === vehicleId)
   const vehicleName = selectedProduct?.fullName || vehicleNameOf(details)
@@ -94,8 +100,9 @@ export default function PitchGenerator() {
     if (!vehicleName.trim()) return
     saveLastVehicle(vehicleName)
     setLoading(true)
+    setStreaming(false)
     setError(null)
-    setPitch(null)
+    setReport('')
 
     try {
       const productContext = selectedProduct
@@ -119,46 +126,37 @@ ${formatVehicleDetails(details) ? `Détails véhicule : ${formatVehicleDetails(d
 ${context ? `Contexte client : ${context}` : ''}
 ${productContext || ''}${veillePrixRefBlock(vehicleName)}`
 
-      const raw = await sendMessage([{ role: 'user', content: prompt }], {
-        lang, maxTokens: 1500, expert: true, temperature: 0.85,
+      let first = true
+      const text = await sendMessage([{ role: 'user', content: prompt }], {
+        lang, maxTokens: 1800, expert: true, temperature: 0.85,
         tool: 'pitch', stream: true, systemStatic: STATIC_PITCH,
+        onChunk: (full) => {
+          if (first) { first = false; setLoading(false); setStreaming(true) }
+          setReport(full)
+        },
       })
-      const data = extractJSON(raw, 'object')
       const label = `${vehicleName} · ${t(profile.subKey)} ${t(profile.labelKey)}`
-      setPitch(data)
+      setReport(text)
+      setStreaming(false)
       setGeneratedFor(label)
-      addHistory({ generatedFor: label, pitch: data })
+      addHistory({ generatedFor: label, report: text })
     } catch (err) {
       setError(err.message)
       toast(err.message, 'error')
     } finally {
       setLoading(false)
+      setStreaming(false)
     }
   }
 
-  const copySection = (text) => navigator.clipboard.writeText(text)
-
-  const copyAll = () => {
-    if (!pitch) return
-    const text = [
-      'ACCROCHE\n' + pitch.accroche,
-      '\nARGUMENTS CLÉS\n' + pitch.arguments.map((a, i) => `${i + 1}. ${a}`).join('\n'),
-      '\nOBJECTIONS\n' + pitch.objections.map((o) => `Q: ${o.question}\nR: ${o.reponse}`).join('\n\n'),
-      '\nCLOSING\n' + pitch.closing,
-    ].join('\n')
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
   const handlePdf = () => withExporting(() =>
-    exportToPdf(pitchRef, pdfFileName(vehicleName, t('page_pitch_title')), { title: t('page_pitch_title'), subtitle: vehicleName })
+    exportReportPdf(report, pdfFileName(vehicleName, t('page_pitch_title')), { title: t('page_pitch_title'), subtitle: vehicleName })
   )
 
-  const reset = () => { setPitch(null); setVehicleId(''); setDetails(EMPTY_DETAILS); setContext(''); setGeneratedFor('') }
+  const reset = () => { setReport(''); setVehicleId(''); setDetails(EMPTY_DETAILS); setContext(''); setGeneratedFor('') }
 
   const restore = (item) => {
-    setPitch(item.pitch)
+    setReport(item.report || '')
     setGeneratedFor(item.generatedFor)
   }
 
@@ -231,18 +229,18 @@ ${productContext || ''}${veillePrixRefBlock(vehicleName)}`
 
         <button
           onClick={generate}
-          disabled={!vehicleName.trim() || loading}
+          disabled={!vehicleName.trim() || loading || streaming}
           className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5
                      bg-gradient-to-r from-cyan-400 to-cyan-500 text-navy-900 text-sm font-bold rounded-xl
                      hover:from-cyan-300 hover:to-cyan-400 active:scale-95 transition-all
                      disabled:opacity-40 disabled:pointer-events-none shadow-lg shadow-cyan-400/15"
         >
-          {loading ? <Spinner size="sm" /> : <Mic size={14} />}
-          {loading ? t('generating') : t('generate_pitch_btn')}
+          {(loading || streaming) ? <Spinner size="sm" /> : <Mic size={14} />}
+          {(loading || streaming) ? t('generating') : t('generate_pitch_btn')}
         </button>
       </div>
 
-      {loading && (
+      {loading && !report && (
         <div className="glass-card p-10 flex flex-col items-center gap-3">
           <AIProgress
             active={loading}
@@ -253,130 +251,46 @@ ${productContext || ''}${veillePrixRefBlock(vehicleName)}`
         </div>
       )}
 
-      {!loading && <ErrorAlert message={error} onRetry={generate} />}
+      {!loading && !streaming && <ErrorAlert message={error} onRetry={generate} />}
 
-      {pitch !== null && !loading && (
+      {(report || streaming) && (
         <div className="space-y-3 animate-fade-in">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <p ref={headingRef} tabIndex={-1} className="text-sm font-semibold text-white outline-none">{generatedFor}</p>
+              <p ref={headingRef} tabIndex={-1} className="text-sm font-semibold text-white outline-none">{generatedFor || t('page_pitch_title')}</p>
               <p className="text-xs text-slate-500">{t('pitch_ready')}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handlePdf}
-                disabled={exporting}
-                className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
-                           px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition"
-              >
-                {exporting ? <Spinner size="sm" /> : <Download size={12} />}
-                {t('download_pdf')}
-              </button>
-              <button onClick={generate} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition px-2.5 py-1.5 rounded-lg hover:bg-cyan-400/5">
-                <RefreshCw size={11} /> {t('regenerate')}
-              </button>
-              <button
-                onClick={reset}
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30"
-              >
-                <RotateCcw size={11} /> {t('new_analysis_btn')}
-              </button>
-            </div>
-          </div>
-
-          {/* PDF capture zone */}
-          <div ref={pitchRef} className="space-y-3">
-            {/* Accroche */}
-            <div className="glass-card p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-emerald-400/15 flex items-center justify-center">
-                    <span className="text-emerald-400 text-xs font-bold leading-none">1</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">{t('hook_label')}</span>
-                </div>
-                <button onClick={() => copySection(pitch.accroche)} aria-label={t('copy_section')} className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-emerald-400/10 transition">
-                  <Copy size={12} />
+            {report && !streaming && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handlePdf}
+                  disabled={exporting}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                             px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition"
+                >
+                  {exporting ? <Spinner size="sm" /> : <Download size={12} />}
+                  {t('download_pdf')}
+                </button>
+                <button onClick={generate} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition px-2.5 py-1.5 rounded-lg hover:bg-cyan-400/5">
+                  <RefreshCw size={11} /> {t('regenerate')}
+                </button>
+                <button
+                  onClick={reset}
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30"
+                >
+                  <RotateCcw size={11} /> {t('new_analysis_btn')}
                 </button>
               </div>
-              <div className="bg-emerald-400/5 border border-emerald-400/15 rounded-xl p-4">
-                <p className="text-sm text-slate-200 leading-relaxed">{pitch.accroche}</p>
-              </div>
-            </div>
-
-            {/* Arguments */}
-            <div className="glass-card p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-lg bg-cyan-400/15 flex items-center justify-center">
-                  <span className="text-cyan-400 text-xs font-bold leading-none">2</span>
-                </div>
-                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">{t('key_args')}</span>
-              </div>
-              <div className="space-y-2">
-                {pitch.arguments.map((arg, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-navy-900/30">
-                    <span className="text-[10px] font-bold text-cyan-400/60 flex-shrink-0 mt-0.5 w-4">{i + 1}</span>
-                    <p className="text-sm text-slate-300 leading-snug">{arg}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Objections */}
-            <div className="glass-card p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-lg bg-warn/15 flex items-center justify-center">
-                  <span className="text-warn text-xs font-bold leading-none">3</span>
-                </div>
-                <span className="text-[10px] font-bold text-warn uppercase tracking-wider">{t('obj_responses')}</span>
-              </div>
-              <div className="space-y-2.5">
-                {pitch.objections.map((obj, i) => (
-                  <div key={i} className="bg-warn/5 border border-warn/10 rounded-xl p-3.5">
-                    <p className="text-sm font-semibold text-slate-300 mb-2">"{obj.question}"</p>
-                    <div className="flex items-start gap-2">
-                      <ChevronRight size={13} className="text-warn flex-shrink-0 mt-0.5" />
-                      <p className="text-sm text-slate-400 leading-relaxed">{obj.reponse}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Closing */}
-            <div className="glass-card p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-violet-400/15 flex items-center justify-center">
-                    <span className="text-violet-400 text-xs font-bold leading-none">4</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">{t('closing_label')}</span>
-                </div>
-                <button onClick={() => copySection(pitch.closing)} aria-label={t('copy_section')} className="p-1.5 rounded-lg text-slate-500 hover:text-violet-400 hover:bg-violet-400/10 transition">
-                  <Copy size={12} />
-                </button>
-              </div>
-              <div className="bg-violet-400/5 border border-violet-400/15 rounded-xl p-4">
-                <p className="text-sm text-slate-200 leading-relaxed">{pitch.closing}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Copy all */}
-          <button
-            onClick={copyAll}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3
-                       bg-navy-800/60 border border-navy-700/50 rounded-xl
-                       text-sm font-semibold text-slate-300
-                       hover:border-cyan-400/30 hover:text-cyan-300 active:scale-95 transition-all"
-          >
-            {copied ? (
-              <><Check size={14} className="text-emerald-400" /><span className="text-emerald-400">{t('copied')}</span></>
-            ) : (
-              <><Copy size={14} />{t('copy_pitch')}</>
             )}
-          </button>
+          </div>
+
+          <div ref={pitchRef} className="glass-card p-6 md:p-8">
+            <div className="report-md text-slate-200" dangerouslySetInnerHTML={{ __html: mdToHtml(report) }} />
+            {streaming && (
+              <span className="inline-block w-0.5 h-[1em] animate-pulse align-middle ml-0.5 opacity-80 bg-cyan-400" />
+            )}
+          </div>
         </div>
       )}
 
