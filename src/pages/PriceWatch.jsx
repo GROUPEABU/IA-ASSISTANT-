@@ -130,6 +130,8 @@ L'objectif est de GÉNÉRER DE LA MARGE, jamais de brader. On se positionne PARM
 - DÉCOTE OBLIGATOIRE : une occasion ne vaut JAMAIS le prix du neuf. Décote d'au moins 10–15 % dès la sortie de concession, 15–35 % la 1re année sur un modèle de grande diffusion. Tout prix d'occasion ≥ 90 % du PVC catalogue neuf est ABERRANT (quasi-neuf surcoté, erreur de finition/génération ou mauvaise saisie) : écarte-le, ne l'utilise JAMAIS comme 1er du net.
 - DÉCOTE vs NEUF RÉELLEMENT REMISÉ (impératif) : ne compare pas qu'au catalogue. Le vrai plafond de ta revente, c'est le prix du NEUF réellement pratiqué (remises mandataires), souvent très inférieur au catalogue. Si des véhicules NEUFS (0–10 km) de même finition se vendent à un niveau proche de ta revente VO, ta revente est TROP HAUTE : un VO récent doit rester nettement sous le neuf remisé. Réancre.
 - ANCRAGE SUR LE CLUSTER, PAS UNE ANNONCE ISOLÉE : le cluster = la zone de prix où se regroupe le gros des annonces comparables. Écarte comme OUTLIERS toute annonce nettement isolée SOUS le peloton (≈ > 15 % sous le cluster : erreur, accidenté, version inférieure) ET nettement AU-DESSUS (quasi-neuf surcoté, finition supérieure). Le 1er du net retenu = la moins chère DU CLUSTER à un niveau de km donné.
+- NE PAS RÉTROGRADER UNE ANNONCE BASSE CONFORME (impératif — c'est l'erreur la plus coûteuse) : une annonce CONFORME aux filtres, plausible et seulement un peu moins chère que le peloton N'EST PAS un outlier — c'est PRÉCISÉMENT le 1er du net : RETIENS-la comme ancrage. N'invente JAMAIS une « erreur de saisie », une « finition inférieure » ou un « à vérifier » pour l'écarter ou la repousser dans une autre tranche SANS preuve explicite (accident, autre génération/version avérée). Ce réflexe gonfle artificiellement l'ancrage, le cœur de marché et toute la cotation : il est INTERDIT. En cas de doute sur une annonce basse mais crédible, on la CONSERVE comme 1er du net.
+- PVC CATALOGUE RÉALISTE : ancre le prix catalogue neuf sur la source officielle la PLUS BASSE crédible (configurateur constructeur, finition exacte), jamais sur une estimation haute. Un PVC surévalué fausse toute la décote. En cas d'incertitude, retiens la fourchette basse et signale-la comme estimation.
 - GÉNÉRATIONS : en cas de changement de génération récent, ne confonds pas le catalogue neuf de la NOUVELLE génération avec les OCCASIONS de la précédente réellement présentes. Reste sur la génération effectivement disponible en occasion aux filtres demandés (le badge de motorisation/puissance est souvent le marqueur de génération : respecte-le).
 - BRUIT DE PRIX : sur un modèle récent, le prix dépend autant du type de vendeur et des options que du kilométrage. Ancre-toi sur le BAS du cluster de chaque tranche, ne surinterprète pas une annonce surcotée.
 
@@ -402,7 +404,7 @@ export default function PriceWatch() {
       const { text, usedWebSearch } = await sendMessage(
         [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry) }],
         {
-          lang, expert: true, temperature: 0.2, tool: 'veilleprix',
+          lang, expert: true, temperature: 0, tool: 'veilleprix',
           webSearch: true, maxSearches: 3, maxTokens: 4500,
           returnMeta: true, stream: true,
           onChunk: (full) => {
