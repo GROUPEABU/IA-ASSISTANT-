@@ -85,21 +85,40 @@ export default function SalesReport({ product }) {
         ? `\nStock interne : ${product._importStats.count} véhicule(s) · prix ${product._importStats.priceBasis} ${formatNumber(product._importStats.prixMin)}–${formatNumber(product._importStats.prixMax)}€`
         : ''
 
-      const prompt = `Tu es un expert commercial automobile chez Autobuyunion.
-Rédige un pitch de vente complet et percutant pour le ${product.fullName} destiné aux équipes commerciales.
+      const prompt = `Tu es un expert commercial automobile chez Autobuyunion, 1er groupement européen d'achat auto.
+Rédige un pitch de vente complet et percutant pour le ${product.fullName}, destiné aux équipes commerciales (briefing interne couvrant les deux canaux : partenaires revendeurs BtoB et particuliers BtoC).
+
+⚠️ MOTORISATION & GÉNÉRATION : respecte EXACTEMENT l'énergie et la version du ${product.fullName}. Un hybride simple / micro-hybride / full hybrid n'est PAS un hybride rechargeable (plug-in / PHEV) : ne parle de recharge, de prise, de batterie plug-in ou d'autonomie 100 % électrique que si le véhicule est EXPLICITEMENT rechargeable. En cas de changement de génération récent, ne confonds pas la nouvelle génération avec l'ancienne (le badge de puissance est souvent le marqueur de génération).
+
+Données de référence :
+Prix catalogue : ${formatNumber(product.prix.base)}€ · CO₂ : ${product.specs.co2_wltp} g/km${priceAdvantageLine}${stockLine}
 
 Inclus :
-1. **Accroche d'ouverture** (2-3 phrases choc)
-2. **Arguments BtoB** (flottes, entreprises)
-3. **Arguments BtoC** (particuliers)
-4. **Réponses aux 3 objections principales** (marque inconnue, malus, valeur résiduelle)
-5. **Argument prix Autobuyunion** — achat en volume pro HT → prix de vente TTC PARMI LES PREMIERS DU NET (top 20% moins chers du marché). Cite un prix compétitif concret et l'écart vs. marché moyen.
-6. **Closing** — phrase de signature
 
-Prix catalogue : ${formatNumber(product.prix.base)}€ · Malus : ${malus > 0 ? `+${formatNumber(malus)}€` : 'Exonéré'} · CO₂ : ${product.specs.co2_wltp}g/km${priceAdvantageLine}${stockLine}
+1. **Accroche d'ouverture** (2-3 phrases choc, avec l'avantage prix Autobuyunion)
 
-RÈGLE AUTOBUYUNION : nos partenaires se positionnent toujours parmi les prix les plus compétitifs du marché, jamais sur la moyenne haute. Intègre cet avantage concurrentiel dans le pitch.
-Sois percutant, concret et adapté au marché français.`
+2. **Arguments BtoB — PARTENAIRES REVENDEURS** (concessions / négociants qui RACHÈTENT pour REVENDRE, pas pour rouler) : raisonne MARGE et ROTATION. Prix de cession HT qui laisse de la marge tout en permettant de rester premier du net à la revente, modèle qui tourne vite (demande du marché final), régime de TVA clair (récupérable vs sur marge), volume et réassort, frais de remise en route faibles, et pour un import : COC / carte grise / délais. Traduis les caractéristiques produit en arguments de REVENTE, jamais en plaisir de conduite.
+
+3. **Arguments BtoC — particuliers (utilisateur final)** : usage familial / quotidien, fiabilité, coût d'usage, économie réelle, confiance dans un achat via une centrale.
+
+4. **Réponses aux 3 objections principales** :
+   - notoriété : si la MARQUE est peu diffusée, rassure sur le réseau / la fiabilité / la capacité à se revendre ; si la marque est connue, porte plutôt l'objection sur le MODÈLE ou la version (récent, moins repérable en occasion) ;
+   - valeur résiduelle / tenue de la cote ;
+   - « pourquoi passer par Autobuyunion plutôt qu'en concession locale, aux enchères ou chez un autre grossiste » — traite frontalement la confiance, la livraison, le lieu de la garantie / SAV et, le cas échéant, le véhicule importé.
+
+5. **Argument prix Autobuyunion** — achat en volume pro HT → prix de vente TTC positionné AU NIVEAU des premiers du net (top 20 % des annonces les moins chères, bas du cluster réaliste), jamais sur la moyenne haute. Appuie-toi sur les données injectées : en priorité le prix du STOCK INTERNE s'il est fourni, sinon l'écart vs concurrence et le prix catalogue.${product._importStats ? ` La base de prix du stock est ${product._importStats.priceBasis} : si elle est HT, ne présente jamais ce montant comme un prix de vente client — le prix annoncé au client final est TTC.` : ' Si aucune donnée de prix marché n\'est fournie, exprime le positionnement (premiers du net) SANS inventer de chiffre précis.'}
+
+6. **Closing** — phrase de signature avec appel à l'action (réserver le ou les véhicules) et rappel de l'avantage prix.
+
+RÈGLE AUTOBUYUNION : nos partenaires achètent en volume à prix HT et se positionnent TOUJOURS parmi les prix les plus compétitifs du marché (premiers du net), jamais sur la moyenne haute. En BtoB, cet avantage = marge sécurisée + capacité à rester premier du net à la revente ; en BtoC = l'un des prix les plus bas du marché.
+
+GARANTIE : si tu évoques la garantie sur un véhicule d'occasion, précise qu'elle est RÉSIDUELLE (selon la date de 1re immatriculation) et complétée par la garantie commerciale ; ne promets jamais une garantie constructeur pleine sur un VO.
+
+INTERDIT : n'écris jamais « malus », « écotaxe », « malus écologique », « malus au poids » ni aucun calcul de taxation CO₂ — sujet traité par un outil dédié. Le CO₂ et la consommation ne servent que d'arguments d'économie / sobriété, jamais fiscal.
+
+CONCISION : chaque section va à l'essentiel (3 à 5 puces ou 3-4 phrases max). Un briefing dense et tenu, pas un texte fleuve : il doit être utilisable à l'oral.
+
+Sois percutant, concret, sobre (aucun emoji, aucun symbole décoratif), adapté au marché français et directement utilisable par les équipes commerciales.`
 
       const result = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 5000, expert: true, temperature: 0.7, tool: 'rapportcommercial', stream: true })
       setPitch(result)
