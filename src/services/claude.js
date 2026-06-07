@@ -20,9 +20,9 @@ const MODELS = {
 }
 
 // Modèle par outil — prioritaire sur le réglage utilisateur.
-// Opus : raisonnement prix critique · Sonnet : données web fiables · Haiku : JSON rapide
+// Sonnet : données web fiables + raisonnement prix (méthodo de référence) · Haiku : JSON rapide
 const TOOL_MODELS = {
-  veilleprix:        'claude-opus-4-8',
+  veilleprix:        'claude-sonnet-4-6',
   ficheIA:           'claude-sonnet-4-6',
   analysemarche:     'claude-sonnet-4-6',
   comparateur:       'claude-sonnet-4-6',
@@ -307,12 +307,17 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
       ]
     : systemBase
 
+  const model = getModel(tool)
   const body = {
-    model:       getModel(tool),
+    model,
     max_tokens:  maxTokens,
-    temperature,
     system,
     messages:    apiMessages,
+  }
+  // Opus 4.8 a déprécié `temperature` (l'API rejette la requête). On ne
+  // l'envoie que pour les modèles qui l'acceptent encore (Sonnet, Haiku).
+  if (!model.startsWith('claude-opus-4-8')) {
+    body.temperature = temperature
   }
   // Pont vers la recherche web officielle (exécutée côté serveur,
   // jamais bloquée comme un proxy navigateur). Le modèle décide quand chercher.
@@ -448,13 +453,16 @@ export async function streamMessage(messages, { lang = 'fr', onChunk, temperatur
     content: buildContent(content, attachment),
   }))
 
+  const model = getModel()
   const body = {
-    model:       getModel(),
+    model,
     max_tokens:  MAX_TOKENS,
-    temperature,
     system:      buildSystemPrompt(lang),
     messages:    apiMessages,
     stream:      true,
+  }
+  if (!model.startsWith('claude-opus-4-8')) {
+    body.temperature = temperature
   }
   if (webSearch) {
     body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: maxSearches }]
