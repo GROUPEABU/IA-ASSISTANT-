@@ -1,10 +1,8 @@
 import { useState } from 'react'
-import { TrendingUp, TrendingDown, AlertTriangle, Lightbulb, RefreshCw, Globe, ExternalLink, Info, CheckCircle2, Download } from 'lucide-react'
+import { TrendingUp, TrendingDown, AlertTriangle, Lightbulb, RefreshCw, Globe, Info, Download } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
-import { fetchMarketData, buildMarketPrompt, STATIC_MARKET } from '@/services/marketSearch'
-import { veillePrixRefBlock } from '@/utils/veillePrix'
+import { buildPrompt } from '@/services/veillePrixPrompt'
 import Spinner from '@/components/ui/Spinner'
-import AIProgress from '@/components/ui/AIProgress'
 import Button from '@/components/ui/Button'
 import { formatNumber } from '@/utils/formatters'
 import { mdToHtml } from '@/utils/mdToHtml'
@@ -12,6 +10,11 @@ import { useExport } from '@/hooks/useExport'
 import { pdfFileName } from '@/utils/exportPdf'
 import { exportReportPdf } from '@/utils/exportReportPdf'
 import { useSettings } from '@/contexts/SettingsContext'
+
+// L'analyse marché de la Fiche IA réutilise la MÊME méthodologie que la Veille
+// Prix (prompt partagé, source de vérité unique). Contexte par défaut : VO,
+// France, millésime du produit, sans plage de km imposée.
+const FR_CTRY = { code: 'FR', label: 'France', tva: 1.20, transport: 450, sites: 'La Centrale, LeBonCoin, AutoScout24.fr' }
 
 function StatCard({ label, value, sub, trend }) {
   return (
@@ -33,93 +36,52 @@ function StatCard({ label, value, sub, trend }) {
   )
 }
 
-function SourceBadges({ snippets }) {
-  if (!snippets?.length) return null
-  return (
-    <div className="flex items-center gap-2 flex-wrap mt-1">
-      {snippets.map((s, i) => (
-        <a
-          key={i}
-          href={s.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400
-                     bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-full
-                     hover:bg-emerald-400/20 transition"
-        >
-          <CheckCircle2 size={9} />
-          {s.source}
-          <ExternalLink size={8} />
-        </a>
-      ))}
-    </div>
-  )
-}
-
 export default function MarketAnalysis({ product }) {
   const { t, lang } = useSettings()
   const [analysis, setAnalysis] = useState('')
-  const [snippets, setSnippets] = useState([])
   const [loading, setLoading] = useState(false)
   const [streaming, setStreaming] = useState(false)
-  const [loadingStep, setLoadingStep] = useState('')
   const [error, setError] = useState(null)
-  const [fetchedAt, setFetchedAt] = useState(null)
   const { exporting, withExporting } = useExport()
 
   const generate = async () => {
     setLoading(true)
     setStreaming(false)
     setError(null)
-    setSnippets([])
     setAnalysis('')
 
     try {
-      // Étape 1 : collecte web (Jina AI — gratuit, sans clé)
-      setLoadingStep(t('market_step_reading'))
-      const webData = await fetchMarketData(product.fullName)
-
-      if (webData.snippets?.length) {
-        setSnippets(webData.snippets)
-        setFetchedAt(webData.fetchedAt)
-        setLoadingStep(t('market_step_analyzing').replace('{n}', webData.snippets.length))
-      } else {
-        setLoadingStep(t('market_step_ai'))
+      // Même prompt EXACT que la Veille Prix (module partagé verrouillé).
+      const filters = {
+        type: 'vo', finition: '', carrosserieLabel: '', fuelLabel: '', gearboxLabel: '',
+        mileageMin: '', mileageMax: '',
+        yearMin: product.year || '', yearMax: product.year || '',
       }
+      const prompt = buildPrompt(filters, product.fullName, FR_CTRY)
 
-      // Étape 2 : analyse IA
-      const prompt = buildMarketPrompt(product.fullName, webData.snippets || [], product, lang) + veillePrixRefBlock(product.fullName)
       let first = true
-      const result = await sendMessage([{ role: 'user', content: prompt }], {
-        lang, maxTokens: 4500, expert: true, temperature: 0.35,
-        tool: 'analysemarche', webSearch: true, maxSearches: 4,
-        systemStatic: STATIC_MARKET,
-        stream: true,
+      const { text } = await sendMessage([{ role: 'user', content: prompt }], {
+        lang, expert: true, temperature: 0, tool: 'veilleprix',
+        webSearch: true, maxSearches: 3, maxTokens: 4500,
+        returnMeta: true, stream: true,
         onChunk: (full) => {
           if (first) { first = false; setLoading(false); setStreaming(true) }
           setAnalysis(full)
         },
       })
-      setAnalysis(result)
+      setAnalysis(text)
       setStreaming(false)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
       setStreaming(false)
-      setLoadingStep('')
     }
   }
 
   const handlePdf = () => withExporting(() =>
     exportReportPdf(analysis, pdfFileName(product.fullName, t('market_realtime_title')), { title: t('market_realtime_title'), subtitle: product.fullName })
   )
-
-  const localeDateString = (ts) => {
-    const locale = lang === 'fr' ? 'fr-FR' : lang === 'de' ? 'de-DE' : lang === 'it' ? 'it-IT' : lang === 'es' ? 'es-ES' : 'en-GB'
-    return new Date(ts).toLocaleString(locale)
-  }
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -159,7 +121,7 @@ export default function MarketAnalysis({ product }) {
         </div>
       </div>
 
-      {/* Analyse principale */}
+      {/* Analyse principale — rapport Veille Prix en direct */}
       <div className="glass-card p-5">
         <div className="flex items-center justify-between mb-4 gap-3">
           <div className="min-w-0">
@@ -167,15 +129,7 @@ export default function MarketAnalysis({ product }) {
               <Globe size={14} className="text-cyan-400 flex-shrink-0" />
               <h3 className="text-sm font-semibold text-white">{t('market_realtime_title')}</h3>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {t('market_sources_label')}
-            </p>
-            {snippets.length > 0 && <SourceBadges snippets={snippets} />}
-            {fetchedAt && (
-              <p className="text-[10px] text-slate-600 mt-1">
-                {`${t('market_updated_at')} ${localeDateString(fetchedAt)}`}
-              </p>
-            )}
+            <p className="text-xs text-slate-500 mt-0.5">{t('market_sources_label')}</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {analysis && !streaming && (
@@ -196,10 +150,11 @@ export default function MarketAnalysis({ product }) {
           </div>
         </div>
 
-        {/* Loading */}
+        {/* Loading avant 1er token — spinner simple (pas de pourcentage) */}
         {loading && !analysis && (
-          <div className="py-8">
-            <AIProgress active={loading} label={loadingStep} estimatedMs={30000} persistKey="marketanalysis" />
+          <div className="py-8 flex flex-col items-center gap-3 text-center">
+            <Spinner />
+            <p className="text-sm text-slate-400">{t('market_loading')}</p>
           </div>
         )}
 
@@ -223,7 +178,7 @@ export default function MarketAnalysis({ product }) {
           </div>
         )}
 
-        {/* Analyse */}
+        {/* Analyse (rapport Markdown streamé) */}
         {analysis && (
           <div>
             <div className="report-md text-slate-200" dangerouslySetInnerHTML={{ __html: mdToHtml(analysis) }} />

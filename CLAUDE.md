@@ -18,7 +18,7 @@ Si le build échoue, corriger toutes les erreurs avant de continuer. Ne jamais i
 Le hook ABUVERIF lance `npm run build` automatiquement. Tout commit avec un build cassé est rejeté.
 
 ## VERROUILLÉ — Prompt Veille Prix (NE PAS MODIFIER)
-La fonction `buildPrompt` de `src/pages/PriceWatch.jsx` (méthodologie, garde-fous, format de sortie) et son appel `sendMessage` (modèle Sonnet via `tool: 'veilleprix'`, `temperature: 0`, `maxSearches: 3`, `maxTokens: 4500`) sont **figés et validés**.
+La fonction `buildPrompt` de `src/services/veillePrixPrompt.js` (source de vérité unique, importée par `src/pages/PriceWatch.jsx` ET `src/components/products/MarketAnalysis.jsx`) — méthodologie, garde-fous, format de sortie — et son appel `sendMessage` (modèle Sonnet via `tool: 'veilleprix'`, `temperature: 0`, `maxSearches: 3`, `maxTokens: 4500`) sont **figés et validés**. Toute modification de ce prompt se répercute partout où il est réutilisé.
 **AUCUNE modification automatique sur ce sujet.** Avant toute modification touchant la Veille Prix — même mineure, même découlant d'un brief plus large portant sur d'autres outils — DEMANDER SYSTÉMATIQUEMENT et explicitement la validation de l'utilisateur via une question, et attendre sa confirmation avant d'agir. Ne jamais présumer l'accord.
 
 ## Rules
