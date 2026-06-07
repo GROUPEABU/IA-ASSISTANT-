@@ -101,7 +101,7 @@ INTERDIT (champs texte générés : tagline, atouts, objections, argument_prix, 
 
 CONTRAINTES DE FORME : JSON complet et valide — tous les champs remplis, exactement 4 concurrents, guillemets fermés, aucune virgule finale, aucun texte / commentaire / citation / balise markdown avant ou après.`
 
-  const raw = await sendMessage([{ role: 'user', content: prompt }], { maxTokens: 6000, expert: true, temperature: 0.25, tool: 'ficheIA', webSearch: true, maxSearches: 5, stream: true })
+  const raw = await sendMessage([{ role: 'user', content: prompt }], { maxTokens: 6000, expert: true, temperature: 0.25, tool: 'ficheIA', stream: true })
 
   // Extraire le JSON de la réponse
   const match = raw.match(/\{[\s\S]*\}/)

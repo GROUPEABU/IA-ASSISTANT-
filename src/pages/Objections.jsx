@@ -157,7 +157,7 @@ CONTRAINTES DE FORME :
 - Le JSON DOIT être complet et valide : exactement 10 objets, tous les champs remplis, guillemets fermés, aucune virgule finale.
 - Aucun texte, aucun commentaire, aucune balise markdown avant ou après le tableau.`
 
-      const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 8192, expert: true, temperature: 0.55, tool: 'objections', stream: true })
+      const raw = await sendMessage([{ role: 'user', content: prompt }], { lang, maxTokens: 4000, expert: true, temperature: 0.55, tool: 'objections', stream: true })
       const data = extractJSON(raw, 'array')
       const label = `${vehicleName} · ${segLabel}`
       setObjections(data)
