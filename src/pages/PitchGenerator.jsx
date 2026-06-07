@@ -6,6 +6,7 @@ import AIProgress from '@/components/ui/AIProgress'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
 import VehicleDetails, { EMPTY_DETAILS, formatVehicleDetails, vehicleNameOf } from '@/components/ui/VehicleDetails'
+import { veillePrixRefBlock } from '@/utils/veillePrix'
 import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -116,7 +117,7 @@ export default function PitchGenerator() {
       const prompt = `Génère un pitch de vente structuré et percutant pour le ${vehicleName}, destiné à : ${t(profile.subKey)} — ${t(profile.labelKey)}.
 ${formatVehicleDetails(details) ? `Détails véhicule : ${formatVehicleDetails(details)}. Appuie-toi dessus pour des arguments PRÉCIS (motorisation, âge, kilométrage, finition).` : ''}
 ${context ? `Contexte client : ${context}` : ''}
-${productContext || ''}`
+${productContext || ''}${veillePrixRefBlock(vehicleName)}`
 
       const raw = await sendMessage([{ role: 'user', content: prompt }], {
         lang, maxTokens: 1500, expert: true, temperature: 0.85,

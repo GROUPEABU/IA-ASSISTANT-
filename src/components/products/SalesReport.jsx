@@ -3,6 +3,7 @@ import { Building2, Users, Download, CheckCircle2, XCircle, RefreshCw } from 'lu
 import { sendMessage } from '@/services/claude'
 import { formatNumber } from '@/utils/formatters'
 import { useSettings } from '@/contexts/SettingsContext'
+import { veillePrixRefBlock } from '@/utils/veillePrix'
 
 const STATIC_SALESREPORT = `⚠️ MOTORISATION & GÉNÉRATION : respecte EXACTEMENT l'énergie et la version du véhicule demandé. Un hybride simple / micro-hybride / full hybrid n'est PAS un hybride rechargeable (plug-in / PHEV) : ne parle de recharge, de prise, de batterie plug-in ou d'autonomie 100 % électrique que si le véhicule est EXPLICITEMENT rechargeable. En cas de changement de génération récent, ne confonds pas la nouvelle génération avec l'ancienne (le badge de puissance est souvent le marqueur de génération).
 
@@ -115,7 +116,7 @@ export default function SalesReport({ product }) {
       const prompt = `Rédige un pitch de vente complet et percutant pour le ${product.fullName}, destiné aux équipes commerciales (briefing interne couvrant les deux canaux : partenaires revendeurs BtoB et particuliers BtoC).
 
 Données de référence :
-Prix catalogue : ${formatNumber(product.prix.base)}€ · CO₂ : ${product.specs.co2_wltp} g/km${priceAdvantageLine}${stockLine}`
+Prix catalogue : ${formatNumber(product.prix.base)}€ · CO₂ : ${product.specs.co2_wltp} g/km${priceAdvantageLine}${stockLine}${veillePrixRefBlock(product.fullName)}`
 
       const result = await sendMessage([{ role: 'user', content: prompt }], {
         lang, maxTokens: 3500, expert: true, temperature: 0.7,

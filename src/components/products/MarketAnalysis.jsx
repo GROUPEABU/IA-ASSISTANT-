@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { TrendingUp, TrendingDown, AlertTriangle, Lightbulb, RefreshCw, Globe, ExternalLink, Info, CheckCircle2 } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { fetchMarketData, buildMarketPrompt, STATIC_MARKET } from '@/services/marketSearch'
+import { veillePrixRefBlock } from '@/utils/veillePrix'
 import Spinner from '@/components/ui/Spinner'
 import AIProgress from '@/components/ui/AIProgress'
 import Button from '@/components/ui/Button'
@@ -106,7 +107,7 @@ export default function MarketAnalysis({ product }) {
       }
 
       // Étape 2 : analyse IA
-      const prompt = buildMarketPrompt(product.fullName, webData.snippets || [], product, lang)
+      const prompt = buildMarketPrompt(product.fullName, webData.snippets || [], product, lang) + veillePrixRefBlock(product.fullName)
       const result = await sendMessage([{ role: 'user', content: prompt }], {
         lang, maxTokens: 4500, expert: true, temperature: 0.35,
         tool: 'analysemarche', webSearch: true, maxSearches: 4,
