@@ -10,7 +10,7 @@ import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
-import { useLastVehicle, readLastVehicleName } from '@/hooks/useLastVehicle'
+import { useLastVehicle } from '@/hooks/useLastVehicle'
 import { useExport } from '@/hooks/useExport'
 import { useResultFocus } from '@/hooks/useResultFocus'
 import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
@@ -80,7 +80,7 @@ export default function Objections() {
   const objRef = useRef(null)
   const [vehicleId, setVehicleId] = useState('')
   const [segment, setSegment] = useState('btoc')
-  const [details, setDetails] = useState(() => ({ ...EMPTY_DETAILS, model: readLastVehicleName() }))
+  const [details, setDetails] = useState(EMPTY_DETAILS)
   const [loading, setLoading] = useState(false)
   const [objections, setObjections] = useState([])
   const [openIndex, setOpenIndex] = useState(0)
