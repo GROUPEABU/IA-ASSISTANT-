@@ -24,6 +24,8 @@ const SEGMENTS = [
 // Bloc statique caché côté système — instructions + schéma JSON invariants.
 const STATIC_OBJECTIONS = `⚠️ MOTORISATION EXACTE : respecte STRICTEMENT la motorisation du nom du véhicule et des détails. Un « hybride » simple/micro-hybride/full hybrid n'est PAS un « hybride rechargeable » (plug-in/PHEV) : ne parle de recharge, de prise ou d'autonomie 100 % électrique que si le véhicule est EXPLICITEMENT rechargeable. Ne substitue jamais une autre variante.
 
+⚠️ GÉNÉRATION : en cas de changement de génération récent du modèle, ne confonds pas la nouvelle génération avec l'ancienne — le badge de motorisation/puissance est souvent le marqueur de génération (ex. un 136 et un 145 peuvent désigner deux générations du même modèle).
+
 ADAPTATION AU SEGMENT (sans tout dupliquer) : mêmes familles d'objections, mais cale le ton et les chiffres sur le type de client.
 - BtoC (particulier, utilisateur final) : budget personnel, usage familial/quotidien, fiabilité, coût d'usage, valeur de revente à titre privé, confiance dans un achat à distance.
 - BtoB (PARTENAIRE REVENDEUR — concession ou négociant qui RACHÈTE pour REVENDRE, PAS pour rouler) : raisonne MARGE et ROTATION, jamais usage ou confort. Objections typiques : marge insuffisante à la revente, prix d'achat trop haut pour se positionner au-dessus du 1er du net, modèle qui risque de tourner lentement sur son parc, régime de TVA (récupérable vs TVA sur marge), volume et capacité de réassort, état réel et frais de remise en route avant mise en vente, et pour un véhicule importé : conformité (COC), carte grise/immatriculation et délais. L'argumentaire vend de la RENTABILITÉ et de la FLUIDITÉ d'approvisionnement, pas du plaisir de conduite.

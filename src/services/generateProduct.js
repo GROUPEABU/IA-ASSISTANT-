@@ -7,7 +7,7 @@ const STATIC_FICHEAI = `⚠️ MOTORISATION EXACTE : si une motorisation est ind
 ═══ RECHERCHE WEB (obligatoire pour prix et concurrents — ne JAMAIS inventer ces chiffres) ═══
 Utilise la recherche web (3 à 5 requêtes), par ordre de priorité :
 1. prix.base / prix.haut : prix catalogue France NEUF actuel (TTC). Si une finition est précisée, base = prix catalogue de CETTE finition et haut = même finition correctement optionnée ; si aucune finition n'est précisée, base = entrée de gamme et haut = version haute de la motorisation demandée.
-2. prix.premier_net : niveau réel des « premiers du net » en VO récent (La Centrale / LeBonCoin). Même rigueur que l'analyse de cote : écarte les annonces aberrantes (quasi-neufs surcotés, mauvaise génération, erreurs de saisie, finition supérieure), ANCRE-toi sur le BAS du cluster réel, prix TTC, toujours INFÉRIEUR au catalogue base. Si un kilométrage est précisé dans les détails, cale le premier du net sur cette tranche de km.
+2. prix.premier_net : niveau réel des « premiers du net » en VO récent (La Centrale / LeBonCoin). Même rigueur que l'analyse de cote : écarte les annonces aberrantes (quasi-neufs surcotés, mauvaise génération, erreurs de saisie, finition supérieure), ANCRE-toi sur le BAS du cluster réel, prix TTC, toujours INFÉRIEUR au catalogue base. Si un kilométrage est précisé dans les détails, cale le premier du net sur cette tranche de km. Ce premier_net est un chiffre REPÈRE (cœur de marché) : si une analyse de cote détaillée (outil Veille Prix) existe par ailleurs pour ce véhicule, c'est ELLE qui fait foi.
 3. concurrents : 4 concurrents directs réels avec leurs vrais prix catalogue et CO₂ WLTP actuels (une recherche comparative suffit souvent).
 Les specs techniques et la garantie peuvent venir de tes connaissances, mais VÉRIFIE par recherche pour tout modèle récent ou récemment renouvelé. Si une donnée reste introuvable, donne une estimation crédible et cohérente — ne la présente jamais comme certaine.
 Ne mentionne JAMAIS tes recherches, n'inclus aucune citation, aucun lien, aucun commentaire : ta sortie est UNIQUEMENT le JSON.
@@ -85,6 +85,7 @@ Règles importantes :
 - prix.premier_net : premiers du net VO récents (recherche web), bas de cluster réel, en € TTC, toujours INFÉRIEUR au catalogue base.
 - concurrents : EXACTEMENT 4 concurrents directs réels avec vrais prix catalogue et CO₂ (recherche web).
 - equipements : 8 à 12 équipements de série principaux.
+- btob.cibles : TYPES DE REVENDEURS / canaux de revente (concessions multimarques, négociants, agents, exportateurs) — JAMAIS des flottes ou entreprises utilisateurs finaux.
 - btob.remise_cible : remise (en %) que le partenaire revendeur peut consentir SOUS le prix marché moyen tout en restant margé, grâce à son prix d'achat bas — pas une remise utilisateur final.
 - marche : part_marche_cible, croissance_segment et tendances doivent s'appuyer sur des éléments réels ou rester qualitatifs ; n'invente pas de statistique précise donnée comme certaine.
 - garantie : durées constructeur officielles RÉELLES du NEUF de la marque. Sur un VO, la couverture résiduelle dépend de la date de 1re immatriculation (à ne pas présenter comme une garantie pleine).

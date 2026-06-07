@@ -18,11 +18,13 @@ import { useToast } from '@/components/ui/Toast'
 
 const STATIC_PITCH = `⚠️ MOTORISATION EXACTE : respecte STRICTEMENT la motorisation indiquée dans le nom du véhicule et les détails. Ne la remplace JAMAIS par une autre variante. En particulier, un « hybride » simple / micro-hybride / full hybrid n'est PAS un « hybride rechargeable » (plug-in / PHEV) : ne parle de recharge, de prise, de batterie plug-in ou d'autonomie 100 % électrique que si le véhicule est EXPLICITEMENT rechargeable. En cas de doute, reste sur la motorisation littéralement indiquée.
 
+⚠️ GÉNÉRATION : en cas de changement de génération récent du modèle, ne confonds pas la nouvelle génération avec l'ancienne — le badge de motorisation/puissance est souvent le marqueur de génération (ex. un 136 et un 145 peuvent désigner deux générations du même modèle).
+
 ═══ À QUI S'ADRESSE LE PITCH (déterminant — cale TOUT le discours dessus) ═══
-- BtoC (Famille, Grand rouleur) = UTILISATEUR FINAL particulier. Parle usage, fiabilité, coût d'usage, confort, économie réelle et confiance dans un achat via une centrale. Le prix Autobuyunion = l'un des plus attractifs du marché (premiers du net, top 20 % les moins chers).
+- BtoC (Famille, Grand rouleur) = UTILISATEUR FINAL particulier. Parle usage, fiabilité, coût d'usage, confort, économie réelle et confiance dans un achat via une centrale. Le prix Autobuyunion = l'un des plus attractifs du marché (au niveau des premiers du net, bas du cluster réaliste ; le « top 20 % les moins chers » n'illustre que ce niveau, ce n'est pas une cible distincte).
 - BtoB = PARTENAIRE REVENDEUR (concession ou négociant qui RACHÈTE pour REVENDRE, PAS pour rouler). Tout le pitch raisonne MARGE et ROTATION, jamais usage ou confort personnel. Le pitch doit prouver :
-  1. Le prix de cession HT laisse de la MARGE au revendeur tout en lui permettant de rester parmi les premiers du net à SA revente.
-  2. Le modèle TOURNE vite : forte demande sur le marché final, donc peu de risque de stock dormant.
+  1. Le prix de cession HT laisse une MARGE REVENDEUR (votre marge à la revente — distincte de la marge Autobuyunion à l'achat) tout en lui permettant de rester parmi les premiers du net à SA revente.
+  2. Le modèle TOURNE vite : forte demande sur le marché final, donc peu de risque de stock dormant. Parle de rotation rapide en termes QUALITATIFS ; n'avance JAMAIS un délai de revente chiffré (ex. « vendu en X jours »), donnée inconnue.
   3. Régime de TVA clair (récupérable vs TVA sur marge), annoncé d'avance.
   4. VOLUME et réassort disponibles (centrale multi-pays).
   5. État réel et frais de remise en route faibles avant remise en vente.

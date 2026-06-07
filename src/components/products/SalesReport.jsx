@@ -10,7 +10,7 @@ Inclus :
 
 1. **Accroche d'ouverture** (2-3 phrases choc, avec l'avantage prix Autobuyunion)
 
-2. **Arguments BtoB — PARTENAIRES REVENDEURS** (concessions / négociants qui RACHÈTENT pour REVENDRE, pas pour rouler) : raisonne MARGE et ROTATION. Prix de cession HT qui laisse de la marge tout en permettant de rester premier du net à la revente, modèle qui tourne vite (demande du marché final), régime de TVA clair (récupérable vs sur marge), volume et réassort, frais de remise en route faibles, et pour un import : COC / carte grise / délais. Traduis les caractéristiques produit en arguments de REVENTE, jamais en plaisir de conduite.
+2. **Arguments BtoB — PARTENAIRES REVENDEURS** (concessions / négociants qui RACHÈTENT pour REVENDRE, pas pour rouler) : raisonne MARGE REVENDEUR (sa marge à la revente, distincte de la marge Autobuyunion à l'achat) et ROTATION. Prix de cession HT qui laisse de la marge revendeur tout en permettant de rester premier du net à la revente, modèle qui tourne vite (demande du marché final) — rotation exprimée QUALITATIVEMENT, sans délai de revente chiffré (jamais « vendu en X jours », donnée inconnue), régime de TVA clair (récupérable vs sur marge), volume et réassort, frais de remise en route faibles, et pour un import : COC / carte grise / délais. Traduis les caractéristiques produit en arguments de REVENTE, jamais en plaisir de conduite.
 
 3. **Arguments BtoC — particuliers (utilisateur final)** : usage familial / quotidien, fiabilité, coût d'usage, économie réelle, confiance dans un achat via une centrale.
 
@@ -19,11 +19,11 @@ Inclus :
    - valeur résiduelle / tenue de la cote ;
    - « pourquoi passer par Autobuyunion plutôt qu'en concession locale, aux enchères ou chez un autre grossiste » — traite frontalement la confiance, la livraison, le lieu de la garantie / SAV et, le cas échéant, le véhicule importé.
 
-5. **Argument prix Autobuyunion** — achat en volume pro HT → prix de vente TTC positionné AU NIVEAU des premiers du net (top 20 % des annonces les moins chères, bas du cluster réaliste), jamais sur la moyenne haute. Appuie-toi sur les données injectées : en priorité le prix du STOCK INTERNE s'il est fourni, sinon l'écart vs concurrence et le prix catalogue. Si une base de prix HT est mentionnée dans les données, ne la présente jamais comme un prix de vente client — le prix client final est TTC. Si aucune donnée de prix marché n'est fournie, exprime le positionnement (premiers du net) SANS inventer de chiffre précis.
+5. **Argument prix Autobuyunion** — achat en volume pro HT → prix de vente TTC positionné AU NIVEAU des premiers du net (bas du cluster réaliste ; le « top 20 % des annonces les moins chères » n'illustre que ce niveau, ce n'est pas une cible distincte), jamais sur la moyenne haute. Appuie-toi sur les données injectées : en priorité le prix du STOCK INTERNE s'il est fourni, sinon l'écart vs concurrence et le prix catalogue. Si une base de prix HT est mentionnée dans les données, ne la présente jamais comme un prix de vente client — le prix client final est TTC. Si aucune donnée de prix marché n'est fournie, exprime le positionnement (premiers du net) SANS inventer de chiffre précis.
 
 6. **Closing** — phrase de signature avec appel à l'action (réserver le ou les véhicules) et rappel de l'avantage prix.
 
-RÈGLE AUTOBUYUNION : nos partenaires achètent en volume à prix HT et se positionnent TOUJOURS parmi les prix les plus compétitifs du marché (premiers du net), jamais sur la moyenne haute. En BtoB, cet avantage = marge sécurisée + capacité à rester premier du net à la revente ; en BtoC = l'un des prix les plus bas du marché.
+RÈGLE AUTOBUYUNION : nos partenaires achètent en volume à prix HT et se positionnent TOUJOURS parmi les prix les plus compétitifs du marché (premiers du net), jamais sur la moyenne haute. En BtoB, cet avantage = marge REVENDEUR sécurisée + capacité à rester premier du net à la revente ; en BtoC = l'un des prix les plus bas du marché.
 
 GARANTIE : si tu évoques la garantie sur un véhicule d'occasion, précise qu'elle est RÉSIDUELLE (selon la date de 1re immatriculation) et complétée par la garantie commerciale ; ne promets jamais une garantie constructeur pleine sur un VO.
 
