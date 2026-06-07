@@ -55,6 +55,10 @@ OBLIGATOIRE : au moins UNE objection doit porter sur « pourquoi passer par Auto
 
 INTERDIT : aucune objection ni réponse sur le malus, l'écotaxe, le malus écologique, le malus au poids ou la taxation CO₂ — ce sujet est traité par un outil dédié. N'emploie aucun de ces termes.
 
+NUANCES (présente-les comme POSSIBILITÉS, jamais comme des acquis) :
+- Financement / portage au partenaire : possible SOUS CONDITIONS (selon critères), pas systématique ni garanti — évoque-le en option.
+- Garantie constructeur : évoque-la SANS durée chiffrée ; la plupart de nos véhicules en bénéficient, mais pas systématiquement — possibilité majoritaire à confirmer, jamais une promesse ferme.
+
 FORMAT DE SORTIE (Markdown épuré, AUCUN JSON, aucune phrase d'introduction, aucun emoji) :
 Commence directement par la première objection. Pour CHACUNE des 10 objections, reproduis EXACTEMENT ce bloc :
 

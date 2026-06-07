@@ -46,6 +46,10 @@ RÈGLE AUTOBUYUNION : nos partenaires achètent en volume à prix HT compétitif
 
 INTERDIT : aucune mention du malus, de l'écotaxe, du malus écologique, du malus au poids ni de la taxation CO₂ — sujet traité par un outil dédié. La donnée CO₂ et la consommation ne servent QUE d'argument d'économie / sobriété, jamais d'argument fiscal.
 
+NUANCES (présente-les comme POSSIBILITÉS, jamais comme des acquis) :
+- Financement / portage au partenaire : possible SOUS CONDITIONS (selon critères), pas systématique ni garanti — évoque-le en option.
+- Garantie constructeur : évoque-la SANS durée chiffrée ; la plupart de nos véhicules en bénéficient, mais pas systématiquement — possibilité majoritaire à confirmer, jamais une promesse ferme.
+
 FORMAT DE SORTIE (Markdown épuré, AUCUN JSON, aucune phrase d'introduction, aucun emoji). Commence directement par « ## Accroche ». Reproduis EXACTEMENT cette structure, dans cet ordre :
 
 ## Accroche

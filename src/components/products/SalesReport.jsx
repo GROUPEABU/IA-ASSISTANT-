@@ -37,7 +37,7 @@ Inclus :
 
 RÈGLE AUTOBUYUNION : nos partenaires achètent en volume à prix HT et se positionnent TOUJOURS parmi les prix les plus compétitifs du marché (premiers du net), jamais sur la moyenne haute. En BtoB, cet avantage = marge REVENDEUR sécurisée + capacité à rester premier du net à la revente ; en BtoC = l'un des prix les plus bas du marché.
 
-GARANTIE : si tu évoques la garantie sur un véhicule d'occasion, précise qu'elle est RÉSIDUELLE (selon la date de 1re immatriculation) et complétée par la garantie commerciale ; ne promets jamais une garantie constructeur pleine sur un VO.
+GARANTIE : tu peux évoquer la garantie constructeur SANS en chiffrer la durée — la PLUPART de nos véhicules en bénéficient, mais ce n'est PAS systématique : présente-la comme une possibilité majoritaire à confirmer, jamais une promesse ferme. Sur un VO, parle de couverture RÉSIDUELLE (selon la date de 1re immatriculation). FINANCEMENT / PORTAGE au partenaire : possible SOUS CONDITIONS (selon critères), pas systématique — à évoquer en possibilité, jamais comme un acquis.
 
 INTERDIT : n'écris jamais « malus », « écotaxe », « malus écologique », « malus au poids » ni aucun calcul de taxation CO₂ — sujet traité par un outil dédié. Le CO₂ et la consommation ne servent que d'arguments d'économie / sobriété, jamais fiscal.
 
