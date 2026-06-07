@@ -17,6 +17,9 @@ Si le build échoue, corriger toutes les erreurs avant de continuer. Ne jamais i
 ## Hook git pre-commit ABUVERIF (auto-appliqué)
 Le hook ABUVERIF lance `npm run build` automatiquement. Tout commit avec un build cassé est rejeté.
 
+## VERROUILLÉ — Prompt Veille Prix (NE PAS MODIFIER)
+La fonction `buildPrompt` de `src/pages/PriceWatch.jsx` (méthodologie, garde-fous, format de sortie) et son appel `sendMessage` (modèle Sonnet via `tool: 'veilleprix'`, `temperature: 0`, `maxSearches: 3`, `maxTokens: 4500`) sont **figés et validés**. Ne JAMAIS les modifier sans demande explicite et formelle de l'utilisateur dans le message courant.
+
 ## Rules
 - Never mention Claude, Anthropic, or AI model names in the UI, commits, or PR descriptions
 - Never push to any branch other than `claude/autobuyunion-sales-assistant-mfTUL`
