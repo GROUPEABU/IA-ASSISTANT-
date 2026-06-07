@@ -75,7 +75,7 @@ export default function AIProgress({ active, stages = [], estimatedMs = 18000, l
         // +12 % de marge sur la durée réelle observée : la barre vise un peu au-delà
         // du temps habituel → elle finit le plus souvent AVANT la fin réelle (saut
         // à 100 %) plutôt que de stagner. « Fin plus rapide », jamais figée.
-        if (saved > 1500) estRef.current = Math.round(saved * 1.12)
+        if (saved > 1500) estRef.current = Math.round(saved * 1.3)
       } catch {}
     }
     const est = estRef.current

@@ -2,7 +2,6 @@ import { useState, useRef } from 'react'
 import { ShieldCheck, RefreshCw, RotateCcw, Download } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
-import AIProgress from '@/components/ui/AIProgress'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
 import VehicleDetails, { EMPTY_DETAILS, formatVehicleDetails, vehicleNameOf } from '@/components/ui/VehicleDetails'
@@ -186,13 +185,9 @@ ${productContext || ''}`
       {!loading && !streaming && <ErrorAlert message={error} onRetry={generate} />}
 
       {loading && !report && (
-        <div className="glass-card p-8 flex flex-col items-center gap-3">
-          <AIProgress
-            active={loading}
-            stages={[t('ai_progress_connect'), t('ai_progress_analyze'), t('ai_progress_format')]}
-            estimatedMs={22000}
-            persistKey="objections"
-          />
+        <div className="glass-card p-8 flex flex-col items-center gap-3 text-center">
+          <Spinner />
+          <p className="text-sm text-slate-400">{t('generating')}</p>
         </div>
       )}
 

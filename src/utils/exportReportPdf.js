@@ -117,13 +117,23 @@ export async function exportReportPdf(markdown, filename, meta = {}) {
       const level = line.match(/^(#{1,4})/)[1].length
       const txt = pdfSafe(line.replace(/^#{1,4}\s+/, ''))
       const size = level <= 2 ? 12 : level === 3 ? 10.5 : 9.5
-      ensure(level <= 2 ? 12 : 8)
+      const headLh = level <= 2 ? 5.5 : 4.5
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(size)
+      // Découpe le titre sur la largeur utile pour éviter le débordement.
+      const headLines = pdf.splitTextToSize(txt, usableW)
+      // Hauteur totale du bloc (toutes les lignes + espacement de tête niveau ≤ 2)
+      // pour qu'un titre long en bas de page bascule proprement.
+      const topGap = level <= 2 ? 3 : 0
+      ensure(topGap + headLines.length * headLh)
       if (level <= 2) y += 3
       pdf.setFont('helvetica', 'bold'); pdf.setFontSize(size)
       pdf.setTextColor(...(level <= 2 ? NAVY : SLATE))
-      pdf.text(txt, margin, y)
+      headLines.forEach((hl, idx) => {
+        pdf.text(hl, margin, y)
+        if (idx < headLines.length - 1) y += headLh
+      })
       if (level <= 2) {
-        // filet cyan sous les sections de niveau 2
+        // filet cyan sous les sections de niveau 2 (sous la DERNIÈRE ligne)
         pdf.setDrawColor(...CYAN); pdf.setLineWidth(0.8)
         pdf.line(margin, y + 1.6, margin + 18, y + 1.6)
         y += 5.5

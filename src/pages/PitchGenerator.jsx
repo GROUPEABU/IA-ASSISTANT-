@@ -2,7 +2,6 @@ import { useState, useRef } from 'react'
 import { Mic, RefreshCw, RotateCcw, Users, Car, Wrench, Building2, Briefcase, Download } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import Spinner from '@/components/ui/Spinner'
-import AIProgress from '@/components/ui/AIProgress'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
 import VehicleDetails, { EMPTY_DETAILS, formatVehicleDetails, vehicleNameOf } from '@/components/ui/VehicleDetails'
@@ -12,7 +11,7 @@ import { PRODUCTS } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
-import { useLastVehicle, readLastVehicleName } from '@/hooks/useLastVehicle'
+import { useLastVehicle } from '@/hooks/useLastVehicle'
 import { useExport } from '@/hooks/useExport'
 import { useResultFocus } from '@/hooks/useResultFocus'
 import { pdfFileName } from '@/utils/exportPdf'
@@ -76,7 +75,7 @@ export default function PitchGenerator() {
   const pitchRef = useRef(null)
   const [vehicleId, setVehicleId] = useState('')
   const [profileId, setProfileId] = useState('btoc_famille')
-  const [details, setDetails] = useState(() => ({ ...EMPTY_DETAILS, model: readLastVehicleName() }))
+  const [details, setDetails] = useState(EMPTY_DETAILS)
   const [context, setContext] = useState('')
   const [loading, setLoading] = useState(false)
   const [streaming, setStreaming] = useState(false)
@@ -241,13 +240,9 @@ ${productContext || ''}${veillePrixRefBlock(vehicleName)}`
       </div>
 
       {loading && !report && (
-        <div className="glass-card p-10 flex flex-col items-center gap-3">
-          <AIProgress
-            active={loading}
-            stages={[t('ai_progress_connect'), t('ai_progress_analyze'), t('ai_progress_format')]}
-            estimatedMs={14000}
-            persistKey="pitch"
-          />
+        <div className="glass-card p-8 flex flex-col items-center gap-3 text-center">
+          <Spinner />
+          <p className="text-sm text-slate-400">{t('generating')}</p>
         </div>
       )}
 

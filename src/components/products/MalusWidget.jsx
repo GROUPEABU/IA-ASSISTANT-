@@ -3,7 +3,7 @@ import { getMalus, getMalusColor, getMalusLabel } from '@/utils/malus'
 import { formatNumber } from '@/utils/formatters'
 import { useSettings } from '@/contexts/SettingsContext'
 import { getCountryName } from '@/utils/malusLabels'
-import { AlertTriangle, CheckCircle, Info } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Info, Minus, Plus } from 'lucide-react'
 
 const COUNTRIES_WIDGET = [
   { code: 'FR', flag: '🇫🇷', note: 'Barème 2025 WLTP' },
@@ -23,7 +23,8 @@ function estimateForeignMalus(co2, country) {
 export default function MalusWidget({ product }) {
   const { t, lang } = useSettings()
   const [prix, setPrix] = useState(product.prix.base)
-  const co2 = product.specs.co2_wltp
+  const [co2, setCo2] = useState(product.specs.co2_wltp)
+  const setCo2Clamped = (v) => setCo2(Math.max(0, Math.min(400, Math.round(Number(v) || 0))))
   const malus = getMalus(co2, prix)
   const mc = getMalusColor(co2)
   const ml = getMalusLabel(co2)
@@ -50,9 +51,36 @@ export default function MalusWidget({ product }) {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs text-slate-500 mb-1">{t('malus_co2_wltp_label')}</p>
-            <div className="flex items-baseline gap-2">
-              <span className={`text-4xl font-bold ${colorClass}`}>{co2}</span>
-              <span className="text-lg text-slate-400">g/km</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCo2Clamped(co2 - 5)}
+                className="w-7 h-7 rounded-lg bg-navy-900/60 border border-navy-700/50 flex items-center justify-center text-slate-400 hover:text-cyan-400 hover:border-cyan-400/40 transition"
+                aria-label="-5"
+              >
+                <Minus size={13} />
+              </button>
+              <div className="flex items-baseline gap-1.5">
+                <input
+                  type="number"
+                  min={0}
+                  max={400}
+                  value={co2}
+                  onChange={(e) => setCo2Clamped(e.target.value)}
+                  className={`w-20 bg-navy-900/60 border border-navy-700/50 rounded-lg px-2 py-1 text-3xl font-bold text-center
+                              focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/10 transition ${colorClass}
+                              [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                />
+                <span className="text-lg text-slate-400">g/km</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCo2Clamped(co2 + 5)}
+                className="w-7 h-7 rounded-lg bg-navy-900/60 border border-navy-700/50 flex items-center justify-center text-slate-400 hover:text-cyan-400 hover:border-cyan-400/40 transition"
+                aria-label="+5"
+              >
+                <Plus size={13} />
+              </button>
             </div>
             <div className="flex items-center gap-1.5 mt-2">
               {mc === 'success'

@@ -39,7 +39,6 @@ CONCISION : chaque section va à l'essentiel (3 à 5 puces ou 3-4 phrases max). 
 Sois percutant, concret, sobre (aucun emoji, aucun symbole décoratif), adapté au marché français et directement utilisable par les équipes commerciales.`
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
-import AIProgress from '@/components/ui/AIProgress'
 
 function SegmentBlock({ icon: Icon, color, title, targets, strengths, objections, extra }) {
   const { t } = useSettings()
@@ -223,8 +222,9 @@ Prix catalogue : ${formatNumber(product.prix.base)}€ · CO₂ : ${product.spec
         )}
 
         {loading && !pitch && (
-          <div className="py-8">
-            <AIProgress active={loading} label={t('sales_pitch_loading')} estimatedMs={12000} persistKey="salesreport" />
+          <div className="glass-card p-8 flex flex-col items-center gap-3 text-center">
+            <Spinner />
+            <p className="text-sm text-slate-400">{t('sales_pitch_loading')}</p>
           </div>
         )}
 
