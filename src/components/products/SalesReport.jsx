@@ -11,13 +11,20 @@ import { veillePrixRefBlock } from '@/utils/veillePrix'
 
 const STATIC_SALESREPORT = `⚠️ MOTORISATION & GÉNÉRATION : respecte EXACTEMENT l'énergie et la version du véhicule demandé. Un hybride simple / micro-hybride / full hybrid n'est PAS un hybride rechargeable (plug-in / PHEV) : ne parle de recharge, de prise, de batterie plug-in ou d'autonomie 100 % électrique que si le véhicule est EXPLICITEMENT rechargeable. En cas de changement de génération récent, ne confonds pas la nouvelle génération avec l'ancienne (le badge de puissance est souvent le marqueur de génération).
 
+═══ MODÈLE D'AFFAIRES (RESPECTER ABSOLUMENT — ne rien inventer autour) ═══
+Autobuyunion est une CENTRALE D'ACHAT européenne : elle achète en volume et revend À SES PARTENAIRES REVENDEURS (concessions, négociants, agents). Ce sont CES PARTENAIRES qui vendent ensuite au client final (BtoB comme BtoC). Autobuyunion ne vend, ne livre et ne facture JAMAIS le client final.
+- Vendeur face au particulier (BtoC) = le PARTENAIRE, jamais Autobuyunion. N'écris jamais qu'Autobuyunion vend, livre, immatricule ou suit le particulier.
+- LIVRAISON : Autobuyunion gère l'approvisionnement jusqu'au PARTENAIRE (UE, transport inclus) ; la livraison au client final relève du partenaire. AUCUNE livraison à domicile par Autobuyunion.
+- AUCUN essai, AUCUNE rétractation, AUCUN « satisfait ou remboursé », AUCUN retour : n'invente jamais de période d'essai (ex. « 7 jours »), de refus à la livraison ni de politique de retour.
+- N'INVENTE JAMAIS un processus, service, délai, garantie maison, intermédiaire ou modalité (livraison / essai / retour / immatriculation / « concessionnaire partenaire » où récupérer le véhicule) qui ne t'est pas explicitement fourni. Si un mécanisme n'est pas connu, n'en parle pas : reste sur la valeur (prix, marge, sourcing, disponibilité, financement / portage AU PARTENAIRE).
+
 Inclus :
 
 1. **Accroche d'ouverture** (2-3 phrases choc, avec l'avantage prix Autobuyunion)
 
 2. **Arguments BtoB — PARTENAIRES REVENDEURS** (concessions / négociants qui RACHÈTENT pour REVENDRE, pas pour rouler) : raisonne MARGE REVENDEUR (sa marge à la revente, distincte de la marge Autobuyunion à l'achat) et ROTATION. Prix de cession HT qui laisse de la marge revendeur tout en permettant de rester premier du net à la revente, modèle qui tourne vite (demande du marché final) — rotation exprimée QUALITATIVEMENT, sans délai de revente chiffré (jamais « vendu en X jours », donnée inconnue), régime de TVA clair (récupérable vs sur marge), volume et réassort, frais de remise en route faibles, et pour un import : COC / carte grise / délais. Traduis les caractéristiques produit en arguments de REVENTE, jamais en plaisir de conduite.
 
-3. **Arguments BtoC — particuliers (utilisateur final)** : usage familial / quotidien, fiabilité, coût d'usage, économie réelle, confiance dans un achat via une centrale.
+3. **Arguments BtoC — particuliers (utilisateur final, à qui c'est le PARTENAIRE qui vend)** : usage familial / quotidien, fiabilité, coût d'usage, économie réelle, confiance dans le véhicule et le revendeur. Ne présente jamais Autobuyunion comme vendeur ou livreur du particulier.
 
 4. **Réponses aux 3 objections principales** :
    - notoriété : si la MARQUE est peu diffusée, rassure sur le réseau / la fiabilité / la capacité à se revendre ; si la marque est connue, porte plutôt l'objection sur le MODÈLE ou la version (récent, moins repérable en occasion) ;

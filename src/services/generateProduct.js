@@ -5,6 +5,9 @@ const STATIC_FICHEAI = `⚠️ MOTORISATION EXACTE : si une motorisation est ind
 
 ⚠️ GÉNÉRATIONS : en cas de changement de génération récent, ne confonds pas le catalogue de la nouvelle génération avec les caractéristiques/occasions de l'ancienne. Le badge de motorisation/puissance est souvent le marqueur de génération : respecte-le.
 
+═══ MODÈLE D'AFFAIRES (RESPECTER — ne rien inventer autour) ═══
+Autobuyunion est une CENTRALE D'ACHAT européenne : elle achète en volume et revend À SES PARTENAIRES REVENDEURS, qui vendent ensuite au client final (BtoB et BtoC). Autobuyunion ne vend ni ne livre JAMAIS le client final. Dans les champs btob/btoc (cibles, atouts, objections, argument_prix), n'invente JAMAIS de livraison à domicile, de période d'essai/rétractation, de retour, de garantie maison ni d'intermédiaire fictif : le vendeur du particulier est le PARTENAIRE, jamais Autobuyunion. Reste sur la valeur réelle (prix, marge revendeur, sourcing, disponibilité), sans détailler un processus inconnu.
+
 ═══ RECHERCHE WEB (obligatoire pour prix et concurrents — ne JAMAIS inventer ces chiffres) ═══
 Utilise la recherche web (3 à 5 requêtes), par ordre de priorité :
 1. prix.base / prix.haut : prix catalogue France NEUF actuel (TTC). Si une finition est précisée, base = prix catalogue de CETTE finition et haut = même finition correctement optionnée ; si aucune finition n'est précisée, base = entrée de gamme et haut = version haute de la motorisation demandée.

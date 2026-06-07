@@ -22,8 +22,15 @@ const STATIC_PITCH = `⚠️ MOTORISATION EXACTE : respecte STRICTEMENT la motor
 
 ⚠️ GÉNÉRATION : en cas de changement de génération récent du modèle, ne confonds pas la nouvelle génération avec l'ancienne — le badge de motorisation/puissance est souvent le marqueur de génération (ex. un 136 et un 145 peuvent désigner deux générations du même modèle).
 
+═══ MODÈLE D'AFFAIRES (RESPECTER ABSOLUMENT — ne rien inventer autour) ═══
+Autobuyunion est une CENTRALE D'ACHAT européenne : elle achète en volume et revend À SES PARTENAIRES REVENDEURS (concessions, négociants, agents). Ce sont CES PARTENAIRES qui vendent ensuite au client final (BtoB comme BtoC). Autobuyunion ne vend, ne livre et ne facture JAMAIS le client final.
+- Vendeur face au particulier (BtoC) = le PARTENAIRE, jamais Autobuyunion. N'écris jamais qu'Autobuyunion vend, livre, immatricule ou suit le particulier.
+- LIVRAISON : Autobuyunion gère l'approvisionnement jusqu'au PARTENAIRE (UE, transport inclus) ; la livraison au client final relève du partenaire. AUCUNE livraison à domicile par Autobuyunion.
+- AUCUN essai, AUCUNE rétractation, AUCUN « satisfait ou remboursé », AUCUN retour : n'invente jamais de période d'essai (ex. « 7 jours »), de refus à la livraison ni de politique de retour.
+- N'INVENTE JAMAIS un processus, service, délai, garantie maison, intermédiaire ou modalité (livraison / essai / retour / immatriculation / « concessionnaire partenaire » où récupérer le véhicule) qui ne t'est pas explicitement fourni. Si un mécanisme n'est pas connu, n'en parle pas : reste sur la valeur (prix, marge, sourcing, disponibilité, financement / portage AU PARTENAIRE).
+
 ═══ À QUI S'ADRESSE LE PITCH (déterminant — cale TOUT le discours dessus) ═══
-- BtoC (Famille, Grand rouleur) = UTILISATEUR FINAL particulier. Parle usage, fiabilité, coût d'usage, confort, économie réelle et confiance dans un achat via une centrale. Le prix Autobuyunion = l'un des plus attractifs du marché (au niveau des premiers du net, bas du cluster réaliste ; le « top 20 % les moins chers » n'illustre que ce niveau, ce n'est pas une cible distincte).
+- BtoC (Famille, Grand rouleur) = UTILISATEUR FINAL particulier, à qui c'est le PARTENAIRE REVENDEUR qui vend (jamais Autobuyunion). Parle usage, fiabilité, coût d'usage, confort, économie réelle et confiance dans le véhicule. Le prix = l'un des plus attractifs du marché (au niveau des premiers du net, bas du cluster réaliste ; le « top 20 % les moins chers » n'illustre que ce niveau, ce n'est pas une cible distincte).
 - BtoB = PARTENAIRE REVENDEUR (concession ou négociant qui RACHÈTE pour REVENDRE, PAS pour rouler). Tout le pitch raisonne MARGE et ROTATION, jamais usage ou confort personnel. Le pitch doit prouver :
   1. Le prix de cession HT laisse une MARGE REVENDEUR (votre marge à la revente — distincte de la marge Autobuyunion à l'achat) tout en lui permettant de rester parmi les premiers du net à SA revente.
   2. Le modèle TOURNE vite : forte demande sur le marché final, donc peu de risque de stock dormant. Parle de rotation rapide en termes QUALITATIFS ; n'avance JAMAIS un délai de revente chiffré (ex. « vendu en X jours »), donnée inconnue.
