@@ -116,6 +116,8 @@ export default {
     year_max: 'Année max',
     km_min: 'Kilométrage min',
     km_max: 'Kilométrage max',
+    power_min: 'Puissance min',
+    power_max: 'Puissance max',
     km_no_limit: 'Sans limite',
     veh_details_title: 'Détails véhicule (optionnel — plus précis)',
     veh_type_label: 'Type',

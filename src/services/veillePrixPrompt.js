@@ -35,6 +35,14 @@ export function buildPrompt(filters, vehicleDesc, ctry) {
     ? `\n⚠️ CARBURANT STRICT : uniquement la motorisation "${filters.fuelLabel}". N'inclus AUCUNE autre énergie (ne mélange pas essence, diesel, hybride simple/micro-hybride, hybride rechargeable ou électrique). Un hybride non rechargeable n'est PAS un PHEV : aucune mention de prise, recharge, batterie plug-in ou autonomie 100 % électrique.` : ''
   const gearboxFilter = filters.gearboxLabel
     ? `\n⚠️ BOÎTE STRICTE : uniquement la boîte "${filters.gearboxLabel}".` : ''
+  const powerMin = filters.powerMin ? Number(filters.powerMin) : null
+  const powerMax = filters.powerMax ? Number(filters.powerMax) : null
+  const powerFilter = (powerMin || powerMax)
+    ? `\n⚠️ PUISSANCE STRICTE : uniquement les véhicules ${
+        powerMin && powerMax ? `entre ${powerMin} et ${powerMax} ch`
+        : powerMin ? `≥ ${powerMin} ch` : `< ${powerMax} ch`
+      }. Écarte toute annonce hors plage.` : ''
+
   const kmFilter = (kmMin || kmMax)
     ? `\n⚠️ KILOMÉTRAGE STRICT : raisonne UNIQUEMENT sur des compteurs réels ${
         kmMin && kmMax ? `entre ${kmMinTxt} et ${kmMaxTxt}`
@@ -54,7 +62,7 @@ export function buildPrompt(filters, vehicleDesc, ctry) {
   return `Tu es l'analyste cote & marché automobile ${filters.type === 'vn' ? 'VN (neuf)' : 'VO (occasion)'} d'Autobuyunion, centrale d'achat européenne. En UNE SEULE passe : tu relèves les annonces réelles, tu construis une grille de prix par kilométrage, tu calcules les prix d'achat, PUIS tu te relis selon une check-list stricte avant de répondre. Rendu final en Markdown épuré, prêt à afficher.
 
 ═══ VÉHICULE CIBLE ═══
-"${vehicleDesc}"${finitionFilter}${carrosserieFilter}${fuelFilter}${gearboxFilter}${kmFilter}${anneeFilter}${countryCtx}
+"${vehicleDesc}"${finitionFilter}${carrosserieFilter}${fuelFilter}${gearboxFilter}${powerFilter}${kmFilter}${anneeFilter}${countryCtx}
 
 ═══ RECHERCHE WEB (obligatoire) ═══
 Utilise la recherche web (2 à 3 requêtes) pour relever les annonces réelles correspondant EXACTEMENT aux filtres (kilométrage inclus) sur ${sites}, et repérer le niveau des « premiers du net » (annonces les moins chères réellement disponibles) PAR niveau de kilométrage. Si une vérification ultérieure révèle un prix incohérent, relance une requête ciblée pour réancrer — ne corrige jamais un prix au doigt mouillé. Si les annonces restent trop rares ou incohérentes, appuie-toi sur la décote experte (PVC neuf − décote réaliste) et signale l'incertitude.

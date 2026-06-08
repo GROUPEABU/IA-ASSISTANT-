@@ -106,6 +106,8 @@ export default {
     year_max: 'Max year',
     km_min: 'Min mileage',
     km_max: 'Max mileage',
+    power_min: 'Min power',
+    power_max: 'Max power',
     km_no_limit: 'No limit',
     veh_details_title: 'Vehicle details (optional — more precise)',
     veh_type_label: 'Type',

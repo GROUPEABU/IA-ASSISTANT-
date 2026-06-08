@@ -163,6 +163,37 @@ export default function PriceWatch() {
     { label: '< 200 000 km', value: '200000' },
   ]
 
+  const POWER_MIN_OPTS = [
+    { label: t('power_min'), value: '' },
+    { label: '≥ 50 ch', value: '50' },
+    { label: '≥ 75 ch', value: '75' },
+    { label: '≥ 90 ch', value: '90' },
+    { label: '≥ 100 ch', value: '100' },
+    { label: '≥ 110 ch', value: '110' },
+    { label: '≥ 130 ch', value: '130' },
+    { label: '≥ 150 ch', value: '150' },
+    { label: '≥ 170 ch', value: '170' },
+    { label: '≥ 200 ch', value: '200' },
+    { label: '≥ 250 ch', value: '250' },
+    { label: '≥ 300 ch', value: '300' },
+    { label: '≥ 400 ch', value: '400' },
+  ]
+  const POWER_MAX_OPTS = [
+    { label: t('power_max'), value: '' },
+    { label: '< 75 ch', value: '75' },
+    { label: '< 90 ch', value: '90' },
+    { label: '< 100 ch', value: '100' },
+    { label: '< 110 ch', value: '110' },
+    { label: '< 130 ch', value: '130' },
+    { label: '< 150 ch', value: '150' },
+    { label: '< 170 ch', value: '170' },
+    { label: '< 200 ch', value: '200' },
+    { label: '< 250 ch', value: '250' },
+    { label: '< 300 ch', value: '300' },
+    { label: '< 400 ch', value: '400' },
+    { label: '< 500 ch', value: '500' },
+  ]
+
   const [type, setType]           = useState(() => readPwSession('type', 'vo'))
   const [make, setMake]           = useState(() => readPwSession('make', ''))
   const [model, setModel]         = useState(() => readPwSession('model', ''))
@@ -174,6 +205,8 @@ export default function PriceWatch() {
   const [mileageMax, setMileageMax] = useState(() => readPwSession('mileageMax', ''))
   const [fuel, setFuel]           = useState(() => readPwSession('fuel', ''))
   const [gearbox, setGearbox]     = useState(() => readPwSession('gearbox', ''))
+  const [powerMin, setPowerMin]   = useState(() => readPwSession('powerMin', ''))
+  const [powerMax, setPowerMax]   = useState(() => readPwSession('powerMax', ''))
   const [country, setCountry]     = useState(() => readPwSession('country', 'FR'))
 
   const [loading, setLoading]     = useState(false)   // avant le 1er token
@@ -193,10 +226,10 @@ export default function PriceWatch() {
   useEffect(() => {
     try {
       sessionStorage.setItem(PW_SESSION, JSON.stringify(
-        { type, make, model, finition, carrosserie, yearMin, yearMax, mileageMin, mileageMax, fuel, gearbox, country }
+        { type, make, model, finition, carrosserie, yearMin, yearMax, mileageMin, mileageMax, fuel, gearbox, powerMin, powerMax, country }
       ))
     } catch {}
-  }, [type, make, model, finition, carrosserie, yearMin, yearMax, mileageMin, mileageMax, fuel, gearbox, country])
+  }, [type, make, model, finition, carrosserie, yearMin, yearMax, mileageMin, mileageMax, fuel, gearbox, powerMin, powerMax, country])
 
   const canSearch = make.trim() || model.trim()
 
@@ -205,7 +238,7 @@ export default function PriceWatch() {
     const rawMake = overrides.make ?? make
     const matchedMake = MAKES.find(m => m.label.toLowerCase() === rawMake.toLowerCase())
     const resolvedMake = matchedMake ? matchedMake.code : rawMake
-    const filters = { make: resolvedMake, model, finition, carrosserie, type, yearMin, yearMax, mileageMin, mileageMax, fuel, gearbox, ...overrides }
+    const filters = { make: resolvedMake, model, finition, carrosserie, type, yearMin, yearMax, mileageMin, mileageMax, fuel, gearbox, powerMin, powerMax, ...overrides }
     // Libellés lisibles des filtres énumérés, pour que l'analyse les applique en STRICT.
     filters.fuelLabel        = filters.fuel ? FUELS.find(f => f.code === filters.fuel)?.label || '' : ''
     filters.gearboxLabel     = filters.gearbox ? GEARBOXES.find(g => g.code === filters.gearbox)?.label || '' : ''
@@ -225,6 +258,11 @@ export default function PriceWatch() {
       filters.fuel ? FUELS.find(f => f.code === filters.fuel)?.label : '',
       filters.gearbox ? GEARBOXES.find(g => g.code === filters.gearbox)?.label : '',
       filters.carrosserie ? BODIES.find(b => b.code === filters.carrosserie)?.label : '',
+      (filters.powerMin || filters.powerMax)
+        ? filters.powerMin && filters.powerMax
+          ? `${filters.powerMin}–${filters.powerMax} ch`
+          : filters.powerMin ? `≥ ${filters.powerMin} ch` : `< ${filters.powerMax} ch`
+        : '',
     ].filter(Boolean).join(' · ')
 
     const label = [
@@ -235,6 +273,11 @@ export default function PriceWatch() {
           ? `${Number(filters.mileageMin).toLocaleString('fr-FR')}–${Number(filters.mileageMax).toLocaleString('fr-FR')} km`
           : filters.mileageMin ? `> ${Number(filters.mileageMin).toLocaleString('fr-FR')} km`
           : `< ${Number(filters.mileageMax).toLocaleString('fr-FR')} km`
+      ),
+      (filters.powerMin || filters.powerMax) && (
+        filters.powerMin && filters.powerMax
+          ? `${filters.powerMin}–${filters.powerMax} ch`
+          : filters.powerMin ? `≥ ${filters.powerMin} ch` : `< ${filters.powerMax} ch`
       ),
       ctry.label,
     ].filter(Boolean).join(' · ')
@@ -326,7 +369,7 @@ export default function PriceWatch() {
 
   const reset = () => {
     setReport(''); setMake(''); setModel(''); setFinition(''); setCarrosserie('')
-    setYearMin(''); setYearMax(''); setMileageMin(''); setMileageMax(''); setFuel(''); setGearbox('')
+    setYearMin(''); setYearMax(''); setMileageMin(''); setMileageMax(''); setFuel(''); setGearbox(''); setPowerMin(''); setPowerMax('')
     setCountry('FR')
     setSearchLabel(''); setCentraleUrl(''); setFetchedAt(null); setSources([]); setHasLiveData(false)
   }
@@ -447,6 +490,12 @@ export default function PriceWatch() {
           </FilterSelect>
           <FilterSelect label={t('gearbox_label')} value={gearbox} onChange={setGearbox}>
             {GEARBOXES.map(g => <option key={g.code} value={g.code}>{g.label}</option>)}
+          </FilterSelect>
+          <FilterSelect label={t('power_min')} value={powerMin} onChange={setPowerMin}>
+            {POWER_MIN_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </FilterSelect>
+          <FilterSelect label={t('power_max')} value={powerMax} onChange={setPowerMax}>
+            {POWER_MAX_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </FilterSelect>
         </div>
 
