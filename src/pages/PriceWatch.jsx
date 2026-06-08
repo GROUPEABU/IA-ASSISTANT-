@@ -363,9 +363,12 @@ export default function PriceWatch() {
     }
   }
 
-  const handlePdf = () => withExporting(() =>
-    exportReportPdf(report, pdfFileName(searchLabel, t('tool_price_title')), { title: t('tool_price_title'), subtitle: searchLabel })
-  )
+  const handlePdf = () => {
+    const ctryLabel = (COUNTRIES.find(c => c.code === country)?.label || country).toUpperCase()
+    const pdfTitle = `Veille prix ${ctryLabel}`
+    return withExporting(() =>
+      exportReportPdf(report, pdfFileName(searchLabel, pdfTitle), { title: pdfTitle, subtitle: searchLabel }))
+  }
 
   const reset = () => {
     setReport(''); setMake(''); setModel(''); setFinition(''); setCarrosserie('')
