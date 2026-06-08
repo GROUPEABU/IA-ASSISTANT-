@@ -81,7 +81,7 @@ export default function Objections() {
   const [generatedFor, setGeneratedFor] = useState('')
   const { toast } = useToast()
   const { generated } = useGeneratedProducts()
-  const { history, add: addHistory, clear: clearHistory } = useHistory('objections')
+  const { history, add: addHistory, remove: removeHistory, clear: clearHistory } = useHistory('objections')
   const { save: saveLastVehicle } = useLastVehicle()
   const { exporting, withExporting } = useExport()
   const headingRef = useResultFocus(!!report && !loading && !streaming)
@@ -242,7 +242,7 @@ ${productContext || ''}`
         </>
       )}
 
-      <HistoryPanel items={history} onRestore={restore} onClear={clearHistory} primary={(item) => item.generatedFor} />
+      <HistoryPanel items={history} onRestore={restore} onRemove={removeHistory} onClear={clearHistory} primary={(item) => item.generatedFor} />
     </div>
   )
 }

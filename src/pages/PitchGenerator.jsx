@@ -97,7 +97,7 @@ export default function PitchGenerator() {
   const { toast } = useToast()
   const { generated } = useGeneratedProducts()
   const allProducts = [...PRODUCTS, ...generated]
-  const { history, add: addHistory, clear: clearHistory } = useHistory('pitch')
+  const { history, add: addHistory, remove: removeHistory, clear: clearHistory } = useHistory('pitch')
   const { save: saveLastVehicle } = useLastVehicle()
   const { exporting, withExporting } = useExport()
   const headingRef = useResultFocus(!!report && !loading && !streaming)
@@ -300,7 +300,7 @@ ${productContext || ''}${veillePrixRefBlock(vehicleName)}`
         </div>
       )}
 
-      <HistoryPanel items={history} onRestore={restore} onClear={clearHistory} primary={(item) => item.generatedFor} />
+      <HistoryPanel items={history} onRestore={restore} onRemove={removeHistory} onClear={clearHistory} primary={(item) => item.generatedFor} />
     </div>
   )
 }

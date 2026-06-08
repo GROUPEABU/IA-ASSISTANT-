@@ -218,7 +218,7 @@ export default function PriceWatch() {
   const [error, setError]         = useState(null)
   const [centraleUrl, setCentraleUrl] = useState('')
   const [searchLabel, setSearchLabel] = useState('')
-  const { history, add: addHistory, clear: clearHistory } = useHistory('pricewatch')
+  const { history, add: addHistory, remove: removeHistory, clear: clearHistory } = useHistory('pricewatch')
   const { save: saveLastVehicle } = useLastVehicle()
   const { exporting, withExporting } = useExport()
 
@@ -658,6 +658,7 @@ export default function PriceWatch() {
       <HistoryPanel
         items={history}
         onRestore={restore}
+        onRemove={removeHistory}
         onClear={clearHistory}
         primary={(item) => item.searchLabel}
         badge={(item) => (
