@@ -354,19 +354,26 @@ export default function PriceWatch() {
           <h2 className="text-sm font-semibold text-white">{t('tool_price_title')}</h2>
         </div>
 
-        {/* VO / VN toggle */}
-        <div className="flex gap-1 p-1 bg-navy-900/60 rounded-xl w-fit mb-4 border border-navy-700/40">
-          {[{ id: 'vo', label: t('used_vehicle') }, { id: 'vn', label: t('new_vehicle') }].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => { setType(tab.id); if (tab.id === 'vn') setMileageMax('') }}
-              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                type === tab.id ? 'bg-cyan-400 text-navy-900' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        {/* VO / VN toggle + Marché */}
+        <div className="flex items-end justify-between gap-4 mb-4">
+          <div className="flex gap-1 p-1 bg-navy-900/60 rounded-xl w-fit border border-navy-700/40">
+            {[{ id: 'vo', label: t('used_vehicle') }, { id: 'vn', label: t('new_vehicle') }].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => { setType(tab.id); if (tab.id === 'vn') setMileageMax('') }}
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                  type === tab.id ? 'bg-cyan-400 text-navy-900' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <div className="min-w-[180px]">
+            <FilterSelect label={t('price_country_label')} value={country} onChange={setCountry}>
+              {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+            </FilterSelect>
+          </div>
         </div>
 
         {/* Ligne 1 : Marque + Modèle + Année min + Année max */}
@@ -407,8 +414,8 @@ export default function PriceWatch() {
           </FilterSelect>
         </div>
 
-        {/* Ligne 1b : Finition + Carrosserie + Marché */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+        {/* Ligne 1b : Finition + Carrosserie */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('price_finition_label')}</label>
             <input
@@ -420,9 +427,6 @@ export default function PriceWatch() {
           </div>
           <FilterSelect label={t('price_body_label')} value={carrosserie} onChange={setCarrosserie}>
             {BODIES.map(b => <option key={b.code} value={b.code}>{b.label}</option>)}
-          </FilterSelect>
-          <FilterSelect label={t('price_country_label')} value={country} onChange={setCountry}>
-            {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
           </FilterSelect>
         </div>
 
