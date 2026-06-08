@@ -19,6 +19,7 @@ export function buildPrompt(filters, vehicleDesc, ctry) {
   const { code: countryCode, label: countryLabel, tva, transport, sites } = ctry
   const isFrance = countryCode === 'FR'
   const mandatairesTerm = isFrance ? 'mandataires' : 'remises officielles'
+  const currency = ctry.currency || 'EUR'
   const tvaFmt = tva.toFixed(2).replace('.', ',')
   const tvaRate = Math.round((tva - 1) * 100)
 
@@ -45,7 +46,10 @@ export function buildPrompt(filters, vehicleDesc, ctry) {
     : filters.yearMax ? `millésime ${filters.yearMax} ou plus ancien` : null
   const anneeFilter = anneeTxt
     ? `\n⚠️ ANNÉE STRICTE : ${anneeTxt} uniquement. N'écris JAMAIS une autre année.` : ''
-  const countryCtx = isFrance ? '' : `\nMARCHÉ : ${countryLabel} — relève les annonces sur ${sites}, prix en euros TTC (TVA locale ${tvaRate} %). Précise que les prix relevés sont ceux du marché ${countryLabel}.`
+  const prixNote = currency === 'EUR'
+    ? `euros TTC (TVA locale ${tvaRate} %)`
+    : `${currency} TTC (TVA locale ${tvaRate} % — convertis en EUR au taux du jour avant d'appliquer la formule d'achat)`
+  const countryCtx = isFrance ? '' : `\nMARCHÉ : ${countryLabel} — relève les annonces sur ${sites}, prix en ${prixNote}. Précise que les prix relevés sont ceux du marché ${countryLabel}.`
 
   return `Tu es l'analyste cote & marché automobile ${filters.type === 'vn' ? 'VN (neuf)' : 'VO (occasion)'} d'Autobuyunion, centrale d'achat européenne. En UNE SEULE passe : tu relèves les annonces réelles, tu construis une grille de prix par kilométrage, tu calcules les prix d'achat, PUIS tu te relis selon une check-list stricte avant de répondre. Rendu final en Markdown épuré, prêt à afficher.
 

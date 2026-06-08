@@ -48,18 +48,28 @@ const MAKES = [
 const YEARS = Array.from({ length: 27 }, (_, i) => 2026 - i)
 
 const COUNTRIES = [
-  { code: 'FR', label: 'France',     tva: 1.20, transport: 450, tld: 'fr', as24cy: 'F',  sites: 'La Centrale, LeBonCoin, AutoScout24.fr' },
-  { code: 'BE', label: 'Belgique',   tva: 1.21, transport: 450, tld: 'be', as24cy: 'B',  sites: 'AutoScout24.be, 2dehands.be, Vroom.be' },
-  { code: 'LU', label: 'Luxembourg', tva: 1.17, transport: 450, tld: 'lu', as24cy: 'L',  sites: 'AutoScout24.lu, Luxauto.lu' },
-  { code: 'DE', label: 'Allemagne',  tva: 1.19, transport: 450, tld: 'de', as24cy: 'D',  sites: 'mobile.de, AutoScout24.de' },
-  { code: 'NL', label: 'Pays-Bas',   tva: 1.21, transport: 450, tld: 'nl', as24cy: 'NL', sites: 'AutoScout24.nl, Marktplaats.nl' },
-  { code: 'ES', label: 'Espagne',    tva: 1.21, transport: 450, tld: 'es', as24cy: 'E',  sites: 'AutoScout24.es, Coches.net' },
-  { code: 'IT', label: 'Italie',     tva: 1.22, transport: 450, tld: 'it', as24cy: 'I',  sites: 'AutoScout24.it, Subito.it' },
-  { code: 'PT', label: 'Portugal',   tva: 1.23, transport: 450, tld: 'pt', as24cy: 'P',  sites: 'AutoScout24.pt, CustoJusto.pt' },
+  { code: 'FR', label: 'France',      tva: 1.20,  transport: 450,  tld: 'fr', as24cy: 'F',   sites: 'La Centrale, LeBonCoin, AutoScout24.fr' },
+  { code: 'BE', label: 'Belgique',    tva: 1.21,  transport: 450,  tld: 'be', as24cy: 'B',   sites: 'AutoScout24.be, 2dehands.be, Vroom.be' },
+  { code: 'LU', label: 'Luxembourg',  tva: 1.17,  transport: 450,  tld: 'lu', as24cy: 'L',   sites: 'AutoScout24.lu, Luxauto.lu' },
+  { code: 'DE', label: 'Allemagne',   tva: 1.19,  transport: 450,  tld: 'de', as24cy: 'D',   sites: 'mobile.de, AutoScout24.de' },
+  { code: 'NL', label: 'Pays-Bas',    tva: 1.21,  transport: 450,  tld: 'nl', as24cy: 'NL',  sites: 'AutoScout24.nl, Marktplaats.nl' },
+  { code: 'ES', label: 'Espagne',     tva: 1.21,  transport: 450,  tld: 'es', as24cy: 'E',   sites: 'AutoScout24.es, Coches.net' },
+  { code: 'IT', label: 'Italie',      tva: 1.22,  transport: 450,  tld: 'it', as24cy: 'I',   sites: 'AutoScout24.it, Subito.it' },
+  { code: 'PT', label: 'Portugal',    tva: 1.23,  transport: 450,  tld: 'pt', as24cy: 'P',   sites: 'AutoScout24.pt, CustoJusto.pt' },
+  { code: 'CH', label: 'Suisse',      tva: 1.081, transport: 400,  tld: 'ch', as24cy: 'CH',  currency: 'CHF', sites: 'AutoScout24.ch, Tutti.ch' },
+  { code: 'HR', label: 'Croatie',     tva: 1.25,  transport: 500,  tld: 'hr', as24cy: 'HR',  sites: 'AutoScout24.hr, Njuškalo.hr' },
+  { code: 'PL', label: 'Pologne',     tva: 1.23,  transport: 500,  tld: 'pl', as24cy: 'PL',  currency: 'PLN', sites: 'OtoMoto.pl, AutoScout24.pl' },
+  { code: 'SE', label: 'Suède',       tva: 1.25,  transport: 700,  tld: 'se', as24cy: 'S',   currency: 'SEK', sites: 'Blocket.se, AutoScout24.se' },
+  { code: 'NO', label: 'Norvège',     tva: 1.25,  transport: 700,  tld: 'no', as24cy: 'N',   currency: 'NOK', sites: 'Finn.no, AutoScout24.no' },
+  { code: 'FI', label: 'Finlande',    tva: 1.255, transport: 600,  tld: 'fi', as24cy: 'FIN', sites: 'Nettiauto.com, AutoScout24.fi' },
+  { code: 'MA', label: 'Maroc',       tva: 1.20,  transport: 1800, tld: 'ma', as24cy: null,  currency: 'MAD', sites: 'Avito.ma, Moteur.ma' },
+  { code: 'TN', label: 'Tunisie',     tva: 1.19,  transport: 2000, tld: 'tn', as24cy: null,  currency: 'TND', sites: 'Tayara.tn' },
+  { code: 'DZ', label: 'Algérie',     tva: 1.19,  transport: 2000, tld: 'dz', as24cy: null,  currency: 'DZD', sites: 'Ouedkniss.com' },
 ]
 
 const AS24_FUEL = { ES: '1', GO: '2', GP: '3', EL: '6', HY: '8', GH: '10' }
 function buildAs24Url(ctry, filters) {
+  if (!ctry.as24cy) return null
   const makeSlug = (filters.make || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
   const modelSlug = (filters.model || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
   const p = ['atype=C', `cy=${ctry.as24cy}`, 'damaged_listing=exclude', 'sort=standard', 'ustate=N%2CU']
@@ -255,13 +265,28 @@ export default function PriceWatch() {
           ES: { name: 'Coches.net', url: `https://www.coches.net/segunda-mano/?q=${q}` },
           PT: { name: 'CustoJusto.pt', url: `https://www.custojusto.pt/portugal/carros-e-motos/carros/?q=${q}` },
           LU: { name: 'Luxauto.lu', url: 'https://www.luxauto.lu/' },
+          CH: { name: 'Tutti.ch', url: `https://www.tutti.ch/de/suche/auto?q=${q}` },
+          HR: { name: 'Njuškalo.hr', url: `https://www.njuskalo.hr/auti?q=${q}` },
+          PL: { name: 'OtoMoto.pl', url: `https://www.otomoto.pl/osobowe?search[filter_str]=${q}` },
+          SE: { name: 'Blocket.se', url: `https://www.blocket.se/annonser/hela_sverige/fordon/bilar?q=${q}` },
+          NO: { name: 'Finn.no', url: `https://www.finn.no/car/used/search.html?q=${q}` },
+          FI: { name: 'Nettiauto.com', url: `https://www.nettiauto.com/en/?search[q]=${q}` },
+          MA: { name: 'Avito.ma', url: `https://www.avito.ma/fr/voitures?query=${q}` },
+          TN: { name: 'Tayara.tn', url: `https://www.tayara.tn/search/?q=${q}` },
+          DZ: { name: 'Ouedkniss.com', url: `https://www.ouedkniss.com/auto-vehicule-occasion?q=${q}` },
         }
         setFetchedAt(new Date().toISOString())
-        setCentraleUrl(as24Url)
-        setSources([
-          { name: `AutoScout24 ${ctry.label}`, url: as24Url },
-          ...(SECONDARY[ctry.code] ? [SECONDARY[ctry.code]] : []),
-        ])
+        if (as24Url) {
+          setCentraleUrl(as24Url)
+          setSources([
+            { name: `AutoScout24 ${ctry.label}`, url: as24Url },
+            ...(SECONDARY[ctry.code] ? [SECONDARY[ctry.code]] : []),
+          ])
+        } else {
+          const sec = SECONDARY[ctry.code]
+          setCentraleUrl(sec?.url || '')
+          setSources(sec ? [sec] : [])
+        }
       }
 
       // Analyse streamée en direct (comme le chat) — le texte s'affiche au fil
