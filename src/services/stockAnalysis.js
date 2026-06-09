@@ -50,40 +50,54 @@ Commence directement par « ## Lecture rapide », sans phrase d'introduction.`
 // SCRAPING WEB — extraction du stock via web_search (même mécanisme que
 // Veille Prix — contourne les blocages anti-bot des proxies serveur).
 // ════════════════════════════════════════════════════════════════════════════
-const SCRAPE_SYSTEM = `Tu es un extracteur de données automobiles. On te donne l'URL d'un showroom concessionnaire (La Centrale Pro ou similaire). Tu DOIS utiliser l'outil web_fetch pour récupérer le contenu RÉEL de cette page (et web_search en complément si besoin), puis retourner UNIQUEMENT les données extraites. Format de sortie STRICT : une ligne DEALER: <nom> puis un tableau JSON valide. Aucun autre texte avant ou après.`
+const SCRAPE_SYSTEM = `Tu es un extracteur de données automobiles expert en navigation web. Tu reçois l'URL d'un showroom concessionnaire (La Centrale Pro ou similaire).
 
-/**
- * Récupère le stock d'un concessionnaire via web_search (Claude navigue sur
- * la page — même mécanisme que la Veille Prix, non bloqué côté serveur).
- *
- * @param {string} url  — URL La Centrale Pro ou équivalent
- * @param {{ lang?: string }} opts
- * @returns {Promise<{ vehicles: object[], dealer: object }>}
- */
-export async function scrapeStockWithSearch(url, { lang = 'fr' } = {}) {
-  const prompt = `Récupère le contenu de cette page de stock automobiles (utilise web_fetch) et extrais TOUS les véhicules listés :
-${url}
+STRATÉGIE D'ACCÈS — applique dans cet ordre :
+1. Tente web_fetch sur l'URL fournie.
+2. Si la racine est bloquée (anti-bot, 403, page vide), essaie ces variantes dans l'ordre :
+   - <base>/voitures-occasion
+   - <base>/voitures-occasion?page=1
+   - <base>?page=1
+   Pour La Centrale Pro (pros.lacentrale.fr/CXXXXXX) : les sous-pages de listing par catégorie sont accessibles même quand la racine est protégée.
+3. Navigue TOUTES les pages de pagination en incrémentant le paramètre page jusqu'à ne plus trouver de nouveaux véhicules (maximum 15 pages — typiquement 9 à 12 véhicules par page).
+4. Agrège les véhicules de TOUTES les pages en un seul tableau.
 
-Retourne EXACTEMENT dans cet ordre — rien d'autre :
-1. Une ligne : DEALER: <nom du vendeur affiché sur la page>
-2. Un tableau JSON de tous les véhicules :
-[
-  {
-    "make": "MARQUE (majuscules)",
-    "model": "modèle",
-    "version": "finition/motorisation ou null",
-    "year": 2022,
-    "mileageKm": 45000,
-    "fuel": "Essence|Diesel|Électrique|Hybride|GPL|Autre",
-    "gearbox": "Manuelle|Automatique ou null",
-    "priceEur": 22900,
-    "marketBadge": "Très bonne affaire|Bonne affaire|Offre équitable|Au dessus du marché ou null"
-  }
-]
+Pendant ta navigation, indique brièvement chaque étape (ex : "Page 1 : 9 véhicules extraits", "Page 2 : 9 véhicules", etc.) avant d'écrire la ligne DEALER:.
 
-Si la page est inaccessible ou ne contient aucun véhicule, retourne :
+Format de sortie STRICT (rien d'autre après la narration de navigation) :
+DEALER: <nom du vendeur affiché sur la page>
+[tableau JSON de TOUS les véhicules]
+
+Si aucune page n'est accessible, retourne :
 DEALER: Inconnu
 []`
+
+/**
+ * Récupère le stock d'un concessionnaire via web_fetch (Claude navigue les
+ * pages paginées — même mécanisme que la Veille Prix).
+ *
+ * @param {string} url  — URL La Centrale Pro ou équivalent
+ * @param {{ lang?: string, onChunk?: (text: string) => void }} opts
+ * @returns {Promise<{ vehicles: object[], dealer: object }>}
+ */
+export async function scrapeStockWithSearch(url, { lang = 'fr', onChunk = null } = {}) {
+  const prompt = `Récupère TOUS les véhicules de ce showroom automobile en appliquant la stratégie d'accès décrite dans tes instructions système :
+${url}
+
+Pour chaque véhicule extrait, utilise ce schéma JSON :
+{
+  "make": "MARQUE (majuscules)",
+  "model": "modèle",
+  "version": "finition/motorisation ou null",
+  "year": 2022,
+  "mileageKm": 45000,
+  "fuel": "Essence|Diesel|Électrique|Hybride|GPL|Autre",
+  "gearbox": "Manuelle|Automatique ou null",
+  "priceEur": 22900,
+  "marketBadge": "Très bonne affaire|Bonne affaire|Offre équitable|Au dessus du marché ou null"
+}
+
+Navigue toutes les pages de pagination. Retourne la narration de navigation puis DEALER: <nom> et le tableau JSON complet.`
 
   const raw = await sendMessage(
     [{ role: 'user', content: prompt }],
@@ -91,11 +105,13 @@ DEALER: Inconnu
       lang,
       webFetch: true,
       webSearch: true,
-      maxSearches: 3,
-      maxTokens: 4096,
+      maxSearches: 20,
+      maxTokens: 8000,
       tool: 'analysestock',
       systemStatic: SCRAPE_SYSTEM,
       temperature: 0,
+      stream: true,
+      onChunk,
     }
   )
 

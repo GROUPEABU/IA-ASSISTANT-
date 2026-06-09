@@ -40,6 +40,7 @@ export default function AnalyseStock() {
 
   const [phase, setPhase] = useState('idle') // idle | scraping | analyzing | streaming | done
   const [report, setReport] = useState('')
+  const [scrapeLog, setScrapeLog] = useState('')
   const [stats, setStats] = useState(null)
   const [dealerName, setDealerName] = useState('')
   const [ignored, setIgnored] = useState(0)
@@ -57,6 +58,7 @@ export default function AnalyseStock() {
     setDealerName(dealer.name || company || '')
     setPhase('analyzing')
     setReport('')
+    setScrapeLog('')
 
     let first = true
     const text = await analyzeStock(
@@ -77,10 +79,19 @@ export default function AnalyseStock() {
 
   const analyzeFromUrl = async () => {
     if (!url.trim()) return
-    setError(null); setReport(''); setStats(null); setIgnored(0)
+    setError(null); setReport(''); setStats(null); setIgnored(0); setScrapeLog('')
     setPhase('scraping')
     try {
-      const { vehicles, dealer } = await scrapeStockWithSearch(url.trim(), { lang })
+      const { vehicles, dealer } = await scrapeStockWithSearch(url.trim(), {
+        lang,
+        onChunk: (raw) => {
+          // Show narration before the JSON array — hide raw data extraction
+          const cut = raw.search(/\n\[/)
+          const narration = (cut >= 0 ? raw.slice(0, cut) : raw)
+            .replace(/^DEALER:.*$/m, '').trim()
+          if (narration) setScrapeLog(narration)
+        },
+      })
       if (!company && dealer?.name) setCompany(dealer.name)
       await runAnalysis(dealer || { name: company }, vehicles)
     } catch (err) {
@@ -118,7 +129,7 @@ export default function AnalyseStock() {
   )
 
   const reset = () => {
-    setReport(''); setStats(null); setDealerName(''); setUrl(''); setCompany(''); setFileName(''); setIgnored(0); setError(null); setPhase('idle')
+    setReport(''); setStats(null); setDealerName(''); setUrl(''); setCompany(''); setFileName(''); setIgnored(0); setError(null); setPhase('idle'); setScrapeLog('')
   }
 
   const restore = (item) => {
@@ -207,9 +218,17 @@ export default function AnalyseStock() {
 
       {/* ── Chargement ────────────────────────────────────────────────────── */}
       {(phase === 'scraping' || (phase === 'analyzing' && !report)) && (
-        <div className="glass-card p-8 flex flex-col items-center gap-3 text-center">
-          <Spinner />
-          <p className="text-sm text-slate-400">{phase === 'scraping' ? t('stock_scraping') : t('stock_analyzing')}</p>
+        <div className="glass-card p-6 flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <Spinner />
+            <p className="text-sm text-slate-400">{phase === 'scraping' ? t('stock_scraping') : t('stock_analyzing')}</p>
+          </div>
+          {phase === 'scraping' && scrapeLog && (
+            <div className="w-full mt-1 rounded-xl bg-navy-900/60 border border-navy-700/40 px-4 py-3 font-mono text-[11px] text-slate-400 max-h-36 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+              {scrapeLog}
+              <span className="inline-block w-0.5 h-[1em] animate-pulse align-middle ml-0.5 opacity-60 bg-cyan-400" />
+            </div>
+          )}
         </div>
       )}
 
