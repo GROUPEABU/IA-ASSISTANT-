@@ -80,7 +80,7 @@ export default function AnalyseStock() {
     setError(null); setReport(''); setStats(null); setIgnored(0)
     setPhase('scraping')
     try {
-      const res = await fetch(`/api/scrape-stock?url=${encodeURIComponent(url.trim())}`)
+      const res = await fetch(`/api/stock?url=${encodeURIComponent(url.trim())}`)
       // Réponse non-JSON (ex. page 404 Vercel si la fonction serveur n'est pas
       // déployée) → message clair, jamais de crash « not valid JSON ».
       const ct = res.headers.get('content-type') || ''
