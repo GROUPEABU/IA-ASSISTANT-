@@ -326,8 +326,8 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
   // recherche) — c'est ce que fait Claude chat quand on colle un lien.
   if (webSearch || webFetch) {
     body.tools = []
-    if (webFetch) body.tools.push({ type: 'web_fetch_20250910', name: 'web_fetch', max_uses: maxSearches })
-    if (webSearch) body.tools.push({ type: 'web_search_20250305', name: 'web_search', max_uses: maxSearches })
+    if (webFetch) body.tools.push({ type: 'web_fetch_20260209', name: 'web_fetch', max_uses: maxSearches })
+    if (webSearch) body.tools.push({ type: 'web_search_20260209', name: 'web_search', max_uses: maxSearches })
   }
 
   // Streaming interne : pour les requêtes longues (recherche web en direct),
@@ -470,7 +470,7 @@ export async function streamMessage(messages, { lang = 'fr', onChunk, temperatur
     body.temperature = temperature
   }
   if (webSearch) {
-    body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: maxSearches }]
+    body.tools = [{ type: 'web_search_20260209', name: 'web_search', max_uses: maxSearches }]
   }
 
   let fullText = ''

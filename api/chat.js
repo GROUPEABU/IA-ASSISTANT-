@@ -86,10 +86,7 @@ export default async function handler(req) {
   if (Array.isArray(parsed.system) && parsed.system.some((b) => b?.cache_control?.type === 'ephemeral')) {
     betas.push('prompt-caching-2024-07-31')
   }
-  // Web fetch : récupération du contenu réel d'une URL (≠ web search).
-  if (Array.isArray(parsed.tools) && parsed.tools.some((tool) => tool?.type === 'web_fetch_20250910')) {
-    betas.push('web-fetch-2025-09-10')
-  }
+  // web_fetch_20260209 est GA — aucun header beta requis.
 
   let upstream
   try {
