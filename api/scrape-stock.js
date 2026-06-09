@@ -1,4 +1,4 @@
-// Vercel Edge Function — récupère le stock d'un showroom pro La Centrale.
+// Vercel Edge Function (v2) — récupère le stock d'un showroom pro La Centrale.
 //
 // ⚠️ Contexte projet : le scraping La Centrale depuis les IP Vercel est
 // fréquemment bloqué (403 anti-bot, cf. api/price-watch.js). Cette fonction
