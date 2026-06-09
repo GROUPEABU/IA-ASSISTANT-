@@ -290,7 +290,7 @@ function buildContent(text, attachment) {
  * @param {ChatMessage[]} messages
  * @returns {Promise<string>}
  */
-export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3, tool = null, systemStatic = null, webSearch = false, maxSearches = 5, returnMeta = false, stream = false, onChunk = null } = {}) {
+export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3, tool = null, systemStatic = null, webSearch = false, webFetch = false, maxSearches = 5, returnMeta = false, stream = false, onChunk = null } = {}) {
   assertOnline()
   const apiMessages = messages.map(({ role, content, attachment }) => ({
     role,
@@ -322,15 +322,19 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
   }
   // Pont vers la recherche web officielle (exécutée côté serveur,
   // jamais bloquée comme un proxy navigateur). Le modèle décide quand chercher.
-  if (webSearch) {
-    body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: maxSearches }]
+  // web_fetch récupère le CONTENU RÉEL d'une URL fournie (≠ extraits de
+  // recherche) — c'est ce que fait Claude chat quand on colle un lien.
+  if (webSearch || webFetch) {
+    body.tools = []
+    if (webFetch) body.tools.push({ type: 'web_fetch_20250910', name: 'web_fetch', max_uses: maxSearches })
+    if (webSearch) body.tools.push({ type: 'web_search_20250305', name: 'web_search', max_uses: maxSearches })
   }
 
   // Streaming interne : pour les requêtes longues (recherche web en direct),
   // on stream la réponse afin que des octets circulent en continu. Sans cela,
   // la passerelle coupe une requête non-streamée trop longue → 504. Le texte
   // est accumulé puis renvoyé comme si la requête était classique.
-  if (stream || webSearch) {
+  if (stream || webSearch || webFetch) {
     body.stream = true
     return streamToText(body, { returnMeta, onChunk })
   }

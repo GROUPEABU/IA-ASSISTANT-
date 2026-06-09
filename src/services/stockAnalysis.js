@@ -50,7 +50,7 @@ Commence directement par « ## Lecture rapide », sans phrase d'introduction.`
 // SCRAPING WEB — extraction du stock via web_search (même mécanisme que
 // Veille Prix — contourne les blocages anti-bot des proxies serveur).
 // ════════════════════════════════════════════════════════════════════════════
-const SCRAPE_SYSTEM = `Tu es un extracteur de données automobiles. On te donne l'URL d'un showroom concessionnaire (La Centrale Pro ou similaire). Tu DOIS utiliser web_search pour visiter cette URL et retourner UNIQUEMENT les données extraites. Format de sortie STRICT : une ligne DEALER: <nom> puis un tableau JSON valide. Aucun autre texte avant ou après.`
+const SCRAPE_SYSTEM = `Tu es un extracteur de données automobiles. On te donne l'URL d'un showroom concessionnaire (La Centrale Pro ou similaire). Tu DOIS utiliser l'outil web_fetch pour récupérer le contenu RÉEL de cette page (et web_search en complément si besoin), puis retourner UNIQUEMENT les données extraites. Format de sortie STRICT : une ligne DEALER: <nom> puis un tableau JSON valide. Aucun autre texte avant ou après.`
 
 /**
  * Récupère le stock d'un concessionnaire via web_search (Claude navigue sur
@@ -61,7 +61,7 @@ const SCRAPE_SYSTEM = `Tu es un extracteur de données automobiles. On te donne 
  * @returns {Promise<{ vehicles: object[], dealer: object }>}
  */
 export async function scrapeStockWithSearch(url, { lang = 'fr' } = {}) {
-  const prompt = `Visite cette page de stock automobiles et extrais TOUS les véhicules listés :
+  const prompt = `Récupère le contenu de cette page de stock automobiles (utilise web_fetch) et extrais TOUS les véhicules listés :
 ${url}
 
 Retourne EXACTEMENT dans cet ordre — rien d'autre :
@@ -89,6 +89,7 @@ DEALER: Inconnu
     [{ role: 'user', content: prompt }],
     {
       lang,
+      webFetch: true,
       webSearch: true,
       maxSearches: 3,
       maxTokens: 4096,

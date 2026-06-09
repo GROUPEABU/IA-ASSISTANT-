@@ -80,10 +80,16 @@ export default async function handler(req) {
     )
   }
 
-  // Prompt caching : si le body contient des blocs system avec cache_control,
-  // on ajoute l'en-tête beta requis par l'API Anthropic.
-  const usesCaching = Array.isArray(parsed.system) &&
-    parsed.system.some((b) => b?.cache_control?.type === 'ephemeral')
+  // En-têtes beta requis selon le contenu du corps.
+  const betas = []
+  // Prompt caching : blocs system avec cache_control ephemeral.
+  if (Array.isArray(parsed.system) && parsed.system.some((b) => b?.cache_control?.type === 'ephemeral')) {
+    betas.push('prompt-caching-2024-07-31')
+  }
+  // Web fetch : récupération du contenu réel d'une URL (≠ web search).
+  if (Array.isArray(parsed.tools) && parsed.tools.some((tool) => tool?.type === 'web_fetch_20250910')) {
+    betas.push('web-fetch-2025-09-10')
+  }
 
   let upstream
   try {
@@ -93,7 +99,7 @@ export default async function handler(req) {
         'x-api-key':         key,
         'anthropic-version': API_VERSION,
         'content-type':      'application/json',
-        ...(usesCaching && { 'anthropic-beta': 'prompt-caching-2024-07-31' }),
+        ...(betas.length && { 'anthropic-beta': betas.join(',') }),
       },
       body,
     })
