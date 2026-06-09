@@ -47,6 +47,11 @@ export default async function handler(req) {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 })
 
   const { searchParams } = new URL(req.url)
+
+  // ── Mode « analyse de stock » (greffé ici car les NOUVEAUX fichiers /api ne
+  // sont pas enregistrés par le déploiement ; cette fonction l'est déjà). ─────
+  const stockUrl = searchParams.get('stockUrl')
+  if (stockUrl) return handleStock(stockUrl)
   const s = (k, max = 100) => (searchParams.get(k) || '').trim().slice(0, max)
   const make        = s('make')
   const model       = s('model')
@@ -124,4 +129,125 @@ export default async function handler(req) {
     }),
     { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
   )
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ANALYSE DE STOCK — scraping d'un showroom pro La Centrale (greffé ici).
+// En cas de blocage anti-bot (403 fréquent depuis Vercel), renvoie un JSON
+// d'erreur explicite pour que l'UI bascule sur l'import CSV.
+// ════════════════════════════════════════════════════════════════════════════
+const STOCK_MAX_PAGES = 15
+const STOCK_DELAY_MS = 180
+const stockSleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const stockNum = (s) => parseInt(String(s).replace(/[\s .]/g, ''), 10)
+const STOCK_FUELS = ['Bicarburation essence / gpl', 'Hybrides', 'Électrique', 'Electrique', 'Essence', 'Diesel']
+const STOCK_BADGES = ['Très bonne affaire', 'Bonne affaire', 'Offre équitable', 'Au dessus du marché']
+
+function stockJson(obj, status = 200) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' },
+  })
+}
+function stockStrip(html) {
+  return html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&euro;/g, '€')
+    .replace(/&amp;/g, '&').replace(/&#0?39;|&apos;/g, "'").replace(/\s+/g, ' ').trim()
+}
+function stockFuel(text) {
+  for (const f of STOCK_FUELS) if (text.toLowerCase().includes(f.toLowerCase())) return f === 'Electrique' ? 'Électrique' : f
+  return null
+}
+function stockBadge(text) {
+  for (const b of STOCK_BADGES) if (text.includes(b)) return b
+  return null
+}
+function stockCard(text, annonceId, url) {
+  const yearM = text.match(/\b(20\d{2})\b/)
+  const kmM = text.match(/([\d\s ]{2,})\s*km\b/i)
+  const priceM = text.match(/([\d\s ]{3,})\s*€/)
+  const gearbox = /\bauto(matique)?\b/i.test(text) ? 'Auto' : /\bmanuelle?\b/i.test(text) ? 'Manuelle' : null
+  const head = text.split(/\b20\d{2}\b/)[0].trim()
+  const parts = head.split(/\s+/)
+  return {
+    annonceId,
+    make: parts[0] ? parts[0].toUpperCase() : null,
+    model: parts.slice(1).join(' ').trim() || null,
+    version: null,
+    year: yearM ? Number(yearM[1]) : null,
+    gearbox,
+    mileageKm: kmM ? stockNum(kmM[1]) : null,
+    fuel: stockFuel(text),
+    priceEur: priceM ? stockNum(priceM[1]) : null,
+    marketBadge: stockBadge(text),
+    url,
+  }
+}
+function stockParse(html) {
+  let name = ''
+  const ogM = html.match(/<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']+)["']/i)
+    || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:site_name["']/i)
+  if (ogM) name = ogM[1].trim()
+  if (!name) { const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i); if (h1) name = stockStrip(h1[1]) }
+  let total = null
+  const totM = stockStrip(html).match(/([\d\s ]{1,7})\s*annonces?\b/i)
+  if (totM) { const n = stockNum(totM[1]); if (Number.isFinite(n) && n > 0) total = n }
+  const vehicles = []
+  const seen = new Set()
+  const re = /<a\b[^>]*href=["']([^"']*\/annonce\/(\d+)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi
+  let m
+  while ((m = re.exec(html)) !== null) {
+    const href = m[1], annonceId = m[2]
+    if (seen.has(annonceId)) continue
+    const text = stockStrip(m[3])
+    if (text.length < 6) continue
+    const url = href.startsWith('http') ? href : `https://www.lacentrale.fr${href.startsWith('/') ? '' : '/'}${href}`
+    const v = stockCard(text, annonceId, url)
+    if (v.make || v.priceEur) { vehicles.push(v); seen.add(annonceId) }
+  }
+  return { name, total, vehicles }
+}
+
+async function handleStock(rawUrlIn) {
+  let raw = (rawUrlIn || '').trim()
+  try { raw = decodeURIComponent(raw) } catch { /* garde tel quel */ }
+  const idM = raw.match(/(C\d{4,})/i)
+  if (!idM) return stockJson({ error: 'invalid_url', message: "URL invalide : identifiant concession (Cxxxx) introuvable. Exemple : https://pros.lacentrale.fr/C043036" }, 400)
+  const dealerId = idM[1].toUpperCase()
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+    'Referer': `https://pros.lacentrale.fr/${dealerId}`,
+  }
+  const listingUrl = (page) => page <= 1
+    ? `https://pros.lacentrale.fr/${dealerId}/index?vertical=car`
+    : `https://pros.lacentrale.fr/${dealerId}/index?page=${page}&vertical=car`
+
+  let dealerName = '', total = null
+  const all = [], seen = new Set()
+  for (let page = 1; page <= STOCK_MAX_PAGES; page++) {
+    let resp
+    try { resp = await fetch(listingUrl(page), { headers }) }
+    catch (err) {
+      if (page === 1) return stockJson({ error: 'blocked', message: `La Centrale est injoignable côté serveur (${err.message}). Réessayez ou importez un export CSV.` })
+      break
+    }
+    if (!resp.ok) {
+      if (page === 1) return stockJson({ error: 'blocked', message: `La Centrale a refusé la requête côté serveur (HTTP ${resp.status}) — blocage anti-bot fréquent depuis l'hébergeur. Réessayez ou importez l'export CSV du vendeur (données plus riches).` })
+      break
+    }
+    const html = await resp.text()
+    const parsed = stockParse(html)
+    if (page === 1) { dealerName = parsed.name; total = parsed.total }
+    if (parsed.vehicles.length === 0) break
+    for (const v of parsed.vehicles) if (!seen.has(v.annonceId)) { all.push(v); seen.add(v.annonceId) }
+    if (total && all.length >= total) break
+    if (page < STOCK_MAX_PAGES) await stockSleep(STOCK_DELAY_MS)
+  }
+  if (all.length === 0) return stockJson({ error: 'empty', message: "Aucune annonce trouvée (showroom vide, URL incorrecte, ou page bloquée). Vous pouvez importer un export CSV à la place." })
+  return stockJson({
+    dealer: { id: dealerId, name: dealerName || dealerId, url: `https://pros.lacentrale.fr/${dealerId}`, vehicleCount: total || all.length },
+    vehicles: all,
+    scrapedAt: new Date().toISOString(),
+  })
 }
