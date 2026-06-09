@@ -81,6 +81,16 @@ export default function AnalyseStock() {
     setPhase('scraping')
     try {
       const res = await fetch(`/api/scrape-stock?url=${encodeURIComponent(url.trim())}`)
+      // Réponse non-JSON (ex. page 404 Vercel si la fonction serveur n'est pas
+      // déployée) → message clair, jamais de crash « not valid JSON ».
+      const ct = res.headers.get('content-type') || ''
+      if (!ct.includes('application/json')) {
+        setPhase('idle')
+        setError(res.status === 404
+          ? "L'analyse par lien n'est pas disponible pour le moment (service serveur indisponible). Utilisez l'import CSV ci-dessus — il fonctionne sans cette fonction."
+          : `Récupération impossible (HTTP ${res.status}). Utilisez l'import CSV.`)
+        return
+      }
       const data = await res.json()
       if (data.error) {
         setPhase('idle')
