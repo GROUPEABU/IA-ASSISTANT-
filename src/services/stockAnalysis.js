@@ -1,4 +1,4 @@
-import { sendMessage } from './claude'
+import { sendMessage, extractJSON } from './claude'
 
 // ════════════════════════════════════════════════════════════════════════════
 // ANALYSE DE STOCK PARTENAIRE — prompt système (bloc statique, mis en cache)
@@ -45,6 +45,78 @@ Ce qui fonctionne et doit tourner (segments bien pricés, qualité du sourcing, 
 Termine par UNE ligne sur les données : si l'ancienneté, le prix d'achat ou la cote manquent, rappelle qu'ils permettraient de chiffrer l'ancienneté réelle, la marge et l'écart à la cote ; s'ils sont déjà présents, ne les redemande pas.
 
 Commence directement par « ## Lecture rapide », sans phrase d'introduction.`
+
+// ════════════════════════════════════════════════════════════════════════════
+// SCRAPING WEB — extraction du stock via web_search (même mécanisme que
+// Veille Prix — contourne les blocages anti-bot des proxies serveur).
+// ════════════════════════════════════════════════════════════════════════════
+const SCRAPE_SYSTEM = `Tu es un extracteur de données automobiles. On te donne l'URL d'un showroom concessionnaire (La Centrale Pro ou similaire). Tu DOIS utiliser web_search pour visiter cette URL et retourner UNIQUEMENT les données extraites. Format de sortie STRICT : une ligne DEALER: <nom> puis un tableau JSON valide. Aucun autre texte avant ou après.`
+
+/**
+ * Récupère le stock d'un concessionnaire via web_search (Claude navigue sur
+ * la page — même mécanisme que la Veille Prix, non bloqué côté serveur).
+ *
+ * @param {string} url  — URL La Centrale Pro ou équivalent
+ * @param {{ lang?: string }} opts
+ * @returns {Promise<{ vehicles: object[], dealer: object }>}
+ */
+export async function scrapeStockWithSearch(url, { lang = 'fr' } = {}) {
+  const prompt = `Visite cette page de stock automobiles et extrais TOUS les véhicules listés :
+${url}
+
+Retourne EXACTEMENT dans cet ordre — rien d'autre :
+1. Une ligne : DEALER: <nom du vendeur affiché sur la page>
+2. Un tableau JSON de tous les véhicules :
+[
+  {
+    "make": "MARQUE (majuscules)",
+    "model": "modèle",
+    "version": "finition/motorisation ou null",
+    "year": 2022,
+    "mileageKm": 45000,
+    "fuel": "Essence|Diesel|Électrique|Hybride|GPL|Autre",
+    "gearbox": "Manuelle|Automatique ou null",
+    "priceEur": 22900,
+    "marketBadge": "Très bonne affaire|Bonne affaire|Offre équitable|Au dessus du marché ou null"
+  }
+]
+
+Si la page est inaccessible ou ne contient aucun véhicule, retourne :
+DEALER: Inconnu
+[]`
+
+  const raw = await sendMessage(
+    [{ role: 'user', content: prompt }],
+    {
+      lang,
+      webSearch: true,
+      maxSearches: 3,
+      maxTokens: 4096,
+      tool: 'analysestock',
+      systemStatic: SCRAPE_SYSTEM,
+      temperature: 0,
+    }
+  )
+
+  const dealerMatch = raw.match(/DEALER:\s*(.+)/i)
+  const dealerName = dealerMatch ? dealerMatch[1].trim().replace(/^inconnu$/i, '') : ''
+
+  let vehicles = []
+  try {
+    vehicles = extractJSON(raw, 'array')
+  } catch {
+    throw new Error("Impossible d'extraire les véhicules depuis cette URL. Vérifiez le lien ou utilisez l'import CSV.")
+  }
+
+  if (!vehicles.length) {
+    throw new Error("Aucun véhicule trouvé à cette URL. Vérifiez le lien ou utilisez l'import CSV.")
+  }
+
+  return {
+    vehicles,
+    dealer: { id: null, name: dealerName, url, vehicleCount: vehicles.length },
+  }
+}
 
 /**
  * Demande à Claude un diagnostic de stock actionnable.

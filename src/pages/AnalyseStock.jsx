@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { Boxes, Link2, Upload, Search, RefreshCw, RotateCcw, Download } from 'lucide-react'
-import { analyzeStock } from '@/services/stockAnalysis'
+import { analyzeStock, scrapeStockWithSearch } from '@/services/stockAnalysis'
 import { computeStockStats } from '@/utils/stockStats'
 import { parseStockFile } from '@/utils/stockCsv'
 import Spinner from '@/components/ui/Spinner'
@@ -80,25 +80,9 @@ export default function AnalyseStock() {
     setError(null); setReport(''); setStats(null); setIgnored(0)
     setPhase('scraping')
     try {
-      const res = await fetch(`/api/price-watch?stockUrl=${encodeURIComponent(url.trim())}`)
-      // Réponse non-JSON (ex. page 404 Vercel si la fonction serveur n'est pas
-      // déployée) → message clair, jamais de crash « not valid JSON ».
-      const ct = res.headers.get('content-type') || ''
-      if (!ct.includes('application/json')) {
-        setPhase('idle')
-        setError(res.status === 404
-          ? "L'analyse par lien n'est pas disponible pour le moment (service serveur indisponible). Utilisez l'import CSV ci-dessus — il fonctionne sans cette fonction."
-          : `Récupération impossible (HTTP ${res.status}). Utilisez l'import CSV.`)
-        return
-      }
-      const data = await res.json()
-      if (data.error) {
-        setPhase('idle')
-        setError(data.message || "Récupération impossible. Essayez l'import CSV.")
-        return
-      }
-      if (!company && data.dealer?.name) setCompany(data.dealer.name)
-      await runAnalysis(data.dealer || { name: company }, data.vehicles || [])
+      const { vehicles, dealer } = await scrapeStockWithSearch(url.trim(), { lang })
+      if (!company && dealer?.name) setCompany(dealer.name)
+      await runAnalysis(dealer || { name: company }, vehicles)
     } catch (err) {
       setPhase('idle')
       setError(err.message)
