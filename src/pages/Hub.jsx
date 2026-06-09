@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck, Calculator, Mic, Globe, Zap, TrendingUp } from 'lucide-react'
+import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck, Calculator, Mic, Globe, Zap, TrendingUp, Ruler, Boxes } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 
 const colorMap = {
@@ -10,6 +10,8 @@ const colorMap = {
   rose:    { bg: 'bg-rose-400/10',    border: 'border-rose-400/20',    icon: 'text-rose-400',    badge: 'bg-rose-400/10 text-rose-400 border-rose-400/20',       hoverBorder: '#fb7185' },
   teal:    { bg: 'bg-teal-400/10',    border: 'border-teal-400/20',    icon: 'text-teal-400',    badge: 'bg-teal-400/10 text-teal-400 border-teal-400/20',       hoverBorder: '#2dd4bf' },
   indigo:  { bg: 'bg-indigo-400/10',  border: 'border-indigo-400/20',  icon: 'text-indigo-400',  badge: 'bg-indigo-400/10 text-indigo-400 border-indigo-400/20', hoverBorder: '#818cf8' },
+  blue:    { bg: 'bg-blue-400/10',    border: 'border-blue-400/20',    icon: 'text-blue-400',    badge: 'bg-blue-400/10 text-blue-400 border-blue-400/20',       hoverBorder: '#60a5fa' },
+  sky:     { bg: 'bg-sky-400/10',     border: 'border-sky-400/20',     icon: 'text-sky-400',     badge: 'bg-sky-400/10 text-sky-400 border-sky-400/20',          hoverBorder: '#38bdf8' },
 }
 
 export default function Hub() {
@@ -23,12 +25,14 @@ export default function Hub() {
     { to: '/objections', icon: ShieldCheck,   color: 'rose',   titleKey: 'tool_objections_title',descKey: 'tool_objections_desc', badgeKey: 'hub_badge_btob_btoc' },
     { to: '/tco',        icon: Calculator,    color: 'teal',   titleKey: 'tool_tco_title',       descKey: 'tool_tco_desc',        badgeKey: 'hub_badge_3_5_years' },
     { to: '/pitch',      icon: Mic,           color: 'indigo', titleKey: 'tool_pitch_title',     descKey: 'tool_pitch_desc',      badgeKey: 'hub_badge_ai' },
+    { to: '/compare',    icon: Ruler,         color: 'blue',   titleKey: 'tool_compare_title',   descKey: 'tool_compare_desc',    badgeKey: 'hub_badge_ai' },
+    { to: '/stock-analysis', icon: Boxes,     color: 'sky',    titleKey: 'tool_stock_title',     descKey: 'tool_stock_desc',      badgeKey: 'hub_badge_stock' },
     { to: '/chat',       icon: MessageSquare, color: 'violet', titleKey: 'tool_chat_title',      descKey: 'tool_chat_desc',       badgeKey: 'hub_badge_ai' },
   ]
 
   const stats = [
     { label: '40 pays',        value: '40',  icon: Globe,      color: '#50E5E5', sub: t('stat_countries') },
-    { label: '7 outils',       value: '7',   icon: Zap,        color: '#a78bfa', sub: t('stat_tools') },
+    { label: '9 outils',       value: '9',   icon: Zap,        color: '#a78bfa', sub: t('stat_tools') },
     { label: 'Marchés',        value: '2',   icon: TrendingUp, color: '#34d399', sub: t('stat_markets') },
   ]
 

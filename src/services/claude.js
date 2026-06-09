@@ -29,6 +29,7 @@ const TOOL_MODELS = {
   objections:        'claude-haiku-4-5-20251001',
   pitch:             'claude-haiku-4-5-20251001',
   rapportcommercial: 'claude-haiku-4-5-20251001',
+  analysestock:      'claude-sonnet-4-6',
 }
 
 import { getSessionUserId, ukey } from '@/utils/userStorage'
@@ -234,7 +235,7 @@ Rules:
 - Always include at least one concrete figure (price, %, km, lead time, saving).
 - Bullet points when there are more than 2 facts.
 - Never use generic formulas ("cela dépend…", "il faut considérer…").
-- If the question needs real-time pricing, mention the Veille Prix tool; for vehicle comparison, the Comparateur; for CO₂/malus, the CO₂ & Malus calculator; for TCO, the Calculateur TCO.
+- If the question needs real-time pricing, mention the Veille Prix tool; for vehicle comparison, the Comparateur; for CO₂/malus, the CO₂ & Malus calculator; for TCO, the Calculateur TCO; for a partner's whole-stock pricing/rotation diagnosis, the Analyse de stock tool.
 - Always respond in ${langName}.
 ${ANTI_BS}`
 }

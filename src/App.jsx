@@ -49,6 +49,7 @@ const Objections     = lazyWithReload(() => import('@/pages/Objections'))
 const PitchGenerator = lazyWithReload(() => import('@/pages/PitchGenerator'))
 const Tco            = lazyWithReload(() => import('@/pages/Tco'))
 const Compare        = lazyWithReload(() => import('@/pages/Compare'))
+const AnalyseStock   = lazyWithReload(() => import('@/pages/AnalyseStock'))
 
 function S({ children }) {
   return (
@@ -95,6 +96,7 @@ function AppRoutes() {
           <Route path="pitch"        element={<S><PitchGenerator /></S>} />
           <Route path="tco"          element={<S><Tco /></S>} />
           <Route path="compare"      element={<S><Compare /></S>} />
+          <Route path="stock-analysis" element={<S><AnalyseStock /></S>} />
           <Route path="settings"     element={<S><Settings /></S>} />
         </Route>
 
