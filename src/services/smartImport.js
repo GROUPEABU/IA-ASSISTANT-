@@ -112,18 +112,20 @@ export function toStockVehicles(vehicles) {
  * @returns {Promise<{ vehicles: object[], ignored: number, dealer: object, source: 'columns'|'ai' }>}
  */
 export async function extractVehiclesSmart(file, { lang = 'fr' } = {}) {
-  let deterministicErr
+  // L'outil s'adapte au fichier : aucune colonne imposée. Si même la lecture
+  // adaptative ne trouve rien, le message ne doit PAS parler d'en-têtes requis.
+  const failMsg = 'Aucun véhicule exploitable trouvé dans ce fichier, même en lecture adaptative. Vérifiez qu\'il contient bien des véhicules (modèle, et idéalement prix, km ou année).'
   try {
     const { vehicles, ignored, dealer } = await parseStockFile(file)
     return { vehicles, ignored, dealer, source: 'columns' }
-  } catch (err) {
-    deterministicErr = err
+  } catch {
+    // Format non reconnu → repli adaptatif ci-dessous.
   }
 
   // Repli adaptatif : le modèle lit la grille brute, quel que soit son style.
   const grid = await fileToGrid(file)
   const text = gridToText(grid)
-  if (!text.trim()) throw deterministicErr
+  if (!text.trim()) throw new Error(failMsg)
 
   const raw = await sendMessage(
     [{ role: 'user', content: EXTRACT_PROMPT + text }],
@@ -131,7 +133,7 @@ export async function extractVehiclesSmart(file, { lang = 'fr' } = {}) {
   )
   const arr = extractJSON(raw, 'array')
   const vehicles = (Array.isArray(arr) ? arr : []).map(normalizeAiRow).filter(Boolean)
-  if (!vehicles.length) throw deterministicErr
+  if (!vehicles.length) throw new Error(failMsg)
 
   return {
     vehicles,

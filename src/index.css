@@ -234,13 +234,22 @@ header {
 /* Declared AFTER density rules so it wins when both have !important.            */
 @media (max-width: 767px) {
   .layout-scroll-main {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 7rem) !important;
+    /* 9rem : nav basse (~72px) + barre d'outils Safari iOS + marge de confort.
+       L'utilisateur doit TOUJOURS pouvoir faire défiler le dernier élément
+       entièrement au-dessus de la nav. */
+    padding-bottom: calc(env(safe-area-inset-bottom) + 9rem) !important;
   }
 }
 @media (min-width: 768px) {
   .layout-scroll-main {
     padding-bottom: 1.5rem !important;
   }
+}
+
+/* Garde anti-débordement horizontal : aucun contenu ne doit créer de scroll
+   latéral sur mobile (badges, prix longs, tableaux). */
+.layout-scroll-main {
+  overflow-x: hidden;
 }
 
 /* ── Landscape mobile/tablet — hide bottom nav, reduce padding ───────────── */

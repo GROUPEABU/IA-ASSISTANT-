@@ -75,13 +75,13 @@ function ProductCard({ product, onDelete, navigate, t, formatCurrency }) {
         </div>
       </div>
 
-      {/* Price & Malus */}
-      <div className="flex items-center justify-between pt-3 border-t border-navy-700/50 mb-2">
-        <div>
+      {/* Price & Malus — flex-wrap : sur écran étroit le malus passe dessous au lieu de déborder */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 pt-3 border-t border-navy-700/50 mb-2">
+        <div className="min-w-0">
           <span className="text-[11px] text-slate-500">{t('from_price')} </span>
           <span className="text-base font-bold text-white">{formatCurrency(product.prix.premier_net ?? product.prix.base)}</span>
         </div>
-        <div className="text-right">
+        <div className="text-right min-w-0">
           <span className="text-[11px] text-slate-500">{t('products_fr_duty')} </span>
           <span className={`text-sm font-bold ${mc === 'danger' ? 'text-red-400' : mc === 'orange' ? 'text-warn' : 'text-emerald-400'}`}>
             {malus > 0 ? `+${formatCurrency(malus)}` : t('exempt')}

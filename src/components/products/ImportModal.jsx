@@ -54,16 +54,16 @@ export default function ImportModal({ onImported, onClose }) {
     try {
       const res = await parseImportFile(file)
       setPreview(res)
-    } catch (firstErr) {
+    } catch {
       // Format libre non reconnu → lecture adaptative IA (comme Claude chat).
       try {
         const { vehicles, source } = await extractVehiclesSmart(file, { lang })
         const rows = vehicles.map(toProductRow).filter((r) => r.model)
-        if (!rows.length) throw firstErr
+        if (!rows.length) throw new Error(t('pw_batch_none'))
         setPreview(productsFromRows(rows))
         setSmartUsed(source === 'ai')
-      } catch {
-        setError(firstErr.message)
+      } catch (smartErr) {
+        setError(smartErr.message)
       }
     } finally {
       setParsing(false)
