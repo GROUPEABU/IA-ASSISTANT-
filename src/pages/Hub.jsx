@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck, Calculator, Mic, Globe, Zap, TrendingUp, Ruler, Boxes, History, Pin, RefreshCw } from 'lucide-react'
+import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck, Calculator, Mic, Globe, Zap, TrendingUp, Ruler, Boxes, Truck, History, Pin, RefreshCw } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 import { sendToTool } from '@/utils/toolBridge'
 import { ukey, getSessionUserId } from '@/utils/userStorage'
@@ -56,13 +56,14 @@ export default function Hub() {
     { to: '/pitch',      icon: Mic,           color: 'indigo', titleKey: 'tool_pitch_title',     descKey: 'tool_pitch_desc',      badgeKey: 'hub_badge_ai' },
     { to: '/compare',    icon: Ruler,         color: 'blue',   titleKey: 'tool_compare_title',   descKey: 'tool_compare_desc',    badgeKey: 'hub_badge_ai' },
     { to: '/stock-analysis', icon: Boxes,     color: 'sky',    titleKey: 'tool_stock_title',     descKey: 'tool_stock_desc',      badgeKey: 'hub_badge_stock' },
+    { to: '/logistics',  icon: Truck,         color: 'amber',  titleKey: 'tool_logistics_title', descKey: 'tool_logistics_desc',  badgeKey: 'hub_badge_trucks' },
     { to: '/chat',       icon: MessageSquare, color: 'violet', titleKey: 'tool_chat_title',      descKey: 'tool_chat_desc',       badgeKey: 'hub_badge_ai' },
   ]
 
   const stats = [
     // À synchroniser avec COUNTRIES de malusWorld.js (non importé ici : trop lourd pour le chunk Hub)
     { label: '52 pays',        value: '52',  icon: Globe,      color: '#50E5E5', sub: t('stat_countries') },
-    { label: '9 outils',       value: '9',   icon: Zap,        color: '#a78bfa', sub: t('stat_tools') },
+    { label: '10 outils',      value: '10',  icon: Zap,        color: '#a78bfa', sub: t('stat_tools') },
     { label: 'Marchés',        value: '2',   icon: TrendingUp, color: '#34d399', sub: t('stat_markets') },
   ]
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BookOpen, Gauge, Bell, ShieldCheck, Calculator, Mic, Ruler, Boxes,
+  BookOpen, Gauge, Bell, ShieldCheck, Calculator, Mic, Ruler, Boxes, Truck,
   MessageSquare, Settings, Home, Search, CornerDownLeft,
 } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -17,6 +17,7 @@ const DESTINATIONS = [
   { to: '/pitch',          icon: Mic,           titleKey: 'tool_pitch_title' },
   { to: '/compare',        icon: Ruler,         titleKey: 'tool_compare_title' },
   { to: '/stock-analysis', icon: Boxes,         titleKey: 'tool_stock_title' },
+  { to: '/logistics',      icon: Truck,         titleKey: 'tool_logistics_title' },
   { to: '/chat',           icon: MessageSquare, titleKey: 'tool_chat_title' },
   { to: '/settings',       icon: Settings,      titleKey: 'nav_settings' },
 ]

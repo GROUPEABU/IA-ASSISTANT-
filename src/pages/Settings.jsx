@@ -4,6 +4,7 @@ import { Key, Palette, Globe, Check, Monitor, Sun, Laptop, Scale, ChevronRight, 
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { ukey } from '@/utils/userStorage'
+import { getMarginTarget, setMarginTarget, MARGIN_MIN, MARGIN_MAX } from '@/utils/marginTarget'
 
 const Section = ({ icon: Icon, title, children }) => (
   <div className="glass-card overflow-hidden">
@@ -43,6 +44,13 @@ export default function Settings() {
   const aiPowerKey  = ukey(user?.id ?? null, 'ai_power')
   const [theme,      setTheme]      = useState(() => localStorage.getItem(themeKey)   || 'dark')
   const [aiPower,    setAiPower]    = useState(() => localStorage.getItem(aiPowerKey) || 'performance')
+  const [margin,     setMargin]     = useState(getMarginTarget)
+
+  const handleMargin = (raw) => {
+    const v = Number(raw) || 0
+    setMargin(v)
+    if (v >= MARGIN_MIN && v <= MARGIN_MAX) setMarginTarget(v)
+  }
 
   function applyThemeValue(v) {
     if (v === 'light') {
@@ -177,6 +185,14 @@ export default function Settings() {
               <option value="GBP">{t('currency_gbp')}</option>
               <option value="CHF">{t('currency_chf')}</option>
             </select>
+          </Field>
+          <Field label={t('settings_margin_label')} description={t('settings_margin_desc')}>
+            <input
+              type="number" min={MARGIN_MIN} max={MARGIN_MAX} step="100" value={margin}
+              onChange={(e) => handleMargin(e.target.value)}
+              className="w-full sm:w-36 bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+                         text-sm text-slate-300 focus:outline-none focus:border-cyan-400/50 transition"
+            />
           </Field>
           <Field label={t('settings_language_label')} description={t('settings_language_desc')}>
             <select

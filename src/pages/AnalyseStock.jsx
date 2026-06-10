@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Boxes, Link2, Upload, Search, RefreshCw, RotateCcw, Download, Copy, Bell, ChevronDown } from 'lucide-react'
+import { Boxes, Link2, Upload, Search, RefreshCw, RotateCcw, Download, Copy, Bell, ChevronDown, FileText } from 'lucide-react'
 import { analyzeStock, scrapeStockWithSearch } from '@/services/stockAnalysis'
 import { computeStockStats } from '@/utils/stockStats'
 import { extractVehiclesSmart, toStockVehicles } from '@/services/smartImport'
 import { sendToTool, takeBridgePayload } from '@/utils/toolBridge'
 import { copyReportText } from '@/utils/mdToPlainText'
+import { downloadCsv } from '@/utils/exportCsv'
 import { MILEAGE_MIN_VALUES, MILEAGE_MAX_VALUES } from '@/data/vehicleFilters'
 import Spinner from '@/components/ui/Spinner'
 import ErrorAlert from '@/components/ui/ErrorAlert'
@@ -212,6 +213,18 @@ export default function AnalyseStock() {
     exportReportPdf(report, pdfFileName(dealerName || 'stock', t('tool_stock_title')), { title: t('tool_stock_title'), subtitle: dealerName })
   )
 
+  const handleExcel = () => {
+    if (!vehiclesList.length) return
+    const rows = [[
+      t('make_label'), t('model_label'), t('price_finition_label'), t('veh_year_label'),
+      'Km', t('fuel_label'), t('gearbox_label'), 'Prix TTC (€)',
+    ]]
+    for (const v of vehiclesList) {
+      rows.push([v.make ?? '', v.model ?? '', v.version ?? '', v.year ?? '', v.mileageKm ?? '', v.fuel ?? '', v.gearbox ?? '', v.priceEur ?? ''])
+    }
+    downloadCsv(`ABU Stock ${dealerName || ''} - ${new Date().toLocaleDateString('fr-FR').replace(/\//g, '.')}.csv`.replace(/\s+/g, ' '), rows)
+  }
+
   const reset = () => {
     setReport(''); setStats(null); setVehiclesList([]); setDealerName(''); setUrl(''); setCompany(''); setFileName(''); setIgnored(0); setError(null); setPhase('idle'); setScrapeLog('')
   }
@@ -360,6 +373,12 @@ export default function AnalyseStock() {
                   className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50 px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition">
                   {exporting ? <Spinner size="sm" /> : <Download size={12} />} {t('download_pdf')}
                 </button>
+                {vehiclesList.length > 0 && (
+                  <button onClick={handleExcel}
+                    className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50 px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition">
+                    <FileText size={12} /> Excel
+                  </button>
+                )}
                 <button onClick={retry}
                   className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition">
                   <RefreshCw size={11} /> {t('regenerate')}

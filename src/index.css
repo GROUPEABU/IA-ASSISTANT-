@@ -259,6 +259,22 @@ header {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ── PWA installée (écran d'accueil iOS, status-bar translucide) ───────────
+   En standalone, la webview passe SOUS la barre de statut (heure/encoche) :
+   sans ce padding, le header est masqué et non cliquable. On décale le
+   header et la sidebar de la hauteur de la safe-area haute. */
+@media (display-mode: standalone) {
+  header {
+    height: auto !important;
+    min-height: 3.5rem;
+    padding-top: calc(env(safe-area-inset-top) + 0.375rem) !important;
+    padding-bottom: 0.375rem;
+  }
+  aside {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
 /* ── Landscape mobile/tablet — hide bottom nav, reduce padding ───────────── */
 @media (orientation: landscape) and (max-height: 500px) {
   /* Bottom nav wastes vertical space in landscape → hide it */

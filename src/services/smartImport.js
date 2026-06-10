@@ -49,6 +49,7 @@ Extrais CHAQUE véhicule en un objet JSON avec ces champs (null si absent — n'
 - co2 : émissions CO₂ g/km (number)
 - couleur : couleur
 - vin : VIN / châssis
+- location : ville et/ou code postal du parc / dépôt / fournisseur où se trouve le véhicule (ex. "Lille (59)")
 
 Règles :
 - Une ligne de données = un véhicule. Ignore en-têtes, totaux, signatures, lignes vides.
@@ -84,6 +85,7 @@ function normalizeAiRow(r) {
     co2: num(r.co2),
     couleur: String(r.couleur || '').trim() || null,
     vin: String(r.vin || '').trim() || null,
+    location: String(r.location || '').trim() || null,
     dateInStock: null,
     ref: null,
     url: null,

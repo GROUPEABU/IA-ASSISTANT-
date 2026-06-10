@@ -31,6 +31,7 @@ const TOOL_MODELS = {
   rapportcommercial: 'claude-haiku-4-5-20251001',
   analysestock:      'claude-sonnet-4-6',
   importsmart:       'claude-haiku-4-5-20251001',
+  logistique:        'claude-sonnet-4-6',
 }
 
 import { getSessionUserId, ukey } from '@/utils/userStorage'

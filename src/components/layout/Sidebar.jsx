@@ -1,7 +1,7 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import {
   MessageSquare, Zap, X, Home, BookOpen, Gauge, Bell, ShieldCheck, Mic, LogOut,
-  Calculator, Ruler, Boxes,
+  Calculator, Ruler, Boxes, Truck,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '@/contexts/AuthContext'
@@ -31,6 +31,7 @@ export default function Sidebar({ isOpen, onClose }) {
         { to: '/tco',         icon: Calculator,  labelKey: 'nav_tco' },
         { to: '/compare',     icon: Ruler,       labelKey: 'nav_compare' },
         { to: '/stock-analysis', icon: Boxes,    labelKey: 'nav_stock' },
+        { to: '/logistics',      icon: Truck,    labelKey: 'nav_logistics' },
       ],
     },
     {

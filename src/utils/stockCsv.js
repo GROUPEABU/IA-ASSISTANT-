@@ -28,6 +28,7 @@ const MATCHERS = [
   ['gearbox',       /\bboite\b|gearbox|transmiss|\bbva\b|\bbvm\b/],
   ['ref',           /reference|\bref\b|\bsku\b|\bstock\b|\bvin\b|chassis/],
   ['url',           /\burl\b|\blien\b|\blink\b|annonce/],
+  ['location',      /\bville\b|\bcity\b|code.?postal|\bcp\b|localisation|adresse|\bparc\b|dep[oô]t|\bsite\b|\blieu\b|fournisseur/],
 ]
 
 const REQUIRED = ['make', 'model', 'year', 'mileageKm', 'priceEur']
@@ -199,6 +200,7 @@ export async function parseStockFile(file) {
       dateInStock: parseDate(cell(cells, 'dateInStock')),
       ref: String(cell(cells, 'ref') || '').trim() || null,
       url: String(cell(cells, 'url') || '').trim() || null,
+      location: String(cell(cells, 'location') || '').trim() || null,
       marketBadge: null, // pas de positionnement place de marché en import CSV
     }
     const complete = REQUIRED.every((f) => v[f] != null && v[f] !== '')

@@ -13,6 +13,8 @@ import { COUNTRIES } from '@/data/marketCountries'
 import { sendToTool, takeBridgePayload } from '@/utils/toolBridge'
 import { extractReportFigures } from '@/utils/reportFigures'
 import { copyReportText } from '@/utils/mdToPlainText'
+import { downloadCsv } from '@/utils/exportCsv'
+import { getMarginTarget } from '@/utils/marginTarget'
 import Spinner from '@/components/ui/Spinner'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
@@ -577,6 +579,27 @@ export default function PriceWatch() {
     setBatch(null); setBatchResults(null); setBatchSel(new Set()); setBatchOpen(null)
   }
 
+  const handleBatchExcel = () => {
+    const done = (batchResults || []).filter((r) => r.status === 'done')
+    if (!done.length) return
+    const ctryLabel = COUNTRIES.find(c => c.code === country)?.label || country
+    const rows = [[
+      t('model_label'), t('price_country_label'),
+      `${t('pw_evol_achat')} min`, `${t('pw_evol_achat')} max`,
+      `${t('pw_evol_revente')} min`, `${t('pw_evol_revente')} max`,
+      t('price_live_badge'),
+    ]]
+    for (const r of done) {
+      rows.push([
+        r.label, ctryLabel,
+        r.figures?.achatMin ?? '', r.figures?.achatMax ?? r.figures?.achatMin ?? '',
+        r.figures?.reventeMin ?? '', r.figures?.reventeMax ?? r.figures?.reventeMin ?? '',
+        r.hasLiveData ? 'Oui' : 'Non',
+      ])
+    }
+    downloadCsv(`ABU Veille prix lot - ${new Date().toLocaleDateString('fr-FR').replace(/\//g, '.')}.csv`, rows)
+  }
+
   const handleBatchPdf = () => {
     const done = (batchResults || []).filter((r) => r.status === 'done')
     if (!done.length) return
@@ -960,7 +983,7 @@ export default function PriceWatch() {
               </div>
 
               {!batchRunning && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button
                     onClick={handleBatchPdf}
                     disabled={exporting || !batchResults.some(r => r.status === 'done')}
@@ -970,6 +993,15 @@ export default function PriceWatch() {
                   >
                     {exporting ? <Spinner size="sm" /> : <Download size={12} />}
                     {t('pw_batch_export')}
+                  </button>
+                  <button
+                    onClick={handleBatchExcel}
+                    disabled={!batchResults.some(r => r.status === 'done')}
+                    className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                               px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition
+                               disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    <FileText size={12} /> Excel
                   </button>
                   <button
                     onClick={closeBatch}
@@ -1016,6 +1048,9 @@ export default function PriceWatch() {
                     )}
                     <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/10 text-emerald-400 border border-emerald-400/20">
                       <ShieldCheck size={9} /> {t('price_guardrail_done')}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-warn/10 text-warn border border-warn/20">
+                      {t('pw_margin_badge').replace('{n}', getMarginTarget().toLocaleString('fr-FR'))}
                     </span>
                   </>
                 ) : null}
