@@ -235,21 +235,15 @@ header {
 /* On mobile, ensure the main scroll container always has enough bottom padding  */
 /* to scroll past the fixed bottom nav (≈85px) + iOS safe area.                 */
 /* Declared AFTER density rules so it wins when both have !important.            */
-@media (max-width: 767px) {
-  .layout-scroll-main {
-    padding-bottom: 1rem !important;
-  }
-  /* BUG WebKit (Safari iOS) : le padding-bottom d'un conteneur scrollable
-     n'est PAS compté dans la zone de défilement → impossible d'atteindre le
-     bas de page derrière la nav. Solution fiable : un pseudo-élément spacer
-     en fin de contenu, compté dans le scroll par TOUS les moteurs.
-     Hauteur : nav basse (~72px) + barre Safari + safe-area + confort. */
-  .layout-scroll-main::after {
-    content: '';
-    display: block;
-    flex-shrink: 0;
-    height: calc(env(safe-area-inset-bottom, 0px) + 9rem);
-  }
+/* La nav basse mobile est désormais DANS le flux (Layout) : la zone de
+   scroll se termine au-dessus d'elle, rien ne peut être masqué derrière.
+   Petit spacer de confort en fin de contenu (compté par tous les moteurs,
+   contrairement au padding-bottom des conteneurs scrollables sur WebKit). */
+.layout-scroll-main::after {
+  content: '';
+  display: block;
+  flex-shrink: 0;
+  height: 1rem;
 }
 @media (min-width: 768px) {
   .layout-scroll-main {
@@ -303,7 +297,7 @@ html.pwa-standalone .fixed.inset-x-0.top-0 {
 /* ── Landscape mobile/tablet — hide bottom nav, reduce padding ───────────── */
 @media (orientation: landscape) and (max-height: 500px) {
   /* Bottom nav wastes vertical space in landscape → hide it */
-  nav.fixed.bottom-0 {
+  .bottom-nav {
     display: none !important;
   }
   .layout-scroll-main {

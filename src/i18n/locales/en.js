@@ -963,7 +963,7 @@ export default {
   lg_capacity_label: 'Vehicles / truck',
   lg_notes_label: 'Your request (free text — overrides default rules)',
   lg_notes_ph: 'Describe what you want, like in a chat. E.g.: "Split this batch into 3 km-balanced trucks", "Keep EVs separate", "Max 2 SUVs per truck, deliver Munich first"…',
-  lg_rules_hint: 'Large sizes (SUV, estate, van) counted automatically · parks grouped by proximity · average km balanced across trucks.',
+  lg_rules_hint: 'Without a request: 8 vehicles/truck (7 for Germany), large sizes counted, parks grouped by proximity, average km balanced across trucks. Your written request overrides everything.',
   lg_organize_btn: 'Organise trucks',
   lg_organizing: 'Building the loading plan…',
   lg_organizing_sub: 'Geographic grouping of parks and mileage balancing',

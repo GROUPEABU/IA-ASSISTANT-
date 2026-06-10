@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { Truck, FileSpreadsheet, Sparkles, RotateCcw, Download, FileText, MapPin, AlertTriangle } from 'lucide-react'
 import { extractVehiclesSmart } from '@/services/smartImport'
-import { planTrucks, DEST_COUNTRIES } from '@/services/logistics'
+import { planTrucks } from '@/services/logistics'
 import { downloadCsv } from '@/utils/exportCsv'
 import { exportReportPdf } from '@/utils/exportReportPdf'
 import { pdfFileName } from '@/utils/exportPdf'
@@ -27,19 +27,11 @@ export default function Logistics() {
   const [smartUsed, setSmartUsed] = useState(false)
   const [parsing, setParsing] = useState(false)
 
-  const [destCountry, setDestCountry] = useState('DE')
-  const [capacity, setCapacity] = useState(7)
   const [notes, setNotes] = useState('')
 
   const [planning, setPlanning] = useState(false)
   const [plan, setPlan] = useState(null) // { trucks, unassignedIdx, summary }
   const [error, setError] = useState(null)
-
-  const onCountry = (code) => {
-    setDestCountry(code)
-    const c = DEST_COUNTRIES.find((x) => x.code === code)
-    if (c) setCapacity(c.capacity)
-  }
 
   const onFile = async (e) => {
     const file = e.target.files?.[0]
@@ -71,11 +63,7 @@ export default function Logistics() {
     setError(null)
     setPlan(null)
     try {
-      const result = await planTrucks(vehicles, {
-        capacity,
-        destCountry: DEST_COUNTRIES.find((c) => c.code === destCountry)?.label || destCountry,
-        notes,
-      }, { lang })
+      const result = await planTrucks(vehicles, { notes }, { lang })
       setPlan(result)
     } catch (err) {
       setError(err.message)
@@ -119,7 +107,7 @@ export default function Logistics() {
     if (!plan) return
     const md = [
       `# ${t('lg_pdf_title')}`,
-      `${vehicles.length} ${t('pw_batch_vehicles')} · ${plan.trucks.length} ${t('lg_trucks')} · ${t('lg_capacity_label')} ${capacity} · ${DEST_COUNTRIES.find(c => c.code === destCountry)?.label || destCountry}`,
+      `${vehicles.length} ${t('pw_batch_vehicles')} · ${plan.trucks.length} ${t('lg_trucks')}${notes ? ` · « ${notes} »` : ''}`,
       '',
       ...plan.trucks.flatMap((truck) => [
         `## ${t('lg_truck')} ${truck.id} — ${truck.vehicleIdx.length} ${t('pw_batch_vehicles')} · ${t('lg_km_avg')} ${fmtKm(truck.kmAvg)}`,
@@ -180,26 +168,9 @@ export default function Logistics() {
               </span>
             </div>
 
-            {/* Paramètres */}
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('lg_dest_label')}</label>
-                <select value={destCountry} onChange={(e) => onCountry(e.target.value)} className={inputClass}>
-                  {DEST_COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('lg_capacity_label')}</label>
-                <input
-                  type="number" min="4" max="10" value={capacity}
-                  onChange={(e) => setCapacity(Math.max(4, Math.min(10, Number(e.target.value) || 7)))}
-                  className={inputClass}
-                />
-              </div>
-            </div>
-
             {/* Demande libre — comme sur Claude chat : décrivez ce que vous
-                voulez faire du fichier, les consignes priment sur les règles */}
+                voulez faire du fichier, les consignes priment sur les règles.
+                Capacités par pays (DE=7…) et gabarits : gérés par le moteur. */}
             <div className="mb-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('lg_notes_label')}</label>
               <textarea

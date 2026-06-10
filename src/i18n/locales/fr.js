@@ -991,7 +991,7 @@ export default {
   lg_capacity_label: 'Véhicules / camion',
   lg_notes_label: 'Votre demande (texte libre — prioritaire sur les règles)',
   lg_notes_ph: 'Décrivez ce que vous voulez, comme sur un chat. Ex. : « Divise ce lot en 3 camions équilibrés en km », « Sépare les électriques », « Maxi 2 SUV par camion, livre Munich en premier »…',
-  lg_rules_hint: 'Gabarits larges (SUV, break, utilitaire) comptés automatiquement · parcs regroupés par proximité · km moyen équilibré entre camions.',
+  lg_rules_hint: 'Sans demande : 8 véhicules/camion (7 pour l\'Allemagne), gabarits larges comptés, parcs regroupés par proximité, km moyen équilibré entre camions. Votre demande écrite prime sur tout.',
   lg_organize_btn: 'Organiser les camions',
   lg_organizing: 'Organisation du plan de chargement…',
   lg_organizing_sub: 'Regroupement géographique des parcs et équilibrage kilométrique',

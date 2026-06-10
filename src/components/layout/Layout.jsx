@@ -55,14 +55,15 @@ export default function Layout() {
         <main
           id="main-content"
           tabIndex={-1}
-          className="layout-scroll-main flex-1 overflow-y-auto p-4 pb-24 md:p-6 md:pb-6 lg:p-8 flex flex-col"
+          className="layout-scroll-main flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 flex flex-col"
         >
           <Outlet />
         </main>
+        {/* Nav basse mobile DANS le flux (plus en fixed par-dessus le contenu) :
+            la zone de scroll se termine exactement au-dessus d'elle — aucun
+            contenu ne peut être masqué derrière, sur aucun moteur (fix iOS). */}
+        <BottomNav />
       </div>
-
-      {/* Bottom nav mobile uniquement */}
-      <BottomNav />
 
       {/* Palette de commandes (Ctrl/Cmd+K ou « / ») */}
       <CommandPalette />

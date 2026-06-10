@@ -13,7 +13,7 @@ const STATIC_LOGISTICS = `Tu es un expert en logistique de transport automobile 
 
 MISSION : répartir une liste de véhicules en CAMIONS de chargement, en respectant strictement :
 
-1. CAPACITÉ — nombre de places par camion fourni en paramètre. Les véhicules à gabarit LARGE (SUV, 4x4, break, monospace, utilitaire, pickup) occupent plus de place : un camion ne peut pas dépasser sa capacité et au-delà de 2 gabarits larges, retire 1 place sur ce camion. Déduis le gabarit du modèle (ex. X5, Tiguan, 3008 = SUV large ; Clio, 208, Polo = compact).
+1. CAPACITÉ — par défaut 8 véhicules par camion ; 7 si la destination est l'Allemagne (réglementation chargement) ou si la demande de l'utilisateur l'indique. Déduis la destination et toute capacité spécifique de la DEMANDE UTILISATEUR quand elle en parle. Les véhicules à gabarit LARGE (SUV, 4x4, break, monospace, utilitaire, pickup) occupent plus de place : un camion ne peut pas dépasser sa capacité et au-delà de 2 gabarits larges, retire 1 place sur ce camion. Déduis le gabarit du modèle (ex. X5, Tiguan, 3008 = SUV large ; Clio, 208, Polo = compact).
 
 2. PROXIMITÉ GÉOGRAPHIQUE — regroupe les véhicules dont les parcs (ville / code postal fournis) sont proches, pour minimiser les détours d'une tournée d'enlèvement. Utilise ta connaissance de la géographie européenne (distances routières approximatives). Ordonne les villes de chaque camion en tournée logique.
 
@@ -42,11 +42,11 @@ Chaque index de véhicule apparaît EXACTEMENT une fois (dans un camion ou unass
 
 /**
  * @param {object[]} vehicles — lignes canoniques (make, model, version, year, mileageKm, fuel, location…)
- * @param {{ capacity: number, destCountry: string, notes?: string }} params
+ * @param {{ notes?: string }} params — demande libre de l'utilisateur (prioritaire)
  * @param {{ lang?: string, onChunk?: (t: string) => void }} opts
  * @returns {Promise<{ trucks: object[], unassignedIdx: number[], summary: string }>}
  */
-export async function planTrucks(vehicles, { capacity, destCountry, notes = '' }, { lang = 'fr', onChunk = null } = {}) {
+export async function planTrucks(vehicles, { notes = '' } = {}, { lang = 'fr', onChunk = null } = {}) {
   const compact = vehicles.map((v, idx) => ({
     idx,
     vehicule: [v.make, v.model, v.version].filter(Boolean).join(' '),
@@ -56,13 +56,10 @@ export async function planTrucks(vehicles, { capacity, destCountry, notes = '' }
   }))
 
   const prompt = `Organise ces ${vehicles.length} véhicules en camions.
-
-PARAMÈTRES :
-- Capacité par camion : ${capacity} véhicules (destination ${destCountry})
-- Équilibrage kilométrique : OBLIGATOIRE (km moyens proches entre camions)
 ${notes ? `
-CONSIGNES UTILISATEUR (PRIORITAIRES sur les règles par défaut) :
-${notes}` : ''}
+DEMANDE UTILISATEUR (PRIORITAIRE sur les règles par défaut) :
+${notes}` : `
+Aucune demande spécifique : applique les règles par défaut (capacité 8, équilibrage kilométrique, proximité des parcs).`}
 
 VÉHICULES (idx, désignation, année, km, parc d'enlèvement) :
 ${JSON.stringify(compact)}
