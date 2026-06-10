@@ -237,10 +237,18 @@ header {
 /* Declared AFTER density rules so it wins when both have !important.            */
 @media (max-width: 767px) {
   .layout-scroll-main {
-    /* 9rem : nav basse (~72px) + barre d'outils Safari iOS + marge de confort.
-       L'utilisateur doit TOUJOURS pouvoir faire défiler le dernier élément
-       entièrement au-dessus de la nav. */
-    padding-bottom: calc(env(safe-area-inset-bottom) + 9rem) !important;
+    padding-bottom: 1rem !important;
+  }
+  /* BUG WebKit (Safari iOS) : le padding-bottom d'un conteneur scrollable
+     n'est PAS compté dans la zone de défilement → impossible d'atteindre le
+     bas de page derrière la nav. Solution fiable : un pseudo-élément spacer
+     en fin de contenu, compté dans le scroll par TOUS les moteurs.
+     Hauteur : nav basse (~72px) + barre Safari + safe-area + confort. */
+  .layout-scroll-main::after {
+    content: '';
+    display: block;
+    flex-shrink: 0;
+    height: calc(env(safe-area-inset-bottom, 0px) + 8rem);
   }
 }
 @media (min-width: 768px) {
