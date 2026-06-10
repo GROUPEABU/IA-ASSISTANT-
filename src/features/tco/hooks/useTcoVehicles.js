@@ -57,7 +57,12 @@ export function useTcoVehicles(globals) {
   }, [])
 
   const remove = useCallback((id) => {
-    setVehicles(prev => prev.filter(v => v.id !== id))
+    setVehicles(prev => {
+      const next = prev.filter(v => v.id !== id)
+      // Dernier véhicule supprimé → repartir d'un formulaire vierge plutôt
+      // que de laisser une liste vide (chaque véhicule reste supprimable).
+      return next.length ? next : [emptyVehicle(1)]
+    })
   }, [])
 
   const toggleOpen = useCallback((id) => {
@@ -96,7 +101,7 @@ export function useTcoVehicles(globals) {
   return {
     vehicles: vehiclesWithMaint,
     canAdd: vehicles.length < MAX_VEHICLES,
-    canRemove: vehicles.length > 1,
+    canRemove: true,
     update,
     add,
     remove,

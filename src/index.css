@@ -50,7 +50,10 @@
     background-attachment: fixed;
     color: #edf2f7;
     min-height: 100dvh;
-    padding-bottom: env(safe-area-inset-bottom);
+    /* PAS de padding-bottom safe-area ici : il rendait le document défilable
+       de ~34px sur iPhone (viewport-fit=cover), ce qui volait le geste de
+       scroll au conteneur interne — bas de page inatteignable sur iOS Safari.
+       La nav basse gère sa propre safe-area via .pb-safe. */
     overflow-x: hidden;
   }
 
@@ -247,9 +250,13 @@ header {
 }
 
 /* Garde anti-débordement horizontal : aucun contenu ne doit créer de scroll
-   latéral sur mobile (badges, prix longs, tableaux). */
+   latéral sur mobile (badges, prix longs, tableaux).
+   overscroll-behavior : empêche iOS de transférer le geste au document
+   (rubber-band) quand le conteneur atteint ses bornes. */
 .layout-scroll-main {
   overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Landscape mobile/tablet — hide bottom nav, reduce padding ───────────── */
