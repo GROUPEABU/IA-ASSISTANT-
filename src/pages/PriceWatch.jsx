@@ -91,7 +91,7 @@ function buildAs24Url(ctry, filters) {
 // ── Analyse par lot (import CSV / Excel) ─────────────────────────────────────
 // Chaque ligne du fichier relance EXACTEMENT la même analyse que la recherche
 // unitaire (même buildPrompt, mêmes paramètres) — rien ne change côté prompt.
-const MAX_BATCH = 12
+const MAX_BATCH = 30
 
 const BATCH_FUEL_CODE = [
   [/rechargeable|phev|plug/i, 'GH'],
@@ -303,6 +303,7 @@ export default function PriceWatch() {
   const [powerMin, setPowerMin]   = useState(() => readPwSession('powerMin', ''))
   const [powerMax, setPowerMax]   = useState(() => readPwSession('powerMax', ''))
   const [country, setCountry]     = useState(() => readPwSession('country', 'FR'))
+  const [pwMode, setPwMode]       = useState('search') // 'search' | 'file'
 
   const [loading, setLoading]     = useState(false)   // avant le 1er token
   const [streaming, setStreaming] = useState(false)   // tokens en cours d'arrivée
@@ -657,6 +658,50 @@ export default function PriceWatch() {
           <h2 className="text-sm font-semibold text-white">{t('tool_price_title')}</h2>
         </div>
 
+        {/* Toggle mode : recherche | fichier (comme Analyse de stock) */}
+        <div className="flex gap-1 p-1 bg-navy-900/60 rounded-xl w-fit mb-4 border border-navy-700/40">
+          {[
+            { id: 'search', label: t('pw_mode_search'), icon: Search },
+            { id: 'file',   label: t('pw_import_btn'),  icon: FileSpreadsheet },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setPwMode(tab.id)}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                pwMode === tab.id ? 'bg-cyan-400 text-navy-900' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <tab.icon size={13} /> {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {pwMode === 'file' ? (
+          /* ── Mode fichier : pays + zone de dépôt, c'est tout ── */
+          <div className="space-y-3">
+            <div className="max-w-[240px]">
+              <FilterSelect label={t('price_country_label')} value={country} onChange={setCountry}>
+                {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+              </FilterSelect>
+            </div>
+            <button
+              onClick={() => batchFileRef.current?.click()}
+              disabled={batchParsing || batchRunning}
+              className="w-full flex items-center justify-center gap-2 px-4 py-6 rounded-xl border border-dashed border-navy-600/60
+                         text-sm text-slate-400 hover:text-cyan-400 hover:border-cyan-400/40 transition disabled:opacity-40"
+            >
+              {batchParsing ? <Spinner size="sm" /> : <FileSpreadsheet size={16} />}
+              {batchParsing ? t('import_parsing') : (batch?.fileName || t('pw_batch_drop'))}
+            </button>
+            <p className="text-[10px] text-slate-600">{t('pw_batch_drop_hint')}</p>
+            <input
+              ref={batchFileRef} type="file" accept=".csv,.xlsx,.xlsm,.txt,text/csv"
+              className="hidden" onChange={onBatchFile}
+            />
+          </div>
+        ) : (
+        <>
+        {/* ── Mode recherche ── */}
         {/* VO / VN toggle + Marché */}
         <div className="flex items-end justify-between gap-4 mb-4">
           <div className="flex gap-1 p-1 bg-navy-900/60 rounded-xl w-fit border border-navy-700/40">
@@ -762,28 +807,13 @@ export default function PriceWatch() {
         {/* Bouton */}
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => search()} disabled={!canSearch || loading || streaming || batchRunning}
+            onClick={() => search()} disabled={!canSearch || loading || streaming}
             className="flex items-center gap-2 px-5 py-2.5 bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
                        hover:bg-cyan-300 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
           >
             {(loading || streaming) ? <Spinner size="sm" /> : <Search size={14} />}
             {(loading || streaming) ? t('analyzing') : t('analyze_btn')}
           </button>
-
-          <button
-            onClick={() => batchFileRef.current?.click()}
-            disabled={batchParsing || batchRunning || loading || streaming}
-            className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
-                       px-3 py-2.5 rounded-xl hover:text-cyan-400 hover:border-cyan-400/30 transition
-                       disabled:opacity-40 disabled:pointer-events-none"
-          >
-            {batchParsing ? <Spinner size="sm" /> : <FileSpreadsheet size={13} />}
-            {t('pw_import_btn')}
-          </button>
-          <input
-            ref={batchFileRef} type="file" accept=".csv,.xlsx,.xlsm,.txt,text/csv"
-            className="hidden" onChange={onBatchFile}
-          />
 
           {centraleUrl && !loading && !streaming && (
             <a href={centraleUrl} target="_blank" rel="noopener noreferrer"
@@ -794,10 +824,12 @@ export default function PriceWatch() {
             </a>
           )}
         </div>
+        </>
+        )}
       </div>
 
-      {/* ── Analyse par lot (fichier CSV / Excel importé) ────────────────────── */}
-      {batch && (
+      {/* ── Résultats du lot (fichier CSV / Excel) ───────────────────────────── */}
+      {pwMode === 'file' && batch && (
         <div className="glass-card p-4 md:p-5 space-y-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">

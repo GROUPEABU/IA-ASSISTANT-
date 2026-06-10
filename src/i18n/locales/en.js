@@ -905,7 +905,10 @@ export default {
   hub_rerun_last: 'Re-run my last price watch',
   hub_rerun: 'Re-run',
   // Price Watch — batch analysis (CSV / Excel import)
-  pw_import_btn: 'Import CSV/Excel',
+  pw_mode_search: 'Search',
+  pw_import_btn: 'Import file',
+  pw_batch_drop: 'Click to choose a file',
+  pw_batch_drop_hint: 'CSV or Excel (.xlsx) — free columns, the model adapts to your file.',
   pw_batch_title: 'Batch analysis',
   pw_batch_detected: '{n} vehicle(s) detected',
   pw_batch_select_hint: 'Select the models to analyse (max {max} per batch)',

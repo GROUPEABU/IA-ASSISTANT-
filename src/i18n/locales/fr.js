@@ -933,7 +933,10 @@ export default {
   hub_rerun_last: 'Relancer ma dernière veille',
   hub_rerun: 'Relancer',
   // Veille Prix — analyse par lot (import CSV / Excel)
-  pw_import_btn: 'Importer CSV/Excel',
+  pw_mode_search: 'Recherche',
+  pw_import_btn: 'Import fichier',
+  pw_batch_drop: 'Cliquez pour choisir un fichier',
+  pw_batch_drop_hint: 'CSV ou Excel (.xlsx) — colonnes libres, le modèle s\'adapte à votre fichier.',
   pw_batch_title: 'Analyse par lot',
   pw_batch_detected: '{n} véhicule(s) détecté(s)',
   pw_batch_select_hint: 'Sélectionnez les modèles à analyser (max {max} par lot)',
