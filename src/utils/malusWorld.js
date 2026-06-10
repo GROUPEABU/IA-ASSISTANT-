@@ -1,5 +1,5 @@
 // CO2 & Malus Mondial v42 — calculation engine extracted from co2-malus.vercel.app
-// 40 countries · France barèmes 2023-2027 · Import décote · Multi-country
+// 52 countries · France barèmes 2023-2027 · Import décote · Multi-country
 
 const FR_BAREME_2023 = {
   123: 50,

@@ -702,8 +702,9 @@ export default function PriceWatch() {
         ) : (
         <>
         {/* ── Mode recherche ── */}
-        {/* VO / VN toggle + Marché */}
-        <div className="flex items-end justify-between gap-4 mb-4">
+        {/* VO / VN toggle + Marché — flex-wrap : sur mobile le pays passe en
+            pleine largeur dessous au lieu de déborder de la carte */}
+        <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
           <div className="flex gap-1 p-1 bg-navy-900/60 rounded-xl w-fit border border-navy-700/40">
             {[{ id: 'vo', label: t('used_vehicle') }, { id: 'vn', label: t('new_vehicle') }].map(tab => (
               <button
@@ -717,7 +718,7 @@ export default function PriceWatch() {
               </button>
             ))}
           </div>
-          <div className="min-w-[180px]">
+          <div className="w-full sm:w-auto sm:min-w-[180px]">
             <FilterSelect label={t('price_country_label')} value={country} onChange={setCountry}>
               {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
             </FilterSelect>
