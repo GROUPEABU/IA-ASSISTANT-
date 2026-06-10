@@ -7,6 +7,16 @@ import { installGlobalErrorReporting } from '@/utils/reportError'
 // Capture les erreurs non gérées (hors arbre React) + promesses rejetées.
 installGlobalErrorReporting()
 
+// PWA installée (écran d'accueil) : classe CSS de détection robuste.
+// `navigator.standalone` couvre les iOS où la media query
+// (display-mode: standalone) n'est pas fiable — ceinture et bretelles.
+try {
+  if (window.navigator.standalone === true
+      || window.matchMedia?.('(display-mode: standalone)').matches) {
+    document.documentElement.classList.add('pwa-standalone')
+  }
+} catch { /* non bloquant */ }
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />

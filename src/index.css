@@ -262,17 +262,33 @@ header {
 /* ── PWA installée (écran d'accueil iOS, status-bar translucide) ───────────
    En standalone, la webview passe SOUS la barre de statut (heure/encoche) :
    sans ce padding, le header est masqué et non cliquable. On décale le
-   header et la sidebar de la hauteur de la safe-area haute. */
+   header et la sidebar de la hauteur de la safe-area haute.
+   Double détection : media query (display-mode) ET classe .pwa-standalone
+   posée par main.jsx via navigator.standalone (iOS anciens / cas limites). */
 @media (display-mode: standalone) {
   header {
     height: auto !important;
     min-height: 3.5rem;
-    padding-top: calc(env(safe-area-inset-top) + 0.375rem) !important;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.375rem) !important;
     padding-bottom: 0.375rem;
   }
   aside {
-    padding-top: env(safe-area-inset-top);
+    padding-top: env(safe-area-inset-top, 0px);
   }
+}
+html.pwa-standalone header {
+  height: auto !important;
+  min-height: 3.5rem;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 0.375rem) !important;
+  padding-bottom: 0.375rem;
+}
+html.pwa-standalone aside {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+/* Bandeau hors-ligne et toasts éventuels fixés en haut : même décalage. */
+html.pwa-standalone .fixed.top-0,
+html.pwa-standalone .fixed.inset-x-0.top-0 {
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* ── Landscape mobile/tablet — hide bottom nav, reduce padding ───────────── */
