@@ -1,7 +1,7 @@
 import { COUNTRIES, RELIABILITY_CONFIG } from '@/utils/malusWorld'
 import { useSettings } from '@/contexts/SettingsContext'
 import { getCountryName } from '@/utils/malusLabels'
-import { sevColor } from '../constants'
+import { sevColor, MAX_COMPARE } from '../constants'
 
 /**
  * Compare-mode country selection grid — shown first (top of the page) so the
@@ -40,10 +40,15 @@ function CountryCheckboxGrid({ selected, onToggle }) {
   const { t, lang } = useSettings()
   return (
     <div className="glass-card p-4 mb-2">
-      <div className="flex justify-between items-center mb-3">
+      <div className="flex justify-between items-center mb-1">
         <span className="text-sm font-semibold text-white">{t('malus_compare_select_countries')}</span>
-        <span className="text-xs text-slate-500">{selected.length}/6</span>
+        <span className="text-xs font-bold text-cyan-400">{selected.length}/{MAX_COMPARE}</span>
       </div>
+      <p className="text-[11px] text-slate-500 mb-3">
+        {t('malus_compare_max_hint')
+          .replace('{n}', MAX_COMPARE)
+          .replace('{t}', COUNTRIES.length)}
+      </p>
       <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1.5">
         {COUNTRIES.map(c => {
           const cfg = RELIABILITY_CONFIG[c.reliability]

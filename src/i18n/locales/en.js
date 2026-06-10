@@ -689,6 +689,7 @@ export default {
   malus_imported_note: 'Age-based reduction',
   // CompareView
   malus_compare_select_countries: 'Select countries',
+  malus_compare_max_hint: 'Compare up to {n} countries at once · {t} countries available',
   malus_compare_countries_label: 'countries',
   malus_compare_btn: 'Compare',
   malus_compare_results: 'Results for {e} g/km · {w} kg',

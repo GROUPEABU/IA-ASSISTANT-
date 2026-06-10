@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { buildCountryData } from '@/utils/malusWorld'
 import { localizeResult } from '@/utils/malusLabels'
 import { useSettings } from '@/contexts/SettingsContext'
+import { MAX_COMPARE } from '../constants'
 
 /**
  * Hook encapsulating all malus calculation logic.
@@ -74,7 +75,7 @@ export function useMalusCalculation() {
       if (prev.find(x => x.code === country.code)) {
         return prev.filter(x => x.code !== country.code)
       }
-      return prev.length < 6 ? [...prev, country] : prev
+      return prev.length < MAX_COMPARE ? [...prev, country] : prev
     })
   }, [])
 

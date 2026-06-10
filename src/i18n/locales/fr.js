@@ -717,6 +717,7 @@ export default {
   malus_imported_note: 'Décote selon ancienneté',
   // CompareView
   malus_compare_select_countries: 'Sélectionnez les pays',
+  malus_compare_max_hint: 'Jusqu\'à {n} pays comparés en simultané · {t} pays disponibles',
   malus_compare_countries_label: 'pays',
   malus_compare_btn: 'Comparer',
   malus_compare_results: 'Résultats pour {e} g/km · {w} kg',
