@@ -1,6 +1,8 @@
-import { useState, useRef } from 'react'
-import { Mic, RefreshCw, RotateCcw, Users, Car, Wrench, Building2, Briefcase, Download } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Mic, RefreshCw, RotateCcw, Users, Car, Wrench, Building2, Briefcase, Download, Copy } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
+import { takeBridgePayload } from '@/utils/toolBridge'
+import { copyReportText } from '@/utils/mdToPlainText'
 import Spinner from '@/components/ui/Spinner'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
@@ -97,10 +99,21 @@ export default function PitchGenerator() {
   const { toast } = useToast()
   const { generated } = useGeneratedProducts()
   const allProducts = [...PRODUCTS, ...generated]
-  const { history, add: addHistory, remove: removeHistory, clear: clearHistory } = useHistory('pitch')
+  const { history, add: addHistory, remove: removeHistory, clear: clearHistory, togglePin } = useHistory('pitch')
   const { save: saveLastVehicle } = useLastVehicle()
   const { exporting, withExporting } = useExport()
   const headingRef = useResultFocus(!!report && !loading && !streaming)
+
+  // Pont inter-outils : véhicule reçu (Veille Prix) ou restauration (Hub).
+  useEffect(() => {
+    const p = takeBridgePayload('/pitch')
+    if (!p) return
+    if (p.details) setDetails((d) => ({ ...d, ...p.details }))
+    if (p.restoreId != null) {
+      const item = history.find((h) => (h.id ?? h.savedAt) === p.restoreId)
+      if (item) restore(item)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedProduct = allProducts.find((p) => p.id === vehicleId)
   const vehicleName = selectedProduct?.fullName || vehicleNameOf(details)
@@ -162,6 +175,11 @@ ${productContext || ''}${veillePrixRefBlock(vehicleName)}`
   const handlePdf = () => withExporting(() =>
     exportReportPdf(report, pdfFileName(vehicleName, t('page_pitch_title')), { title: t('page_pitch_title'), subtitle: vehicleName })
   )
+
+  const handleCopy = async () => {
+    await copyReportText(report)
+    toast(t('copy_done'), 'success')
+  }
 
   const reset = () => { setReport(''); setVehicleId(''); setDetails(EMPTY_DETAILS); setContext(''); setGeneratedFor('') }
 
@@ -270,6 +288,13 @@ ${productContext || ''}${veillePrixRefBlock(vehicleName)}`
             {report && !streaming && (
               <div className="flex items-center gap-2">
                 <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                             px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition"
+                >
+                  <Copy size={12} /> {t('copy_btn')}
+                </button>
+                <button
                   onClick={handlePdf}
                   disabled={exporting}
                   className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
@@ -300,7 +325,7 @@ ${productContext || ''}${veillePrixRefBlock(vehicleName)}`
         </div>
       )}
 
-      <HistoryPanel items={history} onRestore={restore} onRemove={removeHistory} onClear={clearHistory} primary={(item) => item.generatedFor} />
+      <HistoryPanel items={history} onRestore={restore} onRemove={removeHistory} onClear={clearHistory} onTogglePin={togglePin} primary={(item) => item.generatedFor} />
     </div>
   )
 }

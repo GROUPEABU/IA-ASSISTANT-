@@ -10,6 +10,7 @@
     "lint": "eslint src --ext .js,.jsx --report-unused-disable-directives --max-warnings 0",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "vite build && playwright test",
     "check:i18n": "node scripts/check-i18n.mjs",
     "verify:aiprogress": "vite build && node scripts/verify-aiprogress.mjs",
     "verify:pricewatch": "vite build && node scripts/verify-pricewatch.mjs"
@@ -27,6 +28,7 @@
     "react-router-dom": "^6.23.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^18.3.3",

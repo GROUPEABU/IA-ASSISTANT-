@@ -1,6 +1,9 @@
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck, Calculator, Mic, Globe, Zap, TrendingUp, Ruler, Boxes } from 'lucide-react'
+import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck, Calculator, Mic, Globe, Zap, TrendingUp, Ruler, Boxes, History, Pin, RefreshCw } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
+import { sendToTool } from '@/utils/toolBridge'
+import { ukey, getSessionUserId } from '@/utils/userStorage'
 
 const colorMap = {
   cyan:    { bg: 'bg-cyan-400/10',    border: 'border-cyan-400/20',    icon: 'text-cyan-400',    badge: 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20',       hoverBorder: '#50E5E5' },
@@ -14,9 +17,35 @@ const colorMap = {
   sky:     { bg: 'bg-sky-400/10',     border: 'border-sky-400/20',     icon: 'text-sky-400',     badge: 'bg-sky-400/10 text-sky-400 border-sky-400/20',          hoverBorder: '#38bdf8' },
 }
 
+// Lecture directe des historiques par outil (mêmes clés que useHistory).
+function readHist(ns) {
+  try { return JSON.parse(localStorage.getItem(ukey(getSessionUserId(), `history_${ns}`)) || '[]') } catch { return [] }
+}
+
+const ACTIVITY_SOURCES = [
+  { ns: 'pricewatch',   route: '/price-watch',    icon: Bell,        titleKey: 'tool_price_title',      label: (i) => i.searchLabel },
+  { ns: 'analysestock', route: '/stock-analysis', icon: Boxes,       titleKey: 'tool_stock_title',      label: (i) => i.generatedFor },
+  { ns: 'objections',   route: '/objections',     icon: ShieldCheck, titleKey: 'tool_objections_title', label: (i) => i.generatedFor },
+  { ns: 'pitch',        route: '/pitch',          icon: Mic,         titleKey: 'tool_pitch_title',      label: (i) => i.generatedFor },
+]
+
 export default function Hub() {
   const navigate = useNavigate()
   const { t } = useSettings()
+
+  // Activité récente tous outils + veilles épinglées (lues une fois par rendu).
+  const { recent, pinnedWatches, lastWatch } = useMemo(() => {
+    const all = ACTIVITY_SOURCES.flatMap((src) =>
+      readHist(src.ns).map((item) => ({ src, item }))
+    )
+    all.sort((a, b) => (b.item.savedAt || 0) - (a.item.savedAt || 0))
+    const pw = readHist('pricewatch')
+    return {
+      recent: all.slice(0, 4),
+      pinnedWatches: pw.filter((i) => i.pinned && i.filters).slice(0, 6),
+      lastWatch: pw.find((i) => i.filters) || null,
+    }
+  }, [])
 
   const tools = [
     { to: '/products',   icon: BookOpen,      color: 'cyan',   titleKey: 'tool_products_title',  descKey: 'tool_products_desc',   badgeKey: 'hub_badge_ai_reports' },
@@ -71,6 +100,73 @@ export default function Hub() {
           </div>
         ))}
       </div>
+
+      {/* ── Reprendre (activité récente tous outils) ─────────────────────────── */}
+      {(recent.length > 0 || lastWatch) && (
+        <div className="glass-card p-4">
+          <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <History size={13} className="text-slate-500" />
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('hub_recent_title')}</span>
+            </div>
+            {lastWatch && (
+              <button
+                onClick={() => sendToTool(navigate, '/price-watch', { filters: lastWatch.filters })}
+                className="flex items-center gap-1.5 text-[11px] font-bold text-cyan-400 border border-cyan-400/30
+                           px-2.5 py-1 rounded-lg hover:bg-cyan-400/10 transition"
+              >
+                <RefreshCw size={11} /> {t('hub_rerun_last')}
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            {recent.map(({ src, item }) => {
+              const Icon = src.icon
+              return (
+                <button
+                  key={`${src.ns}-${item.id ?? item.savedAt}`}
+                  onClick={() => sendToTool(navigate, src.route, { restoreId: item.id ?? item.savedAt })}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-navy-900/40 border border-navy-700/30
+                             hover:border-cyan-400/30 hover:bg-cyan-400/5 transition text-left group"
+                >
+                  <Icon size={13} className="text-slate-500 group-hover:text-cyan-400 flex-shrink-0 transition-colors" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-slate-300 group-hover:text-cyan-300 truncate transition-colors">
+                      {src.label(item) || t(src.titleKey)}
+                    </p>
+                    <p className="text-[10px] text-slate-600">
+                      {t(src.titleKey)} · {new Date(item.savedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          {pinnedWatches.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-navy-700/30">
+              <div className="flex items-center gap-2 mb-2">
+                <Pin size={11} className="text-cyan-400" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('hub_pinned_title')}</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {pinnedWatches.map((item) => (
+                  <button
+                    key={item.id ?? item.savedAt}
+                    onClick={() => sendToTool(navigate, '/price-watch', { filters: item.filters })}
+                    className="flex items-center gap-1.5 text-[11px] text-slate-300 bg-navy-900/50 border border-cyan-400/20
+                               px-2.5 py-1.5 rounded-lg hover:border-cyan-400/40 hover:bg-cyan-400/5 transition max-w-full"
+                    title={t('hub_rerun')}
+                  >
+                    <RefreshCw size={10} className="text-cyan-400 flex-shrink-0" />
+                    <span className="truncate max-w-[220px]">{item.searchLabel}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Tools grid ───────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Bell, Search, RotateCcw, ExternalLink, Clock, Download, FileText,
-  Wifi, WifiOff, Calculator, Sparkles, ShieldCheck,
+  Wifi, WifiOff, Calculator, Sparkles, ShieldCheck, Copy, Mic, TrendingDown, TrendingUp,
 } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { buildPrompt } from '@/services/veillePrixPrompt'
+import { sendToTool, takeBridgePayload } from '@/utils/toolBridge'
+import { extractReportFigures } from '@/utils/reportFigures'
+import { copyReportText } from '@/utils/mdToPlainText'
 import Spinner from '@/components/ui/Spinner'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
@@ -108,10 +111,58 @@ function FilterSelect({ label, value, onChange, children }) {
   )
 }
 
+// ── Évolution prix entre deux analyses du même véhicule ──────────────────────
+const fmtEur = (n) => `${Number(n).toLocaleString('fr-FR')} €`
+const fmtRange = (min, max) => (min === max || max == null ? fmtEur(min) : `${fmtEur(min)} – ${fmtEur(max)}`)
+
+function EvolutionCard({ evolution, t }) {
+  const { prevAt, prev, cur } = evolution
+  const rows = [
+    { label: t('pw_evol_achat'),   pMin: prev.achatMin,   pMax: prev.achatMax,   cMin: cur.achatMin,   cMax: cur.achatMax },
+    { label: t('pw_evol_revente'), pMin: prev.reventeMin, pMax: prev.reventeMax, cMin: cur.reventeMin, cMax: cur.reventeMax },
+  ].filter((r) => r.pMin != null && r.cMin != null)
+  if (rows.length === 0) return null
+
+  const allStable = rows.every((r) => r.cMin === r.pMin)
+
+  return (
+    <div className="glass-card p-4">
+      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+        {t('pw_evol_title')} · {new Date(prevAt).toLocaleDateString()}
+      </p>
+      {allStable ? (
+        <p className="text-xs text-slate-400">{t('pw_evol_stable')}</p>
+      ) : (
+        <div className="space-y-1.5">
+          {rows.map((r) => {
+            const delta = r.cMin - r.pMin
+            const up = delta > 0
+            return (
+              <div key={r.label} className="flex items-center gap-2 flex-wrap text-xs">
+                <span className="text-slate-500 w-28 flex-shrink-0">{r.label}</span>
+                <span className="text-slate-400">{fmtRange(r.pMin, r.pMax)}</span>
+                <span className="text-slate-600">→</span>
+                <span className="text-slate-200 font-semibold">{fmtRange(r.cMin, r.cMax)}</span>
+                {delta !== 0 && (
+                  <span className={`flex items-center gap-1 font-bold ${up ? 'text-warn' : 'text-emerald-400'}`}>
+                    {up ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                    {up ? '+' : ''}{delta.toLocaleString('fr-FR')} €
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Page principale ───────────────────────────────────────────────────────────
 export default function PriceWatch() {
   const { t, lang } = useSettings()
   const { toast } = useToast()
+  const navigate = useNavigate()
   const resultRef = useRef(null)
 
   const FUELS = [
@@ -218,9 +269,19 @@ export default function PriceWatch() {
   const [error, setError]         = useState(null)
   const [centraleUrl, setCentraleUrl] = useState('')
   const [searchLabel, setSearchLabel] = useState('')
-  const { history, add: addHistory, remove: removeHistory, clear: clearHistory } = useHistory('pricewatch')
+  const [evolution, setEvolution] = useState(null) // diff vs analyse précédente du même véhicule
+  const { history, add: addHistory, remove: removeHistory, clear: clearHistory, togglePin } = useHistory('pricewatch')
   const { save: saveLastVehicle } = useLastVehicle()
   const { exporting, withExporting } = useExport()
+
+  // Synchronise le formulaire avec un jeu de filtres (restauration / pont inter-outils).
+  const applyFilters = (f) => {
+    setType(f.type || 'vo'); setMake(f.make || ''); setModel(f.model || ''); setFinition(f.finition || '')
+    setCarrosserie(f.carrosserie || ''); setYearMin(f.yearMin || ''); setYearMax(f.yearMax || '')
+    setMileageMin(f.mileageMin || ''); setMileageMax(f.mileageMax || ''); setFuel(f.fuel || '')
+    setGearbox(f.gearbox || ''); setPowerMin(f.powerMin || ''); setPowerMax(f.powerMax || '')
+    setCountry(f.country || 'FR')
+  }
 
   // Persist filter state across page navigations (session-scoped)
   useEffect(() => {
@@ -230,6 +291,20 @@ export default function PriceWatch() {
       ))
     } catch {}
   }, [type, make, model, finition, carrosserie, yearMin, yearMax, mileageMin, mileageMax, fuel, gearbox, powerMin, powerMax, country])
+
+  // Pont inter-outils : filtres reçus (Analyse de stock, Hub) → pré-remplit et
+  // lance ; restoreId (Hub « Reprendre ») → restaure l'analyse archivée.
+  useEffect(() => {
+    const p = takeBridgePayload('/price-watch')
+    if (!p) return
+    if (p.filters) {
+      applyFilters(p.filters)
+      search(p.filters)
+    } else if (p.restoreId != null) {
+      const item = history.find((h) => (h.id ?? h.savedAt) === p.restoreId)
+      if (item) restore(item)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const canSearch = make.trim() || model.trim()
 
@@ -289,6 +364,7 @@ export default function PriceWatch() {
     setError(null)
     setReport('')
     setHasLiveData(false)
+    setEvolution(null)
 
     try {
       // Liens de référence — for non-France markets, use AutoScout24 country URL.
@@ -353,7 +429,17 @@ export default function PriceWatch() {
       setStreaming(false)
 
       saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '))
-      addHistory({ searchLabel: label, country: ctry.code, type: filters.type, report: text, hasLiveData: !!usedWebSearch, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '' })
+
+      // Évolution prix : compare aux chiffres de la dernière analyse archivée
+      // du même véhicule (même libellé de recherche).
+      const figures = extractReportFigures(text)
+      const prev = history.find((h) => h.searchLabel === label && h.figures)
+      if (figures && prev?.figures) {
+        setEvolution({ prevAt: prev.savedAt, prev: prev.figures, cur: figures })
+      }
+
+      const filtersSnapshot = { ...filters, country: ctry.code }
+      addHistory({ searchLabel: label, country: ctry.code, type: filters.type, report: text, hasLiveData: !!usedWebSearch, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '', filters: filtersSnapshot, figures })
     } catch (err) {
       setError(err.message)
       toast(err.message, 'error')
@@ -386,6 +472,22 @@ export default function PriceWatch() {
     setFetchedAt(item.fetchedAt || null)
     setSources(item.sources || [])
     setCentraleUrl(item.centraleUrl || '')
+    setEvolution(null)
+    // Resynchronise le formulaire : le bouton « Analyser » relance la même veille.
+    if (item.filters) applyFilters(item.filters)
+  }
+
+  // Pont sortant : véhicule courant → Pitch / Objections (champs VehicleDetails).
+  const vehicleDetailsPayload = () => ({
+    details: {
+      type, make, model, finition, carrosserie,
+      yearMin, yearMax, mileageMin, mileageMax, fuel, gearbox,
+    },
+  })
+
+  const handleCopy = async () => {
+    await copyReportText(report)
+    toast(t('copy_done'), 'success')
   }
 
   const showResult = (loading || streaming || report) && !error
@@ -571,11 +673,26 @@ export default function PriceWatch() {
 
             {report && !streaming && (
               <div className="flex items-center gap-2 overflow-x-auto pb-0.5 w-full sm:w-auto">
+                <button onClick={handleCopy}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                             px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition flex-shrink-0">
+                  <Copy size={12} /> {t('copy_btn')}
+                </button>
                 <button onClick={handlePdf} disabled={exporting}
                   className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
                              px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition flex-shrink-0">
                   {exporting ? <Spinner size="sm" /> : <Download size={12} />}
                   {t('download_pdf')}
+                </button>
+                <button onClick={() => sendToTool(navigate, '/pitch', vehicleDetailsPayload())}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                             px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition flex-shrink-0">
+                  <Mic size={12} /> {t('bridge_pitch')}
+                </button>
+                <button onClick={() => sendToTool(navigate, '/objections', vehicleDetailsPayload())}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                             px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition flex-shrink-0">
+                  <ShieldCheck size={12} /> {t('bridge_objections')}
                 </button>
                 <button onClick={() => search()}
                   className="flex items-center gap-1.5 text-xs text-cyan-400 border border-cyan-400/30
@@ -597,6 +714,11 @@ export default function PriceWatch() {
               <p className="text-sm text-slate-400">{t('price_step_calculating')}</p>
               <p className="text-xs text-slate-600">{t('price_step_collecting')}</p>
             </div>
+          )}
+
+          {/* Évolution vs dernière analyse du même véhicule */}
+          {report && !streaming && evolution && (
+            <EvolutionCard evolution={evolution} t={t} />
           )}
 
           {/* Rapport Markdown streamé */}
@@ -660,6 +782,7 @@ export default function PriceWatch() {
         onRestore={restore}
         onRemove={removeHistory}
         onClear={clearHistory}
+        onTogglePin={togglePin}
         primary={(item) => item.searchLabel}
         badge={(item) => (
           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${

@@ -890,4 +890,34 @@ export default {
   currency_chf: 'CHF (Fr)',
   api_key_copy: 'Copy',
   api_key_copied: 'Copied!',
+  // Copy report (WhatsApp / email sharing)
+  copy_btn: 'Copy',
+  copy_done: 'Summary copied — ready to paste (WhatsApp, email…)',
+  // History — pinning & search
+  history_pin: 'Pin',
+  history_unpin: 'Unpin',
+  history_search_ph: 'Search history…',
+  history_no_match: 'No match in history.',
+  history_delete: 'Delete',
+  // Hub — resume activity
+  hub_recent_title: 'Resume',
+  hub_pinned_title: 'Pinned watches',
+  hub_rerun_last: 'Re-run my last price watch',
+  hub_rerun: 'Re-run',
+  // Price Watch — evolution between two analyses
+  pw_evol_title: 'Change since last analysis',
+  pw_evol_achat: 'Pro purchase (excl. VAT)',
+  pw_evol_revente: 'Resale (incl. VAT)',
+  pw_evol_stable: 'Prices stable since last analysis',
+  // Tool bridges
+  bridge_pitch: 'Pitch',
+  bridge_objections: 'Objections',
+  stock_vehicles_title: 'Extracted vehicles',
+  stock_pw_btn: 'Price Watch',
+  product_compare_btn: 'Compare size',
+  product_tco_btn: 'Compute TCO',
+  // Command palette (Ctrl+K)
+  palette_ph: 'Go to a tool…',
+  palette_empty: 'No tool found',
+  palette_hint: '↑↓ navigate · ↵ open · Esc close',
 }

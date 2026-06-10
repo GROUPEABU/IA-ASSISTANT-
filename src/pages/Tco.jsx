@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Plus, Calculator, ChevronRight } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
+import { takeBridgePayload } from '@/utils/toolBridge'
 import { useTcoVehicles } from '@/features/tco/hooks/useTcoVehicles'
 import { COLORS } from '@/features/tco/constants'
 import TcoConfig    from '@/features/tco/components/TcoConfig'
@@ -24,6 +25,14 @@ export default function Tco() {
 
   const { vehicles, canAdd, canRemove, update, add, remove, toggleOpen, results } =
     useTcoVehicles(globals)
+
+  // Pont inter-outils : véhicule reçu (Fiche IA) → pré-remplit le véhicule 1.
+  useEffect(() => {
+    const p = takeBridgePayload('/tco')
+    if (!p?.name || !vehicles[0]) return
+    update(vehicles[0].id, 'nom', p.name)
+    if (Number(p.price) > 0) update(vehicles[0].id, 'prix', String(Math.round(Number(p.price))))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const readyToCalc = vehicles.some(v => v.nom && Number(v.prix) > 0)
   const hasResults  = results.length >= 1

@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Download, FileText, TrendingUp, Gauge, Users } from 'lucide-react'
+import { ArrowLeft, Download, FileText, TrendingUp, Gauge, Users, Ruler, Calculator } from 'lucide-react'
+import { sendToTool } from '@/utils/toolBridge'
 import { getProduct } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { getMalus, getMalusColor } from '@/utils/malus'
@@ -47,6 +48,15 @@ export default function ProductDetail() {
   const malus = getMalus(product.specs.co2_wltp, product.prix.haut)
   const malusColor = getMalusColor(product.specs.co2_wltp)
 
+  // Ponts inter-outils : la fiche part vers le Comparateur ou le TCO pré-remplis.
+  const nameParts = String(product.fullName || '').trim().split(/\s+/)
+  const toCompare = () => sendToTool(navigate, '/compare', {
+    make: nameParts[0] || '', model: nameParts.slice(1).join(' '), year: product.year || '',
+  })
+  const toTco = () => sendToTool(navigate, '/tco', {
+    name: product.fullName, price: product.prix?.base,
+  })
+
   const handlePDF = async () => {
     await exportToPdf(printRef, pdfFileName(product.fullName, t('page_products_title')), {
       title: t('page_products_title'),
@@ -76,9 +86,17 @@ export default function ProductDetail() {
           </div>
           <p className="text-xs text-slate-500 mt-0.5">{product.origin} · {product.year}</p>
         </div>
-        <Button size="sm" onClick={handlePDF} className="flex-shrink-0">
-          <Download size={14} /> PDF
-        </Button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Button size="sm" variant="ghost" onClick={toCompare} title={t('product_compare_btn')}>
+            <Ruler size={14} /> <span className="hidden sm:inline">{t('product_compare_btn')}</span>
+          </Button>
+          <Button size="sm" variant="ghost" onClick={toTco} title={t('product_tco_btn')}>
+            <Calculator size={14} /> <span className="hidden sm:inline">{t('product_tco_btn')}</span>
+          </Button>
+          <Button size="sm" onClick={handlePDF}>
+            <Download size={14} /> PDF
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}

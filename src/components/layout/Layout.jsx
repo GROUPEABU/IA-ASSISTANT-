@@ -4,6 +4,7 @@ import { useSettings } from '@/contexts/SettingsContext'
 import Sidebar from './Sidebar'
 import Header from './Header'
 import BottomNav from './BottomNav'
+import CommandPalette from '@/components/ui/CommandPalette'
 import { ToastContainer, useToast } from '@/components/ui/Toast'
 
 export default function Layout() {
@@ -62,6 +63,9 @@ export default function Layout() {
 
       {/* Bottom nav mobile uniquement */}
       <BottomNav />
+
+      {/* Palette de commandes (Ctrl/Cmd+K ou « / ») */}
+      <CommandPalette />
 
       {/* Offline banner */}
       {isOffline && (

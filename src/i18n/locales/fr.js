@@ -918,4 +918,34 @@ export default {
   currency_chf: 'CHF (Fr)',
   api_key_copy: 'Copier',
   api_key_copied: 'Copié !',
+  // Copier le rapport (partage WhatsApp / e-mail)
+  copy_btn: 'Copier',
+  copy_done: 'Résumé copié — prêt à coller (WhatsApp, e-mail…)',
+  // Historique — épinglage & recherche
+  history_pin: 'Épingler',
+  history_unpin: 'Désépingler',
+  history_search_ph: 'Rechercher dans l’historique…',
+  history_no_match: 'Aucun résultat dans l’historique.',
+  history_delete: 'Supprimer',
+  // Hub — reprise d'activité
+  hub_recent_title: 'Reprendre',
+  hub_pinned_title: 'Veilles épinglées',
+  hub_rerun_last: 'Relancer ma dernière veille',
+  hub_rerun: 'Relancer',
+  // Veille Prix — évolution entre deux analyses
+  pw_evol_title: 'Évolution depuis la dernière analyse',
+  pw_evol_achat: 'Achat pro HT',
+  pw_evol_revente: 'Revente TTC',
+  pw_evol_stable: 'Prix stables depuis la dernière analyse',
+  // Ponts entre outils
+  bridge_pitch: 'Pitch',
+  bridge_objections: 'Objections',
+  stock_vehicles_title: 'Véhicules extraits',
+  stock_pw_btn: 'Veille Prix',
+  product_compare_btn: 'Comparer le gabarit',
+  product_tco_btn: 'Calculer le TCO',
+  // Palette de commandes (Ctrl+K)
+  palette_ph: 'Aller à un outil…',
+  palette_empty: 'Aucun outil trouvé',
+  palette_hint: '↑↓ naviguer · ↵ ouvrir · Esc fermer',
 }

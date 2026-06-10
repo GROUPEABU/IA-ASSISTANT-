@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Ruler, AlertCircle, RefreshCw, RotateCcw, Info, Sparkles, History, FileDown } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
+import { takeBridgePayload } from '@/utils/toolBridge'
 import { useSettings } from '@/contexts/SettingsContext'
 import AIProgress from '@/components/ui/AIProgress'
 import Spinner from '@/components/ui/Spinner'
@@ -243,6 +244,14 @@ export default function Compare() {
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
   const vehicleName = [form.make, form.model].filter(Boolean).join(' ').trim()
+
+  // Pont inter-outils : véhicule reçu (Fiche IA) → pré-remplit le formulaire.
+  useEffect(() => {
+    const p = takeBridgePayload('/compare')
+    if (p?.make || p?.model) {
+      setForm((f) => ({ ...f, make: p.make || '', model: p.model || '', year: p.year ? String(p.year) : '', version: p.version || '' }))
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const analyze = async (override) => {
     const name = (override || vehicleName).trim()

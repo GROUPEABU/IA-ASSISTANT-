@@ -1,8 +1,12 @@
-import { useState, useRef } from 'react'
-import { Boxes, Link2, Upload, Search, RefreshCw, RotateCcw, Download } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Boxes, Link2, Upload, Search, RefreshCw, RotateCcw, Download, Copy, Bell, ChevronDown } from 'lucide-react'
 import { analyzeStock, scrapeStockWithSearch } from '@/services/stockAnalysis'
 import { computeStockStats } from '@/utils/stockStats'
 import { parseStockFile } from '@/utils/stockCsv'
+import { sendToTool, takeBridgePayload } from '@/utils/toolBridge'
+import { copyReportText } from '@/utils/mdToPlainText'
+import { MILEAGE_MIN_VALUES, MILEAGE_MAX_VALUES } from '@/data/vehicleFilters'
 import Spinner from '@/components/ui/Spinner'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
@@ -27,9 +31,81 @@ function StatCard({ label, value }) {
   )
 }
 
+// Mappe un véhicule du stock vers les filtres de la Veille Prix (codes identiques).
+const FUEL_CODE = [
+  [/rechargeable|phev|plug/i, 'GH'],
+  [/hybride|hybrid/i, 'HY'],
+  [/électrique|electrique|electric/i, 'EL'],
+  [/diesel/i, 'GO'],
+  [/gpl|lpg/i, 'GP'],
+  [/essence|petrol|gasoline/i, 'ES'],
+]
+function vehicleToPwFilters(v) {
+  const km = Number(v.mileageKm) || 0
+  const fuel = (FUEL_CODE.find(([re]) => re.test(v.fuel || '')) || [])[1] || ''
+  const gearbox = /auto/i.test(v.gearbox || '') ? 'A' : /manuelle|manual/i.test(v.gearbox || '') ? 'M' : ''
+  return {
+    type: 'vo',
+    make: String(v.make || '').trim(),
+    model: String(v.model || '').trim(),
+    finition: String(v.version || '').trim(),
+    carrosserie: '',
+    yearMin: v.year ? String(v.year) : '',
+    yearMax: v.year ? String(v.year) : '',
+    mileageMin: String([...MILEAGE_MIN_VALUES].reverse().find((x) => x <= km) || ''),
+    mileageMax: String(MILEAGE_MAX_VALUES.find((x) => x >= km) || ''),
+    fuel, gearbox, powerMin: '', powerMax: '', country: 'FR',
+  }
+}
+
+// Liste repliable des véhicules extraits — chaque ligne peut partir en Veille Prix.
+function VehiclesList({ vehicles, t, onPriceWatch }) {
+  const [open, setOpen] = useState(false)
+  if (!vehicles?.length) return null
+  const eur = (n) => (Number(n) || 0).toLocaleString('fr-FR') + ' €'
+  return (
+    <div className="glass-card overflow-hidden">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-cyan-400/5 transition"
+      >
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          {t('stock_vehicles_title')} ({vehicles.length})
+        </span>
+        <ChevronDown size={14} className={`text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="max-h-80 overflow-y-auto divide-y divide-navy-700/30">
+          {vehicles.map((v, i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-2 hover:bg-navy-900/40 transition">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-slate-300 truncate">
+                  {v.make} {v.model}{v.version ? ` ${v.version}` : ''}
+                </p>
+                <p className="text-[10px] text-slate-600">
+                  {[v.year, v.mileageKm != null ? `${Number(v.mileageKm).toLocaleString('fr-FR')} km` : null, v.fuel].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+              <span className="text-xs font-bold text-cyan-400 flex-shrink-0">{eur(v.priceEur)}</span>
+              <button
+                onClick={() => onPriceWatch(v)}
+                className="flex items-center gap-1 text-[10px] font-bold text-slate-400 border border-navy-600/50
+                           px-2 py-1 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 transition flex-shrink-0"
+              >
+                <Bell size={10} /> {t('stock_pw_btn')}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function AnalyseStock() {
   const { t, lang } = useSettings()
   const { toast } = useToast()
+  const navigate = useNavigate()
   const resultRef = useRef(null)
   const fileRef = useRef(null)
 
@@ -42,11 +118,12 @@ export default function AnalyseStock() {
   const [report, setReport] = useState('')
   const [scrapeLog, setScrapeLog] = useState('')
   const [stats, setStats] = useState(null)
+  const [vehiclesList, setVehiclesList] = useState([])
   const [dealerName, setDealerName] = useState('')
   const [ignored, setIgnored] = useState(0)
   const [error, setError] = useState(null)
 
-  const { history, add: addHistory, remove: removeHistory, clear: clearHistory } = useHistory('analysestock')
+  const { history, add: addHistory, remove: removeHistory, clear: clearHistory, togglePin } = useHistory('analysestock')
   const { exporting, withExporting } = useExport()
   const headingRef = useResultFocus(!!report && phase === 'done')
 
@@ -55,6 +132,7 @@ export default function AnalyseStock() {
   const runAnalysis = async (dealer, vehicles) => {
     const computed = computeStockStats(vehicles)
     setStats(computed)
+    setVehiclesList(vehicles)
     setDealerName(dealer.name || company || '')
     setPhase('analyzing')
     setReport('')
@@ -74,7 +152,7 @@ export default function AnalyseStock() {
     setReport(text)
     setPhase('done')
     const label = `${company || dealer.name || 'Stock'} · ${computed.total} véhicules`
-    addHistory({ generatedFor: label, report: text, stats: computed, dealerName: company || dealer.name || '' })
+    addHistory({ generatedFor: label, report: text, stats: computed, dealerName: company || dealer.name || '', vehicles: vehicles.slice(0, 100) })
   }
 
   const analyzeFromUrl = async () => {
@@ -129,15 +207,33 @@ export default function AnalyseStock() {
   )
 
   const reset = () => {
-    setReport(''); setStats(null); setDealerName(''); setUrl(''); setCompany(''); setFileName(''); setIgnored(0); setError(null); setPhase('idle'); setScrapeLog('')
+    setReport(''); setStats(null); setVehiclesList([]); setDealerName(''); setUrl(''); setCompany(''); setFileName(''); setIgnored(0); setError(null); setPhase('idle'); setScrapeLog('')
   }
 
   const restore = (item) => {
     setReport(item.report || '')
     setStats(item.stats || null)
+    setVehiclesList(item.vehicles || [])
     setDealerName(item.dealerName || '')
     setPhase('done')
   }
+
+  // Hub « Reprendre » → restaure l'analyse archivée correspondante.
+  useEffect(() => {
+    const p = takeBridgePayload('/stock-analysis')
+    if (p?.restoreId != null) {
+      const item = history.find((h) => (h.id ?? h.savedAt) === p.restoreId)
+      if (item) restore(item)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleCopy = async () => {
+    await copyReportText(report)
+    toast(t('copy_done'), 'success')
+  }
+
+  // Pont sortant : un véhicule du stock → Veille Prix pré-remplie et lancée.
+  const toPriceWatch = (v) => sendToTool(navigate, '/price-watch', { filters: vehicleToPwFilters(v) })
 
   const retry = () => (mode === 'url' ? analyzeFromUrl() : fileRef.current?.click())
 
@@ -250,6 +346,10 @@ export default function AnalyseStock() {
             </p>
             {report && phase === 'done' && (
               <div className="flex items-center gap-2">
+                <button onClick={handleCopy}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50 px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition">
+                  <Copy size={12} /> {t('copy_btn')}
+                </button>
                 <button onClick={handlePdf} disabled={exporting}
                   className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50 px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition">
                   {exporting ? <Spinner size="sm" /> : <Download size={12} />} {t('download_pdf')}
@@ -272,10 +372,14 @@ export default function AnalyseStock() {
               <span className="inline-block w-0.5 h-[1em] animate-pulse align-middle ml-0.5 opacity-80 bg-cyan-400" />
             )}
           </div>
+
+          {phase === 'done' && (
+            <VehiclesList vehicles={vehiclesList} t={t} onPriceWatch={toPriceWatch} />
+          )}
         </>
       )}
 
-      <HistoryPanel items={history} onRestore={restore} onRemove={removeHistory} onClear={clearHistory} primary={(item) => item.generatedFor} />
+      <HistoryPanel items={history} onRestore={restore} onRemove={removeHistory} onClear={clearHistory} onTogglePin={togglePin} primary={(item) => item.generatedFor} />
     </div>
   )
 }
