@@ -276,7 +276,7 @@ export default function AnalyseStock() {
               <input
                 type="text" value={url} onChange={e => setUrl(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && analyzeFromUrl()}
-                placeholder="https://pros.lacentrale.fr/C043036" className={inputClass}
+                placeholder={t('stock_url_ph')} className={inputClass}
               />
             </div>
             <div>

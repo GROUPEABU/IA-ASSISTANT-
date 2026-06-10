@@ -50,17 +50,18 @@ Commence directement par « ## Lecture rapide », sans phrase d'introduction.`
 // SCRAPING WEB — extraction du stock via web_search (même mécanisme que
 // Veille Prix — contourne les blocages anti-bot des proxies serveur).
 // ════════════════════════════════════════════════════════════════════════════
-const SCRAPE_SYSTEM = `Tu es un extracteur de données automobiles expert en navigation web. Tu reçois l'URL d'un showroom concessionnaire (La Centrale Pro ou similaire).
+const SCRAPE_SYSTEM = `Tu es un extracteur de données automobiles expert en navigation web. Tu reçois l'URL du stock d'un vendeur automobile — N'IMPORTE QUELLE source : La Centrale Pro, boutique LeBonCoin Pro, page concessionnaire AutoScout24 / mobile.de / OtoMoto, site web propre du vendeur (toutes plateformes : WordPress, Spider VO, Datacar…), ou toute autre page listant des véhicules. Adapte-toi à la structure du site tel qu'il est.
 
 STRATÉGIE D'ACCÈS — applique dans cet ordre :
 1. Tente web_fetch sur l'URL fournie.
-2. Si la racine est bloquée (anti-bot, 403, page vide), essaie ces variantes dans l'ordre :
-   - <base>/voitures-occasion
-   - <base>/voitures-occasion?page=1
-   - <base>?page=1
-   Pour La Centrale Pro (pros.lacentrale.fr/CXXXXXX) : les sous-pages de listing par catégorie sont accessibles même quand la racine est protégée.
-3. Navigue TOUTES les pages de pagination en incrémentant le paramètre page jusqu'à ne plus trouver de nouveaux véhicules (maximum 15 pages — typiquement 9 à 12 véhicules par page).
-4. Agrège les véhicules de TOUTES les pages en un seul tableau.
+2. Si la racine est bloquée (anti-bot, 403, page vide), essaie les variantes usuelles selon la plateforme :
+   - <base>/voitures-occasion · <base>/occasions · <base>/vehicules · <base>/stock · <base>/nos-vehicules
+   - les mêmes avec ?page=1 ou /page/2
+   - La Centrale Pro (pros.lacentrale.fr/CXXXXXX) : les sous-pages de listing par catégorie restent accessibles quand la racine est protégée.
+   - LeBonCoin boutique : ajoute ?page=2, ?page=3… sur l'URL de la boutique.
+   - Si la page est introuvable, fais une web_search « <nom du vendeur> stock véhicules occasion » pour retrouver la bonne page de listing.
+3. Navigue TOUTES les pages de pagination (paramètre page, liens « suivant »…) jusqu'à ne plus trouver de nouveaux véhicules (maximum 15 pages).
+4. Agrège les véhicules de TOUTES les pages en un seul tableau. Le champ marketBadge n'existe que sur certaines plateformes (La Centrale) — mets null ailleurs, n'invente rien.
 
 Pendant ta navigation, indique brièvement chaque étape (ex : "Page 1 : 9 véhicules extraits", "Page 2 : 9 véhicules", etc.) avant d'écrire la ligne DEALER:.
 
@@ -76,7 +77,7 @@ DEALER: Inconnu
  * Récupère le stock d'un concessionnaire via web_fetch (Claude navigue les
  * pages paginées — même mécanisme que la Veille Prix).
  *
- * @param {string} url  — URL La Centrale Pro ou équivalent
+ * @param {string} url  — URL d'un stock vendeur (La Centrale Pro, LeBonCoin, AutoScout24, site du vendeur…)
  * @param {{ lang?: string, onChunk?: (text: string) => void }} opts
  * @returns {Promise<{ vehicles: object[], dealer: object }>}
  */

@@ -10,11 +10,12 @@ import { useExport } from '@/hooks/useExport'
 import { pdfFileName } from '@/utils/exportPdf'
 import { exportReportPdf } from '@/utils/exportReportPdf'
 import { useSettings } from '@/contexts/SettingsContext'
+import { COUNTRIES } from '@/data/marketCountries'
 
 // L'analyse marché de la Fiche IA réutilise la MÊME méthodologie que la Veille
-// Prix (prompt partagé, source de vérité unique). Contexte par défaut : VO,
-// France, millésime du produit, sans plage de km imposée.
-const FR_CTRY = { code: 'FR', label: 'France', tva: 1.20, transport: 450, sites: 'La Centrale, LeBonCoin, AutoScout24.fr' }
+// Prix (prompt partagé, source de vérité unique). Contexte : VO, millésime du
+// produit, sans plage de km imposée — le MARCHÉ se choisit via le sélecteur
+// (les sources citées dépendent du pays, pas seulement de la France).
 
 function StatCard({ label, value, sub, trend }) {
   return (
@@ -42,7 +43,10 @@ export default function MarketAnalysis({ product }) {
   const [loading, setLoading] = useState(false)
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState(null)
+  const [country, setCountry] = useState('FR')
   const { exporting, withExporting } = useExport()
+
+  const ctry = COUNTRIES.find((c) => c.code === country) ?? COUNTRIES[0]
 
   const generate = async () => {
     setLoading(true)
@@ -57,7 +61,7 @@ export default function MarketAnalysis({ product }) {
         mileageMin: '', mileageMax: '',
         yearMin: product.year || '', yearMax: product.year || '',
       }
-      const prompt = buildPrompt(filters, product.fullName, FR_CTRY)
+      const prompt = buildPrompt(filters, product.fullName, ctry)
 
       let first = true
       const { text } = await sendMessage([{ role: 'user', content: prompt }], {
@@ -80,7 +84,7 @@ export default function MarketAnalysis({ product }) {
   }
 
   const handlePdf = () => withExporting(() =>
-    exportReportPdf(analysis, pdfFileName(product.fullName, t('market_realtime_title')), { title: t('market_realtime_title'), subtitle: product.fullName })
+    exportReportPdf(analysis, pdfFileName(product.fullName, t('market_realtime_title')), { title: t('market_realtime_title'), subtitle: `${product.fullName} · ${ctry.label}` })
   )
 
   return (
@@ -123,15 +127,26 @@ export default function MarketAnalysis({ product }) {
 
       {/* Analyse principale — rapport Veille Prix en direct */}
       <div className="glass-card p-5">
-        <div className="flex items-center justify-between mb-4 gap-3">
+        <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <Globe size={14} className="text-cyan-400 flex-shrink-0" />
               <h3 className="text-sm font-semibold text-white">{t('market_realtime_title')}</h3>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">{t('market_sources_label')}</p>
+            {/* Sources selon le marché sélectionné — pas uniquement les sites FR */}
+            <p className="text-xs text-slate-500 mt-0.5">{ctry.sites}</p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+            <select
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              disabled={loading || streaming}
+              aria-label={t('price_country_label')}
+              className="bg-navy-900/60 border border-navy-700/50 rounded-lg px-2.5 py-2 text-xs
+                         text-slate-300 focus:outline-none focus:border-cyan-400/50 transition disabled:opacity-40"
+            >
+              {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+            </select>
             {analysis && !streaming && (
               <Button size="sm" variant="ghost" onClick={handlePdf} disabled={exporting}>
                 {exporting ? <Spinner size="sm" /> : <Download size={13} />}
