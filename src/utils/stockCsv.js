@@ -146,23 +146,33 @@ function detectHeaderRow(grid) {
 }
 
 /**
+ * Lit un fichier CSV/XLSX et renvoie la grille brute de chaînes, sans
+ * interprétation des colonnes. Sert aussi de base à la lecture adaptative
+ * (smartImport) quand la détection de colonnes échoue.
  * @param {File} file
- * @returns {Promise<{ vehicles: object[], ignored: number, dealer: object }>}
+ * @returns {Promise<string[][]>}
  */
-export async function parseStockFile(file) {
+export async function fileToGrid(file) {
   if (!file) throw new Error('Aucun fichier fourni.')
   if (file.size > MAX_BYTES) throw new Error('Fichier trop volumineux (max 25 Mo).')
 
   const name = (file.name || '').toLowerCase()
-  let grid
   if (name.endsWith('.xlsx') || name.endsWith('.xlsm')) {
-    grid = await parseXLSX(await file.arrayBuffer())
-  } else if (name.endsWith('.csv') || name.endsWith('.txt') || file.type === 'text/csv') {
-    grid = parseCSV(await file.text())
-  } else {
-    try { grid = await parseXLSX(await file.arrayBuffer()) }
-    catch { grid = parseCSV(await file.text()) }
+    return parseXLSX(await file.arrayBuffer())
   }
+  if (name.endsWith('.csv') || name.endsWith('.txt') || file.type === 'text/csv') {
+    return parseCSV(await file.text())
+  }
+  try { return await parseXLSX(await file.arrayBuffer()) }
+  catch { return parseCSV(await file.text()) }
+}
+
+/**
+ * @param {File} file
+ * @returns {Promise<{ vehicles: object[], ignored: number, dealer: object }>}
+ */
+export async function parseStockFile(file) {
+  const grid = await fileToGrid(file)
 
   const headerIdx = detectHeaderRow(grid)
   if (headerIdx < 0) {

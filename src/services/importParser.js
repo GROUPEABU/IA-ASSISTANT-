@@ -371,7 +371,16 @@ export async function parseImportFile(file) {
   }
   if (rows.length === 0) throw new Error('Aucune ligne de véhicule exploitable trouvée.')
 
-  // Regroupement par modèle exact
+  return productsFromRows(rows)
+}
+
+/**
+ * Regroupe des lignes normalisées (schéma normalizeRow : model, couleur, vin,
+ * equipements, carburant, boite, kms, co2, prix_ht, prix_ttc, prix, immatStr,
+ * year) par modèle exact et construit les fiches produit. Réutilisé par
+ * l'import adaptatif (smartImport) quand les colonnes ne sont pas reconnues.
+ */
+export function productsFromRows(rows) {
   const groups = new Map()
   for (const r of rows) {
     const key = r.model.replace(/\s+/g, ' ').trim().toUpperCase()

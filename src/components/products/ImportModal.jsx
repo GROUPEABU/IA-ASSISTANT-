@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Upload, FileSpreadsheet, AlertCircle, Loader2, CheckCircle2, Car } from 'lucide-react'
-import { parseImportFile } from '@/services/importParser'
+import { X, Upload, FileSpreadsheet, AlertCircle, Loader2, CheckCircle2, Car, Sparkles } from 'lucide-react'
+import { parseImportFile, productsFromRows } from '@/services/importParser'
+import { extractVehiclesSmart } from '@/services/smartImport'
 import { useSettings } from '@/contexts/SettingsContext'
 import useFocusTrap from '@/hooks/useFocusTrap'
 
@@ -9,12 +10,30 @@ import useFocusTrap from '@/hooks/useFocusTrap'
  * par modèle, avec veille prix interne (min / moyen / max) calculée sur le
  * stock réel. Aperçu avant validation, aucune donnée perdue.
  */
+// Ligne canonique (smartImport) → schéma normalizeRow attendu par productsFromRows.
+const toProductRow = (v) => ({
+  model: [v.make, v.model, v.version].filter(Boolean).join(' '),
+  couleur: v.couleur || '',
+  vin: v.vin || '',
+  equipements: '',
+  carburant: v.fuel || '',
+  boite: v.gearbox || '',
+  kms: v.mileageKm,
+  co2: v.co2,
+  prix_ht: v.prixHt,
+  prix_ttc: v.priceEur,
+  prix: v.priceEur ?? v.prixHt,
+  immatStr: '',
+  year: v.year,
+})
+
 export default function ImportModal({ onImported, onClose }) {
-  const { t, formatCurrency } = useSettings()
+  const { t, formatCurrency, lang } = useSettings()
   const fileRef = useRef(null)
   const [parsing, setParsing] = useState(false)
   const [error, setError] = useState(null)
   const [preview, setPreview] = useState(null) // { products, vehicleCount, modelCount }
+  const [smartUsed, setSmartUsed] = useState(false)
   const [fileName, setFileName] = useState('')
   const trapRef = useFocusTrap()
 
@@ -31,11 +50,21 @@ export default function ImportModal({ onImported, onClose }) {
     setParsing(true)
     setError(null)
     setPreview(null)
+    setSmartUsed(false)
     try {
       const res = await parseImportFile(file)
       setPreview(res)
-    } catch (err) {
-      setError(err.message)
+    } catch (firstErr) {
+      // Format libre non reconnu → lecture adaptative IA (comme Claude chat).
+      try {
+        const { vehicles, source } = await extractVehiclesSmart(file, { lang })
+        const rows = vehicles.map(toProductRow).filter((r) => r.model)
+        if (!rows.length) throw firstErr
+        setPreview(productsFromRows(rows))
+        setSmartUsed(source === 'ai')
+      } catch {
+        setError(firstErr.message)
+      }
     } finally {
       setParsing(false)
     }
@@ -123,6 +152,13 @@ export default function ImportModal({ onImported, onClose }) {
                     .replace('{m}', preview.modelCount)}
                 </p>
               </div>
+
+              {smartUsed && (
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-violet-400/10 border border-violet-400/20">
+                  <Sparkles size={13} className="text-violet-400 flex-shrink-0" />
+                  <p className="text-[11px] text-violet-300">{t('import_smart_badge')}</p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 {preview.products.map((p) => (

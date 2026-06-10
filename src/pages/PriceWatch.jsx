@@ -3,9 +3,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   Bell, Search, RotateCcw, ExternalLink, Clock, Download, FileText,
   Wifi, WifiOff, Calculator, Sparkles, ShieldCheck, Copy, Mic, TrendingDown, TrendingUp,
+  FileSpreadsheet, ChevronDown, CheckSquare, Square, StopCircle, X,
 } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { buildPrompt } from '@/services/veillePrixPrompt'
+import { extractVehiclesSmart } from '@/services/smartImport'
+import { MILEAGE_MIN_VALUES, MILEAGE_MAX_VALUES } from '@/data/vehicleFilters'
 import { sendToTool, takeBridgePayload } from '@/utils/toolBridge'
 import { extractReportFigures } from '@/utils/reportFigures'
 import { copyReportText } from '@/utils/mdToPlainText'
@@ -83,6 +86,47 @@ function buildAs24Url(ctry, filters) {
   if (filters.fuel && AS24_FUEL[filters.fuel]) p.push(`fuel=${AS24_FUEL[filters.fuel]}`)
   const base = makeSlug ? `https://www.autoscout24.${ctry.tld}/lst/${makeSlug}${modelSlug ? '/' + modelSlug : ''}` : `https://www.autoscout24.${ctry.tld}/`
   return `${base}?${p.join('&')}`
+}
+
+// ── Analyse par lot (import CSV / Excel) ─────────────────────────────────────
+// Chaque ligne du fichier relance EXACTEMENT la même analyse que la recherche
+// unitaire (même buildPrompt, mêmes paramètres) — rien ne change côté prompt.
+const MAX_BATCH = 12
+
+const BATCH_FUEL_CODE = [
+  [/rechargeable|phev|plug/i, 'GH'],
+  [/hybride|hybrid/i, 'HY'],
+  [/électrique|electrique|electric/i, 'EL'],
+  [/diesel/i, 'GO'],
+  [/gpl|lpg/i, 'GP'],
+  [/essence|petrol|gasoline/i, 'ES'],
+]
+
+function batchRowToFilters(v) {
+  const km = Number(v.mileageKm) || 0
+  const fuel = (BATCH_FUEL_CODE.find(([re]) => re.test(v.fuel || '')) || [])[1] || ''
+  const gearbox = /auto/i.test(v.gearbox || '') ? 'A' : /manuelle|manual/i.test(v.gearbox || '') ? 'M' : ''
+  return {
+    type: 'vo',
+    make: String(v.make || '').trim(),
+    model: String(v.model || '').trim(),
+    finition: String(v.version || '').trim(),
+    carrosserie: '',
+    yearMin: v.year ? String(v.year) : '',
+    yearMax: v.year ? String(v.year) : '',
+    mileageMin: km ? String([...MILEAGE_MIN_VALUES].reverse().find((x) => x <= km) || '') : '',
+    mileageMax: km ? String(MILEAGE_MAX_VALUES.find((x) => x >= km) || '') : '',
+    fuel, gearbox, powerMin: '', powerMax: '',
+  }
+}
+
+function batchRowLabel(v) {
+  return [
+    [v.make, v.model, v.version].filter(Boolean).join(' '),
+    v.year,
+    v.mileageKm != null ? `${Number(v.mileageKm).toLocaleString('fr-FR')} km` : null,
+    v.fuel,
+  ].filter(Boolean).join(' · ')
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -270,6 +314,17 @@ export default function PriceWatch() {
   const [centraleUrl, setCentraleUrl] = useState('')
   const [searchLabel, setSearchLabel] = useState('')
   const [evolution, setEvolution] = useState(null) // diff vs analyse précédente du même véhicule
+
+  // Analyse par lot (fichier CSV / Excel)
+  const batchFileRef = useRef(null)
+  const batchCancelRef = useRef(false)
+  const [batchParsing, setBatchParsing] = useState(false)
+  const [batch, setBatch] = useState(null)          // { rows, fileName, source }
+  const [batchSel, setBatchSel] = useState(new Set())
+  const [batchRunning, setBatchRunning] = useState(false)
+  const [batchResults, setBatchResults] = useState(null)
+  const [batchOpen, setBatchOpen] = useState(null)  // index du rapport déplié
+
   const { history, add: addHistory, remove: removeHistory, clear: clearHistory, togglePin } = useHistory('pricewatch')
   const { save: saveLastVehicle } = useLastVehicle()
   const { exporting, withExporting } = useExport()
@@ -449,6 +504,106 @@ export default function PriceWatch() {
     }
   }
 
+  // ── Lot : import du fichier, sélection, exécution séquentielle ─────────────
+  const onBatchFile = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setBatchParsing(true)
+    setError(null)
+    try {
+      const { vehicles, source } = await extractVehiclesSmart(file, { lang })
+      const rows = vehicles.filter((v) => v.make || v.model)
+      if (!rows.length) throw new Error(t('pw_batch_none'))
+      setBatch({ rows, fileName: file.name, source })
+      setBatchSel(new Set(rows.slice(0, MAX_BATCH).map((_, i) => i)))
+      setBatchResults(null)
+      setBatchOpen(null)
+    } catch (err) {
+      toast(err.message, 'error')
+    } finally {
+      setBatchParsing(false)
+    }
+  }
+
+  const toggleBatchRow = (i) => {
+    setBatchSel((prev) => {
+      const next = new Set(prev)
+      if (next.has(i)) next.delete(i)
+      else if (next.size < MAX_BATCH) next.add(i)
+      return next
+    })
+  }
+
+  const runBatch = async () => {
+    if (!batch || batchSel.size === 0) return
+    const rows = [...batchSel].sort((a, b) => a - b).map((i) => batch.rows[i])
+    const ctry = COUNTRIES.find(c => c.code === country) ?? COUNTRIES[0]
+    batchCancelRef.current = false
+    setBatchRunning(true)
+    setBatchOpen(null)
+    const results = rows.map((v) => ({ label: batchRowLabel(v), status: 'pending', report: '', figures: null, hasLiveData: false }))
+    setBatchResults([...results])
+
+    for (let i = 0; i < rows.length; i++) {
+      if (batchCancelRef.current) {
+        for (let j = i; j < results.length; j++) results[j] = { ...results[j], status: 'cancelled' }
+        setBatchResults([...results])
+        break
+      }
+      results[i] = { ...results[i], status: 'running' }
+      setBatchResults([...results])
+
+      const v = rows[i]
+      const filters = batchRowToFilters(v)
+      filters.fuelLabel        = filters.fuel ? FUELS.find(f => f.code === filters.fuel)?.label || '' : ''
+      filters.gearboxLabel     = filters.gearbox ? GEARBOXES.find(g => g.code === filters.gearbox)?.label || '' : ''
+      filters.carrosserieLabel = ''
+      const vehicleDesc = batchRowLabel(v)
+
+      try {
+        // Même appel que la recherche unitaire — prompt et paramètres identiques.
+        const { text, usedWebSearch } = await sendMessage(
+          [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry) }],
+          {
+            lang, expert: true, temperature: 0, tool: 'veilleprix',
+            webSearch: true, maxSearches: 3, maxTokens: 4500,
+            returnMeta: true, stream: true,
+          }
+        )
+        const figures = extractReportFigures(text)
+        results[i] = { ...results[i], status: 'done', report: text, figures, hasLiveData: !!usedWebSearch }
+        addHistory({
+          searchLabel: `${results[i].label} · ${ctry.label}`,
+          country: ctry.code, type: 'vo', report: text, hasLiveData: !!usedWebSearch,
+          fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '',
+          filters: { ...filters, country: ctry.code }, figures,
+        })
+      } catch (err) {
+        results[i] = { ...results[i], status: 'error', error: err.message }
+      }
+      setBatchResults([...results])
+    }
+    setBatchRunning(false)
+  }
+
+  const stopBatch = () => { batchCancelRef.current = true }
+
+  const closeBatch = () => {
+    if (batchRunning) batchCancelRef.current = true
+    setBatch(null); setBatchResults(null); setBatchSel(new Set()); setBatchOpen(null)
+  }
+
+  const handleBatchPdf = () => {
+    const done = (batchResults || []).filter((r) => r.status === 'done')
+    if (!done.length) return
+    const ctryLabel = COUNTRIES.find(c => c.code === country)?.label || country
+    const md = done.map((r) => `# ${r.label}\n\n${r.report}`).join('\n\n---\n\n')
+    return withExporting(() =>
+      exportReportPdf(md, pdfFileName(`lot-${done.length}-vehicules`, `Veille prix ${ctryLabel}`),
+        { title: `Veille prix · ${t('pw_batch_title')} (${ctryLabel})`, subtitle: `${done.length} ${t('pw_batch_vehicles')}` }))
+  }
+
   const handlePdf = () => {
     const ctryLabel = (COUNTRIES.find(c => c.code === country)?.label || country).toUpperCase()
     const pdfTitle = `Veille prix ${ctryLabel}`
@@ -605,15 +760,30 @@ export default function PriceWatch() {
         </div>
 
         {/* Bouton */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => search()} disabled={!canSearch || loading || streaming}
+            onClick={() => search()} disabled={!canSearch || loading || streaming || batchRunning}
             className="flex items-center gap-2 px-5 py-2.5 bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
                        hover:bg-cyan-300 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
           >
             {(loading || streaming) ? <Spinner size="sm" /> : <Search size={14} />}
             {(loading || streaming) ? t('analyzing') : t('analyze_btn')}
           </button>
+
+          <button
+            onClick={() => batchFileRef.current?.click()}
+            disabled={batchParsing || batchRunning || loading || streaming}
+            className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                       px-3 py-2.5 rounded-xl hover:text-cyan-400 hover:border-cyan-400/30 transition
+                       disabled:opacity-40 disabled:pointer-events-none"
+          >
+            {batchParsing ? <Spinner size="sm" /> : <FileSpreadsheet size={13} />}
+            {t('pw_import_btn')}
+          </button>
+          <input
+            ref={batchFileRef} type="file" accept=".csv,.xlsx,.xlsm,.txt,text/csv"
+            className="hidden" onChange={onBatchFile}
+          />
 
           {centraleUrl && !loading && !streaming && (
             <a href={centraleUrl} target="_blank" rel="noopener noreferrer"
@@ -625,6 +795,179 @@ export default function PriceWatch() {
           )}
         </div>
       </div>
+
+      {/* ── Analyse par lot (fichier CSV / Excel importé) ────────────────────── */}
+      {batch && (
+        <div className="glass-card p-4 md:p-5 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <FileSpreadsheet size={15} className="text-cyan-400 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white truncate">
+                  {t('pw_batch_title')} · {batch.fileName}
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  {t('pw_batch_detected').replace('{n}', batch.rows.length)}
+                  {' · '}
+                  {t('pw_batch_country_note').replace('{c}', COUNTRIES.find(c => c.code === country)?.label || country)}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={closeBatch} aria-label={t('pw_batch_close')}
+              className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-white transition flex-shrink-0"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {batch.source === 'ai' && !batchResults && (
+            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-violet-400/10 border border-violet-400/20">
+              <Sparkles size={13} className="text-violet-400 flex-shrink-0" />
+              <p className="text-[11px] text-violet-300">{t('import_smart_badge')}</p>
+            </div>
+          )}
+
+          {/* Sélection des modèles avant lancement */}
+          {!batchResults && (
+            <>
+              <p className="text-[11px] text-slate-500">
+                {t('pw_batch_select_hint').replace('{max}', MAX_BATCH)}
+              </p>
+              <div className="max-h-72 overflow-y-auto divide-y divide-navy-700/30 rounded-xl border border-navy-700/40">
+                {batch.rows.map((v, i) => {
+                  const selected = batchSel.has(i)
+                  return (
+                    <button
+                      key={i} onClick={() => toggleBatchRow(i)}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-navy-900/40 transition"
+                    >
+                      {selected
+                        ? <CheckSquare size={15} className="text-cyan-400 flex-shrink-0" />
+                        : <Square size={15} className="text-slate-600 flex-shrink-0" />}
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs font-semibold truncate ${selected ? 'text-slate-200' : 'text-slate-500'}`}>
+                          {[v.make, v.model, v.version].filter(Boolean).join(' ')}
+                        </p>
+                        <p className="text-[10px] text-slate-600">
+                          {[v.year, v.mileageKm != null ? `${Number(v.mileageKm).toLocaleString('fr-FR')} km` : null, v.fuel]
+                            .filter(Boolean).join(' · ')}
+                        </p>
+                      </div>
+                      {v.priceEur != null && (
+                        <span className="text-xs font-bold text-cyan-400 flex-shrink-0">{fmtEur(v.priceEur)}</span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+              <button
+                onClick={runBatch} disabled={batchSel.size === 0}
+                className="flex items-center gap-2 px-5 py-2.5 bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
+                           hover:bg-cyan-300 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
+              >
+                <Search size={14} />
+                {t('pw_batch_launch').replace('{n}', batchSel.size)}
+              </button>
+            </>
+          )}
+
+          {/* Progression + tableau récapitulatif */}
+          {batchResults && (
+            <>
+              {batchRunning && (
+                <div className="flex items-center justify-between gap-2">
+                  <p className="flex items-center gap-2 text-xs text-cyan-400">
+                    <Spinner size="sm" />
+                    {t('pw_batch_progress')
+                      .replace('{i}', Math.min(
+                        batchResults.filter(r => r.status !== 'pending' && r.status !== 'running').length + 1,
+                        batchResults.length,
+                      ))
+                      .replace('{n}', batchResults.length)}
+                  </p>
+                  <button
+                    onClick={stopBatch}
+                    className="flex items-center gap-1.5 text-xs text-warn border border-warn/30
+                               px-3 py-1.5 rounded-lg hover:bg-warn/10 transition"
+                  >
+                    <StopCircle size={13} /> {t('pw_batch_stop')}
+                  </button>
+                </div>
+              )}
+
+              <div className="divide-y divide-navy-700/30 rounded-xl border border-navy-700/40 overflow-hidden">
+                {batchResults.map((r, i) => (
+                  <div key={i}>
+                    <button
+                      onClick={() => r.status === 'done' && setBatchOpen(batchOpen === i ? null : i)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition ${
+                        r.status === 'done' ? 'hover:bg-navy-900/40 cursor-pointer' : 'cursor-default'
+                      }`}
+                    >
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                        r.status === 'done'      ? 'bg-emerald-400/10 text-emerald-400'
+                        : r.status === 'running' ? 'bg-cyan-400/10 text-cyan-400 animate-pulse'
+                        : r.status === 'error'   ? 'bg-red-500/10 text-red-400'
+                        : r.status === 'cancelled' ? 'bg-navy-700/40 text-slate-500'
+                        : 'bg-navy-700/40 text-slate-500'
+                      }`}>
+                        {t(`pw_batch_status_${r.status}`)}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-slate-200 truncate">{r.label}</p>
+                        {r.figures && (
+                          <p className="text-[10px] text-slate-500">
+                            {r.figures.achatMin != null && `${t('pw_evol_achat')} ${fmtRange(r.figures.achatMin, r.figures.achatMax)}`}
+                            {r.figures.achatMin != null && r.figures.reventeMin != null && ' · '}
+                            {r.figures.reventeMin != null && `${t('pw_evol_revente')} ${fmtRange(r.figures.reventeMin, r.figures.reventeMax)}`}
+                          </p>
+                        )}
+                        {r.status === 'error' && <p className="text-[10px] text-red-400 truncate">{r.error}</p>}
+                      </div>
+                      {r.status === 'done' && r.hasLiveData && (
+                        <Wifi size={11} className="text-emerald-400 flex-shrink-0" />
+                      )}
+                      {r.status === 'done' && (
+                        <ChevronDown size={13} className={`text-slate-500 flex-shrink-0 transition-transform ${batchOpen === i ? 'rotate-180' : ''}`} />
+                      )}
+                    </button>
+                    {batchOpen === i && r.report && (
+                      <div className="px-3 pb-3">
+                        <div className="rounded-xl bg-navy-900/40 border border-navy-700/40 p-4 md:p-6">
+                          <div className="report-md text-slate-200"
+                               dangerouslySetInnerHTML={{ __html: mdToHtml(r.report) }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {!batchRunning && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleBatchPdf}
+                    disabled={exporting || !batchResults.some(r => r.status === 'done')}
+                    className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                               px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition
+                               disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    {exporting ? <Spinner size="sm" /> : <Download size={12} />}
+                    {t('pw_batch_export')}
+                  </button>
+                  <button
+                    onClick={closeBatch}
+                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30"
+                  >
+                    <RotateCcw size={11} /> {t('pw_batch_close')}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {/* ── Error ────────────────────────────────────────────────────────────── */}
       {error && <ErrorAlert message={error} onRetry={() => search()} />}

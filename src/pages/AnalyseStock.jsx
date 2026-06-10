@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Boxes, Link2, Upload, Search, RefreshCw, RotateCcw, Download, Copy, Bell, ChevronDown } from 'lucide-react'
 import { analyzeStock, scrapeStockWithSearch } from '@/services/stockAnalysis'
 import { computeStockStats } from '@/utils/stockStats'
-import { parseStockFile } from '@/utils/stockCsv'
+import { extractVehiclesSmart, toStockVehicles } from '@/services/smartImport'
 import { sendToTool, takeBridgePayload } from '@/utils/toolBridge'
 import { copyReportText } from '@/utils/mdToPlainText'
 import { MILEAGE_MIN_VALUES, MILEAGE_MAX_VALUES } from '@/data/vehicleFilters'
@@ -185,8 +185,14 @@ export default function AnalyseStock() {
     setFileName(file.name)
     setPhase('scraping')
     try {
-      const { vehicles, ignored: ign, dealer } = await parseStockFile(file)
+      // Lecture adaptative : colonnes reconnues d'abord, sinon extraction IA
+      // (le fichier n'a pas besoin de suivre un format imposé).
+      const { vehicles: rawVehicles, ignored: ign0, dealer, source } = await extractVehiclesSmart(file, { lang })
+      const { vehicles, ignored: ign1 } = source === 'ai' ? toStockVehicles(rawVehicles) : { vehicles: rawVehicles, ignored: 0 }
+      const ign = ign0 + ign1
+      if (!vehicles.length) throw new Error('Aucune ligne exploitable. Vérifiez que marque, modèle, année, kilométrage et prix sont présents.')
       setIgnored(ign)
+      if (source === 'ai') toast(t('import_smart_badge'), 'info')
       if (ign) toast(`${ign} ligne(s) ignorée(s) (données incomplètes).`, 'info')
       await runAnalysis(dealer, vehicles)
     } catch (err) {

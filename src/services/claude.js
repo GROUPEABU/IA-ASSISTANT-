@@ -30,6 +30,7 @@ const TOOL_MODELS = {
   pitch:             'claude-haiku-4-5-20251001',
   rapportcommercial: 'claude-haiku-4-5-20251001',
   analysestock:      'claude-sonnet-4-6',
+  importsmart:       'claude-haiku-4-5-20251001',
 }
 
 import { getSessionUserId, ukey } from '@/utils/userStorage'
