@@ -191,7 +191,7 @@ export default function AnalyseStock() {
       const { vehicles: rawVehicles, ignored: ign0, dealer, source } = await extractVehiclesSmart(file, { lang })
       const { vehicles, ignored: ign1 } = source === 'ai' ? toStockVehicles(rawVehicles) : { vehicles: rawVehicles, ignored: 0 }
       const ign = ign0 + ign1
-      if (!vehicles.length) throw new Error('Aucune ligne exploitable. Vérifiez que marque, modèle, année, kilométrage et prix sont présents.')
+      if (!vehicles.length) throw new Error(t('pw_batch_none'))
       setIgnored(ign)
       if (source === 'ai') toast(t('import_smart_badge'), 'info')
       if (ign) toast(`${ign} ligne(s) ignorée(s) (données incomplètes).`, 'info')

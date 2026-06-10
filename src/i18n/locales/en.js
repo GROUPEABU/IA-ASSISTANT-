@@ -948,6 +948,7 @@ export default {
   settings_margin_label: 'Target partner margin (€ excl. VAT)',
   settings_margin_desc: 'Gross margin target per deal — shown in price watch reports.',
   pw_margin_badge: 'Target margin {n} € excl. VAT',
+  page_stock_sub: 'B2B stock diagnosis · pricing, rotation, vehicles to reprice',
   // Logistics — truck loading plan
   nav_logistics: 'Logistics',
   page_logistics_title: 'Logistics',

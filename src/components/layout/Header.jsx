@@ -18,6 +18,7 @@ export default function Header({ onMenuToggle }) {
     '/tco':         { titleKey: 'page_tco_title',        subKey: 'page_tco_sub' },
     '/pitch':       { titleKey: 'page_pitch_title',      subKey: 'page_pitch_sub' },
     '/compare':     { titleKey: 'dim_title',             subKey: 'dim_subtitle' },
+    '/stock-analysis': { titleKey: 'tool_stock_title',    subKey: 'page_stock_sub' },
     '/logistics':   { titleKey: 'page_logistics_title',  subKey: 'page_logistics_sub' },
     '/settings':    { titleKey: 'page_settings_title',   subKey: 'page_settings_sub' },
   }
