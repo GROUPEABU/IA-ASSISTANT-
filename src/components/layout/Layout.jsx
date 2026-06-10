@@ -27,7 +27,7 @@ export default function Layout() {
   const toggle = useCallback(() => setSidebarOpen((v) => !v), [])
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-navy-900 relative">
+    <div className="app-shell flex overflow-hidden bg-navy-900 relative">
       {/* Skip-to-content link for keyboard users (visible on focus only) */}
       <a
         href="#main-content"

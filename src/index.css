@@ -235,6 +235,21 @@ header {
 /* On mobile, ensure the main scroll container always has enough bottom padding  */
 /* to scroll past the fixed bottom nav (≈85px) + iOS safe area.                 */
 /* Declared AFTER density rules so it wins when both have !important.            */
+/* Coque applicative : remplit TOUT l'écran. dvh pour Safari navigateur
+   (barre d'outils dynamique) ; en PWA installée, dvh peut être calculé plus
+   COURT que l'écran réel → on force 100vh (= plein écran en standalone). */
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+}
+@media (display-mode: standalone) {
+  .app-shell { height: 100vh; }
+  /* Nav collée en bas : padding = safe-area exacte, sans plancher de 1rem */
+  .bottom-nav { padding-bottom: env(safe-area-inset-bottom, 0px); }
+}
+html.pwa-standalone .app-shell { height: 100vh; }
+html.pwa-standalone .bottom-nav { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
 /* La nav basse mobile est désormais DANS le flux (Layout) : la zone de
    scroll se termine au-dessus d'elle, rien ne peut être masqué derrière.
    Petit spacer de confort en fin de contenu (compté par tous les moteurs,
