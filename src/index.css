@@ -248,7 +248,7 @@ header {
     content: '';
     display: block;
     flex-shrink: 0;
-    height: calc(env(safe-area-inset-bottom, 0px) + 8rem);
+    height: calc(env(safe-area-inset-bottom, 0px) + 9rem);
   }
 }
 @media (min-width: 768px) {
@@ -261,10 +261,11 @@ header {
    latéral sur mobile (badges, prix longs, tableaux).
    overscroll-behavior : empêche iOS de transférer le geste au document
    (rubber-band) quand le conteneur atteint ses bornes. */
+/* NB : pas de -webkit-overflow-scrolling: touch (déprécié — bugs connus de
+   gel de l'étendue de scroll quand le contenu change de hauteur sur iOS). */
 .layout-scroll-main {
   overflow-x: hidden;
   overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* ── PWA installée (écran d'accueil iOS, status-bar translucide) ───────────

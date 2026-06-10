@@ -233,6 +233,11 @@ export default function Settings() {
           </div>
         </Section>
       </div>
+
+      {/* Marqueur de build — vérifie que l'appareil charge la dernière version */}
+      <p className="text-[10px] text-slate-600 text-center mt-4">
+        Build {typeof __APP_BUILD__ !== 'undefined' ? __APP_BUILD__ : '—'}
+      </p>
     </div>
   )
 }

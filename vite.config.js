@@ -4,6 +4,11 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    // Marqueur de build affiché dans Paramètres — permet de vérifier en un
+    // coup d'œil que l'appareil charge bien la dernière version déployée.
+    __APP_BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC'),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
