@@ -181,7 +181,7 @@ export default function Logistics() {
             </div>
 
             {/* Paramètres */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+            <div className="grid grid-cols-2 gap-2 mb-2">
               <div>
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('lg_dest_label')}</label>
                 <select value={destCountry} onChange={(e) => onCountry(e.target.value)} className={inputClass}>
@@ -196,13 +196,17 @@ export default function Logistics() {
                   className={inputClass}
                 />
               </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('lg_notes_label')}</label>
-                <input
-                  type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
-                  placeholder={t('lg_notes_ph')} className={inputClass}
-                />
-              </div>
+            </div>
+
+            {/* Demande libre — comme sur Claude chat : décrivez ce que vous
+                voulez faire du fichier, les consignes priment sur les règles */}
+            <div className="mb-2">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('lg_notes_label')}</label>
+              <textarea
+                value={notes} onChange={(e) => setNotes(e.target.value)}
+                placeholder={t('lg_notes_ph')} rows={3}
+                className={`${inputClass} resize-y min-h-[72px]`}
+              />
             </div>
             <p className="text-[10px] text-slate-600 mb-4">{t('lg_rules_hint')}</p>
 

@@ -21,6 +21,8 @@ MISSION : répartir une liste de véhicules en CAMIONS de chargement, en respect
 
 4. Si le nombre de véhicules n'est pas divisible, le dernier camion est partiel. Ne laisse un véhicule non affecté QUE s'il est géographiquement isolé au point de justifier un transport séparé — explique pourquoi.
 
+5. CONSIGNES UTILISATEUR — si des consignes libres sont fournies, elles sont PRIORITAIRES sur les règles 1-4 : adapte le plan exactement à ce qui est demandé (ex. « divise en 3 camions », « sépare les électriques », « regroupe par marque », « le camion 1 part à Munich »…). Signale dans summary ce que les consignes ont changé par rapport aux règles standard.
+
 RÉPONSE : UNIQUEMENT ce JSON (aucun texte autour) :
 {
   "trucks": [
@@ -58,7 +60,9 @@ export async function planTrucks(vehicles, { capacity, destCountry, notes = '' }
 PARAMÈTRES :
 - Capacité par camion : ${capacity} véhicules (destination ${destCountry})
 - Équilibrage kilométrique : OBLIGATOIRE (km moyens proches entre camions)
-${notes ? `- Consignes additionnelles : ${notes}` : ''}
+${notes ? `
+CONSIGNES UTILISATEUR (PRIORITAIRES sur les règles par défaut) :
+${notes}` : ''}
 
 VÉHICULES (idx, désignation, année, km, parc d'enlèvement) :
 ${JSON.stringify(compact)}
