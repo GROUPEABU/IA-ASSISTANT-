@@ -107,10 +107,7 @@ function VehicleHeader({ vehicle, index, color, canRemove, onToggleOpen, onRemov
       >
         {index}
       </span>
-      <span
-        className="flex-1 text-sm font-medium truncate"
-        style={{ color: v.nom ? '#E0E1E1' : '#475569' }}
-      >
+      <span className={`flex-1 text-sm font-medium truncate ${v.nom ? 'text-slate-200' : 'text-slate-500'}`}>
         {v.nom || `${t('tco_vehicle_label')} ${index}`}
       </span>
       {v.nom && Number(v.prix) > 0 && (
@@ -121,9 +118,9 @@ function VehicleHeader({ vehicle, index, color, canRemove, onToggleOpen, onRemov
           <button
             onClick={e => { e.stopPropagation(); onRemove() }}
             aria-label={`${t('tco_remove_label')} ${v.nom || `${t('tco_vehicle_label').toLowerCase()} ${index}`}`}
-            className="w-6 h-6 flex items-center justify-center text-slate-600 hover:text-red-400 transition rounded"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-400/10 active:scale-95 transition"
           >
-            <Trash2 size={13} />
+            <Trash2 size={15} />
           </button>
         )}
         {v.open
@@ -156,7 +153,7 @@ function FuelTypeSelector({ value, onChange, label }) {
   return (
     <div>
       <label className="text-[11px] text-slate-500 uppercase tracking-wider">{label}</label>
-      <div role="radiogroup" className="grid grid-cols-4 gap-0 bg-navy-900/50 rounded-xl p-1 mt-1">
+      <div role="radiogroup" className="grid grid-cols-4 gap-0 bg-navy-900/50 rounded-xl p-1 mt-1 seg-group">
         {Object.entries(FUEL_LABEL_KEYS).map(([k, labelKey]) => {
           const isActive = value === k
           return (
@@ -165,7 +162,7 @@ function FuelTypeSelector({ value, onChange, label }) {
               role="radio"
               aria-checked={isActive}
               onClick={() => onChange(k)}
-              className="py-2 rounded-[9px] text-[11px] font-semibold transition"
+              className="py-2 rounded-[9px] text-[11px] font-semibold transition seg-btn"
               style={{
                 background: isActive ? 'rgba(80,229,229,0.16)' : 'transparent',
                 color:      isActive ? '#50E5E5' : '#64748b',
@@ -188,7 +185,7 @@ function MaintenanceField({ vehicle, onUpdate }) {
         </label>
         <span className="text-[10px] text-slate-600">{t('tco_editable')}</span>
       </div>
-      <div role="radiogroup" className="grid grid-cols-3 gap-0 bg-navy-900/50 rounded-xl p-1 mb-2">
+      <div role="radiogroup" className="grid grid-cols-3 gap-0 bg-navy-900/50 rounded-xl p-1 mb-2 seg-group">
         {MAINT_TIERS.map(tier => {
           const isActive = vehicle.tier === tier.k
           return (
@@ -201,7 +198,7 @@ function MaintenanceField({ vehicle, onUpdate }) {
                 onUpdate('maint', getMaintDefault(vehicle.fuelType, tier.k))
                 onUpdate('maintManual', false)
               }}
-              className="py-1.5 rounded-[9px] text-[10px] font-semibold transition leading-tight"
+              className="py-1.5 rounded-[9px] text-[10px] font-semibold transition leading-tight seg-btn"
               style={{
                 background: isActive ? 'rgba(80,229,229,0.16)' : 'transparent',
                 color:      isActive ? '#50E5E5' : '#64748b',

@@ -190,8 +190,8 @@ function DetailTable({ results, years, formatCurrency, t }) {
             {results.map((r, i) => (
               <td
                 key={i}
-                className="px-3 py-3 text-right font-bold text-base"
-                style={{ color: i === 0 ? r.color : '#E0E1E1' }}
+                className={`px-3 py-3 text-right font-bold text-base ${i !== 0 ? 'text-slate-300' : ''}`}
+                style={{ color: i === 0 ? r.color : undefined }}
               >
                 {formatCurrency(Math.round(r.total))}
               </td>

@@ -68,8 +68,7 @@ export default function Tco() {
         <button
           onClick={add}
           className="glass-card px-4 py-3 flex items-center justify-center gap-2 text-sm
-                     text-slate-400 hover:text-cyan-400 border-dashed transition w-full"
-          style={{ borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.12)' }}
+                     text-slate-400 hover:text-cyan-400 border-dashed transition w-full tco-add-btn"
         >
           <Plus size={15} />
           {t('add_vehicle')}

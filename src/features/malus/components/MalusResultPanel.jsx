@@ -112,7 +112,7 @@ function KeyMetrics({ result, emission }) {
           style={{ background: m.highlight ? 'rgba(80,229,229,0.08)' : 'rgba(255,255,255,0.02)' }}
         >
           <div className="text-[11px] text-slate-500 tracking-wider mb-1 uppercase">{m.label}</div>
-          <div className="text-sm font-semibold" style={{ color: m.highlight ? '#50E5E5' : '#E0E1E1' }}>
+          <div className={`text-sm font-semibold ${m.highlight ? 'text-cyan-400' : 'text-slate-200'}`}>
             {m.value}
           </div>
         </div>
