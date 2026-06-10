@@ -23,7 +23,7 @@ export const sevColor = (s) => SEVERITY_COLOR[s] || '#94a3b8'
 export const sevLabel = (s) => SEVERITY_LABEL[s] || '—'
 
 // Nombre maximum de pays comparés simultanément (hook + UI).
-export const MAX_COMPARE = 6
+export const MAX_COMPARE = 10
 
 export const WEIGHT_PRESETS = [1200, 1450, 1600, 1800, 1950, 2200, 2500, 2800]
 
