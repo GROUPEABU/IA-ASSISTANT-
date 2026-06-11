@@ -237,5 +237,7 @@ export async function exportReportPdf(markdown, filename, meta = {}) {
     globalThis.__PDF_TEST_SINK__(pdf, filename)
     return
   }
+  // output 'blob' : renvoie le PDF (partage Web Share API) au lieu de le télécharger.
+  if (meta.output === 'blob') return pdf.output('blob')
   pdf.save(filename)
 }

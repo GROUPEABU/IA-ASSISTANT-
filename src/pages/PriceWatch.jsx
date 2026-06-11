@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   Bell, Search, RotateCcw, ExternalLink, Clock, Download, FileText,
   Wifi, WifiOff, Calculator, Sparkles, ShieldCheck, Copy, Mic, TrendingDown, TrendingUp,
-  FileSpreadsheet, ChevronDown, CheckSquare, Square, StopCircle, X, AlertTriangle,
+  FileSpreadsheet, ChevronDown, CheckSquare, Square, StopCircle, X, AlertTriangle, Share2,
 } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { buildPrompt } from '@/services/veillePrixPrompt'
@@ -15,6 +15,7 @@ import { extractReportFigures } from '@/utils/reportFigures'
 import { copyReportText } from '@/utils/mdToPlainText'
 import { downloadCsv } from '@/utils/exportCsv'
 import { getMarginTarget, setMarginTarget, MARGIN_DEFAULT, MARGIN_MIN, MARGIN_MAX } from '@/utils/marginTarget'
+import { getSessionUserId, ukey } from '@/utils/userStorage'
 import Spinner from '@/components/ui/Spinner'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
@@ -30,6 +31,12 @@ import { useToast } from '@/components/ui/Toast'
 const PW_SESSION = 'abu_pw_filters'
 function readPwSession(field, def) {
   try { return JSON.parse(sessionStorage.getItem(PW_SESSION))?.[field] ?? def } catch { return def }
+}
+
+// État du lot persisté par utilisateur : un import interrompu (navigation,
+// fermeture) se retrouve intact au retour, avec reprise des lignes restantes.
+function readBatchStore() {
+  try { return JSON.parse(localStorage.getItem(ukey(getSessionUserId(), 'pw_batch_state'))) || null } catch { return null }
 }
 
 // ── Données filtres ────────────────────────────────────────────────────────────
@@ -364,11 +371,22 @@ export default function PriceWatch() {
   const batchFileRef = useRef(null)
   const batchCancelRef = useRef(false)
   const [batchParsing, setBatchParsing] = useState(false)
-  const [batch, setBatch] = useState(null)          // { rows, fileName, source }
-  const [batchSel, setBatchSel] = useState(new Set())
+  const [batch, setBatch] = useState(() => readBatchStore()?.batch ?? null) // { rows, fileName, source }
+  const [batchSel, setBatchSel] = useState(() => new Set(readBatchStore()?.sel ?? []))
   const [batchRunning, setBatchRunning] = useState(false)
-  const [batchResults, setBatchResults] = useState(null)
+  const [batchResults, setBatchResults] = useState(() => {
+    const r = readBatchStore()?.results
+    // Une ligne « en cours » au moment de la fermeture redevient « en attente ».
+    return r ? r.map((x) => (x.status === 'running' ? { ...x, status: 'pending' } : x)) : null
+  })
   const [batchOpen, setBatchOpen] = useState(null)  // index du rapport déplié
+  const [batchEta, setBatchEta] = useState(null)    // minutes restantes estimées
+
+  // Comparaison multi-marchés (jusqu'à 2 pays en plus du marché principal)
+  const [extraCountries, setExtraCountries] = useState([])
+  const [multiResults, setMultiResults] = useState(null)
+  const [multiOpen, setMultiOpen] = useState(null)
+  const [multiRunning, setMultiRunning] = useState(false)
 
   const { history, add: addHistory, remove: removeHistory, clear: clearHistory, togglePin } = useHistory('pricewatch')
   const { save: saveLastVehicle } = useLastVehicle()
@@ -391,6 +409,16 @@ export default function PriceWatch() {
       ))
     } catch {}
   }, [type, make, model, finition, carrosserie, yearMin, yearMax, mileageMin, mileageMax, fuel, gearbox, powerMin, powerMax, country])
+
+  // Persiste l'état du lot (fichier, sélection, résultats) — reprise possible
+  // après navigation ou fermeture. Supprimé quand le lot est fermé.
+  useEffect(() => {
+    try {
+      const key = ukey(getSessionUserId(), 'pw_batch_state')
+      if (!batch) localStorage.removeItem(key)
+      else localStorage.setItem(key, JSON.stringify({ batch, sel: [...batchSel], results: batchResults }))
+    } catch {}
+  }, [batch, batchSel, batchResults])
 
   // Pont inter-outils : filtres reçus (Analyse de stock, Hub) → pré-remplit et
   // lance ; restoreId (Hub « Reprendre ») → restaure l'analyse archivée.
@@ -465,6 +493,8 @@ export default function PriceWatch() {
     setReport('')
     setHasLiveData(false)
     setEvolution(null)
+    setMultiResults(null)
+    setMultiOpen(null)
     const marginUsed = getMarginTarget()
 
     try {
@@ -546,6 +576,52 @@ export default function PriceWatch() {
 
       const filtersSnapshot = { ...filters, country: ctry.code }
       addHistory({ searchLabel: label, country: ctry.code, type: filters.type, report: text, hasLiveData: !!usedWebSearch, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '', filters: filtersSnapshot, figures, margin: marginUsed })
+
+      // Comparaison multi-marchés : même véhicule, mêmes filtres, autres pays.
+      const extras = extraCountries.filter((code) => code !== ctry.code)
+      if (extras.length) {
+        const multi = [
+          { code: ctry.code, label: ctry.label, status: 'done', report: text, figures, hasLiveData: !!usedWebSearch },
+          ...extras.map((code) => ({
+            code, label: COUNTRIES.find((c) => c.code === code)?.label || code,
+            status: 'pending', report: '', figures: null, hasLiveData: false,
+          })),
+        ]
+        setMultiResults([...multi])
+        setMultiRunning(true)
+        try {
+          for (let k = 1; k < multi.length; k++) {
+            multi[k] = { ...multi[k], status: 'running' }
+            setMultiResults([...multi])
+            const exCtry = COUNTRIES.find((c) => c.code === multi[k].code)
+            const exLabel = label.endsWith(ctry.label)
+              ? label.slice(0, label.length - ctry.label.length) + exCtry.label
+              : `${label} · ${exCtry.label}`
+            try {
+              const { text: xText, usedWebSearch: xLive } = await sendMessage(
+                [{ role: 'user', content: buildPrompt(filters, vehicleDesc, exCtry, marginUsed) }],
+                {
+                  lang, expert: true, temperature: 0, tool: 'veilleprix',
+                  webSearch: true, maxSearches: 3, maxTokens: 4500,
+                  returnMeta: true, stream: true,
+                }
+              )
+              const xFig = extractReportFigures(xText)
+              multi[k] = { ...multi[k], status: 'done', report: xText, figures: xFig, hasLiveData: !!xLive }
+              addHistory({
+                searchLabel: exLabel, country: exCtry.code, type: filters.type, report: xText,
+                hasLiveData: !!xLive, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '',
+                filters: { ...filters, country: exCtry.code }, figures: xFig, margin: marginUsed,
+              })
+            } catch (e) {
+              multi[k] = { ...multi[k], status: 'error', error: e.message }
+            }
+            setMultiResults([...multi])
+          }
+        } finally {
+          setMultiRunning(false)
+        }
+      }
     } catch (err) {
       setError(err.message)
       toast(err.message, 'error')
@@ -593,15 +669,26 @@ export default function PriceWatch() {
     batchCancelRef.current = false
     setBatchRunning(true)
     setBatchOpen(null)
-    const results = rows.map((v) => ({ label: batchRowLabel(v), status: 'pending', report: '', figures: null, hasLiveData: false, margin: null }))
+    // Reprise : si l'état précédent correspond aux mêmes lignes, on conserve
+    // les rapports déjà terminés et on ne relance que le reste.
+    const reuse = batchResults && batchResults.length === rows.length
+      && batchResults.every((r, i) => r.label === batchRowLabel(rows[i]))
+    const results = reuse
+      ? batchResults.map((r) => (r.status === 'done' ? r : { ...r, status: 'pending', error: undefined }))
+      : rows.map((v) => ({ label: batchRowLabel(v), status: 'pending', report: '', figures: null, hasLiveData: false, margin: null }))
     setBatchResults([...results])
+    const durations = []
+    setBatchEta(null)
 
     for (let i = 0; i < rows.length; i++) {
       if (batchCancelRef.current) {
-        for (let j = i; j < results.length; j++) results[j] = { ...results[j], status: 'cancelled' }
+        for (let j = i; j < results.length; j++) {
+          if (results[j].status !== 'done') results[j] = { ...results[j], status: 'cancelled' }
+        }
         setBatchResults([...results])
         break
       }
+      if (results[i].status === 'done') continue
       results[i] = { ...results[i], status: 'running' }
       setBatchResults([...results])
 
@@ -614,6 +701,7 @@ export default function PriceWatch() {
       // Marge : colonne « marge » du fichier si présente et valide, sinon champ global.
       const rowMargin = (Number(v.margin) >= MARGIN_MIN && Number(v.margin) <= MARGIN_MAX)
         ? Number(v.margin) : getMarginTarget()
+      const t0 = Date.now()
 
       try {
         // Même appel que la recherche unitaire — prompt et paramètres identiques.
@@ -636,9 +724,15 @@ export default function PriceWatch() {
       } catch (err) {
         results[i] = { ...results[i], status: 'error', error: err.message }
       }
+      // Estimation du temps restant : moyenne des analyses déjà faites.
+      durations.push(Date.now() - t0)
+      const remaining = results.filter((r, j) => j > i && r.status === 'pending').length
+      const avg = durations.reduce((a, b) => a + b, 0) / durations.length
+      setBatchEta(remaining > 0 ? Math.max(1, Math.ceil((avg * remaining) / 60000)) : null)
       setBatchResults([...results])
     }
     setBatchRunning(false)
+    setBatchEta(null)
   }
 
   const stopBatch = () => { batchCancelRef.current = true }
@@ -687,11 +781,32 @@ export default function PriceWatch() {
       exportReportPdf(report, pdfFileName(searchLabel, pdfTitle), { title: pdfTitle, subtitle: `${searchLabel} · ${marginTxt}` }))
   }
 
+  // Partage natif (mobile) : PDF via Web Share API ; repli = téléchargement.
+  const handleShare = () => withExporting(async () => {
+    const ctryLabel = (COUNTRIES.find(c => c.code === country)?.label || country).toUpperCase()
+    const pdfTitle = `Veille prix ${ctryLabel}`
+    const marginTxt = t('pw_margin_badge').replace('{n}', (reportMargin ?? getMarginTarget()).toLocaleString('fr-FR'))
+    const filename = pdfFileName(searchLabel, pdfTitle)
+    const meta = { title: pdfTitle, subtitle: `${searchLabel} · ${marginTxt}` }
+    try {
+      const blob = await exportReportPdf(report, filename, { ...meta, output: 'blob' })
+      const file = new File([blob], filename, { type: 'application/pdf' })
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: pdfTitle, text: searchLabel })
+        return
+      }
+    } catch (err) {
+      if (err?.name === 'AbortError') return // partage annulé par l'utilisateur
+    }
+    await exportReportPdf(report, filename, meta)
+  })
+
   const reset = () => {
     setReport(''); setMake(''); setModel(''); setFinition(''); setCarrosserie('')
     setYearMin(''); setYearMax(''); setMileageMin(''); setMileageMax(''); setFuel(''); setGearbox(''); setPowerMin(''); setPowerMax('')
     setCountry('FR')
     setSearchLabel(''); setCentraleUrl(''); setFetchedAt(null); setSources([]); setHasLiveData(false); setReportMargin(null)
+    setMultiResults(null); setMultiOpen(null); setExtraCountries([])
   }
 
   const restore = (item) => {
@@ -704,6 +819,7 @@ export default function PriceWatch() {
     setSources(item.sources || [])
     setCentraleUrl(item.centraleUrl || '')
     setEvolution(null)
+    setMultiResults(null); setMultiOpen(null)
     setReportMargin(item.margin ?? MARGIN_DEFAULT)
     // Resynchronise le formulaire : le bouton « Analyser » relance la même veille.
     if (item.filters) applyFilters(item.filters)
@@ -802,6 +918,35 @@ export default function PriceWatch() {
           </div>
         </div>
 
+        {/* Comparaison multi-marchés : jusqu'à 2 marchés en plus du principal */}
+        <div className="flex items-center gap-2 flex-wrap mb-4">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('pw_multi_label')}</span>
+          {extraCountries.map((code) => (
+            <button
+              key={code} type="button"
+              onClick={() => setExtraCountries((p) => p.filter((c) => c !== code))}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold
+                         bg-cyan-400/10 text-cyan-400 border border-cyan-400/25 hover:bg-cyan-400/20 transition"
+            >
+              {COUNTRIES.find((c) => c.code === code)?.label || code} <X size={10} />
+            </button>
+          ))}
+          {extraCountries.length < 2 && (
+            <select
+              value=""
+              onChange={(e) => e.target.value && setExtraCountries((p) => [...p, e.target.value])}
+              aria-label={t('pw_multi_add')}
+              className="bg-navy-900/60 border border-navy-700/50 rounded-lg px-2 py-1 text-[11px] text-slate-400
+                         focus:outline-none focus:border-cyan-400/50 transition"
+            >
+              <option value="">{t('pw_multi_add')}</option>
+              {COUNTRIES.filter((c) => c.code !== country && !extraCountries.includes(c.code)).map((c) => (
+                <option key={c.code} value={c.code}>{c.label}</option>
+              ))}
+            </select>
+          )}
+        </div>
+
         {/* Ligne 1 : Marque + Modèle + Année min + Année max */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-2">
           <div>
@@ -886,7 +1031,7 @@ export default function PriceWatch() {
         {/* Bouton */}
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => search()} disabled={!canSearch || loading || streaming}
+            onClick={() => search()} disabled={!canSearch || loading || streaming || multiRunning}
             className="flex items-center gap-2 px-5 py-2.5 bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
                        hover:bg-cyan-300 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
           >
@@ -996,6 +1141,9 @@ export default function PriceWatch() {
                         batchResults.length,
                       ))
                       .replace('{n}', batchResults.length)}
+                    {batchEta != null && (
+                      <span className="text-slate-500">· {t('pw_batch_eta').replace('{m}', batchEta)}</span>
+                    )}
                   </p>
                   <button
                     onClick={stopBatch}
@@ -1057,6 +1205,16 @@ export default function PriceWatch() {
 
               {!batchRunning && (
                 <div className="flex items-center gap-2 flex-wrap">
+                  {batchResults.some(r => r.status !== 'done') && (
+                    <button
+                      onClick={runBatch}
+                      className="flex items-center gap-1.5 text-xs font-bold text-navy-900 bg-cyan-400
+                                 px-3 py-1.5 rounded-lg hover:bg-cyan-300 active:scale-95 transition"
+                    >
+                      <Search size={12} />
+                      {t('pw_batch_resume').replace('{n}', batchResults.filter(r => r.status !== 'done').length)}
+                    </button>
+                  )}
                   <button
                     onClick={handleBatchPdf}
                     disabled={exporting || !batchResults.some(r => r.status === 'done')}
@@ -1150,6 +1308,11 @@ export default function PriceWatch() {
                   {exporting ? <Spinner size="sm" /> : <Download size={12} />}
                   {t('download_pdf')}
                 </button>
+                <button onClick={handleShare} disabled={exporting}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                             px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition flex-shrink-0">
+                  <Share2 size={12} /> {t('pw_share')}
+                </button>
                 <button onClick={() => sendToTool(navigate, '/pitch', vehicleDetailsPayload())}
                   className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
                              px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition flex-shrink-0">
@@ -1185,6 +1348,66 @@ export default function PriceWatch() {
           {/* Évolution vs dernière analyse du même véhicule */}
           {report && !streaming && evolution && (
             <EvolutionCard evolution={evolution} t={t} />
+          )}
+
+          {/* Comparatif multi-marchés */}
+          {multiResults && (
+            <div className="glass-card p-4 space-y-2">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('pw_multi_title')}</p>
+              <div className="divide-y divide-navy-700/30 rounded-xl border border-navy-700/40 overflow-hidden">
+                {(() => {
+                  const doneFig = multiResults.filter((x) => x.status === 'done' && x.figures?.achatMin != null)
+                  const bestAchat = doneFig.length > 1 ? Math.min(...doneFig.map((x) => x.figures.achatMin)) : null
+                  return multiResults.map((r, i) => (
+                    <div key={r.code}>
+                      <button
+                        onClick={() => r.status === 'done' && r.report && setMultiOpen(multiOpen === i ? null : i)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition ${
+                          r.status === 'done' && r.report ? 'hover:bg-navy-900/40 cursor-pointer' : 'cursor-default'
+                        }`}
+                      >
+                        <span className="text-xs font-semibold text-slate-200 w-24 sm:w-28 flex-shrink-0 truncate">{r.label}</span>
+                        {r.status === 'done' ? (
+                          <div className="flex-1 min-w-0 text-[11px] text-slate-400 truncate">
+                            {r.figures?.achatMin != null && (
+                              <span>{t('pw_evol_achat')} <span className="text-slate-200 font-semibold">{fmtRange(r.figures.achatMin, r.figures.achatMax)}</span></span>
+                            )}
+                            {r.figures?.achatMin != null && r.figures?.reventeMin != null && ' · '}
+                            {r.figures?.reventeMin != null && (
+                              <span>{t('pw_evol_revente')} <span className="text-slate-200 font-semibold">{fmtRange(r.figures.reventeMin, r.figures.reventeMax)}</span></span>
+                            )}
+                            {r.figures?.achatMin == null && r.figures?.reventeMin == null && <span className="text-slate-600">—</span>}
+                          </div>
+                        ) : r.status === 'error' ? (
+                          <p className="flex-1 text-[11px] text-red-400 truncate">{r.error}</p>
+                        ) : (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            r.status === 'running' ? 'bg-cyan-400/10 text-cyan-400 animate-pulse' : 'bg-navy-700/40 text-slate-500'
+                          }`}>
+                            {t(`pw_batch_status_${r.status}`)}
+                          </span>
+                        )}
+                        {bestAchat != null && r.status === 'done' && r.figures?.achatMin === bestAchat && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 flex-shrink-0">
+                            {t('pw_multi_best')}
+                          </span>
+                        )}
+                        {r.status === 'done' && r.report && (
+                          <ChevronDown size={13} className={`text-slate-500 flex-shrink-0 transition-transform ${multiOpen === i ? 'rotate-180' : ''}`} />
+                        )}
+                      </button>
+                      {multiOpen === i && r.report && (
+                        <div className="px-3 pb-3">
+                          <div className="rounded-xl bg-navy-900/40 border border-navy-700/40 p-4 md:p-6">
+                            <div className="report-md text-slate-200" dangerouslySetInnerHTML={{ __html: mdToHtml(r.report) }} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                })()}
+              </div>
+            </div>
           )}
 
           {/* Rapport Markdown streamé */}

@@ -949,6 +949,13 @@ export default {
   settings_margin_desc: 'Gross margin target per deal — shown in price watch reports.',
   pw_margin_badge: 'Target margin {n} € excl. VAT',
   pw_margin_col: 'Target margin € excl. VAT',
+  pw_multi_label: 'Compare with',
+  pw_multi_add: '+ Add market',
+  pw_multi_title: 'Multi-market comparison',
+  pw_multi_best: 'Best buy',
+  pw_batch_eta: '≈ {m} min left',
+  pw_batch_resume: 'Resume ({n} left)',
+  pw_share: 'Share',
   pw_evol_margin_warn: 'Different target margin between the two analyses ({a} € → {b} € excl. VAT) — purchase prices are not directly comparable.',
   page_stock_sub: 'B2B stock diagnosis · pricing, rotation, vehicles to reprice',
   // Logistics — truck loading plan
