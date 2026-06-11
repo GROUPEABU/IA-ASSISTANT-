@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Bell, Search, RotateCcw, ExternalLink, Clock, Download, FileText,
@@ -12,6 +12,7 @@ import { MILEAGE_MIN_VALUES, MILEAGE_MAX_VALUES } from '@/data/vehicleFilters'
 import { COUNTRIES } from '@/data/marketCountries'
 import { sendToTool, takeBridgePayload } from '@/utils/toolBridge'
 import { extractReportFigures } from '@/utils/reportFigures'
+import { computeOpportunityScore } from '@/utils/opportunityScore'
 import { copyReportText } from '@/utils/mdToPlainText'
 import { downloadCsv } from '@/utils/exportCsv'
 import { getMarginTarget, setMarginTarget, MARGIN_DEFAULT, MARGIN_MIN, MARGIN_MAX } from '@/utils/marginTarget'
@@ -177,6 +178,26 @@ function MarginField({ value, onChange, onReset }) {
         ))}
       </div>
     </div>
+  )
+}
+
+// ── Score d'opportunité 0-100 (calcul client, prompt non modifié) ────────────
+// Un seul chiffre pour prioriser sans lire le rapport : vert ≥ 70, ambre ≥ 45,
+// rouge en dessous. Le détail des composantes s'affiche au survol.
+function ScoreBadge({ score, t }) {
+  if (!score) return null
+  const tone = score.score >= 70 ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20'
+    : score.score >= 45 ? 'bg-warn/10 text-warn border-warn/20'
+    : 'bg-red-500/10 text-red-400 border-red-500/20'
+  const title = [
+    `${t('pw_score_pos')} : ${score.parts.positionnement}/40`,
+    `${t('pw_score_roi')} : ${score.parts.rentabilite}/30`,
+    `${t('pw_score_depth')} : ${score.parts.profondeur}/30`,
+  ].join(' · ')
+  return (
+    <span title={title} className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${tone}`}>
+      {t('pw_score_badge').replace('{n}', score.score)}
+    </span>
   )
 }
 
@@ -750,14 +771,16 @@ export default function PriceWatch() {
       t('model_label'), t('price_country_label'),
       `${t('pw_evol_achat')} min`, `${t('pw_evol_achat')} max`,
       `${t('pw_evol_revente')} min`, `${t('pw_evol_revente')} max`,
-      t('pw_margin_col'), t('price_live_badge'),
+      t('pw_margin_col'), t('pw_score_col'), t('price_live_badge'),
     ]]
     for (const r of done) {
       rows.push([
         r.label, ctryLabel,
         r.figures?.achatMin ?? '', r.figures?.achatMax ?? r.figures?.achatMin ?? '',
         r.figures?.reventeMin ?? '', r.figures?.reventeMax ?? r.figures?.reventeMin ?? '',
-        r.margin ?? MARGIN_DEFAULT, r.hasLiveData ? 'Oui' : 'Non',
+        r.margin ?? MARGIN_DEFAULT,
+        computeOpportunityScore(r.report, r.margin ?? MARGIN_DEFAULT)?.score ?? '',
+        r.hasLiveData ? 'Oui' : 'Non',
       ])
     }
     downloadCsv(`ABU Veille prix lot - ${new Date().toLocaleDateString('fr-FR').replace(/\//g, '.')}.csv`, rows)
@@ -837,6 +860,13 @@ export default function PriceWatch() {
     await copyReportText(report)
     toast(t('copy_done'), 'success')
   }
+
+  // Score d'opportunité du rapport affiché — dérivé du texte (recherche,
+  // restauration d'historique…), donc rien à stocker.
+  const oppScore = useMemo(
+    () => (report && !streaming ? computeOpportunityScore(report, reportMargin ?? MARGIN_DEFAULT) : null),
+    [report, streaming, reportMargin]
+  )
 
   const showResult = (loading || streaming || report) && !error
 
@@ -1184,6 +1214,9 @@ export default function PriceWatch() {
                         )}
                         {r.status === 'error' && <p className="text-[10px] text-red-400 truncate">{r.error}</p>}
                       </div>
+                      {r.status === 'done' && (
+                        <ScoreBadge score={computeOpportunityScore(r.report, r.margin ?? MARGIN_DEFAULT)} t={t} />
+                      )}
                       {r.status === 'done' && r.hasLiveData && (
                         <Wifi size={11} className="text-emerald-400 flex-shrink-0" />
                       )}
@@ -1283,6 +1316,7 @@ export default function PriceWatch() {
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-warn/10 text-warn border border-warn/20">
                       {t('pw_margin_badge').replace('{n}', (reportMargin ?? getMarginTarget()).toLocaleString('fr-FR'))}
                     </span>
+                    <ScoreBadge score={oppScore} t={t} />
                   </>
                 ) : null}
 
@@ -1386,6 +1420,9 @@ export default function PriceWatch() {
                           }`}>
                             {t(`pw_batch_status_${r.status}`)}
                           </span>
+                        )}
+                        {r.status === 'done' && (
+                          <ScoreBadge score={computeOpportunityScore(r.report, reportMargin ?? MARGIN_DEFAULT)} t={t} />
                         )}
                         {bestAchat != null && r.status === 'done' && r.figures?.achatMin === bestAchat && (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 flex-shrink-0">

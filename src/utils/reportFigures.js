@@ -3,8 +3,10 @@
  * pour comparer deux analyses du même véhicule dans le temps (évolution prix).
  * Lecture tolérante : si le format ne matche pas, on renvoie null (pas de diff).
  */
+// Les parenthèses sont ignorées : « (… marge 3 000 € HT incluse) » sur la
+// ligne d'achat polluerait sinon le min avec le montant de la marge.
 const numbersOf = (line) =>
-  [...line.matchAll(/(\d{1,3}(?:[\s  ]\d{3})+|\d{4,6})/g)]
+  [...line.replace(/\([^)]*\)/g, '').matchAll(/(\d{1,3}(?:[\s  ]\d{3})+|\d{4,6})/g)]
     .map((m) => Number(m[1].replace(/[\s  ]/g, '')))
     .filter((n) => n >= 1000 && n < 1000000)
 
