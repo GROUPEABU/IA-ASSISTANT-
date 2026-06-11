@@ -106,7 +106,7 @@ Navigue toutes les pages de pagination. Retourne la narration de navigation puis
       lang,
       webFetch: true,
       webSearch: true,
-      maxSearches: 20,
+      maxSearches: 10,
       maxTokens: 8000,
       tool: 'analysestock',
       systemStatic: SCRAPE_SYSTEM,

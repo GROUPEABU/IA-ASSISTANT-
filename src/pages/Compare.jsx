@@ -272,7 +272,7 @@ export default function Compare() {
       const result = await sendMessage(
         [{ role: 'user', content: prompt }],
         { lang, maxTokens: 4500, expert: true, temperature: 0, tool: 'comparateur',
-          webSearch: true, maxSearches: 8, systemStatic: STATIC_COMPARE },
+          webSearch: true, maxSearches: 5, systemStatic: STATIC_COMPARE },
       )
       setData(parseAIJson(result))
     } catch (err) {

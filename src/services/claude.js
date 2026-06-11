@@ -167,6 +167,8 @@ AUTOBUYUNION business DNA (apply to every recommendation):
 import { ANTI_BS, auditResponse } from './antiBullshit'
 // Doctrine de vente maison + garde-fou confidentialité (sorties partenaire).
 import { HOUSE_METHOD, NEVER_DISCLOSE } from './houseMethod'
+// Suivi coût API par outil (estimation locale, aucun envoi externe).
+import { trackCost } from '@/utils/apiCost'
 
 const EXPERT_RULES = `Rules:
 - Always give concrete, realistic figures (€, %, g/km, km) grounded in the real French market. Never invent implausible numbers; if uncertain, give a credible range and say it is an estimate.
@@ -303,7 +305,7 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
   // de blocs — le dernier portant cache_control ephemeral. Cela couvre le bloc
   // de base + les instructions statiques de l'outil en un seul point de cache.
   const systemBase = buildSystemPrompt(lang, expert, tool)
-  const system = systemStatic
+  let system = systemStatic
     ? [
         { type: 'text', text: systemBase },
         { type: 'text', text: systemStatic, cache_control: { type: 'ephemeral' } },
@@ -311,6 +313,37 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
     : systemBase
 
   const model = getModel(tool)
+
+  // Prompt caching automatique sur la Veille Prix : réduit ~70 % des tokens
+  // d'entrée refacturés à chaque tour de recherche web (le modèle relit le
+  // contexte complet à chaque itération). Le prompt reste identique au bit
+  // près — seul un marqueur de facturation est ajouté à la requête.
+  if (tool === 'veilleprix') {
+    if (typeof system === 'string') {
+      system = [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }]
+    } else if (Array.isArray(system)) {
+      const last = system[system.length - 1]
+      if (!last.cache_control) {
+        system = [...system.slice(0, -1), { ...last, cache_control: { type: 'ephemeral' } }]
+      }
+    }
+    const lastUserIdx = apiMessages.map((m, i) => (m.role === 'user' ? i : -1)).filter((i) => i >= 0).pop()
+    if (lastUserIdx != null) {
+      const msg = apiMessages[lastUserIdx]
+      const cc = { type: 'ephemeral' }
+      if (typeof msg.content === 'string') {
+        apiMessages[lastUserIdx] = { ...msg, content: [{ type: 'text', text: msg.content, cache_control: cc }] }
+      } else if (Array.isArray(msg.content)) {
+        const blocks = [...msg.content]
+        const lastTxtIdx = blocks.map((b, i) => (b.type === 'text' ? i : -1)).filter((i) => i >= 0).pop()
+        if (lastTxtIdx != null && !blocks[lastTxtIdx].cache_control) {
+          blocks[lastTxtIdx] = { ...blocks[lastTxtIdx], cache_control: cc }
+          apiMessages[lastUserIdx] = { ...msg, content: blocks }
+        }
+      }
+    }
+  }
+
   const body = {
     model,
     max_tokens:  maxTokens,
@@ -338,7 +371,7 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
   // est accumulé puis renvoyé comme si la requête était classique.
   if (stream || webSearch || webFetch) {
     body.stream = true
-    return streamToText(body, { returnMeta, onChunk })
+    return streamToText(body, { returnMeta, onChunk, tool })
   }
 
   const response = await fetchResilient(ENDPOINT, {
@@ -354,6 +387,7 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
   const text = blocks.filter(b => b.type === 'text').map(b => b.text).join('\n').trim()
   if (!text) throw new Error('Unexpected API response (no text content).')
   auditResponse(text, tool || (expert ? 'expert' : 'chat'))
+  if (payload.usage) trackCost(tool || 'chat', model, payload.usage, 0)
 
   if (returnMeta) {
     const searchCount = blocks.filter(b => b.type === 'server_tool_use' && b.name === 'web_search').length
@@ -388,12 +422,13 @@ async function postNonStream(body) {
   const blocks = payload.content || []
   const text = blocks.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim()
   const searchCount = blocks.filter((b) => b.type === 'server_tool_use' && b.name === 'web_search').length
-  return { text, searchCount }
+  return { text, searchCount, usage: payload.usage || {} }
 }
 
-async function streamToText(body, { returnMeta = false, onChunk = null } = {}) {
+async function streamToText(body, { returnMeta = false, onChunk = null, tool = null } = {}) {
   let text = ''
   let searchCount = 0
+  let inputTokens = 0, outputTokens = 0, cacheCreateTokens = 0, cacheReadTokens = 0
 
   try {
     const response = await fetchResilient(ENDPOINT, {
@@ -425,6 +460,13 @@ async function streamToText(body, { returnMeta = false, onChunk = null } = {}) {
                      && evt.content_block?.type === 'server_tool_use'
                      && evt.content_block?.name === 'web_search') {
             searchCount += 1
+          } else if (evt.type === 'message_start') {
+            const u = evt.message?.usage || {}
+            inputTokens      = u.input_tokens                || 0
+            cacheCreateTokens = u.cache_creation_input_tokens || 0
+            cacheReadTokens  = u.cache_read_input_tokens      || 0
+          } else if (evt.type === 'message_delta') {
+            outputTokens = evt.usage?.output_tokens || outputTokens
           }
         } catch { /* skip malformed SSE events */ }
       }
@@ -432,15 +474,34 @@ async function streamToText(body, { returnMeta = false, onChunk = null } = {}) {
     text = text.trim()
     if (!text) throw new Error('stream-empty')
   } catch {
-    // Streaming KO → repli non-streamé (résultat complet d'un coup).
-    const r = await postNonStream(body)
-    text = r.text
-    searchCount = r.searchCount
-    onChunk?.(text)
+    // Repli non-streamé UNIQUEMENT si rien n'a été reçu. Si du texte a
+    // été partiellement reçu, on l'utilise tel quel : rejouer facturerait
+    // deux fois la même analyse (l'API a déjà calculé la réponse).
+    if (!text.trim()) {
+      const r = await postNonStream(body)
+      text = r.text
+      searchCount = r.searchCount
+      onChunk?.(text)
+      // Usage disponible depuis la réponse JSON du repli
+      if (r.usage?.input_tokens) {
+        inputTokens       = r.usage.input_tokens                || 0
+        outputTokens      = r.usage.output_tokens               || 0
+        cacheCreateTokens = r.usage.cache_creation_input_tokens || 0
+        cacheReadTokens   = r.usage.cache_read_input_tokens     || 0
+      }
+    }
   }
 
   if (!text) throw new Error('Unexpected API response (no text content).')
   auditResponse(text, 'stream')
+  // Suivi coût (best-effort : usage peut être 0 si le repli n'a pas retourné d'usage).
+  if (inputTokens > 0 || outputTokens > 0) {
+    trackCost(tool || 'chat', body.model, {
+      input_tokens: inputTokens, output_tokens: outputTokens,
+      cache_creation_input_tokens: cacheCreateTokens,
+      cache_read_input_tokens: cacheReadTokens,
+    }, searchCount)
+  }
   if (returnMeta) return { text, usedWebSearch: searchCount > 0, searchCount }
   return text
 }
@@ -476,6 +537,7 @@ export async function streamMessage(messages, { lang = 'fr', onChunk, temperatur
   }
 
   let fullText = ''
+  let chatInputTokens = 0, chatOutputTokens = 0
   try {
     const response = await fetchResilient(ENDPOINT, {
       method:  'POST',
@@ -504,20 +566,32 @@ export async function streamMessage(messages, { lang = 'fr', onChunk, temperatur
           if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
             fullText += evt.delta.text
             onChunk?.(fullText)
+          } else if (evt.type === 'message_start') {
+            chatInputTokens = evt.message?.usage?.input_tokens || 0
+          } else if (evt.type === 'message_delta') {
+            chatOutputTokens = evt.usage?.output_tokens || chatOutputTokens
           }
         } catch { /* skip malformed SSE events */ }
       }
     }
     if (!fullText.trim()) throw new Error('stream-empty')
   } catch {
-    // Streaming KO (ex. iOS Safari « Load failed ») → repli non-streamé :
-    // on récupère le texte complet d'un coup et on l'affiche en une fois.
-    const r = await postNonStream(body)
-    fullText = r.text
-    onChunk?.(fullText)
+    // Repli non-streamé uniquement si rien n'a été reçu.
+    if (!fullText.trim()) {
+      const r = await postNonStream(body)
+      fullText = r.text
+      onChunk?.(fullText)
+      if (r.usage?.input_tokens) {
+        chatInputTokens  = r.usage.input_tokens  || 0
+        chatOutputTokens = r.usage.output_tokens || 0
+      }
+    }
   }
 
   auditResponse(fullText, 'chat')
+  if (chatInputTokens > 0 || chatOutputTokens > 0) {
+    trackCost('chat', model, { input_tokens: chatInputTokens, output_tokens: chatOutputTokens }, 0)
+  }
   return fullText
 }
 

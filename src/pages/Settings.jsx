@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Key, Palette, Globe, Check, Monitor, Sun, Laptop, Scale, ChevronRight, Wifi } from 'lucide-react'
+import { Key, Palette, Globe, Check, Monitor, Sun, Laptop, Scale, ChevronRight, Wifi, BarChart2, RotateCcw, Info } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { ukey } from '@/utils/userStorage'
+import { getCosts, resetCosts } from '@/utils/apiCost'
 
 const Section = ({ icon: Icon, title, children }) => (
   <div className="glass-card overflow-hidden">
@@ -35,10 +36,25 @@ const DENSITY_OPTIONS = [
   { key: 'large',   label: 'Large' },
 ]
 
+const TOOL_LABELS = {
+  veilleprix:        'Veille Prix',
+  ficheIA:           'Fiche IA',
+  analysemarche:     'Analyse marché',
+  comparateur:       'Comparateur',
+  objections:        'Objections',
+  pitch:             'Pitch',
+  rapportcommercial: 'Rapport commercial',
+  analysestock:      'Analyse de stock',
+  importsmart:       'Import intelligent',
+  logistique:        'Logistique',
+  chat:              'Chat assistant',
+}
+
 export default function Settings() {
   const [saved, setSaved] = useState(false)
   const { language, currency, density, changeLanguage, changeCurrency, changeDensity, t } = useSettings()
   const { user } = useAuth()
+  const [costs, setCosts] = useState(() => getCosts())
   const themeKey    = ukey(user?.id ?? null, 'theme')
   const aiPowerKey  = ukey(user?.id ?? null, 'ai_power')
   const [theme,      setTheme]      = useState(() => localStorage.getItem(themeKey)   || 'dark')
@@ -192,7 +208,59 @@ export default function Settings() {
         </Section>
       </div>
 
-      {/* Row 3: Legal — full width */}
+      {/* Row 3: API cost counter */}
+      <div className="mt-4">
+        <Section icon={BarChart2} title={t('settings_cost_section')}>
+          {(() => {
+            const entries = Object.entries(costs).filter(([, v]) => v.cost > 0)
+            const total = entries.reduce((s, [, v]) => s + v.cost, 0)
+            return entries.length === 0 ? (
+              <p className="text-xs text-slate-500">{t('settings_cost_empty')}</p>
+            ) : (
+              <>
+                <div className="flex items-end justify-between mb-3">
+                  <div>
+                    <p className="text-xs text-slate-500">{t('settings_cost_total')}</p>
+                    <p className="text-2xl font-bold text-white">${total.toFixed(3)}</p>
+                    <p className="text-[10px] text-slate-600">{t('settings_cost_since')}</p>
+                  </div>
+                  <button
+                    onClick={() => { resetCosts(); setCosts({}) }}
+                    className="flex items-center gap-1.5 text-xs text-slate-500 border border-navy-600/50
+                               px-3 py-1.5 rounded-lg hover:text-slate-300 hover:border-navy-500 transition"
+                  >
+                    <RotateCcw size={11} /> {t('settings_cost_reset')}
+                  </button>
+                </div>
+                <div className="space-y-1.5">
+                  {entries.sort((a, b) => b[1].cost - a[1].cost).map(([tool, v]) => {
+                    const pct = total > 0 ? (v.cost / total) * 100 : 0
+                    return (
+                      <div key={tool}>
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-xs text-slate-300">{TOOL_LABELS[tool] || tool}</span>
+                          <span className="text-xs text-slate-400 tabular-nums">
+                            ${v.cost.toFixed(3)} · {v.calls} {v.calls > 1 ? t('settings_cost_calls') : t('settings_cost_call')}
+                          </span>
+                        </div>
+                        <div className="h-1 rounded-full bg-navy-700/50">
+                          <div className="h-1 rounded-full bg-cyan-400/60" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="flex items-start gap-1.5 mt-3">
+                  <Info size={11} className="text-slate-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-slate-600 leading-relaxed">{t('settings_cost_disclaimer')}</p>
+                </div>
+              </>
+            )
+          })()}
+        </Section>
+      </div>
+
+      {/* Row 4: Legal — full width */}
       <div className="mt-4">
         <Section icon={Scale} title={t('settings_legal_section')}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
