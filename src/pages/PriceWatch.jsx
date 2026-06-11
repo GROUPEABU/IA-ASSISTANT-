@@ -141,13 +141,15 @@ function FilterSelect({ label, value, onChange, children }) {
 
 // Marge partenaire cible — partagée via marginTarget (affichage uniquement,
 // n'altère pas le prompt Veille Prix verrouillé).
-function MarginField({ label, value, onChange }) {
+function MarginField({ value, onChange }) {
   return (
     <div>
-      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{label}</label>
+      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+        Marge cible € HT
+      </label>
       <input
         type="number" min={MARGIN_MIN} max={MARGIN_MAX} step="100" value={value}
-        onChange={e => onChange(e.target.value)} aria-label={label}
+        placeholder="3 000" onChange={e => onChange(e.target.value)} aria-label="Marge cible € HT"
         className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
                    text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition"
       />
@@ -711,7 +713,7 @@ export default function PriceWatch() {
               <FilterSelect label={t('price_country_label')} value={country} onChange={setCountry}>
                 {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
               </FilterSelect>
-              <MarginField label={t('settings_margin_label')} value={margin} onChange={handleMargin} />
+              <MarginField value={margin} onChange={handleMargin} />
             </div>
             <button
               onClick={() => batchFileRef.current?.click()}
@@ -806,7 +808,7 @@ export default function PriceWatch() {
           <FilterSelect label={t('price_body_label')} value={carrosserie} onChange={setCarrosserie}>
             {BODIES.map(b => <option key={b.code} value={b.code}>{b.label}</option>)}
           </FilterSelect>
-          <MarginField label={t('settings_margin_label')} value={margin} onChange={handleMargin} />
+          <MarginField value={margin} onChange={handleMargin} />
         </div>
 
         {/* Ligne 2 : Km min + Km max (VO only) + Carburant + Boîte */}
