@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   Bell, Search, RotateCcw, ExternalLink, Clock, Download, FileText,
   Wifi, WifiOff, Calculator, Sparkles, ShieldCheck, Copy, Mic, TrendingDown, TrendingUp,
-  FileSpreadsheet, ChevronDown, CheckSquare, Square, StopCircle, X,
+  FileSpreadsheet, ChevronDown, CheckSquare, Square, StopCircle, X, AlertTriangle,
 } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { buildPrompt } from '@/services/veillePrixPrompt'
@@ -155,6 +155,20 @@ function MarginField({ value, onChange, onReset }) {
         className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
                    text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition"
       />
+      <div className="flex gap-1 mt-1.5">
+        {[3000, 3500, 4000].map(p => (
+          <button
+            key={p} type="button" onClick={() => onChange(String(p))}
+            className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border transition ${
+              Number(value) === p
+                ? 'bg-cyan-400/15 text-cyan-400 border-cyan-400/30'
+                : 'text-slate-500 border-navy-600/50 hover:text-slate-300 hover:border-navy-500'
+            }`}
+          >
+            {p.toLocaleString('fr-FR')}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -164,7 +178,8 @@ const fmtEur = (n) => `${Number(n).toLocaleString('fr-FR')} €`
 const fmtRange = (min, max) => (min === max || max == null ? fmtEur(min) : `${fmtEur(min)} – ${fmtEur(max)}`)
 
 function EvolutionCard({ evolution, t }) {
-  const { prevAt, prev, cur } = evolution
+  const { prevAt, prev, cur, prevMargin, curMargin } = evolution
+  const marginChanged = prevMargin != null && curMargin != null && prevMargin !== curMargin
   const rows = [
     { label: t('pw_evol_achat'),   pMin: prev.achatMin,   pMax: prev.achatMax,   cMin: cur.achatMin,   cMax: cur.achatMax },
     { label: t('pw_evol_revente'), pMin: prev.reventeMin, pMax: prev.reventeMax, cMin: cur.reventeMin, cMax: cur.reventeMax },
@@ -178,6 +193,14 @@ function EvolutionCard({ evolution, t }) {
       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
         {t('pw_evol_title')} · {new Date(prevAt).toLocaleDateString()}
       </p>
+      {marginChanged && (
+        <p className="flex items-start gap-1.5 text-[11px] text-warn mb-2">
+          <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" />
+          {t('pw_evol_margin_warn')
+            .replace('{a}', prevMargin.toLocaleString('fr-FR'))
+            .replace('{b}', curMargin.toLocaleString('fr-FR'))}
+        </p>
+      )}
       {allStable ? (
         <p className="text-xs text-slate-400">{t('pw_evol_stable')}</p>
       ) : (
@@ -335,6 +358,7 @@ export default function PriceWatch() {
   const [centraleUrl, setCentraleUrl] = useState('')
   const [searchLabel, setSearchLabel] = useState('')
   const [evolution, setEvolution] = useState(null) // diff vs analyse précédente du même véhicule
+  const [reportMargin, setReportMargin] = useState(null) // marge utilisée pour le rapport affiché
 
   // Analyse par lot (fichier CSV / Excel)
   const batchFileRef = useRef(null)
@@ -441,6 +465,7 @@ export default function PriceWatch() {
     setReport('')
     setHasLiveData(false)
     setEvolution(null)
+    const marginUsed = getMarginTarget()
 
     try {
       // Liens de référence — for non-France markets, use AutoScout24 country URL.
@@ -489,7 +514,7 @@ export default function PriceWatch() {
       // l'auto-vérification sont intégrées au prompt (plus de 2e passe).
       let first = true
       const { text, usedWebSearch } = await sendMessage(
-        [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry, getMarginTarget()) }],
+        [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry, marginUsed) }],
         {
           lang, expert: true, temperature: 0, tool: 'veilleprix',
           webSearch: true, maxSearches: 3, maxTokens: 4500,
@@ -503,6 +528,7 @@ export default function PriceWatch() {
       setReport(text)
       setHasLiveData(!!usedWebSearch)
       setStreaming(false)
+      setReportMargin(marginUsed)
 
       saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '))
 
@@ -511,11 +537,15 @@ export default function PriceWatch() {
       const figures = extractReportFigures(text)
       const prev = history.find((h) => h.searchLabel === label && h.figures)
       if (figures && prev?.figures) {
-        setEvolution({ prevAt: prev.savedAt, prev: prev.figures, cur: figures })
+        setEvolution({
+          prevAt: prev.savedAt, prev: prev.figures, cur: figures,
+          // Anciennes analyses sans marge stockée : générées avec 3 000 (hardcodé).
+          prevMargin: prev.margin ?? MARGIN_DEFAULT, curMargin: marginUsed,
+        })
       }
 
       const filtersSnapshot = { ...filters, country: ctry.code }
-      addHistory({ searchLabel: label, country: ctry.code, type: filters.type, report: text, hasLiveData: !!usedWebSearch, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '', filters: filtersSnapshot, figures })
+      addHistory({ searchLabel: label, country: ctry.code, type: filters.type, report: text, hasLiveData: !!usedWebSearch, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '', filters: filtersSnapshot, figures, margin: marginUsed })
     } catch (err) {
       setError(err.message)
       toast(err.message, 'error')
@@ -563,7 +593,7 @@ export default function PriceWatch() {
     batchCancelRef.current = false
     setBatchRunning(true)
     setBatchOpen(null)
-    const results = rows.map((v) => ({ label: batchRowLabel(v), status: 'pending', report: '', figures: null, hasLiveData: false }))
+    const results = rows.map((v) => ({ label: batchRowLabel(v), status: 'pending', report: '', figures: null, hasLiveData: false, margin: null }))
     setBatchResults([...results])
 
     for (let i = 0; i < rows.length; i++) {
@@ -581,11 +611,14 @@ export default function PriceWatch() {
       filters.gearboxLabel     = filters.gearbox ? GEARBOXES.find(g => g.code === filters.gearbox)?.label || '' : ''
       filters.carrosserieLabel = ''
       const vehicleDesc = batchRowLabel(v)
+      // Marge : colonne « marge » du fichier si présente et valide, sinon champ global.
+      const rowMargin = (Number(v.margin) >= MARGIN_MIN && Number(v.margin) <= MARGIN_MAX)
+        ? Number(v.margin) : getMarginTarget()
 
       try {
         // Même appel que la recherche unitaire — prompt et paramètres identiques.
         const { text, usedWebSearch } = await sendMessage(
-          [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry, getMarginTarget()) }],
+          [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry, rowMargin) }],
           {
             lang, expert: true, temperature: 0, tool: 'veilleprix',
             webSearch: true, maxSearches: 3, maxTokens: 4500,
@@ -593,12 +626,12 @@ export default function PriceWatch() {
           }
         )
         const figures = extractReportFigures(text)
-        results[i] = { ...results[i], status: 'done', report: text, figures, hasLiveData: !!usedWebSearch }
+        results[i] = { ...results[i], status: 'done', report: text, figures, hasLiveData: !!usedWebSearch, margin: rowMargin }
         addHistory({
           searchLabel: `${results[i].label} · ${ctry.label}`,
           country: ctry.code, type: 'vo', report: text, hasLiveData: !!usedWebSearch,
           fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '',
-          filters: { ...filters, country: ctry.code }, figures,
+          filters: { ...filters, country: ctry.code }, figures, margin: rowMargin,
         })
       } catch (err) {
         results[i] = { ...results[i], status: 'error', error: err.message }
@@ -623,14 +656,14 @@ export default function PriceWatch() {
       t('model_label'), t('price_country_label'),
       `${t('pw_evol_achat')} min`, `${t('pw_evol_achat')} max`,
       `${t('pw_evol_revente')} min`, `${t('pw_evol_revente')} max`,
-      t('price_live_badge'),
+      t('pw_margin_col'), t('price_live_badge'),
     ]]
     for (const r of done) {
       rows.push([
         r.label, ctryLabel,
         r.figures?.achatMin ?? '', r.figures?.achatMax ?? r.figures?.achatMin ?? '',
         r.figures?.reventeMin ?? '', r.figures?.reventeMax ?? r.figures?.reventeMin ?? '',
-        r.hasLiveData ? 'Oui' : 'Non',
+        r.margin ?? MARGIN_DEFAULT, r.hasLiveData ? 'Oui' : 'Non',
       ])
     }
     downloadCsv(`ABU Veille prix lot - ${new Date().toLocaleDateString('fr-FR').replace(/\//g, '.')}.csv`, rows)
@@ -640,7 +673,7 @@ export default function PriceWatch() {
     const done = (batchResults || []).filter((r) => r.status === 'done')
     if (!done.length) return
     const ctryLabel = COUNTRIES.find(c => c.code === country)?.label || country
-    const md = done.map((r) => `# ${r.label}\n\n${r.report}`).join('\n\n---\n\n')
+    const md = done.map((r) => `# ${r.label}\n\n*${t('pw_margin_badge').replace('{n}', (r.margin ?? MARGIN_DEFAULT).toLocaleString('fr-FR'))}*\n\n${r.report}`).join('\n\n---\n\n')
     return withExporting(() =>
       exportReportPdf(md, pdfFileName(`lot-${done.length}-vehicules`, `Veille prix ${ctryLabel}`),
         { title: `Veille prix · ${t('pw_batch_title')} (${ctryLabel})`, subtitle: `${done.length} ${t('pw_batch_vehicles')}` }))
@@ -649,15 +682,16 @@ export default function PriceWatch() {
   const handlePdf = () => {
     const ctryLabel = (COUNTRIES.find(c => c.code === country)?.label || country).toUpperCase()
     const pdfTitle = `Veille prix ${ctryLabel}`
+    const marginTxt = t('pw_margin_badge').replace('{n}', (reportMargin ?? getMarginTarget()).toLocaleString('fr-FR'))
     return withExporting(() =>
-      exportReportPdf(report, pdfFileName(searchLabel, pdfTitle), { title: pdfTitle, subtitle: searchLabel }))
+      exportReportPdf(report, pdfFileName(searchLabel, pdfTitle), { title: pdfTitle, subtitle: `${searchLabel} · ${marginTxt}` }))
   }
 
   const reset = () => {
     setReport(''); setMake(''); setModel(''); setFinition(''); setCarrosserie('')
     setYearMin(''); setYearMax(''); setMileageMin(''); setMileageMax(''); setFuel(''); setGearbox(''); setPowerMin(''); setPowerMax('')
     setCountry('FR')
-    setSearchLabel(''); setCentraleUrl(''); setFetchedAt(null); setSources([]); setHasLiveData(false)
+    setSearchLabel(''); setCentraleUrl(''); setFetchedAt(null); setSources([]); setHasLiveData(false); setReportMargin(null)
   }
 
   const restore = (item) => {
@@ -670,6 +704,7 @@ export default function PriceWatch() {
     setSources(item.sources || [])
     setCentraleUrl(item.centraleUrl || '')
     setEvolution(null)
+    setReportMargin(item.margin ?? MARGIN_DEFAULT)
     // Resynchronise le formulaire : le bouton « Analyser » relance la même veille.
     if (item.filters) applyFilters(item.filters)
   }
@@ -1088,7 +1123,7 @@ export default function PriceWatch() {
                       <ShieldCheck size={9} /> {t('price_guardrail_done')}
                     </span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-warn/10 text-warn border border-warn/20">
-                      {t('pw_margin_badge').replace('{n}', getMarginTarget().toLocaleString('fr-FR'))}
+                      {t('pw_margin_badge').replace('{n}', (reportMargin ?? getMarginTarget()).toLocaleString('fr-FR'))}
                     </span>
                   </>
                 ) : null}

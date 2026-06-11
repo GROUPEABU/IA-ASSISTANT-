@@ -16,6 +16,7 @@ const MAX_BYTES = 25 * 1024 * 1024 // 25 Mo
 // L'ordre compte (prix_vente avant « prix » générique ; prix_achat distinct).
 const MATCHERS = [
   ['purchasePrice', /prix.?achat|achat.?ht|cout.?achat|buy.?price|prix.?revient/],
+  ['margin',        /\bmarge\b|\bmargin\b/],
   ['priceEur',      /prix.?vente|prix.?ttc|pv.?ttc|prix.?affich|vente.?ttc|\bprix\b|\bpvc\b|\bprice\b|tarif/],
   ['cote',          /\bcote\b|argus|valeur.?marche/],
   ['dateInStock',   /date.?entr|mise.?en.?stock|entree.?stock|date.?stock|stock.?date|in.?stock/],
@@ -196,6 +197,7 @@ export async function parseStockFile(file) {
       gearbox: String(cell(cells, 'gearbox') || '').trim() || null,
       priceEur: parseNum(cell(cells, 'priceEur')),
       purchasePrice: parseNum(cell(cells, 'purchasePrice')),
+      margin: parseNum(cell(cells, 'margin')),
       cote: parseNum(cell(cells, 'cote')),
       dateInStock: parseDate(cell(cells, 'dateInStock')),
       ref: String(cell(cells, 'ref') || '').trim() || null,

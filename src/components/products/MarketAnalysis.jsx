@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { TrendingUp, TrendingDown, AlertTriangle, Lightbulb, RefreshCw, Globe, Info, Download } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { buildPrompt } from '@/services/veillePrixPrompt'
-import { getMarginTarget } from '@/utils/marginTarget'
+import { getMarginTarget, MARGIN_DEFAULT } from '@/utils/marginTarget'
 import Spinner from '@/components/ui/Spinner'
 import Button from '@/components/ui/Button'
 import { formatNumber } from '@/utils/formatters'
@@ -45,6 +45,7 @@ export default function MarketAnalysis({ product }) {
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState(null)
   const [country, setCountry] = useState('FR')
+  const [marginUsed, setMarginUsed] = useState(null) // marge utilisée pour l'analyse affichée
   const { exporting, withExporting } = useExport()
 
   const ctry = COUNTRIES.find((c) => c.code === country) ?? COUNTRIES[0]
@@ -55,6 +56,8 @@ export default function MarketAnalysis({ product }) {
     setError(null)
     setAnalysis('')
 
+    const m = getMarginTarget()
+
     try {
       // Même prompt EXACT que la Veille Prix (module partagé verrouillé).
       const filters = {
@@ -62,7 +65,7 @@ export default function MarketAnalysis({ product }) {
         mileageMin: '', mileageMax: '',
         yearMin: product.year || '', yearMax: product.year || '',
       }
-      const prompt = buildPrompt(filters, product.fullName, ctry, getMarginTarget())
+      const prompt = buildPrompt(filters, product.fullName, ctry, m)
 
       let first = true
       const { text } = await sendMessage([{ role: 'user', content: prompt }], {
@@ -76,6 +79,7 @@ export default function MarketAnalysis({ product }) {
       })
       setAnalysis(text)
       setStreaming(false)
+      setMarginUsed(m)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -85,7 +89,10 @@ export default function MarketAnalysis({ product }) {
   }
 
   const handlePdf = () => withExporting(() =>
-    exportReportPdf(analysis, pdfFileName(product.fullName, t('market_realtime_title')), { title: t('market_realtime_title'), subtitle: `${product.fullName} · ${ctry.label}` })
+    exportReportPdf(analysis, pdfFileName(product.fullName, t('market_realtime_title')), {
+      title: t('market_realtime_title'),
+      subtitle: `${product.fullName} · ${ctry.label} · ${t('pw_margin_badge').replace('{n}', (marginUsed ?? MARGIN_DEFAULT).toLocaleString('fr-FR'))}`,
+    })
   )
 
   return (
@@ -135,7 +142,14 @@ export default function MarketAnalysis({ product }) {
               <h3 className="text-sm font-semibold text-white">{t('market_realtime_title')}</h3>
             </div>
             {/* Sources selon le marché sélectionné — pas uniquement les sites FR */}
-            <p className="text-xs text-slate-500 mt-0.5">{ctry.sites}</p>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              <p className="text-xs text-slate-500">{ctry.sites}</p>
+              {analysis && !streaming && marginUsed != null && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-warn/10 text-warn border border-warn/20">
+                  {t('pw_margin_badge').replace('{n}', marginUsed.toLocaleString('fr-FR'))}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
             <select

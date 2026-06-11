@@ -976,6 +976,8 @@ export default {
   settings_margin_label: 'Marge partenaire cible (€ HT)',
   settings_margin_desc: 'Marge brute visée par deal — affichée dans les rapports de veille prix.',
   pw_margin_badge: 'Marge cible {n} € HT',
+  pw_margin_col: 'Marge cible € HT',
+  pw_evol_margin_warn: 'Marge cible différente entre les deux analyses ({a} € → {b} € HT) — les prix d\u2019achat ne sont pas directement comparables.',
   page_stock_sub: 'Diagnostic du stock BtoB · prix, rotation, véhicules à repricer',
   // Logistique — plan de chargement camions
   nav_logistics: 'Logistique',

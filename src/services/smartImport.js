@@ -46,6 +46,7 @@ Extrais CHAQUE véhicule en un objet JSON avec ces champs (null si absent — n'
 - priceEur : prix de vente TTC (number, en euros)
 - prixHt : prix HT si distinct (number)
 - purchasePrice : prix d'achat si présent (number)
+- margin : marge cible en € HT si une colonne marge est présente (number)
 - co2 : émissions CO₂ g/km (number)
 - couleur : couleur
 - vin : VIN / châssis
@@ -81,6 +82,7 @@ function normalizeAiRow(r) {
     priceEur: num(r.priceEur),
     prixHt: num(r.prixHt),
     purchasePrice: num(r.purchasePrice),
+    margin: num(r.margin),
     cote: null,
     co2: num(r.co2),
     couleur: String(r.couleur || '').trim() || null,
