@@ -14,7 +14,7 @@ import { sendToTool, takeBridgePayload } from '@/utils/toolBridge'
 import { extractReportFigures } from '@/utils/reportFigures'
 import { copyReportText } from '@/utils/mdToPlainText'
 import { downloadCsv } from '@/utils/exportCsv'
-import { getMarginTarget } from '@/utils/marginTarget'
+import { getMarginTarget, setMarginTarget, MARGIN_MIN, MARGIN_MAX } from '@/utils/marginTarget'
 import Spinner from '@/components/ui/Spinner'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
@@ -135,6 +135,22 @@ function FilterSelect({ label, value, onChange, children }) {
       <select value={value} onChange={e => onChange(e.target.value)} className={selectClass}>
         {children}
       </select>
+    </div>
+  )
+}
+
+// Marge partenaire cible — partagée via marginTarget (affichage uniquement,
+// n'altère pas le prompt Veille Prix verrouillé).
+function MarginField({ label, value, onChange }) {
+  return (
+    <div>
+      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{label}</label>
+      <input
+        type="number" min={MARGIN_MIN} max={MARGIN_MAX} step="100" value={value}
+        onChange={e => onChange(e.target.value)} aria-label={label}
+        className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+                   text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition"
+      />
     </div>
   )
 }
@@ -288,6 +304,13 @@ export default function PriceWatch() {
   const [powerMax, setPowerMax]   = useState(() => readPwSession('powerMax', ''))
   const [country, setCountry]     = useState(() => readPwSession('country', 'FR'))
   const [pwMode, setPwMode]       = useState('search') // 'search' | 'file'
+  const [margin, setMargin]       = useState(getMarginTarget)
+
+  const handleMargin = (raw) => {
+    const v = Number(raw) || 0
+    setMargin(v)
+    if (v >= MARGIN_MIN && v <= MARGIN_MAX) setMarginTarget(v)
+  }
 
   const [loading, setLoading]     = useState(false)   // avant le 1er token
   const [streaming, setStreaming] = useState(false)   // tokens en cours d'arrivée
@@ -684,10 +707,11 @@ export default function PriceWatch() {
         {pwMode === 'file' ? (
           /* ── Mode fichier : pays + zone de dépôt, c'est tout ── */
           <div className="space-y-3">
-            <div className="max-w-[240px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-[500px]">
               <FilterSelect label={t('price_country_label')} value={country} onChange={setCountry}>
                 {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
               </FilterSelect>
+              <MarginField label={t('settings_margin_label')} value={margin} onChange={handleMargin} />
             </div>
             <button
               onClick={() => batchFileRef.current?.click()}
@@ -768,8 +792,8 @@ export default function PriceWatch() {
           </FilterSelect>
         </div>
 
-        {/* Ligne 1b : Finition + Carrosserie */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+        {/* Ligne 1b : Finition + Carrosserie + Marge cible */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-2">
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('price_finition_label')}</label>
             <input
@@ -782,6 +806,7 @@ export default function PriceWatch() {
           <FilterSelect label={t('price_body_label')} value={carrosserie} onChange={setCarrosserie}>
             {BODIES.map(b => <option key={b.code} value={b.code}>{b.label}</option>)}
           </FilterSelect>
+          <MarginField label={t('settings_margin_label')} value={margin} onChange={handleMargin} />
         </div>
 
         {/* Ligne 2 : Km min + Km max (VO only) + Carburant + Boîte */}
