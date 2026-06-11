@@ -1,11 +1,12 @@
 /**
- * Marge partenaire cible (€ HT) — réglage par utilisateur (Paramètres).
- * Affichée dans les rapports de veille ; n'altère PAS le prompt Veille Prix
- * (verrouillé) — usage informatif/affichage uniquement.
+ * Marge partenaire cible (€ HT) — réglée depuis la Veille Prix (recherche +
+ * import fichier). Défaut 3 000 € HT : tant qu'on ne touche pas au champ, le
+ * prompt Veille Prix utilise ce montant ; toute valeur saisie est injectée
+ * dans buildPrompt (modification validée par l'utilisateur).
  */
 import { getSessionUserId, ukey } from './userStorage'
 
-export const MARGIN_DEFAULT = 3500
+export const MARGIN_DEFAULT = 3000
 export const MARGIN_MIN = 500
 export const MARGIN_MAX = 20000
 

@@ -476,7 +476,7 @@ export default function PriceWatch() {
       // l'auto-vérification sont intégrées au prompt (plus de 2e passe).
       let first = true
       const { text, usedWebSearch } = await sendMessage(
-        [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry) }],
+        [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry, getMarginTarget()) }],
         {
           lang, expert: true, temperature: 0, tool: 'veilleprix',
           webSearch: true, maxSearches: 3, maxTokens: 4500,
@@ -572,7 +572,7 @@ export default function PriceWatch() {
       try {
         // Même appel que la recherche unitaire — prompt et paramètres identiques.
         const { text, usedWebSearch } = await sendMessage(
-          [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry) }],
+          [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry, getMarginTarget()) }],
           {
             lang, expert: true, temperature: 0, tool: 'veilleprix',
             webSearch: true, maxSearches: 3, maxTokens: 4500,

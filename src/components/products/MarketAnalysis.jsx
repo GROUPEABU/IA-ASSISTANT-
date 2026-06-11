@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { TrendingUp, TrendingDown, AlertTriangle, Lightbulb, RefreshCw, Globe, Info, Download } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { buildPrompt } from '@/services/veillePrixPrompt'
+import { getMarginTarget } from '@/utils/marginTarget'
 import Spinner from '@/components/ui/Spinner'
 import Button from '@/components/ui/Button'
 import { formatNumber } from '@/utils/formatters'
@@ -61,7 +62,7 @@ export default function MarketAnalysis({ product }) {
         mileageMin: '', mileageMax: '',
         yearMin: product.year || '', yearMax: product.year || '',
       }
-      const prompt = buildPrompt(filters, product.fullName, ctry)
+      const prompt = buildPrompt(filters, product.fullName, ctry, getMarginTarget())
 
       let first = true
       const { text } = await sendMessage([{ role: 'user', content: prompt }], {

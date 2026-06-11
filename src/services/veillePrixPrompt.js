@@ -15,8 +15,11 @@
 // Construit le prompt de l'analyse streamée (rapport Markdown, pas de JSON).
 // UNE SEULE passe : relevé d'annonces → grille de prix par kilométrage → prix
 // d'achat → auto-vérification finale intégrée (plus de 2e passe garde-fou).
-export function buildPrompt(filters, vehicleDesc, ctry) {
+// `margin` : marge plancher € HT (défaut 3 000) — réglable depuis la Veille
+// Prix, injectée dans la formule (paramétrage validé par l'utilisateur).
+export function buildPrompt(filters, vehicleDesc, ctry, margin = 3000) {
   const { code: countryCode, label: countryLabel, tva, transport, sites } = ctry
+  const mTxt = Number(margin || 3000).toLocaleString('fr-FR')
   const isFrance = countryCode === 'FR'
   const mandatairesTerm = isFrance ? 'mandataires' : 'remises officielles'
   const currency = ctry.currency || 'EUR'
@@ -89,10 +92,10 @@ Pour chaque tranche, indique : le nombre d'annonces comparables, le km moyen rep
 Pour CHAQUE tranche :
 1. 1ER DU NET = annonce la moins chère DU CLUSTER à ce niveau de km (cf. garde-fous).
 2. REVENTE CONSEILLÉE TTC = au niveau du 1er du net (option ponctuelle : légèrement en dessous pour vendre vite) — jamais brader. C'est cette valeur qui alimente la formule.
-3. PRIX D'ACHAT PRO HT — déduit directement du 1er du net, marge plancher 3 000 € HT incluse.
+3. PRIX D'ACHAT PRO HT — déduit directement du 1er du net, marge plancher ${mTxt} € HT incluse.
    FORMULE (applique-la telle quelle) :
-     achat pro HT = (revente 1er du net TTC ÷ ${tvaFmt}) − ${transport} − 3 000.
-   N'invente JAMAIS un prix d'achat plus bas pour gonfler la marge : le prix conseillé sécurise pile 3 000 € de marge tout en restant parmi les premiers du net. Ne déduis JAMAIS de marge groupe de cette cascade.
+     achat pro HT = (revente 1er du net TTC ÷ ${tvaFmt}) − ${transport} − ${mTxt}.
+   N'invente JAMAIS un prix d'achat plus bas pour gonfler la marge : le prix conseillé sécurise pile ${mTxt} € de marge tout en restant parmi les premiers du net. Ne déduis JAMAIS de marge groupe de cette cascade.
 
 ÉCART ENTRE TRANCHES — PILOTÉ PAR LE KILOMÉTRAGE (PAS de constante) :
 - L'écart de prix entre deux tranches doit être COHÉRENT avec l'écart de km : compte ~100 à 150 € HT par tranche de 1 000 km d'écart.
@@ -106,12 +109,12 @@ EXEMPLE DE STRUCTURE (méthode et mise en forme à reproduire — les valeurs ci
 - N3 annonces · tranche FAIBLE km · revente la PLUS HAUTE · achat le PLUS HAUT
 (N1/N2/N3, les kilométrages, les reventes et les achats sont FICTIFS : remplace-les TOUS par les comptes, kilométrages et prix RÉELS issus de ta recherche. Respecte la monotonie et l'écart ~100–150 € HT / 1 000 km.)
 
-POUR AUGMENTER LA MARGE (conseil, jamais en bradant) : négocier l'achat un peu plus bas, ou positionner la revente un peu plus haut (toujours parmi les premiers du net). Chaque euro gagné s'ajoute aux 3 000 €. Mais le prix d'achat AFFICHÉ reste celui de la formule, ancré sur le 1er du net réel.
+POUR AUGMENTER LA MARGE (conseil, jamais en bradant) : négocier l'achat un peu plus bas, ou positionner la revente un peu plus haut (toujours parmi les premiers du net). Chaque euro gagné s'ajoute aux ${mTxt} €. Mais le prix d'achat AFFICHÉ reste celui de la formule, ancré sur le 1er du net réel.
 Ne déconseille jamais le fort km : il fait simplement baisser le prix d'achat cible tout en préservant la marge et en offrant un TTC plus compétitif au client final.
 
 ═══ AUTO-VÉRIFICATION FINALE (relis-toi AVANT de répondre) ═══
-1. Formule : recalcule chaque tranche, (revente ÷ ${tvaFmt}) − ${transport} − 3 000 ; si un achat affiché ne correspond pas, corrige.
-2. Marge : 3 000 € HT sécurisés à chaque tranche, jamais en dessous.
+1. Formule : recalcule chaque tranche, (revente ÷ ${tvaFmt}) − ${transport} − ${mTxt} ; si un achat affiché ne correspond pas, corrige.
+2. Marge : ${mTxt} € HT sécurisés à chaque tranche, jamais en dessous.
 3. Monotonie : km ↗ ⇒ prix ↘ sur les 3 tranches ; écart cohérent (~100–150 € HT / 1 000 km) ; aucun écart fixe imposé.
 4. Décote : aucune revente ≥ 90 % du catalogue ; revente nettement sous le neuf remisé. Sinon, RELANCE une recherche et réancre.
 5. Plafond achat : ≤ ~75 % du PVC catalogue neuf.
@@ -132,15 +135,15 @@ Si un contrôle de PRIX échoue, ne devine pas : relance une requête ciblée pu
 ═══ FORMAT DE SORTIE (Markdown, ordre EXACT, titres en ## sans emoji) ═══
 
 ## L'essentiel
-- **Prix d'achat pro conseillé** : … – … € HT (selon le kilométrage, marge 3 000 € HT incluse)
+- **Prix d'achat pro conseillé** : … – … € HT (selon le kilométrage, marge ${mTxt} € HT incluse)
 - **Revente conseillée (1er du net)** : … – … € TTC
 - **Tranche de référence** : la plus représentée — … annonces à ~… km
-- **Marge sécurisée** : 3 000 € HT par véhicule (davantage en négociant l'achat plus bas ou la revente plus haut)
+- **Marge sécurisée** : ${mTxt} € HT par véhicule (davantage en négociant l'achat plus bas ou la revente plus haut)
 
 ## Grille de prix par kilométrage
 Tableau Markdown, une ligne par tranche, de fort km à faible km :
 | Kilométrage (moyen) | Annonces | 1er du net TTC | Prix d'achat pro HT |
-Sous le tableau, précise que le transport (${transport} € HT) et la marge plancher (3 000 € HT) sont déjà intégrés dans le prix d'achat. Les comptes de la colonne « Annonces » doivent refléter ta recherche réelle ; à défaut, indique « échantillon limité ».
+Sous le tableau, précise que le transport (${transport} € HT) et la marge plancher (${mTxt} € HT) sont déjà intégrés dans le prix d'achat. Les comptes de la colonne « Annonces » doivent refléter ta recherche réelle ; à défaut, indique « échantillon limité ».
 
 ## Repères marché
 Tableau Markdown : Prix moyen | Prix médian | Fourchette courante | Nb annonces estimé (tous en TTC).
