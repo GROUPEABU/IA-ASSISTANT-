@@ -91,7 +91,9 @@ function parseCSV(text) {
 // ── XLSX → grille de chaînes (fflate + DOMParser) ───────────────────────────
 function colToIndex(letters) { let n = 0; for (const ch of letters) n = n * 26 + (ch.charCodeAt(0) - 64); return n - 1 }
 
-async function parseXLSX(arrayBuffer) {
+// Lit TOUTES les feuilles du classeur (pas seulement la première) — une
+// grille par feuille, dans l'ordre, feuilles vides ignorées.
+async function parseXLSXSheets(arrayBuffer) {
   const { unzipSync, strFromU8 } = await import('fflate')
   const files = unzipSync(new Uint8Array(arrayBuffer))
   const sharedXml = files['xl/sharedStrings.xml'] ? strFromU8(files['xl/sharedStrings.xml']) : ''
@@ -99,28 +101,36 @@ async function parseXLSX(arrayBuffer) {
     ? [...new DOMParser().parseFromString(sharedXml, 'application/xml').getElementsByTagName('si')]
         .map((si) => [...si.getElementsByTagName('t')].map((t) => t.textContent).join(''))
     : []
-  const sheetPath = Object.keys(files).filter((p) => /^xl\/worksheets\/sheet\d+\.xml$/.test(p)).sort()[0]
-  if (!sheetPath) throw new Error('Feuille de calcul introuvable.')
-  const doc = new DOMParser().parseFromString(strFromU8(files[sheetPath]), 'application/xml')
-  const grid = []
-  for (const row of doc.getElementsByTagName('row')) {
-    const arr = []
-    for (const c of row.getElementsByTagName('c')) {
-      const ref = c.getAttribute('r') || ''
-      const col = colToIndex(ref.replace(/[0-9]/g, '') || 'A')
-      const t = c.getAttribute('t')
-      const vEl = c.getElementsByTagName('v')[0]
-      const isEl = c.getElementsByTagName('is')[0]
-      let value = ''
-      if (t === 's' && vEl) value = shared[Number(vEl.textContent)] ?? ''
-      else if ((t === 'str' || t === 'inlineStr') && vEl) value = vEl.textContent
-      else if (isEl) value = [...isEl.getElementsByTagName('t')].map((x) => x.textContent).join('')
-      else if (vEl) value = vEl.textContent
-      arr[col] = value
+  const sheetPaths = Object.keys(files)
+    .filter((p) => /^xl\/worksheets\/sheet\d+\.xml$/.test(p))
+    .sort((a, b) => Number(a.match(/\d+/)[0]) - Number(b.match(/\d+/)[0]))
+  if (!sheetPaths.length) throw new Error('Feuille de calcul introuvable.')
+
+  const grids = sheetPaths.map((sheetPath) => {
+    const doc = new DOMParser().parseFromString(strFromU8(files[sheetPath]), 'application/xml')
+    const grid = []
+    for (const row of doc.getElementsByTagName('row')) {
+      const arr = []
+      for (const c of row.getElementsByTagName('c')) {
+        const ref = c.getAttribute('r') || ''
+        const col = colToIndex(ref.replace(/[0-9]/g, '') || 'A')
+        const t = c.getAttribute('t')
+        const vEl = c.getElementsByTagName('v')[0]
+        const isEl = c.getElementsByTagName('is')[0]
+        let value = ''
+        if (t === 's' && vEl) value = shared[Number(vEl.textContent)] ?? ''
+        else if ((t === 'str' || t === 'inlineStr') && vEl) value = vEl.textContent
+        else if (isEl) value = [...isEl.getElementsByTagName('t')].map((x) => x.textContent).join('')
+        else if (vEl) value = vEl.textContent
+        arr[col] = value
+      }
+      grid.push(arr)
     }
-    grid.push(arr)
-  }
-  return grid
+    return grid
+  })
+
+  const nonEmpty = grids.filter((g) => g.some((row) => (row || []).some((c) => String(c ?? '').trim())))
+  return nonEmpty.length ? nonEmpty : [grids[0]]
 }
 
 // ── Détection en-têtes + mapping ─────────────────────────────────────────────
@@ -148,25 +158,40 @@ function detectHeaderRow(grid) {
 }
 
 /**
- * Lit un fichier CSV/XLSX et renvoie la grille brute de chaînes, sans
- * interprétation des colonnes. Sert aussi de base à la lecture adaptative
- * (smartImport) quand la détection de colonnes échoue.
+ * Lit un fichier CSV/XLSX et renvoie une grille brute par feuille (un CSV
+ * n'a qu'une feuille). Chaque feuille garde sa propre détection d'en-têtes :
+ * les colonnes peuvent différer d'une feuille à l'autre.
  * @param {File} file
- * @returns {Promise<string[][]>}
+ * @returns {Promise<string[][][]>}
  */
-export async function fileToGrid(file) {
+export async function fileToGrids(file) {
   if (!file) throw new Error('Aucun fichier fourni.')
   if (file.size > MAX_BYTES) throw new Error('Fichier trop volumineux (max 25 Mo).')
 
   const name = (file.name || '').toLowerCase()
   if (name.endsWith('.xlsx') || name.endsWith('.xlsm')) {
-    return parseXLSX(await file.arrayBuffer())
+    return parseXLSXSheets(await file.arrayBuffer())
   }
   if (name.endsWith('.csv') || name.endsWith('.txt') || file.type === 'text/csv') {
-    return parseCSV(await file.text())
+    return [parseCSV(await file.text())]
   }
-  try { return await parseXLSX(await file.arrayBuffer()) }
-  catch { return parseCSV(await file.text()) }
+  try { return await parseXLSXSheets(await file.arrayBuffer()) }
+  catch { return [parseCSV(await file.text())] }
+}
+
+/**
+ * Grille brute unique : toutes les feuilles concaténées (ligne vide entre
+ * deux feuilles). Base de la lecture adaptative (smartImport) quand la
+ * détection de colonnes échoue.
+ * @param {File} file
+ * @returns {Promise<string[][]>}
+ */
+export async function fileToGrid(file) {
+  const grids = await fileToGrids(file)
+  if (grids.length === 1) return grids[0]
+  const out = []
+  grids.forEach((g, i) => { if (i) out.push([]); out.push(...g) })
+  return out
 }
 
 /**
@@ -174,42 +199,50 @@ export async function fileToGrid(file) {
  * @returns {Promise<{ vehicles: object[], ignored: number, dealer: object }>}
  */
 export async function parseStockFile(file) {
-  const grid = await fileToGrid(file)
+  const grids = await fileToGrids(file)
 
-  const headerIdx = detectHeaderRow(grid)
-  if (headerIdx < 0) {
-    throw new Error('Colonnes non reconnues. En-têtes attendus : marque, modele, annee, kilometrage, prix_vente_ttc (et idéalement date_entree_stock, prix_achat, cote).')
-  }
-  const colMap = buildColumnMap(grid[headerIdx])
-  const cell = (cells, f) => (colMap[f] != null ? (cells[colMap[f]] ?? '') : '')
-
+  // Chaque feuille du classeur est traitée indépendamment (en-têtes et
+  // colonnes propres), puis les véhicules de toutes les feuilles sont fusionnés.
   const vehicles = []
   let ignored = 0
-  for (let i = headerIdx + 1; i < grid.length; i++) {
-    const cells = grid[i] || []
-    const v = {
-      make: String(cell(cells, 'make') || '').trim().toUpperCase(),
-      model: String(cell(cells, 'model') || '').trim(),
-      version: String(cell(cells, 'version') || '').trim() || null,
-      year: parseNum(cell(cells, 'year')),
-      mileageKm: parseNum(cell(cells, 'mileageKm')),
-      fuel: String(cell(cells, 'fuel') || '').trim() || null,
-      gearbox: String(cell(cells, 'gearbox') || '').trim() || null,
-      priceEur: parseNum(cell(cells, 'priceEur')),
-      purchasePrice: parseNum(cell(cells, 'purchasePrice')),
-      margin: parseNum(cell(cells, 'margin')),
-      cote: parseNum(cell(cells, 'cote')),
-      dateInStock: parseDate(cell(cells, 'dateInStock')),
-      ref: String(cell(cells, 'ref') || '').trim() || null,
-      url: String(cell(cells, 'url') || '').trim() || null,
-      location: String(cell(cells, 'location') || '').trim() || null,
-      marketBadge: null, // pas de positionnement place de marché en import CSV
+  let anyHeader = false
+
+  for (const grid of grids) {
+    const headerIdx = detectHeaderRow(grid)
+    if (headerIdx < 0) continue
+    anyHeader = true
+    const colMap = buildColumnMap(grid[headerIdx])
+    const cell = (cells, f) => (colMap[f] != null ? (cells[colMap[f]] ?? '') : '')
+
+    for (let i = headerIdx + 1; i < grid.length; i++) {
+      const cells = grid[i] || []
+      const v = {
+        make: String(cell(cells, 'make') || '').trim().toUpperCase(),
+        model: String(cell(cells, 'model') || '').trim(),
+        version: String(cell(cells, 'version') || '').trim() || null,
+        year: parseNum(cell(cells, 'year')),
+        mileageKm: parseNum(cell(cells, 'mileageKm')),
+        fuel: String(cell(cells, 'fuel') || '').trim() || null,
+        gearbox: String(cell(cells, 'gearbox') || '').trim() || null,
+        priceEur: parseNum(cell(cells, 'priceEur')),
+        purchasePrice: parseNum(cell(cells, 'purchasePrice')),
+        margin: parseNum(cell(cells, 'margin')),
+        cote: parseNum(cell(cells, 'cote')),
+        dateInStock: parseDate(cell(cells, 'dateInStock')),
+        ref: String(cell(cells, 'ref') || '').trim() || null,
+        url: String(cell(cells, 'url') || '').trim() || null,
+        location: String(cell(cells, 'location') || '').trim() || null,
+        marketBadge: null, // pas de positionnement place de marché en import CSV
+      }
+      const complete = REQUIRED.every((f) => v[f] != null && v[f] !== '')
+      if (complete) vehicles.push(v)
+      else if (v.make || v.model || v.priceEur != null) ignored += 1
     }
-    const complete = REQUIRED.every((f) => v[f] != null && v[f] !== '')
-    if (complete) vehicles.push(v)
-    else if (v.make || v.model || v.priceEur != null) ignored += 1
   }
 
+  if (!anyHeader) {
+    throw new Error('Colonnes non reconnues. En-têtes attendus : marque, modele, annee, kilometrage, prix_vente_ttc (et idéalement date_entree_stock, prix_achat, cote).')
+  }
   if (vehicles.length === 0) {
     throw new Error('Aucune ligne exploitable. Vérifiez que marque, modele, annee, kilometrage et prix_vente_ttc sont remplis.')
   }
