@@ -14,6 +14,7 @@ import { sendToTool, takeBridgePayload } from '@/utils/toolBridge'
 import { extractReportFigures } from '@/utils/reportFigures'
 import { computeOpportunityScore } from '@/utils/opportunityScore'
 import { copyReportText } from '@/utils/mdToPlainText'
+import { stripLeadingReasoning, hasStructuredContent } from '@/utils/stripReportReasoning'
 import { downloadCsv } from '@/utils/exportCsv'
 import { getMarginTarget, setMarginTarget, MARGIN_DEFAULT, MARGIN_MIN, MARGIN_MAX } from '@/utils/marginTarget'
 import { getSessionUserId, ukey } from '@/utils/userStorage'
@@ -576,7 +577,8 @@ export default function PriceWatch() {
           },
         }
       )
-      setReport(text)
+      const cleanText = stripLeadingReasoning(text)
+      setReport(cleanText)
       setHasLiveData(!!usedWebSearch)
       setStreaming(false)
       setReportMargin(marginUsed)
@@ -585,7 +587,7 @@ export default function PriceWatch() {
 
       // Évolution prix : compare aux chiffres de la dernière analyse archivée
       // du même véhicule (même libellé de recherche).
-      const figures = extractReportFigures(text)
+      const figures = extractReportFigures(cleanText)
       const prev = history.find((h) => h.searchLabel === label && h.figures)
       if (figures && prev?.figures) {
         setEvolution({
@@ -596,7 +598,7 @@ export default function PriceWatch() {
       }
 
       const filtersSnapshot = { ...filters, country: ctry.code }
-      addHistory({ searchLabel: label, country: ctry.code, type: filters.type, report: text, hasLiveData: !!usedWebSearch, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '', filters: filtersSnapshot, figures, margin: marginUsed })
+      addHistory({ searchLabel: label, country: ctry.code, type: filters.type, report: cleanText, hasLiveData: !!usedWebSearch, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '', filters: filtersSnapshot, figures, margin: marginUsed })
 
       // Comparaison multi-marchés : même véhicule, mêmes filtres, autres pays.
       const extras = extraCountries.filter((code) => code !== ctry.code)
@@ -619,7 +621,7 @@ export default function PriceWatch() {
               ? label.slice(0, label.length - ctry.label.length) + exCtry.label
               : `${label} · ${exCtry.label}`
             try {
-              const { text: xText, usedWebSearch: xLive } = await sendMessage(
+              const { text: xRaw, usedWebSearch: xLive } = await sendMessage(
                 [{ role: 'user', content: buildPrompt(filters, vehicleDesc, exCtry, marginUsed) }],
                 {
                   lang, expert: true, temperature: 0, tool: 'veilleprix',
@@ -627,6 +629,7 @@ export default function PriceWatch() {
                   returnMeta: true, stream: true,
                 }
               )
+              const xText = stripLeadingReasoning(xRaw)
               const xFig = extractReportFigures(xText)
               multi[k] = { ...multi[k], status: 'done', report: xText, figures: xFig, hasLiveData: !!xLive }
               addHistory({
@@ -726,7 +729,7 @@ export default function PriceWatch() {
 
       try {
         // Même appel que la recherche unitaire — prompt et paramètres identiques.
-        const { text, usedWebSearch } = await sendMessage(
+        const { text: rawText, usedWebSearch } = await sendMessage(
           [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry, rowMargin) }],
           {
             lang, expert: true, temperature: 0, tool: 'veilleprix',
@@ -734,6 +737,14 @@ export default function PriceWatch() {
             returnMeta: true, stream: true,
           }
         )
+        // Vérifie que l'analyse est complète (## L'essentiel présent).
+        // Si la limite de recherches a été atteinte avant la fin, le stream
+        // se termine avec seulement le texte d'intro → on marque en erreur
+        // pour permettre une relance ciblée.
+        if (!hasStructuredContent(rawText)) {
+          throw new Error("Analyse incomplète : la limite de recherches web a été atteinte avant la fin. Relancez uniquement ce véhicule.")
+        }
+        const text = stripLeadingReasoning(rawText)
         const figures = extractReportFigures(text)
         results[i] = { ...results[i], status: 'done', report: text, figures, hasLiveData: !!usedWebSearch, margin: rowMargin }
         addHistory({
