@@ -1,37 +1,16 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { User, ArrowLeft, Send, CheckCircle, Key } from 'lucide-react'
+import { ArrowLeft, Key, Mail } from 'lucide-react'
 import Logo from '@/components/ui/Logo'
 import { useSettings } from '@/contexts/SettingsContext'
-import { findUserByUsername } from '@/data/users'
-import { generateOTP, storeResetToken } from '@/utils/passwordReset'
+
+// La réinitialisation autonome (OTP affiché à l'écran + override localStorage)
+// a été supprimée : elle permettait à n'importe quel visiteur de changer un
+// mot de passe sans vérification. L'authentification étant désormais validée
+// côté serveur (api/login.js), la réinitialisation passe par l'administrateur.
+const ADMIN_EMAIL = 'hubert.saget@aafgroup.eu'
 
 export default function ForgotPassword() {
   const { t } = useSettings()
-  const [username, setUsername]   = useState('')
-  const [loading, setLoading]     = useState(false)
-  const [state, setState]         = useState('idle') // 'idle' | 'success'
-  const [resetCode, setResetCode] = useState('')
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    const clean = username.trim().toLowerCase()
-    if (!clean) return
-
-    setLoading(true)
-    // Constant-time delay prevents timing-based account enumeration
-    await new Promise(r => setTimeout(r, 600))
-
-    const user = findUserByUsername(clean)
-    if (user) {
-      const code = generateOTP()
-      storeResetToken(clean, code)
-      setResetCode(code)
-    }
-    // Always show success — don't reveal whether the account exists
-    setState('success')
-    setLoading(false)
-  }
 
   return (
     <div className="min-h-[100dvh] bg-navy-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -56,105 +35,34 @@ export default function ForgotPassword() {
             </div>
             <div>
               <h2 className="text-sm font-semibold text-white">{t('forgot_title')}</h2>
-              <p className="text-[11px] text-slate-500">{t('forgot_subtitle')}</p>
+              <p className="text-[11px] text-slate-500">{t('forgot_admin_subtitle')}</p>
             </div>
           </div>
 
-          {state === 'success' ? (
-            <SuccessView resetCode={resetCode} username={username.trim().toLowerCase()} t={t} />
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
-                  {t('forgot_username_label')}
-                </label>
-                <div className="relative">
-                  <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={e => { setUsername(e.target.value); setState('idle') }}
-                    placeholder={t('forgot_username_ph')}
-                    autoComplete="username"
-                    className="w-full bg-navy-900/80 border border-navy-700/60 rounded-xl
-                               pl-9 pr-3 py-3 text-sm text-white placeholder-slate-600
-                               focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/20 transition"
-                  />
-                </div>
-              </div>
+          <p className="text-xs text-slate-400 leading-relaxed mb-5">
+            {t('forgot_admin_msg')}
+          </p>
 
-              <button
-                type="submit"
-                disabled={!username.trim() || loading}
-                className="w-full py-3 rounded-xl text-sm font-bold
-                           bg-gradient-to-r from-warn to-warn text-navy-900
-                           hover:from-warn hover:to-warn active:scale-[0.98] transition-all
-                           disabled:opacity-40 disabled:pointer-events-none
-                           flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-navy-900/30 border-t-navy-900 rounded-full animate-spin" />
-                    {t('forgot_sending')}
-                  </>
-                ) : (
-                  <>
-                    <Send size={14} />
-                    {t('forgot_send_btn')}
-                  </>
-                )}
-              </button>
-            </form>
-          )}
-        </div>
+          <a
+            href={`mailto:${ADMIN_EMAIL}?subject=${encodeURIComponent(t('forgot_admin_mail_subject'))}`}
+            className="w-full py-3 rounded-xl text-sm font-bold
+                       bg-gradient-to-r from-cyan-400 to-cyan-500 text-navy-900
+                       hover:from-cyan-300 hover:to-cyan-400 active:scale-[0.98] transition-all
+                       flex items-center justify-center gap-2 shadow-lg shadow-cyan-400/20"
+          >
+            <Mail size={14} />
+            {t('forgot_admin_contact_btn')}
+          </a>
 
-        <div className="mt-4 text-center">
           <Link
             to="/login"
-            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition"
+            className="mt-4 flex items-center justify-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition"
           >
             <ArrowLeft size={12} />
             {t('forgot_back_login')}
           </Link>
         </div>
       </div>
-    </div>
-  )
-}
-
-function SuccessView({ resetCode, username, t }) {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-start gap-3 p-3 rounded-xl bg-emerald-400/8 border border-emerald-400/20">
-        <CheckCircle size={16} className="text-emerald-400 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm font-semibold text-emerald-400">{t('forgot_success_title')}</p>
-          <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">{t('forgot_success_msg')}</p>
-        </div>
-      </div>
-
-      {resetCode && (
-        <>
-          <div className="p-4 rounded-xl bg-warn/6 border border-warn/25 text-center">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
-              {t('forgot_code_hint')}
-            </p>
-            <div className="text-3xl font-bold tracking-[0.4em] text-warn font-mono">
-              {resetCode}
-            </div>
-            <p className="text-[10px] text-slate-500 mt-2">{t('forgot_code_validity')}</p>
-          </div>
-
-          <Link
-            to={`/reset-password?user=${encodeURIComponent(username)}`}
-            className="block w-full py-3 rounded-xl text-sm font-bold text-center
-                       bg-gradient-to-r from-cyan-400 to-cyan-500 text-navy-900
-                       hover:from-cyan-300 hover:to-cyan-400 transition-all active:scale-[0.98]"
-          >
-            {t('reset_title')} →
-          </Link>
-        </>
-      )}
     </div>
   )
 }

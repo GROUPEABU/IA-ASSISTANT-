@@ -1,24 +1,35 @@
-import { createContext, useContext, useState, useCallback } from 'react'
-import { findUserByUsername, validateCredentials, isExpired, hashPassword } from '@/data/users'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 
-// ── localStorage keys ────────────────────────────────────────────────────────
-const SESSION_KEY    = 'abu_session'
-const SECURITY_KEY   = 'abu_login_security'
-const PW_OVERRIDE_KEY = 'abu_pw_overrides'
+// ── Authentification serveur ──────────────────────────────────────────────────
+// La vérification du mot de passe se fait dans la fonction Edge /api/login :
+// aucun hash de mot de passe n'est présent dans le bundle, et la session est
+// un jeton signé HMAC que /api/chat exige sur chaque appel IA. Forger une
+// entrée localStorage ne donne donc plus aucun accès.
 
-// ── Brute-force constants ────────────────────────────────────────────────────
+const SESSION_KEY  = 'abu_session'
+const SECURITY_KEY = 'abu_login_security'
+
+// ── Throttle UX côté client (en plus du rate limit serveur) ──────────────────
 const MAX_ATTEMPTS  = 5
 const WINDOW_MS     = 15 * 60 * 1000   // rolling window for counting failures
 const LOCKOUT_SHORT = 15 * 60 * 1000   // ≥5 failures  → 15 min lockout
 const LOCKOUT_LONG  = 60 * 60 * 1000   // ≥10 failures → 1 h  lockout
 
-// ── Pure helpers (no side effects) ─────────────────────────────────────────
 function readSecurity() {
   try { return JSON.parse(localStorage.getItem(SECURITY_KEY) || '{}') } catch { return {} }
 }
 
-function readPasswordOverrides() {
-  try { return JSON.parse(localStorage.getItem(PW_OVERRIDE_KEY) || '{}') } catch { return {} }
+// Décode l'expiration du jeton (payload base64url avant le point) sans le
+// vérifier — la vérification cryptographique reste côté serveur.
+function tokenExpired(token) {
+  try {
+    const body = token.split('.')[0].replace(/-/g, '+').replace(/_/g, '/')
+    const bin = atob(body + '='.repeat((4 - (body.length % 4)) % 4))
+    const bytes = new Uint8Array(bin.length)
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+    const payload = JSON.parse(new TextDecoder().decode(bytes))
+    return !payload.exp || Date.now() > payload.exp
+  } catch { return true }
 }
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -30,15 +41,25 @@ export function AuthProvider({ children }) {
       const saved = localStorage.getItem(SESSION_KEY)
       if (!saved) return null
       const parsed = JSON.parse(saved)
-      // Kick expired demo sessions on restore
-      const full = findUserByUsername(parsed.username)
-      if (isExpired(full)) {
+      // Session sans jeton (ancien format) ou jeton expiré → reconnexion.
+      if (!parsed?.token || tokenExpired(parsed.token)) {
         localStorage.removeItem(SESSION_KEY)
         return null
       }
       return parsed
     } catch { return null }
   })
+
+  // Déconnexion forcée quand le proxy répond 401 (jeton expiré en cours de
+  // session) — l'événement est émis par src/services/claude.js.
+  useEffect(() => {
+    const onUnauthorized = () => {
+      localStorage.removeItem(SESSION_KEY)
+      setUser(null)
+    }
+    window.addEventListener('abu:unauthorized', onUnauthorized)
+    return () => window.removeEventListener('abu:unauthorized', onUnauthorized)
+  }, [])
 
   // ── Security status (called on every Login render) ───────────────────────
   const getSecurityStatus = useCallback(() => {
@@ -66,26 +87,32 @@ export function AuthProvider({ children }) {
   }, [])
 
   // ── Auth actions ─────────────────────────────────────────────────────────
+  /**
+   * @returns {Promise<boolean>} false = identifiants refusés.
+   * @throws {Error} erreur réseau/serveur (à afficher telle quelle).
+   */
   const login = useCallback(async (username, password) => {
-    // Check for a password override (set via the reset-password flow). Overrides
-    // are stored as salted hashes, so we compare against the hash of the input.
-    const overrides   = readPasswordOverrides()
-    const override    = overrides[username.toLowerCase()]
-    const inputHash   = await hashPassword(password)
+    let res
+    try {
+      res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ username: username.trim(), password }),
+      })
+    } catch {
+      throw new Error('Connexion au serveur impossible. Vérifiez votre réseau puis réessayez.')
+    }
 
-    const safeUser = override && override === inputHash
-      ? (() => {
-          const user = findUserByUsername(username)
-          if (!user || isExpired(user)) return null
-          const { passwordHash: _, expiresAt: __, ...safe } = user
-          return safe
-        })()
-      : await validateCredentials(username, password)
+    if (res.status === 401) return false
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error?.message || `Erreur du serveur (${res.status}). Réessayez.`)
+    }
 
-    if (!safeUser) return false
-
-    setUser(safeUser)
-    localStorage.setItem(SESSION_KEY, JSON.stringify(safeUser))
+    const { user: safeUser, token } = await res.json()
+    const session = { ...safeUser, token }
+    setUser(session)
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session))
     clearSecurity()
     return true
   }, [clearSecurity])
@@ -95,20 +122,12 @@ export function AuthProvider({ children }) {
     localStorage.removeItem(SESSION_KEY)
   }, [])
 
-  /** Stores a new password override (hashed) that takes precedence over the built-in one. */
-  const resetPassword = useCallback(async (username, newPassword) => {
-    const overrides = readPasswordOverrides()
-    overrides[username.toLowerCase()] = await hashPassword(newPassword)
-    localStorage.setItem(PW_OVERRIDE_KEY, JSON.stringify(overrides))
-  }, [])
-
   return (
     <AuthContext.Provider value={{
       user,
       isAuthenticated: !!user,
       login,
       logout,
-      resetPassword,
       getSecurityStatus,
       recordFailure,
       clearSecurity,

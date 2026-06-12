@@ -6,13 +6,16 @@
 //     ICI côté serveur à partir d'un identifiant `_tool` / `_systemStaticKey`
 //     envoyé par le client — les textes sensibles ne transitent plus jamais dans
 //     le bundle JavaScript ni dans les DevTools réseau.
-//   - Si APP_SECRET est configuré (recommandé), le proxy exige le header
-//     `x-app-secret` — sans cela : 401.
+//   - Chaque appel exige un jeton de session signé (émis par api/login.js)
+//     dans `Authorization: Bearer <token>` — sans jeton valide : 401.
+//   - Rate limit par utilisateur/IP (fenêtre glissante) contre l'abus de volume.
 //   - Limite de corps à 200 KB (messages seuls, sans le system).
 //
 // Override optionnel : un utilisateur peut fournir sa propre clé via l'en-tête
 // `x-user-api-key` (saisie dans Réglages, stockée dans son propre localStorage).
 export const config = { runtime: 'edge' }
+
+import { getAuthSecret, verifyToken, clientIp, rateLimit } from './_lib/auth.js'
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const API_VERSION   = '2023-06-01'
@@ -29,6 +32,11 @@ const ALLOWED_MODELS = new Set([
 const MAX_OUTPUT_TOKENS  = 8192 // ≥ plus gros usage légitime (8000, scrape stock)
 const MAX_TOOL_USES      = 16   // ≥ plus gros usage légitime (10, scrape stock)
 const ALLOWED_TOOL_TYPES = new Set(['web_search_20260209', 'web_fetch_20260209'])
+
+// Rate limit volume : 30 requêtes / minute / utilisateur — très au-dessus de
+// l'usage légitime (analyses de 30-60 s chacune), bloque un script de spam.
+const CHAT_LIMIT     = 30
+const CHAT_WINDOW_MS = 60 * 1000
 
 const json = (obj, status) =>
   new Response(JSON.stringify(obj), {
@@ -736,13 +744,22 @@ export default async function handler(req) {
     return json({ error: { message: 'Method not allowed' } }, 405)
   }
 
-  // Vérification du secret applicatif.
-  const appSecret = process.env.APP_SECRET
-  if (appSecret) {
-    const clientSecret = req.headers.get('x-app-secret') || ''
-    if (clientSecret !== appSecret) {
-      return json({ error: { message: 'Unauthorized' } }, 401)
-    }
+  // Authentification : jeton de session signé obligatoire (émis par api/login.js).
+  const authSecret = getAuthSecret()
+  if (!authSecret) {
+    return json({ error: { message: 'Authentification non configurée côté serveur.' } }, 500)
+  }
+  const authHeader = req.headers.get('authorization') || ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+  const session = await verifyToken(token, authSecret)
+  if (!session) {
+    return json({ error: { message: 'Session expirée ou invalide. Reconnectez-vous.' } }, 401)
+  }
+
+  // Rate limit par utilisateur authentifié (l'IP seule pénaliserait une équipe
+  // derrière le même NAT ; le jeton identifie chaque compte).
+  if (!rateLimit(`chat:${session.id}:${clientIp(req)}`, CHAT_LIMIT, CHAT_WINDOW_MS)) {
+    return json({ error: { message: 'Trop de requêtes. Patientez une minute puis réessayez.' } }, 429)
   }
 
   // Limite de taille du corps (messages seuls — le system est construit ici).

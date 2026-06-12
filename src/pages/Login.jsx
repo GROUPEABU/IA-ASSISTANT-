@@ -69,7 +69,16 @@ export default function Login() {
     setError('')
     await new Promise(r => setTimeout(r, 400))
 
-    const ok = await login(username.trim(), password)
+    let ok
+    try {
+      ok = await login(username.trim(), password)
+    } catch (err) {
+      // Erreur réseau / serveur (≠ identifiants refusés) : message tel quel,
+      // sans compter une tentative ratée côté throttle.
+      setError(err.message)
+      setLoading(false)
+      return
+    }
     if (!ok) {
       recordFailure()
       const { isBlocked: nowBlocked, remainingMs: ms, attemptsLeft: left } = getSecurityStatus()

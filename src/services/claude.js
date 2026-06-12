@@ -69,6 +69,10 @@ async function httpError(res) {
   const err = await res.json().catch(() => ({}))
   const e = new Error(err.error?.message ?? `Erreur du service IA (${res.status})`)
   e.status = res.status
+  // Jeton de session expiré/invalide : déconnexion propre (AuthContext écoute).
+  if (res.status === 401) {
+    try { window.dispatchEvent(new Event('abu:unauthorized')) } catch { /* no-op */ }
+  }
   return e
 }
 
@@ -123,15 +127,16 @@ async function readChunk(reader, idleMs = STREAM_IDLE_MS) {
 }
 
 // Builds request headers for the proxy, attaching the personal key only if set.
+// Le proxy exige le jeton de session signé émis au login (api/login.js) :
+// sans session valide, aucun appel IA ne passe — même avec le bundle en main.
 function proxyHeaders() {
   const headers = { 'content-type': 'application/json' }
   const userKey = getUserApiKey()
   if (userKey) headers['x-user-api-key'] = userKey
-  // APP_SECRET: set via VITE_APP_SECRET in Vercel env. Present in the bundle
-  // (Vite bakes VITE_* vars at build time) — raises the bar against scanners
-  // without being a substitute for proper auth.
-  const appSecret = import.meta.env.VITE_APP_SECRET
-  if (appSecret) headers['x-app-secret'] = appSecret
+  try {
+    const session = JSON.parse(localStorage.getItem('abu_session') || 'null')
+    if (session?.token) headers['Authorization'] = `Bearer ${session.token}`
+  } catch { /* pas de session — le proxy répondra 401 */ }
   return headers
 }
 

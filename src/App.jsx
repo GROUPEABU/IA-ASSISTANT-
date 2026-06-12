@@ -28,7 +28,6 @@ import ErrorBoundary from '@/components/ErrorBoundary'
 // Auth pages (public — kept eager for fast login)
 import Login from '@/pages/Login'
 import ForgotPassword from '@/pages/ForgotPassword'
-import ResetPassword from '@/pages/ResetPassword'
 
 // Legal pages (public)
 import MentionsLegales from '@/pages/MentionsLegales'
@@ -77,7 +76,6 @@ function AppRoutes() {
         {/* Public auth routes */}
         <Route path="/login"           element={isAuthenticated ? <Navigate to="/hub" replace /> : <Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password"  element={<ResetPassword />} />
 
         {/* Public legal routes */}
         <Route path="/mentions-legales"           element={<MentionsLegales />} />
