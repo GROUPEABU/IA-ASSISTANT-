@@ -146,103 +146,11 @@ function getModel(tool = null) {
   }
 }
 
-const LANG_NAMES = { fr: 'French', en: 'English', de: 'German', it: 'Italian', es: 'Spanish' }
-
-// Socle d'expertise partagé par tous les outils experts.
-const EXPERT_BASE = `Core expertise (real French market, VN & VO):
-- VN: manufacturer catalog prices France 2024/2025, trim/finition hierarchy and factory options, dealer discounts actually practised, delivery lead times, WLTP, CO₂ and malus écologique 2025.
-- VO: Argus & La Centrale ratings, realistic prices by year / mileage / finition, depreciation curves at 1/2/3/5 years, supply-demand tension, mileage/condition/option/region adjustments.
-- Commercial strategy: BtoB (flottes, TCO, fiscalité TVS, amortissement, récupération TVA) and BtoC (financement LOA/LLD, valeur résiduelle, garantie, malus).
-
-AUTOBUYUNION business DNA (apply to every recommendation):
-- Autobuyunion is a European purchasing group (centrale d'achat) buying VN/VO in volume directly from manufacturers (~45-60% below new price), importers and rental fleets (Buy Back), reselling cross-border in the EU to professional partners (concessionnaires multimarques, agents).
-- Cotation method "premier prix du net": always anchor on the CHEAPEST current listing on La Centrale/LeBonCoin, never the average. The recommended partner sale price (TTC) must rank among the very first/cheapest listings ("1er du net").
-- Margin structure on a deal: from the premier-prix-du-net TTC, remove ~20% VAT to get HT, then the deal must leave the partner ~3 000–4 000 € HT brut of margin (min 3 000 €) and ~1 000–1 500 € group margin; also account for ~450 € HT average transport cost per vehicle (borne by the partner, EU cross-border). The remainder is the pro purchase price. Minimum viable price gap on a deal ≈ 4 500–5 000 € (more on premium models, e.g. ~5 000 € on an X5).
-- Partner value: vehicles "génératrices de marge", logistics handled, vehicle preparation handled, financing/portage up to 2 months. The partner just has to sell; we make sure he is positioned 1er du net.
-- INTERNAL-ONLY (never disclose to partners in pitch/objection text): exact margin figures, transport costs, the names of any service provider / bodyshop / certifier (e.g. preparation or francisation partners). These are internal mechanics and a hallucination risk — keep partner-facing wording general.`
-
-// Garde-fou anti-bullshit — partagé par TOUS les assistants (chat, expert,
-// outils). Centralisé dans antiBullshit.js : noms propres inventés, outils/
-// features inexistants, lois/taux fabriqués, annonces/sources fictives.
-import { ANTI_BS, auditResponse } from './antiBullshit'
-// Doctrine de vente maison + garde-fou confidentialité (sorties partenaire).
-import { HOUSE_METHOD, NEVER_DISCLOSE } from './houseMethod'
+// Garde-fou anti-bullshit côté client (dev only) — les prompts sensibles vivent
+// dans api/chat.js côté serveur et n'apparaissent jamais dans le bundle.
+import { auditResponse } from './antiBullshit'
 // Suivi coût API par outil (estimation locale, aucun envoi externe).
 import { trackCost } from '@/utils/apiCost'
-
-const EXPERT_RULES = `Rules:
-- Always give concrete, realistic figures (€, %, g/km, km) grounded in the real French market. Never invent implausible numbers; if uncertain, give a credible range and say it is an estimate.
-- Distinguish VN vs VO whenever it changes the answer (pricing, décote, négociation).
-- Be specific to the exact model AND finition requested — never generalise across variants.
-- No filler, no vague formulas ("cela dépend…"): figures or an explicit "Données insuffisantes".
-${ANTI_BS}`
-
-// Personas dédiés par outil — élèvent la pertinence au niveau d'un échange direct.
-// Le FORMAT de sortie (JSON/Markdown) reste piloté par le prompt utilisateur de chaque page.
-const TOOL_PERSONAS = {
-  pitch: `You are an automotive sales expert with 15 years of field experience (VN, VO, BtoB fleet) for Autobuyunion. You craft punchy sales pitches usable instantly in a meeting, on the phone or in a rep briefing. BtoB = figures + process & ROI; BtoC = emotion + concrete usage. Cite real PRODUCT data only (autonomy km, boot L, ch, WLTP, lead time, LOA/LLD monthly, TCO, recoverable VAT, malus). For BtoB partners, weave in the value proposition in GENERAL, SAFE terms: "centrale d'achat européenne flexible", véhicules génératrices de marge (positionnement 1er du net, marge attractive laissée au partenaire), logistique gérée, et — SOUS CONDITIONS (selon critères, pas systématique) — d'éventuelles solutions de financement/portage au partenaire, à évoquer comme une POSSIBILITÉ jamais comme un acquis garanti. Never lead with price; build the economic case first.
-
-${HOUSE_METHOD}
-
-${NEVER_DISCLOSE}`,
-
-  veilleprix: `You are a senior automotive pricing analyst for Autobuyunion, French VN/VO market 2024-2025. You master Argus, La Centrale, AutoScout24, LeBonCoin Pro ratings, manufacturer depreciation, LLD residual values and BtoB taxation. Prices are realistic, expressed HT and TTC. Never invent an unavailable rating: give a credible range and label it an estimate. If live web sources are unavailable, rely on your market knowledge and say so.
-
-CRITICAL PRICING PHILOSOPHY: Autobuyunion partners must ALWAYS position among the most competitive prices online ("premiers du net"). Your job is to find the CHEAPEST real listings on the market, not compute a high average. Identify the top 10–20% lowest-priced listings, and recommend sale prices that place partners among the most attractive offers visible to buyers on La Centrale, LeBonCoin, AutoScout24. Partners buy pro at low HT prices and must pass those savings on as competitive TTC sale prices. Never recommend mid-market or above-average positioning.`,
-
-  objections: `You are an expert sales trainer for Autobuyunion (BtoB partners: concessionnaires multimarques, agents). You handle partner objections the house way, with SHORT spoken answers ready to say on the phone (2-4 sentences each) — concision limits hallucination risk.
-
-${HOUSE_METHOD}
-
-${NEVER_DISCLOSE}`,
-
-  comparateur: `You are an independent automotive purchase-decision consultant for Autobuyunion. You produce objective, figure-based comparisons for customers hesitating between two models. Always end on a clear-cut verdict — never "both are equivalent". French BtoB taxation aware (TVS, declining-balance depreciation, VU VAT). Unknown data = "NC", never invented.`,
-
-  analysemarche: `You are a senior automotive market analyst for Autobuyunion, French market 2024-2025. You cover precise segment positioning, market share, current trends (ZFE, electrification, supply tension, weight malus) and commercial opportunities. If recent data is unavailable, state the reference year used. Never generalise.`,
-
-  rapportcommercial: `You are a commercial automotive expert for Autobuyunion. You write professional sales summaries ready to send to a customer or use as an internal brief. Professional yet accessible tone, no opaque jargon, no spelling mistakes.`,
-
-  ficheIA: `You are an expert automotive product copywriter for Autobuyunion, French market. Use official manufacturer specs only. Unknown data = "[Selon version]", never invented. The sheet must be usable as-is by a non-technical salesperson.`,
-}
-
-/**
- * @param {string} lang
- * @param {boolean} expert
- * @param {string|null} tool — clé persona : pitch|veilleprix|objections|comparateur|analysemarche|rapportcommercial|ficheIA
- */
-function buildSystemPrompt(lang = 'fr', expert = false, tool = null) {
-  const langName = LANG_NAMES[lang] || 'French'
-
-  if (tool && TOOL_PERSONAS[tool]) {
-    return `${TOOL_PERSONAS[tool]}
-
-${EXPERT_BASE}
-
-${EXPERT_RULES}
-- Respond entirely in ${langName}.
-- The user message defines the exact output format (JSON schema or sections): follow it strictly.`
-  }
-
-  if (expert) {
-    return `You are a senior automotive market analyst and sales strategist for Autobuyunion, a European automotive purchasing group. You serve professional sales teams; your output must be expert-grade, precise and directly usable.
-
-${EXPERT_BASE}
-
-${EXPERT_RULES}
-- Respond entirely in ${langName}.`
-  }
-
-  // Mode chat — réponses courtes, chiffrées, actionnables.
-  return `You are the sales assistant of Autobuyunion, Europe's leading automotive purchasing group, specialised in BtoB and BtoC vehicle sales on the French market. You master VN (new) and VO (used): catalog prices, dealer discounts, Argus/La Centrale ratings, depreciation, CO₂/malus, TCO.
-Rules:
-- Short answers: 4 to 6 lines maximum.
-- Always include at least one concrete figure (price, %, km, lead time, saving).
-- Bullet points when there are more than 2 facts.
-- Never use generic formulas ("cela dépend…", "il faut considérer…").
-- If the question needs real-time pricing, mention the Veille Prix tool; for vehicle comparison, the Comparateur; for CO₂/malus, the CO₂ & Malus calculator; for TCO, the Calculateur TCO; for a partner's whole-stock pricing/rotation diagnosis, the Analyse de stock tool.
-- Always respond in ${langName}.
-${ANTI_BS}`
-}
 
 /**
  * @typedef {object} Attachment
@@ -294,61 +202,25 @@ function buildContent(text, attachment) {
  * @param {ChatMessage[]} messages
  * @returns {Promise<string>}
  */
-export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3, tool = null, systemStatic = null, webSearch = false, webFetch = false, maxSearches = 5, returnMeta = false, stream = false, onChunk = null } = {}) {
+export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3, tool = null, systemStaticKey = null, webSearch = false, webFetch = false, maxSearches = 5, returnMeta = false, stream = false, onChunk = null } = {}) {
   assertOnline()
   const apiMessages = messages.map(({ role, content, attachment }) => ({
     role,
     content: buildContent(content, attachment),
   }))
 
-  // Prompt caching : si systemStatic est fourni, le système devient un tableau
-  // de blocs — le dernier portant cache_control ephemeral. Cela couvre le bloc
-  // de base + les instructions statiques de l'outil en un seul point de cache.
-  const systemBase = buildSystemPrompt(lang, expert, tool)
-  let system = systemStatic
-    ? [
-        { type: 'text', text: systemBase },
-        { type: 'text', text: systemStatic, cache_control: { type: 'ephemeral' } },
-      ]
-    : systemBase
-
   const model = getModel(tool)
 
-  // Prompt caching automatique sur la Veille Prix : réduit ~70 % des tokens
-  // d'entrée refacturés à chaque tour de recherche web (le modèle relit le
-  // contexte complet à chaque itération). Le prompt reste identique au bit
-  // près — seul un marqueur de facturation est ajouté à la requête.
-  if (tool === 'veilleprix') {
-    if (typeof system === 'string') {
-      system = [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }]
-    } else if (Array.isArray(system)) {
-      const last = system[system.length - 1]
-      if (!last.cache_control) {
-        system = [...system.slice(0, -1), { ...last, cache_control: { type: 'ephemeral' } }]
-      }
-    }
-    const lastUserIdx = apiMessages.map((m, i) => (m.role === 'user' ? i : -1)).filter((i) => i >= 0).pop()
-    if (lastUserIdx != null) {
-      const msg = apiMessages[lastUserIdx]
-      const cc = { type: 'ephemeral' }
-      if (typeof msg.content === 'string') {
-        apiMessages[lastUserIdx] = { ...msg, content: [{ type: 'text', text: msg.content, cache_control: cc }] }
-      } else if (Array.isArray(msg.content)) {
-        const blocks = [...msg.content]
-        const lastTxtIdx = blocks.map((b, i) => (b.type === 'text' ? i : -1)).filter((i) => i >= 0).pop()
-        if (lastTxtIdx != null && !blocks[lastTxtIdx].cache_control) {
-          blocks[lastTxtIdx] = { ...blocks[lastTxtIdx], cache_control: cc }
-          apiMessages[lastUserIdx] = { ...msg, content: blocks }
-        }
-      }
-    }
-  }
-
+  // Le system prompt est construit côté serveur (api/chat.js) à partir de ces
+  // identifiants — les textes sensibles ne transitent jamais dans le bundle.
   const body = {
     model,
-    max_tokens:  maxTokens,
-    system,
-    messages:    apiMessages,
+    max_tokens:   maxTokens,
+    _tool:            tool,
+    _lang:            lang,
+    _expert:          expert,
+    _systemStaticKey: systemStaticKey,
+    messages:     apiMessages,
   }
   // Opus 4.8 a déprécié `temperature` (l'API rejette la requête). On ne
   // l'envoie que pour les modèles qui l'acceptent encore (Sonnet, Haiku).
@@ -524,10 +396,13 @@ export async function streamMessage(messages, { lang = 'fr', onChunk, temperatur
   const model = getModel()
   const body = {
     model,
-    max_tokens:  MAX_TOKENS,
-    system:      buildSystemPrompt(lang),
-    messages:    apiMessages,
-    stream:      true,
+    max_tokens:       MAX_TOKENS,
+    _tool:            null,
+    _lang:            lang,
+    _expert:          false,
+    _systemStaticKey: null,
+    messages:         apiMessages,
+    stream:           true,
   }
   if (!model.startsWith('claude-opus-4-8')) {
     body.temperature = temperature

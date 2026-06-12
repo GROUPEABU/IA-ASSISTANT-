@@ -152,7 +152,7 @@ ${productContext || ''}${veillePrixRefBlock(vehicleName)}`
       let first = true
       const text = await sendMessage([{ role: 'user', content: prompt }], {
         lang, maxTokens: 1800, expert: true, temperature: 0.85,
-        tool: 'pitch', stream: true, systemStatic: STATIC_PITCH,
+        tool: 'pitch', stream: true, systemStaticKey: 'pitch',
         onChunk: (full) => {
           if (first) { first = false; setLoading(false); setStreaming(true) }
           setReport(full)

@@ -108,7 +108,7 @@ ${details ? `Précisions à RESPECTER STRICTEMENT (motorisation, finition, carro
   const raw = await sendMessage([{ role: 'user', content: prompt }], {
     maxTokens: 6000, expert: true, temperature: 0.25,
     tool: 'ficheIA', stream: true,
-    systemStatic: STATIC_FICHEAI,
+    systemStaticKey: 'ficheIA',
     webSearch: true, maxSearches: 3,
   })
 

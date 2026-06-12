@@ -135,7 +135,7 @@ Prix catalogue : ${formatNumber(product.prix.base)}€ · CO₂ : ${product.spec
       let first = true
       const result = await sendMessage([{ role: 'user', content: prompt }], {
         lang, maxTokens: 3500, expert: true, temperature: 0.7,
-        tool: 'rapportcommercial', stream: true, systemStatic: STATIC_SALESREPORT,
+        tool: 'rapportcommercial', stream: true, systemStaticKey: 'salesreport',
         onChunk: (full) => {
           if (first) { first = false; setLoading(false); setStreaming(true) }
           setPitch(full)

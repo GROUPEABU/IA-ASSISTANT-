@@ -24,7 +24,7 @@ const SEGMENTS = [
   { id: 'btob', labelKey: 'btob', subKey: 'btob_sub' },
 ]
 
-// Bloc statique caché côté système — instructions invariantes + format Markdown.
+// Instructions système construites côté serveur (api/chat.js, clé 'objections').
 const STATIC_OBJECTIONS = `⚠️ MOTORISATION EXACTE : respecte STRICTEMENT la motorisation du nom du véhicule et des détails. Un « hybride » simple/micro-hybride/full hybrid n'est PAS un « hybride rechargeable » (plug-in/PHEV) : ne parle de recharge, de prise ou d'autonomie 100 % électrique que si le véhicule est EXPLICITEMENT rechargeable. Ne substitue jamais une autre variante.
 
 ⚠️ GÉNÉRATION : en cas de changement de génération récent du modèle, ne confonds pas la nouvelle génération avec l'ancienne — le badge de motorisation/puissance est souvent le marqueur de génération (ex. un 136 et un 145 peuvent désigner deux générations du même modèle).
@@ -129,7 +129,7 @@ ${productContext || ''}`
       let first = true
       const text = await sendMessage([{ role: 'user', content: prompt }], {
         lang, maxTokens: 2000, expert: true, temperature: 0.55,
-        tool: 'objections', stream: true, systemStatic: STATIC_OBJECTIONS,
+        tool: 'objections', stream: true, systemStaticKey: 'objections',
         onChunk: (full) => {
           if (first) { first = false; setLoading(false); setStreaming(true) }
           setReport(full)
