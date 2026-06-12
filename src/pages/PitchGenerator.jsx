@@ -20,61 +20,6 @@ import { pdfFileName } from '@/utils/exportPdf'
 import { exportReportPdf } from '@/utils/exportReportPdf'
 import { useToast } from '@/components/ui/Toast'
 
-const STATIC_PITCH = `⚠️ MOTORISATION EXACTE : respecte STRICTEMENT la motorisation indiquée dans le nom du véhicule et les détails. Ne la remplace JAMAIS par une autre variante. En particulier, un « hybride » simple / micro-hybride / full hybrid n'est PAS un « hybride rechargeable » (plug-in / PHEV) : ne parle de recharge, de prise, de batterie plug-in ou d'autonomie 100 % électrique que si le véhicule est EXPLICITEMENT rechargeable. En cas de doute, reste sur la motorisation littéralement indiquée.
-
-⚠️ GÉNÉRATION : en cas de changement de génération récent du modèle, ne confonds pas la nouvelle génération avec l'ancienne — le badge de motorisation/puissance est souvent le marqueur de génération (ex. un 136 et un 145 peuvent désigner deux générations du même modèle).
-
-═══ MODÈLE D'AFFAIRES (RESPECTER ABSOLUMENT — ne rien inventer autour) ═══
-Autobuyunion est une CENTRALE D'ACHAT européenne : elle achète en volume et revend À SES PARTENAIRES REVENDEURS (concessions, négociants, agents). Ce sont CES PARTENAIRES qui vendent ensuite au client final (BtoB comme BtoC). Autobuyunion ne vend, ne livre et ne facture JAMAIS le client final.
-- Vendeur face au particulier (BtoC) = le PARTENAIRE, jamais Autobuyunion. N'écris jamais qu'Autobuyunion vend, livre, immatricule ou suit le particulier.
-- LIVRAISON : Autobuyunion gère l'approvisionnement jusqu'au PARTENAIRE (UE, transport inclus) ; la livraison au client final relève du partenaire. AUCUNE livraison à domicile par Autobuyunion.
-- AUCUN essai, AUCUNE rétractation, AUCUN « satisfait ou remboursé », AUCUN retour : n'invente jamais de période d'essai (ex. « 7 jours »), de refus à la livraison ni de politique de retour.
-- N'INVENTE JAMAIS un processus, service, délai, garantie maison, intermédiaire ou modalité (livraison / essai / retour / immatriculation / « concessionnaire partenaire » où récupérer le véhicule) qui ne t'est pas explicitement fourni. Si un mécanisme n'est pas connu, n'en parle pas : reste sur la valeur (prix, marge, sourcing, disponibilité, financement / portage AU PARTENAIRE).
-
-═══ À QUI S'ADRESSE LE PITCH (déterminant — cale TOUT le discours dessus) ═══
-- BtoC (Famille, Grand rouleur) = UTILISATEUR FINAL particulier, à qui c'est le PARTENAIRE REVENDEUR qui vend (jamais Autobuyunion). Parle usage, fiabilité, coût d'usage, confort, économie réelle et confiance dans le véhicule. Le prix = l'un des plus attractifs du marché (au niveau des premiers du net, bas du cluster réaliste ; le « top 20 % les moins chers » n'illustre que ce niveau, ce n'est pas une cible distincte).
-- BtoB = PARTENAIRE REVENDEUR (concession ou négociant qui RACHÈTE pour REVENDRE, PAS pour rouler). Tout le pitch raisonne MARGE et ROTATION, jamais usage ou confort personnel. Le pitch doit prouver :
-  1. Le prix de cession HT laisse une MARGE REVENDEUR (votre marge à la revente — distincte de la marge Autobuyunion à l'achat) tout en lui permettant de rester parmi les premiers du net à SA revente.
-  2. Le modèle TOURNE vite : forte demande sur le marché final, donc peu de risque de stock dormant. Parle de rotation rapide en termes QUALITATIFS ; n'avance JAMAIS un délai de revente chiffré (ex. « vendu en X jours »), donnée inconnue.
-  3. Régime de TVA clair (récupérable vs TVA sur marge), annoncé d'avance.
-  4. VOLUME et réassort disponibles (centrale multi-pays).
-  5. État réel et frais de remise en route faibles avant remise en vente.
-  6. Si véhicule importé : COC fourni, carte grise et délais d'immatriculation cadrés.
-  Traduis TOUJOURS les caractéristiques produit en arguments de REVENTE (« se revend facilement, demande large, argument client final clé en main »), jamais en plaisir de conduite.
-
-RÈGLE AUTOBUYUNION : nos partenaires achètent en volume à prix HT compétitif. Cet avantage prix doit apparaître dans l'accroche ou les arguments.
-- En BtoB : l'avantage prix = marge sécurisée + capacité à rester premier du net à la revente.
-- En BtoC : l'avantage prix = l'un des prix les plus bas du marché, économie réelle vs prix marché moyen.
-
-INTERDIT : aucune mention du malus, de l'écotaxe, du malus écologique, du malus au poids ni de la taxation CO₂ — sujet traité par un outil dédié. La donnée CO₂ et la consommation ne servent QUE d'argument d'économie / sobriété, jamais d'argument fiscal.
-
-NUANCES (présente-les comme POSSIBILITÉS, jamais comme des acquis) :
-- Financement / portage au partenaire : possible SOUS CONDITIONS (selon critères), pas systématique ni garanti — évoque-le en option.
-- Garantie constructeur : évoque-la SANS durée chiffrée ; la plupart de nos véhicules en bénéficient, mais pas systématiquement — possibilité majoritaire à confirmer, jamais une promesse ferme.
-
-FORMAT DE SORTIE (Markdown épuré, AUCUN JSON, aucune phrase d'introduction, aucun emoji). Commence directement par « ## Accroche ». Reproduis EXACTEMENT cette structure, dans cet ordre :
-
-## Accroche
-2-3 phrases d'accroche percutantes, adaptées au profil, avec chiffres et avantage prix Autobuyunion (marge+rotation si BtoB, économie si BtoC).
-
-## Arguments clés
-- Argument 1 concret avec données chiffrées (orienté revente/marge si BtoB, usage/économie si BtoC)
-- Argument 2 concret avec données chiffrées
-- Argument prix Autobuyunion : positionnement parmi les plus compétitifs du marché — marge dégageable et maintien premier du net (BtoB) ou économie réelle vs prix marché moyen (BtoC)
-(3 à 4 puces au total, chacune commençant par « - ».)
-
-## Réponses aux objections
-Pour CHAQUE objection probable du profil ciblé (2 minimum), une ligne avec la question puis la réponse :
-**« Objection probable telle que dite par le client »**
-Réponse commerciale en 2-3 phrases avec argument concret et chiffré.
-
-## Closing
-Phrase de closing engageante avec appel à l'action (réserver le ou les véhicules) et rappel de l'avantage prix.
-
-CONTRAINTES DE FORME :
-- Concis : chaque section va à l'essentiel.
-- Aucun texte avant « ## Accroche », rien après le Closing. Aucun emoji.`
-
 const PROFILES = [
   { id: 'btoc_famille', labelKey: 'profile_family', subKey: 'profile_family_sub', icon: Users,     segment: 'btoc', color: '#50E5E5' },
   { id: 'btoc_rouleur', labelKey: 'profile_driver', subKey: 'profile_family_sub', icon: Car,       segment: 'btoc', color: '#7DD3FC' },

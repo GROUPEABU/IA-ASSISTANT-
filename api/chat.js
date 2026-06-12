@@ -18,6 +18,18 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const API_VERSION   = '2023-06-01'
 const MAX_BODY_BYTES = 200 * 1024
 
+// Garde-fous anti-abus : le secret applicatif étant extractible du bundle,
+// le proxy borne strictement ce qu'il accepte de relayer (modèles, plafonds
+// de tokens, outils serveur) pour empêcher tout détournement coûteux.
+const ALLOWED_MODELS = new Set([
+  'claude-haiku-4-5-20251001',
+  'claude-sonnet-4-6',
+  'claude-opus-4-8',
+])
+const MAX_OUTPUT_TOKENS  = 8192 // ≥ plus gros usage légitime (8000, scrape stock)
+const MAX_TOOL_USES      = 16   // ≥ plus gros usage légitime (10, scrape stock)
+const ALLOWED_TOOL_TYPES = new Set(['web_search_20260209', 'web_fetch_20260209'])
+
 const json = (obj, status) =>
   new Response(JSON.stringify(obj), {
     status,
@@ -602,6 +614,29 @@ export default async function handler(req) {
   }
   if (!parsed || !Array.isArray(parsed.messages)) {
     return json({ error: { message: 'Corps JSON invalide : messages[] requis.' } }, 400)
+  }
+
+  // ── Validation anti-abus ────────────────────────────────────────────────────
+  if (!ALLOWED_MODELS.has(parsed.model)) {
+    return json({ error: { message: 'Modèle non autorisé.' } }, 400)
+  }
+  if (!Number.isFinite(parsed.max_tokens) || parsed.max_tokens < 1) {
+    parsed.max_tokens = 4096
+  }
+  parsed.max_tokens = Math.min(parsed.max_tokens, MAX_OUTPUT_TOKENS)
+  if (parsed.tools !== undefined) {
+    if (!Array.isArray(parsed.tools)
+        || !parsed.tools.every((t) => t && ALLOWED_TOOL_TYPES.has(t.type))) {
+      return json({ error: { message: 'Outils non autorisés.' } }, 400)
+    }
+    parsed.tools = parsed.tools.map((t) => ({
+      ...t,
+      max_uses: Math.min(Number.isFinite(t.max_uses) && t.max_uses > 0 ? t.max_uses : 5, MAX_TOOL_USES),
+    }))
+  }
+  if (parsed.temperature !== undefined) {
+    if (!Number.isFinite(parsed.temperature)) delete parsed.temperature
+    else parsed.temperature = Math.min(1, Math.max(0, parsed.temperature))
   }
 
   // Clé API (serveur uniquement).

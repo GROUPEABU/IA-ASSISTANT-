@@ -190,41 +190,6 @@ function CompGroup({ icon: Icon, title, subtitle, cars, refLen }) {
   )
 }
 
-const STATIC_COMPARE = `PRINCIPE D'ÉQUIVALENCE (exactement comme automobiledimension.com) : l'équivalence se fait sur le GABARIT, AVANT TOUT la LONGUEUR, toutes marques ET toutes carrosseries confondues. Critère premier : longueur proche (±15 cm, soit ±150 mm). À longueur comparable, privilégie les véhicules dont la largeur et la hauteur sont aussi proches (gabarit d'ensemble cohérent). Le segment commercial n'est PAS un filtre : un véhicule d'une autre carrosserie mais de même longueur EST une équivalence valable (indique simplement son "body"). N'exclus que les gabarits manifestement incohérents (ex. ne pas apparier un coupé bas à un fourgon haut de même longueur).
-
-⚠️ GÉNÉRATION & MOTORISATION : ne mélange JAMAIS les chiffres de générations différentes — donne les cotes de la génération EXACTE demandée. Le "fuel"/"engine" doit refléter la version exacte ; ne confonds pas un hybride simple / micro-hybride / full hybrid avec un hybride rechargeable (plug-in / PHEV), car cela change poids, CO₂ et caractéristiques. Si aucune version n'est précisée, retiens la version la plus représentative (les dimensions sont en général identiques d'une motorisation à l'autre ; seuls poids / CO₂ / puissance varient) et renseigne "version" en conséquence.
-
-ÉTAPES :
-1. Dimensions OFFICIELLES EXACTES de la génération précise demandée (largeur HORS rétroviseurs ; champ widthMirrors séparé = largeur rétros déployés) + caractéristiques. Indique le statut : "current" (actuellement commercialisé) ou "previous" (génération remplacée), et par quoi elle a été remplacée le cas échéant.
-2. "comparablesNew" : 6 à 8 véhicules NEUFS actuellement en vente, de LONGUEUR proche (±15 cm), toutes marques et toutes carrosseries. Génération actuellement commercialisée UNIQUEMENT, "year" récente (2023-2026).
-3. "comparablesPrevious" : 3 à 5 GÉNÉRATIONS PRÉCÉDENTES DU MÊME VÉHICULE EXACT demandé (JAMAIS d'autres marques/modèles ici). Compte un restylage majeur comme une entrée distincte uniquement si les dimensions ont changé. Mets dans "year" l'année médiane de la génération. Exemple : "Citroën C5 Aircross 2025 (2e génération)" → 1re génération C5 Aircross ; "Volkswagen Golf 8" → Golf 7, Golf 6…
-
-Toutes les LARGEURS (véhicule principal ET comparables) sont données HORS rétroviseurs, pour rester comparables. "body" = type de carrosserie en un mot : "SUV", "berline", "break", "citadine", "monospace", "coupé", "cabriolet", "ludospace", "fourgon", "pickup".
-
-FIABILITÉ : utilise des dimensions RÉELLES, issues de sources officielles ou de données bien établies ; recherche pour vérifier la génération exacte demandée et tout comparable récent ou incertain. Si une valeur exacte reste introuvable, mets null — n'invente jamais, ne déduis pas d'une autre version ou génération.
-
-Réponds ENSUITE UNIQUEMENT en JSON valide (aucun texte autour, pas de backticks) :
-{
-  "vehicle": {
-    "make": "string", "model": "string", "year": number, "version": "string|null",
-    "status": "current|previous", "replacedBy": "string|null",
-    "segment": "string", "body": "string", "seats": number,
-    "length": number, "width": number, "widthMirrors": number|null, "height": number,
-    "wheelbase": number, "weight": number, "trunk": number, "turningCircle": number|null,
-    "engine": "string", "power": number, "torque": number, "co2": number|null,
-    "fuel": "string", "gearbox": "string", "acceleration": number|null, "topSpeed": number|null
-  },
-  "comparablesNew": [
-    { "make": "string", "model": "string", "year": number, "version": "string|null",
-      "body": "string", "length": number, "width": number, "height": number }
-  ],
-  "comparablesPrevious": [
-    { "make": "string", "model": "string", "year": number, "version": "string|null",
-      "body": "string", "length": number, "width": number, "height": number }
-  ]
-}
-Dimensions en mm, poids en kg, coffre en litres, braquage en m, puissance en ch, couple en Nm, CO₂ en g/km WLTP. Valeur inconnue = null. JSON pur uniquement.`
-
 const SUGGESTIONS = [
   'Alpine A290', 'Renault 5 E-Tech', 'Peugeot 308', 'Volkswagen Golf',
   'Dacia Duster', 'BMW Série 1', 'Toyota Yaris Cross', 'Tesla Model 3',
