@@ -30,6 +30,8 @@ export function addSpend(uid, amount) {
     const mkey = mk(uid), dkey = dk(uid)
     localStorage.setItem(mkey, (parseFloat(localStorage.getItem(mkey) || '0') + amount).toFixed(6))
     localStorage.setItem(dkey, (parseFloat(localStorage.getItem(dkey) || '0') + amount).toFixed(6))
+    // Notifie l'UI (jauge sidebar) sans recharger la page.
+    try { window.dispatchEvent(new Event('abu:spend')) } catch { /* SSR/no-op */ }
   } catch {}
 }
 

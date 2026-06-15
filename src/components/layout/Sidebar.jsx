@@ -7,6 +7,7 @@ import clsx from 'clsx'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
 import Logo from '@/components/ui/Logo'
+import DailyQuotaBar from '@/components/ui/DailyQuotaBar'
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth()
@@ -94,6 +95,9 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Footer */}
       <div className="px-3 pb-4 pt-3 border-t border-navy-700/50 space-y-2">
+        {/* Consommation IA du jour — visible en continu (façon Claude) */}
+        <DailyQuotaBar />
+
         <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border"
              style={{ background: 'linear-gradient(135deg, rgba(80,229,229,0.07) 0%, rgba(52,211,153,0.07) 100%)', borderColor: 'rgba(52,211,153,0.20)' }}>
           <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
