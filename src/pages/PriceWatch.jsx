@@ -381,6 +381,7 @@ export default function PriceWatch() {
   const [streaming, setStreaming] = useState(false)   // tokens en cours d'arrivée
   const [report, setReport]       = useState('')      // texte Markdown streamé
   const [hasLiveData, setHasLiveData] = useState(false)
+  const [truncated, setTruncated] = useState(false)   // rapport coupé (plafond de tokens atteint)
   const [fetchedAt, setFetchedAt] = useState(null)
   const [sources, setSources]     = useState([])
   const [error, setError]         = useState(null)
@@ -514,6 +515,7 @@ export default function PriceWatch() {
     setError(null)
     setReport('')
     setHasLiveData(false)
+    setTruncated(false)
     setEvolution(null)
     setMultiResults(null)
     setMultiOpen(null)
@@ -565,11 +567,11 @@ export default function PriceWatch() {
       // de l'eau dès le 1er token reçu. Passe UNIQUE : la grille de prix et
       // l'auto-vérification sont intégrées au prompt (plus de 2e passe).
       let first = true
-      const { text, usedWebSearch } = await sendMessage(
+      const { text, usedWebSearch, truncated: wasTruncated } = await sendMessage(
         [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry, marginUsed) }],
         {
           lang, expert: true, temperature: 0, tool: 'veilleprix',
-          webSearch: true, maxSearches: 3, maxTokens: 4500,
+          webSearch: true, maxSearches: 3, maxTokens: 8000,
           returnMeta: true, stream: true,
           onChunk: (full) => {
             if (first) { first = false; setLoading(false); setStreaming(true) }
@@ -580,6 +582,7 @@ export default function PriceWatch() {
       const cleanText = stripLeadingReasoning(text)
       setReport(cleanText)
       setHasLiveData(!!usedWebSearch)
+      setTruncated(!!wasTruncated)
       setStreaming(false)
       setReportMargin(marginUsed)
 
@@ -625,7 +628,7 @@ export default function PriceWatch() {
                 [{ role: 'user', content: buildPrompt(filters, vehicleDesc, exCtry, marginUsed) }],
                 {
                   lang, expert: true, temperature: 0, tool: 'veilleprix',
-                  webSearch: true, maxSearches: 3, maxTokens: 4500,
+                  webSearch: true, maxSearches: 3, maxTokens: 8000,
                   returnMeta: true, stream: true,
                 }
               )
@@ -733,7 +736,7 @@ export default function PriceWatch() {
           [{ role: 'user', content: buildPrompt(filters, vehicleDesc, ctry, rowMargin) }],
           {
             lang, expert: true, temperature: 0, tool: 'veilleprix',
-            webSearch: true, maxSearches: 3, maxTokens: 4500,
+            webSearch: true, maxSearches: 3, maxTokens: 8000,
             returnMeta: true, stream: true,
           }
         )
@@ -840,11 +843,13 @@ export default function PriceWatch() {
     setYearMin(''); setYearMax(''); setMileageMin(''); setMileageMax(''); setFuel(''); setGearbox(''); setPowerMin(''); setPowerMax('')
     setCountry('FR')
     setSearchLabel(''); setCentraleUrl(''); setFetchedAt(null); setSources([]); setHasLiveData(false); setReportMargin(null)
+    setTruncated(false)
     setMultiResults(null); setMultiOpen(null); setExtraCountries([])
   }
 
   const restore = (item) => {
     setReport(item.report || '')
+    setTruncated(false)
     setSearchLabel(item.searchLabel)
     setType(item.type)
     setCountry(item.country || 'FR')
@@ -1468,6 +1473,14 @@ export default function PriceWatch() {
                   <span className="inline-block w-0.5 h-[1em] animate-pulse align-middle ml-0.5 opacity-80 bg-cyan-400" />
                 )}
               </div>
+
+              {/* Avertissement : rapport tronqué (plafond de tokens atteint) */}
+              {!streaming && truncated && (
+                <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-warn/10 border border-warn/30">
+                  <AlertTriangle size={15} className="text-warn flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-warn leading-relaxed">{t('price_truncated_warn')}</p>
+                </div>
+              )}
 
               {/* Malus — lien centré vers le calculateur */}
               {!streaming && (

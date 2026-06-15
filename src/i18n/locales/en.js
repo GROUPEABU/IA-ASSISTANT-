@@ -813,6 +813,7 @@ export default {
   price_live_refreshing: 'Refreshing live…',
   price_guardrail_checking: 'Checking…',
   price_guardrail_done: 'Checked',
+  price_truncated_warn: 'Incomplete report: the length limit was reached before the end. Re-run the analysis to get the full report.',
   price_expert_section: 'Valuation & Depreciation',
   price_pro_section: 'Pro Pricing',
   price_catalogue_label: 'New list price',

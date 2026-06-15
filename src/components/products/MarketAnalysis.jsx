@@ -70,7 +70,7 @@ export default function MarketAnalysis({ product }) {
       let first = true
       const { text } = await sendMessage([{ role: 'user', content: prompt }], {
         lang, expert: true, temperature: 0, tool: 'veilleprix',
-        webSearch: true, maxSearches: 3, maxTokens: 4500,
+        webSearch: true, maxSearches: 3, maxTokens: 8000,
         returnMeta: true, stream: true,
         onChunk: (full) => {
           if (first) { first = false; setLoading(false); setStreaming(true) }

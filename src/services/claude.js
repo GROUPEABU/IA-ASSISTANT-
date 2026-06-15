@@ -285,7 +285,7 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
 
   if (returnMeta) {
     const searchCount = blocks.filter(b => b.type === 'server_tool_use' && b.name === 'web_search').length
-    return { text, usedWebSearch: searchCount > 0, searchCount }
+    return { text, usedWebSearch: searchCount > 0, searchCount, truncated: payload.stop_reason === 'max_tokens' }
   }
   return text
 }
@@ -316,12 +316,13 @@ async function postNonStream(body) {
   const blocks = payload.content || []
   const text = blocks.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim()
   const searchCount = blocks.filter((b) => b.type === 'server_tool_use' && b.name === 'web_search').length
-  return { text, searchCount, usage: payload.usage || {} }
+  return { text, searchCount, usage: payload.usage || {}, stopReason: payload.stop_reason || null }
 }
 
 async function streamToText(body, { returnMeta = false, onChunk = null, tool = null, uid = null } = {}) {
   let text = ''
   let searchCount = 0
+  let stopReason = null
   let inputTokens = 0, outputTokens = 0, cacheCreateTokens = 0, cacheReadTokens = 0
 
   try {
@@ -361,6 +362,8 @@ async function streamToText(body, { returnMeta = false, onChunk = null, tool = n
             cacheReadTokens  = u.cache_read_input_tokens      || 0
           } else if (evt.type === 'message_delta') {
             outputTokens = evt.usage?.output_tokens || outputTokens
+            // stop_reason 'max_tokens' = réponse tronquée (plafond de sortie atteint).
+            if (evt.delta?.stop_reason) stopReason = evt.delta.stop_reason
           }
         } catch { /* skip malformed SSE events */ }
       }
@@ -375,6 +378,7 @@ async function streamToText(body, { returnMeta = false, onChunk = null, tool = n
       const r = await postNonStream(body)
       text = r.text
       searchCount = r.searchCount
+      stopReason = r.stopReason ?? stopReason
       onChunk?.(text)
       // Usage disponible depuis la réponse JSON du repli
       if (r.usage?.input_tokens) {
@@ -398,7 +402,7 @@ async function streamToText(body, { returnMeta = false, onChunk = null, tool = n
     trackCost(tool || 'chat', body.model, usageObj, searchCount)
     if (uid != null) addSpend(uid, computeCost(body.model, usageObj, searchCount))
   }
-  if (returnMeta) return { text, usedWebSearch: searchCount > 0, searchCount }
+  if (returnMeta) return { text, usedWebSearch: searchCount > 0, searchCount, truncated: stopReason === 'max_tokens' }
   return text
 }
 

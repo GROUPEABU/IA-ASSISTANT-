@@ -838,6 +838,7 @@ export default {
   price_live_refreshing: 'Actualisation en direct…',
   price_guardrail_checking: 'Contrôle en cours…',
   price_guardrail_done: 'Contrôlé',
+  price_truncated_warn: 'Rapport incomplet : la limite de longueur a été atteinte avant la fin. Relancez l’analyse pour obtenir le rapport complet.',
   price_expert_section: 'Cotation & Décote',
   price_pro_section: 'Pricing Pro',
   price_catalogue_label: 'PVC neuf catalogue',
