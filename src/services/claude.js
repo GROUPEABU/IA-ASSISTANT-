@@ -137,6 +137,12 @@ function proxyHeaders() {
     const session = JSON.parse(localStorage.getItem('abu_session') || 'null')
     if (session?.token) headers['Authorization'] = `Bearer ${session.token}`
   } catch { /* pas de session — le proxy répondra 401 */ }
+  // Quota déclaratif : le serveur rejette si le client signale un dépassement.
+  try {
+    const { month, day } = getSpend(getSessionUserId())
+    headers['x-user-spend-month'] = month.toFixed(6)
+    headers['x-user-spend-day']   = day.toFixed(6)
+  } catch { /* ignore */ }
   return headers
 }
 
@@ -155,7 +161,9 @@ function getModel(tool = null) {
 // dans api/chat.js côté serveur et n'apparaissent jamais dans le bundle.
 import { auditResponse } from './antiBullshit'
 // Suivi coût API par outil (estimation locale, aucun envoi externe).
-import { trackCost } from '@/utils/apiCost'
+import { trackCost, computeCost } from '@/utils/apiCost'
+// Plafond de dépense mensuel/quotidien (enforcement côté client + best-effort côté serveur).
+import { getSpend, addSpend, checkLimits, MONTHLY_CAP, DAILY_CAP, quotaErrorMessage } from '@/utils/spendTracker'
 
 /**
  * @typedef {object} Attachment
@@ -209,6 +217,12 @@ function buildContent(text, attachment) {
  */
 export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKENS, expert = false, temperature = 0.3, tool = null, systemStaticKey = null, webSearch = false, webFetch = false, maxSearches = 5, returnMeta = false, stream = false, onChunk = null } = {}) {
   assertOnline()
+  // Plafond de dépense — bloque avant tout appel réseau (ignoré si clé perso).
+  if (!getUserApiKey()) {
+    const uid = getSessionUserId()
+    const lim = checkLimits(uid)
+    if (!lim.ok) throw Object.assign(new Error(quotaErrorMessage(lim.reason)), { quotaReason: lim.reason })
+  }
   const apiMessages = messages.map(({ role, content, attachment }) => ({
     role,
     content: buildContent(content, attachment),
@@ -248,7 +262,7 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
   // est accumulé puis renvoyé comme si la requête était classique.
   if (stream || webSearch || webFetch) {
     body.stream = true
-    return streamToText(body, { returnMeta, onChunk, tool })
+    return streamToText(body, { returnMeta, onChunk, tool, uid: getUserApiKey() ? null : getSessionUserId() })
   }
 
   const response = await fetchResilient(ENDPOINT, {
@@ -264,7 +278,10 @@ export async function sendMessage(messages, { lang = 'fr', maxTokens = MAX_TOKEN
   const text = blocks.filter(b => b.type === 'text').map(b => b.text).join('\n').trim()
   if (!text) throw new Error('Unexpected API response (no text content).')
   auditResponse(text, tool || (expert ? 'expert' : 'chat'))
-  if (payload.usage) trackCost(tool || 'chat', model, payload.usage, 0)
+  if (payload.usage) {
+    trackCost(tool || 'chat', model, payload.usage, 0)
+    if (!getUserApiKey()) addSpend(getSessionUserId(), computeCost(model, payload.usage, 0))
+  }
 
   if (returnMeta) {
     const searchCount = blocks.filter(b => b.type === 'server_tool_use' && b.name === 'web_search').length
@@ -302,7 +319,7 @@ async function postNonStream(body) {
   return { text, searchCount, usage: payload.usage || {} }
 }
 
-async function streamToText(body, { returnMeta = false, onChunk = null, tool = null } = {}) {
+async function streamToText(body, { returnMeta = false, onChunk = null, tool = null, uid = null } = {}) {
   let text = ''
   let searchCount = 0
   let inputTokens = 0, outputTokens = 0, cacheCreateTokens = 0, cacheReadTokens = 0
@@ -373,11 +390,13 @@ async function streamToText(body, { returnMeta = false, onChunk = null, tool = n
   auditResponse(text, 'stream')
   // Suivi coût (best-effort : usage peut être 0 si le repli n'a pas retourné d'usage).
   if (inputTokens > 0 || outputTokens > 0) {
-    trackCost(tool || 'chat', body.model, {
+    const usageObj = {
       input_tokens: inputTokens, output_tokens: outputTokens,
       cache_creation_input_tokens: cacheCreateTokens,
       cache_read_input_tokens: cacheReadTokens,
-    }, searchCount)
+    }
+    trackCost(tool || 'chat', body.model, usageObj, searchCount)
+    if (uid != null) addSpend(uid, computeCost(body.model, usageObj, searchCount))
   }
   if (returnMeta) return { text, usedWebSearch: searchCount > 0, searchCount }
   return text
@@ -393,6 +412,12 @@ async function streamToText(body, { returnMeta = false, onChunk = null, tool = n
  */
 export async function streamMessage(messages, { lang = 'fr', onChunk, temperature = 0.6, webSearch = false, maxSearches = 3 } = {}) {
   assertOnline()
+  // Plafond de dépense — bloque avant tout appel réseau (ignoré si clé perso).
+  if (!getUserApiKey()) {
+    const uid = getSessionUserId()
+    const lim = checkLimits(uid)
+    if (!lim.ok) throw Object.assign(new Error(quotaErrorMessage(lim.reason)), { quotaReason: lim.reason })
+  }
   const apiMessages = messages.map(({ role, content, attachment }) => ({
     role,
     content: buildContent(content, attachment),
@@ -470,7 +495,9 @@ export async function streamMessage(messages, { lang = 'fr', onChunk, temperatur
 
   auditResponse(fullText, 'chat')
   if (chatInputTokens > 0 || chatOutputTokens > 0) {
-    trackCost('chat', model, { input_tokens: chatInputTokens, output_tokens: chatOutputTokens }, 0)
+    const usageObj = { input_tokens: chatInputTokens, output_tokens: chatOutputTokens }
+    trackCost('chat', model, usageObj, 0)
+    if (!getUserApiKey()) addSpend(getSessionUserId(), computeCost(model, usageObj, 0))
   }
   return fullText
 }

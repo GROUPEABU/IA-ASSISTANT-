@@ -38,6 +38,10 @@ const ALLOWED_TOOL_TYPES = new Set(['web_search_20260209', 'web_fetch_20260209']
 const CHAT_LIMIT     = 30
 const CHAT_WINDOW_MS = 60 * 1000
 
+// Quotas de dépense (déclarés par le client en en-tête, best-effort).
+const SPEND_MONTHLY_CAP = 25  // €/mois
+const SPEND_DAILY_CAP   = 2   // €/jour
+
 const json = (obj, status) =>
   new Response(JSON.stringify(obj), {
     status,
@@ -760,6 +764,19 @@ export default async function handler(req) {
   // derrière le même NAT ; le jeton identifie chaque compte).
   if (!rateLimit(`chat:${session.id}:${clientIp(req)}`, CHAT_LIMIT, CHAT_WINDOW_MS)) {
     return json({ error: { message: 'Trop de requêtes. Patientez une minute puis réessayez.' } }, 429)
+  }
+
+  // Quota de dépense mensuel/quotidien (signalé par le client, best-effort).
+  // Ignoré si l'utilisateur utilise sa propre clé API.
+  if (!req.headers.get('x-user-api-key')) {
+    const mSpend = parseFloat(req.headers.get('x-user-spend-month') || '0')
+    const dSpend = parseFloat(req.headers.get('x-user-spend-day')   || '0')
+    if (mSpend >= SPEND_MONTHLY_CAP) {
+      return json({ error: { message: `Limite mensuelle de ${SPEND_MONTHLY_CAP} € atteinte. Votre quota se réinitialise le 1er du mois prochain.` } }, 429)
+    }
+    if (dSpend >= SPEND_DAILY_CAP) {
+      return json({ error: { message: `Limite quotidienne de ${SPEND_DAILY_CAP} € atteinte. Votre quota se réinitialise à minuit.` } }, 429)
+    }
   }
 
   // Limite de taille du corps (messages seuls — le system est construit ici).

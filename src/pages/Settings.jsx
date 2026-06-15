@@ -5,6 +5,7 @@ import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { ukey } from '@/utils/userStorage'
 import { getCosts, resetCosts } from '@/utils/apiCost'
+import { getSpend, MONTHLY_CAP, DAILY_CAP } from '@/utils/spendTracker'
 
 const Section = ({ icon: Icon, title, children }) => (
   <div className="glass-card overflow-hidden">
@@ -55,6 +56,7 @@ export default function Settings() {
   const { language, currency, density, changeLanguage, changeCurrency, changeDensity, t } = useSettings()
   const { user } = useAuth()
   const [costs, setCosts] = useState(() => getCosts())
+  const [spend, setSpend] = useState(() => user?.id != null ? getSpend(user.id) : { month: 0, day: 0 })
   const themeKey    = ukey(user?.id ?? null, 'theme')
   const aiPowerKey  = ukey(user?.id ?? null, 'ai_power')
   const [theme,      setTheme]      = useState(() => localStorage.getItem(themeKey)   || 'dark')
@@ -208,9 +210,36 @@ export default function Settings() {
         </Section>
       </div>
 
-      {/* Row 3: API cost counter */}
+      {/* Row 3: API cost counter + quota */}
       <div className="mt-4">
         <Section icon={BarChart2} title={t('settings_cost_section')}>
+          {/* Quota gauges — toujours visibles */}
+          <div className="space-y-3 pb-3 border-b border-navy-700/40">
+            {[
+              { label: t('settings_quota_month'), spent: spend.month, cap: MONTHLY_CAP, resetNote: t('settings_quota_reset_month') },
+              { label: t('settings_quota_day'),   spent: spend.day,   cap: DAILY_CAP,   resetNote: t('settings_quota_reset_day')   },
+            ].map(({ label, spent, cap, resetNote }) => {
+              const pct     = Math.min(100, (spent / cap) * 100)
+              const reached = spent >= cap
+              return (
+                <div key={label}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-300">{label}</span>
+                    <span className={`text-xs font-mono tabular-nums ${reached ? 'text-red-400 font-semibold' : 'text-slate-400'}`}>
+                      €{spent.toFixed(2)} / €{cap}
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-navy-700/50">
+                    <div
+                      className={`h-1.5 rounded-full transition-all ${reached ? 'bg-red-400' : pct > 75 ? 'bg-warn/70' : 'bg-cyan-400/70'}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-600 mt-0.5">{resetNote}</p>
+                </div>
+              )
+            })}
+          </div>
           {(() => {
             const entries = Object.entries(costs).filter(([, v]) => v.cost > 0)
             const total = entries.reduce((s, [, v]) => s + v.cost, 0)
