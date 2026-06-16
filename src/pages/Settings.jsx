@@ -5,6 +5,7 @@ import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { ukey } from '@/utils/userStorage'
 import { getCosts, resetCosts } from '@/utils/apiCost'
+import { seedServerSpend } from '@/services/claude'
 import { getSpend, MONTHLY_CAP, DAILY_CAP, migrateToQuota } from '@/utils/spendTracker'
 
 const Section = ({ icon: Icon, title, children }) => (
@@ -85,6 +86,9 @@ export default function Settings() {
       migrateToQuota(user.id, legacy)
       setSpend(getSpend(user.id))
     }
+    // Import unique vers le compteur serveur (si KV actif) : rend le total
+    // historique visible sur tous les appareils du compte.
+    seedServerSpend(user.id, legacy)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 

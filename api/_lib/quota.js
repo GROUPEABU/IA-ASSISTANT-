@@ -74,6 +74,28 @@ export async function addSpend(uid, amount) {
   } catch { /* best-effort */ }
 }
 
+/**
+ * Importe UNE FOIS une dépense historique (estimation locale pré-KV) dans le
+ * compteur du compte, pour qu'elle apparaisse sur tous les appareils.
+ * Idempotent via un flag atomique SET NX : seul le premier appel non nul est
+ * pris en compte ; les suivants sont ignorés. Non abusable (n'augmente que la
+ * propre dépense du compte).
+ * @returns {Promise<{ seeded: boolean, already?: boolean }>}
+ */
+export async function seedSpend(uid, amount) {
+  if (!quotaEnabled() || uid == null || !(amount > 0)) return { seeded: false }
+  try {
+    const flag = `abuq:${uid}:seed`
+    // SET NX : pose le flag seulement s'il n'existe pas encore (atomique).
+    const out = await pipeline([['SET', flag, '1', 'NX', 'EX', String(MONTH_TTL_S)]])
+    if (out?.[0]?.result !== 'OK') return { seeded: false, already: true }
+    await addSpend(uid, amount)
+    return { seeded: true }
+  } catch {
+    return { seeded: false }
+  }
+}
+
 /** Coût estimé d'un appel (identique à la formule client). */
 export function computeCost(model, usage = {}, searchCount = 0) {
   const p = PRICING[model] || PRICING['claude-sonnet-4-6']

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeCost, parseUsageFromText, quotaEnabled } from './quota.js'
+import { computeCost, parseUsageFromText, quotaEnabled, seedSpend } from './quota.js'
 
 describe('computeCost', () => {
   it('prices input tokens per model ($/M)', () => {
@@ -54,5 +54,15 @@ describe('quotaEnabled', () => {
   it('is disabled when no KV env vars are set (graceful degradation)', () => {
     // En environnement de test aucune variable KV_*/UPSTASH_* n'est définie.
     expect(quotaEnabled()).toBe(false)
+  })
+})
+
+describe('seedSpend', () => {
+  it('is a no-op (no network) when the quota backend is disabled', async () => {
+    await expect(seedSpend(3, 0.25)).resolves.toEqual({ seeded: false })
+  })
+
+  it('ignores non-positive amounts', async () => {
+    await expect(seedSpend(3, 0)).resolves.toEqual({ seeded: false })
   })
 })

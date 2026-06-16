@@ -128,6 +128,32 @@ function reconcileServerSpend(res) {
 }
 
 /**
+ * Importe UNE FOIS vers le compteur serveur le total estimé localement (ancien
+ * api_costs), pour qu'il apparaisse sur tous les appareils du compte. No-op si
+ * le quota serveur n'est pas actif (réessaiera tant que le flag local n'est pas
+ * posé). N'augmente que la propre dépense du compte — aucun risque d'abus.
+ */
+export async function seedServerSpend(uid, amount) {
+  if (uid == null || !(amount > 0)) return
+  try {
+    const flag = ukey(uid, 'quota_server_seeded_v1')
+    if (localStorage.getItem(flag)) return
+    const session = JSON.parse(localStorage.getItem('abu_session') || 'null')
+    if (!session?.token) return
+    const res = await fetch('/api/quota-seed', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: `Bearer ${session.token}` },
+      body: JSON.stringify({ amount }),
+    })
+    if (!res.ok) return
+    const data = await res.json().catch(() => null)
+    if (!data?.enabled) return            // KV inactif → on réessaiera plus tard
+    localStorage.setItem(flag, '1')       // seeding tenté (effectif ou déjà fait)
+    if (data.spend) setServerSpend(uid, data.spend)
+  } catch { /* no-op */ }
+}
+
+/**
  * Lit un chunk d'un flux avec garde d'inactivité : si aucun octet n'arrive
  * pendant `idleMs`, on abandonne (le timeout global ne convient pas au
  * streaming, où la recherche web peut légitimement durer).
