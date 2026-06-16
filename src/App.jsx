@@ -1,9 +1,10 @@
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { SettingsProvider } from '@/contexts/SettingsContext'
 import { getSessionUserId } from '@/utils/userStorage'
 import { lazyWithReload, installPreloadErrorReload } from '@/utils/lazyWithReload'
+import { bulkSeedToCloud } from '@/utils/cloudStore'
 
 installPreloadErrorReload()
 
@@ -68,10 +69,21 @@ function ProtectedRoute({ children }) {
   return isAuthenticated ? children : <Navigate to="/login" replace />
 }
 
+function AuthenticatedInit() {
+  const { user, isAuthenticated } = useAuth()
+  useEffect(() => {
+    if (isAuthenticated && user?.id != null) {
+      bulkSeedToCloud(user.id)
+    }
+  }, [isAuthenticated, user?.id])
+  return null
+}
+
 function AppRoutes() {
   const { isAuthenticated } = useAuth()
   return (
     <>
+      <AuthenticatedInit />
       <Routes>
         {/* Public auth routes */}
         <Route path="/login"           element={isAuthenticated ? <Navigate to="/hub" replace /> : <Login />} />
