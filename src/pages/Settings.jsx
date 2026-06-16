@@ -86,9 +86,13 @@ export default function Settings() {
       migrateToQuota(user.id, legacy)
       setSpend(getSpend(user.id))
     }
-    // Import unique vers le compteur serveur (si KV actif) : rend le total
-    // historique visible sur tous les appareils du compte.
-    seedServerSpend(user.id, legacy)
+    // Synchronise sur le compteur autoritaire du compte (et seede l'historique
+    // une fois) puis rafraîchit la jauge — affiche le même total sur tous les
+    // appareils, y compris ceux sans estimation locale.
+    ;(async () => {
+      await seedServerSpend(user.id, legacy)
+      setSpend(getSpend(user.id))
+    })()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 

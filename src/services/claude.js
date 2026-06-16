@@ -128,28 +128,31 @@ function reconcileServerSpend(res) {
 }
 
 /**
- * Importe UNE FOIS vers le compteur serveur le total estimé localement (ancien
- * api_costs), pour qu'il apparaisse sur tous les appareils du compte. No-op si
- * le quota serveur n'est pas actif (réessaiera tant que le flag local n'est pas
- * posé). N'augmente que la propre dépense du compte — aucun risque d'abus.
+ * Synchronise les jauges sur le compteur AUTORITAIRE du compte ET, une seule
+ * fois, importe le total estimé localement (ancien api_costs) pour qu'il
+ * apparaisse sur tous les appareils. Appelé à chaque ouverture des Réglages :
+ *   • tout appareil récupère et affiche le total du compte (même avec 0 local) ;
+ *   • le premier appareil non vide « seede » son historique (idempotent serveur).
+ * No-op si le quota serveur n'est pas actif. N'augmente que la propre dépense.
  */
 export async function seedServerSpend(uid, amount) {
-  if (uid == null || !(amount > 0)) return
+  if (uid == null) return
   try {
-    const flag = ukey(uid, 'quota_server_seeded_v1')
-    if (localStorage.getItem(flag)) return
     const session = JSON.parse(localStorage.getItem('abu_session') || 'null')
     if (!session?.token) return
+    const flag = ukey(uid, 'quota_server_seeded_v1')
+    // On n'envoie un montant à importer que s'il reste à seeder sur cet appareil.
+    const toSeed = !localStorage.getItem(flag) && amount > 0 ? amount : 0
     const res = await fetch('/api/quota-seed', {
       method: 'POST',
       headers: { 'content-type': 'application/json', Authorization: `Bearer ${session.token}` },
-      body: JSON.stringify({ amount }),
+      body: JSON.stringify({ amount: toSeed }),
     })
     if (!res.ok) return
     const data = await res.json().catch(() => null)
     if (!data?.enabled) return            // KV inactif → on réessaiera plus tard
-    localStorage.setItem(flag, '1')       // seeding tenté (effectif ou déjà fait)
-    if (data.spend) setServerSpend(uid, data.spend)
+    if (toSeed > 0) localStorage.setItem(flag, '1')
+    if (data.spend) setServerSpend(uid, data.spend) // affiche le total du compte
   } catch { /* no-op */ }
 }
 
