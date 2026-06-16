@@ -597,6 +597,7 @@ export default {
     settings_cost_empty: 'Aucune utilisation enregistrée pour cette session.',
     settings_cost_call: 'analyse',
     settings_cost_calls: 'analyses',
+    settings_cost_breakdown: 'Répartition par outil',
     settings_cost_disclaimer: 'Estimation locale calculée à partir des tokens retournés par l\'API. Le coût réel et le total multi-utilisateurs sont visibles sur console.anthropic.com.',
     settings_quota_month: 'Ce mois-ci',
     settings_quota_day: "Aujourd'hui",

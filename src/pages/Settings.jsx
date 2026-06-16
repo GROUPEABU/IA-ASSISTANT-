@@ -293,6 +293,7 @@ export default function Settings() {
                     <RotateCcw size={11} /> {t('settings_cost_reset')}
                   </button>
                 </div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t('settings_cost_breakdown')}</p>
                 <div className="space-y-1.5">
                   {entries.sort((a, b) => b[1].cost - a[1].cost).map(([tool, v]) => {
                     const pct = total > 0 ? (v.cost / total) * 100 : 0
@@ -301,7 +302,7 @@ export default function Settings() {
                         <div className="flex items-center justify-between mb-0.5">
                           <span className="text-xs text-slate-300">{TOOL_LABELS[tool] || tool}</span>
                           <span className="text-xs text-slate-400 tabular-nums">
-                            €{v.cost.toFixed(3)} · {v.calls} {v.calls > 1 ? t('settings_cost_calls') : t('settings_cost_call')}
+                            €{v.cost.toFixed(3)} · {v.calls} {v.calls > 1 ? t('settings_cost_calls') : t('settings_cost_call')} · {Math.round(pct)} %
                           </span>
                         </div>
                         <div className="h-1 rounded-full bg-navy-700/50">
