@@ -5,7 +5,7 @@ import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { ukey } from '@/utils/userStorage'
 import { getCosts, resetCosts } from '@/utils/apiCost'
-import { getSpend, MONTHLY_CAP, DAILY_CAP } from '@/utils/spendTracker'
+import { getSpend, MONTHLY_CAP, DAILY_CAP, migrateToQuota } from '@/utils/spendTracker'
 
 const Section = ({ icon: Icon, title, children }) => (
   <div className="glass-card overflow-hidden">
@@ -74,6 +74,19 @@ export default function Settings() {
     const id = setTimeout(() => setUsageHighlight(false), 1600)
     return () => clearTimeout(id)
   }, [location.hash])
+
+  // Migration one-shot : si des coûts historiques existent mais que les jauges
+  // mois/jour sont à 0, on injecte le total dans le quota courant.
+  useEffect(() => {
+    if (user?.id == null) return
+    const entries = Object.entries(costs).filter(([, v]) => v.cost > 0)
+    const legacy  = entries.reduce((s, [, v]) => s + v.cost, 0)
+    if (legacy > 0) {
+      migrateToQuota(user.id, legacy)
+      setSpend(getSpend(user.id))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   function applyThemeValue(v) {
     if (v === 'light') {

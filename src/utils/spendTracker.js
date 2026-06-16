@@ -43,6 +43,21 @@ export function checkLimits(uid) {
   return { ok: true }
 }
 
+/**
+ * Migration one-shot depuis l'ancien compteur `api_costs`.
+ * Si les jauges sont à 0 et qu'un total historique existe, on l'injecte
+ * dans le mois + jour courants — une seule fois grâce au flag `quota_migrated_v1`.
+ */
+export function migrateToQuota(uid, legacyTotal) {
+  if (uid == null || !(legacyTotal > 0)) return
+  try {
+    const flagKey = ukey(uid, 'quota_migrated_v1')
+    if (localStorage.getItem(flagKey)) return   // déjà fait
+    addSpend(uid, legacyTotal)
+    localStorage.setItem(flagKey, '1')
+  } catch {}
+}
+
 export function quotaErrorMessage(reason) {
   if (reason === 'monthly')
     return `Limite mensuelle de ${MONTHLY_CAP} € atteinte. Votre quota se réinitialise le 1er du mois prochain.`
