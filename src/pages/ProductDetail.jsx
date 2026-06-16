@@ -5,7 +5,6 @@ import { sendToTool } from '@/utils/toolBridge'
 import { getProduct } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
 import { getMalus, getMalusColor } from '@/utils/malus'
-import { formatNumber } from '@/utils/formatters'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import ProductSheetPrint from '@/components/products/ProductSheetPrint'
@@ -70,7 +69,7 @@ export default function ProductDetail() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Header */}
+      {/* Header — titre pleine largeur ; actions sur leur propre ligne (wrap mobile) */}
       <div className="flex items-start gap-3">
         <button onClick={() => navigate('/products')}
           aria-label={t('back') || 'Retour'}
@@ -78,34 +77,38 @@ export default function ProductDetail() {
                      border border-navy-700/50 text-slate-400 hover:text-cyan-400 hover:border-cyan-400/30 transition">
           <ArrowLeft size={16} aria-hidden="true" />
         </button>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 space-y-2.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-xl font-bold text-white">{product.fullName}</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-white leading-tight">{product.fullName}</h1>
             <Badge variant="cyan">{product.segment}</Badge>
+            {/* Lien vers le calculateur : le malus précis dépend de specs/pays,
+                on ne fige plus un montant approximatif sur la fiche. */}
             {malus > 0 && (
-              <Badge variant={malusColor === 'danger' ? 'danger' : 'warning'}>
-                {t('malus_badge_label')} +{formatNumber(malus)} €
-              </Badge>
+              <button onClick={() => setTab('malus')}
+                className="inline-flex items-center gap-1 text-xs font-medium text-amber-300
+                           hover:text-amber-200 underline underline-offset-2 transition">
+                <Gauge size={12} aria-hidden="true" /> {t('product_malus_link')}
+              </button>
             )}
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">{product.origin} · {product.year}</p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Button size="sm" variant="ghost" onClick={toCompare} title={t('product_compare_btn')}>
-            <Ruler size={14} /> <span className="hidden sm:inline">{t('product_compare_btn')}</span>
-          </Button>
-          <Button size="sm" variant="ghost" onClick={toTco} title={t('product_tco_btn')}>
-            <Calculator size={14} /> <span className="hidden sm:inline">{t('product_tco_btn')}</span>
-          </Button>
-          <Button size="sm" variant="ghost" onClick={toPitch} title={t('bridge_pitch')}>
-            <Mic size={14} /> <span className="hidden sm:inline">{t('bridge_pitch')}</span>
-          </Button>
-          <Button size="sm" variant="ghost" onClick={toObjections} title={t('bridge_objections')}>
-            <ShieldCheck size={14} /> <span className="hidden sm:inline">{t('bridge_objections')}</span>
-          </Button>
-          <Button size="sm" onClick={handlePDF}>
-            <Download size={14} /> PDF
-          </Button>
+          <p className="text-xs text-slate-500">{product.origin} · {product.year}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="ghost" onClick={toCompare} title={t('product_compare_btn')}>
+              <Ruler size={14} /> <span className="hidden sm:inline">{t('product_compare_btn')}</span>
+            </Button>
+            <Button size="sm" variant="ghost" onClick={toTco} title={t('product_tco_btn')}>
+              <Calculator size={14} /> <span className="hidden sm:inline">{t('product_tco_btn')}</span>
+            </Button>
+            <Button size="sm" variant="ghost" onClick={toPitch} title={t('bridge_pitch')}>
+              <Mic size={14} /> <span className="hidden sm:inline">{t('bridge_pitch')}</span>
+            </Button>
+            <Button size="sm" variant="ghost" onClick={toObjections} title={t('bridge_objections')}>
+              <ShieldCheck size={14} /> <span className="hidden sm:inline">{t('bridge_objections')}</span>
+            </Button>
+            <Button size="sm" onClick={handlePDF}>
+              <Download size={14} /> PDF
+            </Button>
+          </div>
         </div>
       </div>
 

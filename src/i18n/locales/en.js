@@ -892,8 +892,8 @@ export default {
   // Copy report (WhatsApp / email sharing)
   copy_btn: 'Copy',
   copy_done: 'Summary copied — ready to paste (WhatsApp, email…)',
-  email_btn: 'Email',
-  email_opened: 'Email draft opened',
+  data_raw_btn: 'Raw data',
+  data_raw_done: 'Raw data copied',
   // History — pinning & search
   history_pin: 'Pin',
   history_unpin: 'Unpin',
@@ -939,6 +939,7 @@ export default {
   stock_pw_btn: 'Price Watch',
   product_compare_btn: 'Compare size',
   product_tco_btn: 'Compute TCO',
+  product_malus_link: 'View duty',
   // Command palette (Ctrl+K)
   palette_ph: 'Go to a tool…',
   palette_empty: 'No tool found',

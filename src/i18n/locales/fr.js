@@ -920,8 +920,8 @@ export default {
   // Copier le rapport (partage WhatsApp / e-mail)
   copy_btn: 'Copier',
   copy_done: 'Résumé copié — prêt à coller (WhatsApp, e-mail…)',
-  email_btn: 'Email',
-  email_opened: 'Brouillon d\'email ouvert',
+  data_raw_btn: 'Données brutes',
+  data_raw_done: 'Données brutes copiées',
   // Historique — épinglage & recherche
   history_pin: 'Épingler',
   history_unpin: 'Désépingler',
@@ -967,6 +967,7 @@ export default {
   stock_pw_btn: 'Veille Prix',
   product_compare_btn: 'Comparer le gabarit',
   product_tco_btn: 'Calculer le TCO',
+  product_malus_link: 'Voir le malus',
   // Palette de commandes (Ctrl+K)
   palette_ph: 'Aller à un outil…',
   palette_empty: 'Aucun outil trouvé',

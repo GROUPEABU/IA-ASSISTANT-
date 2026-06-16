@@ -33,38 +33,12 @@ export function mdToPlainText(md) {
   return s
 }
 
-// Au-delà de cette longueur, le corps du mailto: peut être tronqué par
-// certains clients/navigateurs — on bascule alors sur le presse-papiers.
-const MAILTO_BODY_LIMIT = 1500
-
-/**
- * Ouvre le client mail de l'utilisateur avec le rapport en texte brut.
- * Si le rapport est trop long pour un mailto:, on tronque le corps et on
- * copie la version complète dans le presse-papiers (100% client-side).
- * @returns {Promise<{ truncated: boolean }>}
- */
-export async function shareReportByEmail(md, subject = 'Autobuyunion') {
-  const text = mdToPlainText(md)
-  let body = text
-  let truncated = false
-  if (body.length > MAILTO_BODY_LIMIT) {
-    truncated = true
-    try { await navigator.clipboard.writeText(text) } catch { /* presse-papiers indisponible */ }
-    body = body.slice(0, MAILTO_BODY_LIMIT).trimEnd() +
-      '\n\n[…] — version complète copiée dans le presse-papiers, collez-la ci-dessous.'
-  }
-  const href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-  try { window.location.href = href } catch { /* SSR/no-op */ }
-  return { truncated }
-}
-
-/** Copie le rapport en texte brut dans le presse-papiers (avec repli legacy). */
-export async function copyReportText(md) {
-  const text = mdToPlainText(md)
+/** Écrit `text` dans le presse-papiers, avec repli pour contextes sans Clipboard API. */
+async function writeClipboard(text) {
   try {
     await navigator.clipboard.writeText(text)
   } catch {
-    // Repli pour contextes sans Clipboard API (HTTP, vieux navigateurs).
+    // Repli (HTTP, vieux navigateurs).
     const ta = document.createElement('textarea')
     ta.value = text
     ta.style.position = 'fixed'
@@ -74,5 +48,18 @@ export async function copyReportText(md) {
     document.execCommand('copy')
     ta.remove()
   }
+}
+
+/** Copie le rapport en texte brut LISIBLE (titres, puces, tableaux aplatis). */
+export async function copyReportText(md) {
+  const text = mdToPlainText(md)
+  await writeClipboard(text)
+  return text
+}
+
+/** Copie les DONNÉES BRUTES (rapport tel quel, Markdown non transformé). */
+export async function copyRawText(md) {
+  const text = String(md || '')
+  await writeClipboard(text)
   return text
 }
