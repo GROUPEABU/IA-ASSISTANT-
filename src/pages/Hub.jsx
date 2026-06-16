@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck, Calculator, Mic, Globe, Zap, TrendingUp, Ruler, Boxes, Truck, History, Pin, RefreshCw } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 import { sendToTool } from '@/utils/toolBridge'
 import { ukey, getSessionUserId } from '@/utils/userStorage'
+import { cloudGet, cloudPut } from '@/utils/cloudStore'
 
 const colorMap = {
   cyan:    { bg: 'bg-cyan-400/10',    border: 'border-cyan-400/20',    icon: 'text-cyan-400',    badge: 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20',       hoverBorder: '#50E5E5' },
@@ -18,8 +19,12 @@ const colorMap = {
 }
 
 // Lecture directe des historiques par outil (mêmes clés que useHistory).
+// Filtre les tombstones (marqueurs de suppression) pour ne montrer que le vivant.
 function readHist(ns) {
-  try { return JSON.parse(localStorage.getItem(ukey(getSessionUserId(), `history_${ns}`)) || '[]') } catch { return [] }
+  try {
+    const arr = JSON.parse(localStorage.getItem(ukey(getSessionUserId(), `history_${ns}`)) || '[]')
+    return Array.isArray(arr) ? arr.filter((i) => i && !i._tombstone) : []
+  } catch { return [] }
 }
 
 const ACTIVITY_SOURCES = [
@@ -29,11 +34,46 @@ const ACTIVITY_SOURCES = [
   { ns: 'pitch',        route: '/pitch',          icon: Mic,         titleKey: 'tool_pitch_title',      label: (i) => i.generatedFor },
 ]
 
+// Fusion union par id, tombstone prioritaire (cohérent avec useHistory).
+function mergeHist(local, remote) {
+  const map = new Map()
+  for (const it of [...remote, ...local]) {
+    if (!it || it.id == null) continue
+    const ex = map.get(it.id)
+    if (!ex) { map.set(it.id, it); continue }
+    if (it._tombstone && !ex._tombstone) { map.set(it.id, it); continue }
+    if (!it._tombstone && ex._tombstone) continue
+    if (it._tombstone) { if ((it.deletedAt || 0) >= (ex.deletedAt || 0)) map.set(it.id, it) }
+    else map.set(it.id, { ...ex, ...it, pinned: ex.pinned || it.pinned })
+  }
+  return [...map.values()]
+}
+
 export default function Hub() {
   const navigate = useNavigate()
   const { t } = useSettings()
 
-  // Activité récente tous outils + veilles épinglées (lues une fois par rendu).
+  // Récupère les historiques du compte (serveur) au montage, fusionne dans le
+  // localStorage et force un recalcul → l'activité récente apparaît sur tous les
+  // appareils, sans avoir à ouvrir chaque outil.
+  const [synced, setSynced] = useState(0)
+  useEffect(() => {
+    let alive = true
+    const uid = getSessionUserId()
+    Promise.all(ACTIVITY_SOURCES.map(async ({ ns }) => {
+      const remote = await cloudGet(`history_${ns}`)
+      if (remote === undefined || !Array.isArray(remote)) return false
+      let local = []
+      try { local = JSON.parse(localStorage.getItem(ukey(uid, `history_${ns}`)) || '[]') } catch {}
+      const merged = mergeHist(Array.isArray(local) ? local : [], remote)
+      try { localStorage.setItem(ukey(uid, `history_${ns}`), JSON.stringify(merged)) } catch {}
+      cloudPut(`history_${ns}`, merged)
+      return true
+    })).then((res) => { if (alive && res.some(Boolean)) setSynced((n) => n + 1) })
+    return () => { alive = false }
+  }, [])
+
+  // Activité récente tous outils + veilles épinglées.
   const { recent, pinnedWatches, lastWatch } = useMemo(() => {
     const all = ACTIVITY_SOURCES.flatMap((src) =>
       readHist(src.ns).map((item) => ({ src, item }))
@@ -45,7 +85,7 @@ export default function Hub() {
       pinnedWatches: pw.filter((i) => i.pinned && i.filters).slice(0, 6),
       lastWatch: pw.find((i) => i.filters) || null,
     }
-  }, [])
+  }, [synced])
 
   const tools = [
     { to: '/products',   icon: BookOpen,      color: 'cyan',   titleKey: 'tool_products_title',  descKey: 'tool_products_desc',   badgeKey: 'hub_badge_ai_reports' },
