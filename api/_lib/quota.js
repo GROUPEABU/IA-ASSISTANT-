@@ -33,6 +33,22 @@ export function quotaEnabled() {
   return Boolean(REST_URL && REST_TOKEN)
 }
 
+/**
+ * Contrôle de santé : ping réel du KV pour confirmer URL + token valides.
+ * N'expose aucun secret. @returns {Promise<{ ok: boolean, reason: string }>}
+ */
+export async function pingKV() {
+  if (!quotaEnabled()) return { ok: false, reason: 'not_configured' }
+  try {
+    const out = await pipeline([['PING']])
+    return out?.[0]?.result === 'PONG'
+      ? { ok: true, reason: 'connected' }
+      : { ok: false, reason: 'unexpected_response' }
+  } catch {
+    return { ok: false, reason: 'unreachable_or_bad_token' }
+  }
+}
+
 // Clés UTC (mêmes découpages que le client : toISOString slice).
 function monthKey(uid) { return `abuq:${uid}:m:${new Date().toISOString().slice(0, 7)}` }
 function dayKey(uid)   { return `abuq:${uid}:d:${new Date().toISOString().slice(0, 10)}` }
