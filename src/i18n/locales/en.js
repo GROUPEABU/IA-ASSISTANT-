@@ -892,6 +892,8 @@ export default {
   // Copy report (WhatsApp / email sharing)
   copy_btn: 'Copy',
   copy_done: 'Summary copied — ready to paste (WhatsApp, email…)',
+  email_btn: 'Email',
+  email_opened: 'Email draft opened',
   // History — pinning & search
   history_pin: 'Pin',
   history_unpin: 'Unpin',

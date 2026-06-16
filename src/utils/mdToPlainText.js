@@ -33,6 +33,31 @@ export function mdToPlainText(md) {
   return s
 }
 
+// Au-delà de cette longueur, le corps du mailto: peut être tronqué par
+// certains clients/navigateurs — on bascule alors sur le presse-papiers.
+const MAILTO_BODY_LIMIT = 1500
+
+/**
+ * Ouvre le client mail de l'utilisateur avec le rapport en texte brut.
+ * Si le rapport est trop long pour un mailto:, on tronque le corps et on
+ * copie la version complète dans le presse-papiers (100% client-side).
+ * @returns {Promise<{ truncated: boolean }>}
+ */
+export async function shareReportByEmail(md, subject = 'Autobuyunion') {
+  const text = mdToPlainText(md)
+  let body = text
+  let truncated = false
+  if (body.length > MAILTO_BODY_LIMIT) {
+    truncated = true
+    try { await navigator.clipboard.writeText(text) } catch { /* presse-papiers indisponible */ }
+    body = body.slice(0, MAILTO_BODY_LIMIT).trimEnd() +
+      '\n\n[…] — version complète copiée dans le presse-papiers, collez-la ci-dessous.'
+  }
+  const href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  try { window.location.href = href } catch { /* SSR/no-op */ }
+  return { truncated }
+}
+
 /** Copie le rapport en texte brut dans le presse-papiers (avec repli legacy). */
 export async function copyReportText(md) {
   const text = mdToPlainText(md)

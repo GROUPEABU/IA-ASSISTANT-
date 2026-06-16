@@ -8,7 +8,8 @@ import {
 import { sendMessage } from '@/services/claude'
 import { buildPrompt } from '@/services/veillePrixPrompt'
 import { extractVehiclesSmart } from '@/services/smartImport'
-import { MILEAGE_MIN_VALUES, MILEAGE_MAX_VALUES } from '@/data/vehicleFilters'
+import { MILEAGE_MIN_VALUES, MILEAGE_MAX_VALUES, MAKES_AS24 as MAKES, YEARS } from '@/data/vehicleFilters'
+import { fmtEur, fmtRange } from '@/utils/formatters'
 import { COUNTRIES } from '@/data/marketCountries'
 import { sendToTool, takeBridgePayload } from '@/utils/toolBridge'
 import { extractReportFigures } from '@/utils/reportFigures'
@@ -42,29 +43,7 @@ function readBatchStore() {
 }
 
 // ── Données filtres ────────────────────────────────────────────────────────────
-const MAKES = [
-  { label: 'Abarth', code: 'ABARTH' }, { label: 'Alfa Romeo', code: 'ALFA ROMEO' },
-  { label: 'Audi', code: 'AUDI' }, { label: 'BMW', code: 'BMW' },
-  { label: 'Citroën', code: 'CITROEN' }, { label: 'Cupra', code: 'CUPRA' },
-  { label: 'Dacia', code: 'DACIA' }, { label: 'DS Automobiles', code: 'DS' },
-  { label: 'Fiat', code: 'FIAT' }, { label: 'Ford', code: 'FORD' },
-  { label: 'Honda', code: 'HONDA' }, { label: 'Hyundai', code: 'HYUNDAI' },
-  { label: 'Jaecoo', code: 'JAECOO' }, { label: 'Jaguar', code: 'JAGUAR' },
-  { label: 'Jeep', code: 'JEEP' }, { label: 'Kia', code: 'KIA' },
-  { label: 'Land Rover', code: 'LAND ROVER' }, { label: 'Lexus', code: 'LEXUS' },
-  { label: 'Mazda', code: 'MAZDA' }, { label: 'Mercedes', code: 'MERCEDES' },
-  { label: 'MINI', code: 'MINI' }, { label: 'Mitsubishi', code: 'MITSUBISHI' },
-  { label: 'Nissan', code: 'NISSAN' }, { label: 'Omoda', code: 'OMODA' },
-  { label: 'Opel', code: 'OPEL' }, { label: 'Peugeot', code: 'PEUGEOT' },
-  { label: 'Porsche', code: 'PORSCHE' }, { label: 'Renault', code: 'RENAULT' },
-  { label: 'SEAT', code: 'SEAT' }, { label: 'Skoda', code: 'SKODA' },
-  { label: 'Smart', code: 'SMART' }, { label: 'Suzuki', code: 'SUZUKI' },
-  { label: 'Tesla', code: 'TESLA' }, { label: 'Toyota', code: 'TOYOTA' },
-  { label: 'Volkswagen', code: 'VOLKSWAGEN' }, { label: 'Volvo', code: 'VOLVO' },
-]
-
-const YEARS = Array.from({ length: 27 }, (_, i) => 2026 - i)
-
+// MAKES (forme { label, code } AS24) et YEARS : voir @/data/vehicleFilters.
 // COUNTRIES : voir @/data/marketCountries (partagé avec MarketAnalysis)
 const AS24_FUEL = { ES: '1', GO: '2', GP: '3', EL: '6', HY: '8', GH: '10' }
 function buildAs24Url(ctry, filters) {
@@ -203,8 +182,7 @@ function ScoreBadge({ score, t }) {
 }
 
 // ── Évolution prix entre deux analyses du même véhicule ──────────────────────
-const fmtEur = (n) => `${Number(n).toLocaleString('fr-FR')} €`
-const fmtRange = (min, max) => (min === max || max == null ? fmtEur(min) : `${fmtEur(min)} – ${fmtEur(max)}`)
+// fmtEur / fmtRange : voir @/utils/formatters (partagés avec l'Analyse de stock).
 
 function EvolutionCard({ evolution, t }) {
   const { prevAt, prev, cur, prevMargin, curMargin } = evolution

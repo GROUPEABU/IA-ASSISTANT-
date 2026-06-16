@@ -15,6 +15,29 @@ export const MAKES = [
 
 export const YEARS = Array.from({ length: 27 }, (_, i) => 2026 - i)
 
+// Marques avec leur code AS24 (forme { label, code }), utilisé par la Veille
+// Prix pour construire les URL marché. Même liste de marques que MAKES.
+export const MAKES_AS24 = [
+  { label: 'Abarth', code: 'ABARTH' }, { label: 'Alfa Romeo', code: 'ALFA ROMEO' },
+  { label: 'Audi', code: 'AUDI' }, { label: 'BMW', code: 'BMW' },
+  { label: 'Citroën', code: 'CITROEN' }, { label: 'Cupra', code: 'CUPRA' },
+  { label: 'Dacia', code: 'DACIA' }, { label: 'DS Automobiles', code: 'DS' },
+  { label: 'Fiat', code: 'FIAT' }, { label: 'Ford', code: 'FORD' },
+  { label: 'Honda', code: 'HONDA' }, { label: 'Hyundai', code: 'HYUNDAI' },
+  { label: 'Jaecoo', code: 'JAECOO' }, { label: 'Jaguar', code: 'JAGUAR' },
+  { label: 'Jeep', code: 'JEEP' }, { label: 'Kia', code: 'KIA' },
+  { label: 'Land Rover', code: 'LAND ROVER' }, { label: 'Lexus', code: 'LEXUS' },
+  { label: 'Mazda', code: 'MAZDA' }, { label: 'Mercedes', code: 'MERCEDES' },
+  { label: 'MINI', code: 'MINI' }, { label: 'Mitsubishi', code: 'MITSUBISHI' },
+  { label: 'Nissan', code: 'NISSAN' }, { label: 'Omoda', code: 'OMODA' },
+  { label: 'Opel', code: 'OPEL' }, { label: 'Peugeot', code: 'PEUGEOT' },
+  { label: 'Porsche', code: 'PORSCHE' }, { label: 'Renault', code: 'RENAULT' },
+  { label: 'SEAT', code: 'SEAT' }, { label: 'Skoda', code: 'SKODA' },
+  { label: 'Smart', code: 'SMART' }, { label: 'Suzuki', code: 'SUZUKI' },
+  { label: 'Tesla', code: 'TESLA' }, { label: 'Toyota', code: 'TOYOTA' },
+  { label: 'Volkswagen', code: 'VOLKSWAGEN' }, { label: 'Volvo', code: 'VOLVO' },
+]
+
 export const MILEAGE_MIN_VALUES = [500, 5000, 10000, 20000, 30000, 50000]
 export const MILEAGE_MAX_VALUES = [10000, 20000, 30000, 50000, 80000, 100000, 150000, 200000]
 

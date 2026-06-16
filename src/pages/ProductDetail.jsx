@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Download, FileText, TrendingUp, Gauge, Users, Ruler, Calculator } from 'lucide-react'
+import { ArrowLeft, Download, FileText, TrendingUp, Gauge, Users, Ruler, Calculator, Mic, ShieldCheck } from 'lucide-react'
 import { sendToTool } from '@/utils/toolBridge'
 import { getProduct } from '@/services/products'
 import { useGeneratedProducts } from '@/hooks/useGeneratedProducts'
@@ -56,6 +56,10 @@ export default function ProductDetail() {
   const toTco = () => sendToTool(navigate, '/tco', {
     name: product.fullName, price: product.prix?.base,
   })
+  // La fiche connaît son id catalogue → Pitch / Objections récupèrent tout le
+  // contexte produit (prix, specs, atouts, objections) via le sélecteur véhicule.
+  const toPitch = () => sendToTool(navigate, '/pitch', { vehicleId: product.id })
+  const toObjections = () => sendToTool(navigate, '/objections', { vehicleId: product.id })
 
   const handlePDF = async () => {
     await exportToPdf(printRef, pdfFileName(product.fullName, t('page_products_title')), {
@@ -92,6 +96,12 @@ export default function ProductDetail() {
           </Button>
           <Button size="sm" variant="ghost" onClick={toTco} title={t('product_tco_btn')}>
             <Calculator size={14} /> <span className="hidden sm:inline">{t('product_tco_btn')}</span>
+          </Button>
+          <Button size="sm" variant="ghost" onClick={toPitch} title={t('bridge_pitch')}>
+            <Mic size={14} /> <span className="hidden sm:inline">{t('bridge_pitch')}</span>
+          </Button>
+          <Button size="sm" variant="ghost" onClick={toObjections} title={t('bridge_objections')}>
+            <ShieldCheck size={14} /> <span className="hidden sm:inline">{t('bridge_objections')}</span>
           </Button>
           <Button size="sm" onClick={handlePDF}>
             <Download size={14} /> PDF

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { computeSecurityStatus, recordFailureState } from '@/utils/loginSecurity'
 
 // ── Authentification serveur ──────────────────────────────────────────────────
 // La vérification du mot de passe se fait dans la fonction Edge /api/login :
@@ -9,11 +10,8 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 const SESSION_KEY  = 'abu_session'
 const SECURITY_KEY = 'abu_login_security'
 
-// ── Throttle UX côté client (en plus du rate limit serveur) ──────────────────
-const MAX_ATTEMPTS  = 5
-const WINDOW_MS     = 15 * 60 * 1000   // rolling window for counting failures
-const LOCKOUT_SHORT = 15 * 60 * 1000   // ≥5 failures  → 15 min lockout
-const LOCKOUT_LONG  = 60 * 60 * 1000   // ≥10 failures → 1 h  lockout
+// Le throttle UX (fenêtre, seuils, durées de blocage) vit dans
+// src/utils/loginSecurity.js — logique pure et testable.
 
 function readSecurity() {
   try { return JSON.parse(localStorage.getItem(SECURITY_KEY) || '{}') } catch { return {} }
@@ -62,24 +60,10 @@ export function AuthProvider({ children }) {
   }, [])
 
   // ── Security status (called on every Login render) ───────────────────────
-  const getSecurityStatus = useCallback(() => {
-    const { attempts = [], blocked_until = 0 } = readSecurity()
-    const now    = Date.now()
-    const recent = attempts.filter(t => now - t < WINDOW_MS)
-    const isBlocked    = now < blocked_until
-    const remainingMs  = isBlocked ? blocked_until - now : 0
-    const attemptsLeft = Math.max(0, MAX_ATTEMPTS - recent.length)
-    return { isBlocked, remainingMs, failCount: recent.length, attemptsLeft }
-  }, [])
+  const getSecurityStatus = useCallback(() => computeSecurityStatus(readSecurity()), [])
 
   const recordFailure = useCallback(() => {
-    const { attempts = [] } = readSecurity()
-    const now    = Date.now()
-    const recent = [...attempts.filter(t => now - t < WINDOW_MS), now]
-    const blocked_until =
-      recent.length >= 10 ? now + LOCKOUT_LONG  :
-      recent.length >= MAX_ATTEMPTS ? now + LOCKOUT_SHORT : 0
-    localStorage.setItem(SECURITY_KEY, JSON.stringify({ attempts: recent, blocked_until }))
+    localStorage.setItem(SECURITY_KEY, JSON.stringify(recordFailureState(readSecurity())))
   }, [])
 
   const clearSecurity = useCallback(() => {

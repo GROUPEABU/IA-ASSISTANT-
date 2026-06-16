@@ -24,3 +24,20 @@ export const formatCurrency = (n) =>
 /** @param {string|number|Date} d @returns {string} e.g. "12 mars 2025" */
 export const formatDate = (d) =>
   new Intl.DateTimeFormat(FR_LOCALE, { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(d))
+
+/**
+ * Euro « espace simple » utilisé par la Veille Prix et l'Analyse de stock —
+ * sortie en chiffres groupés + « € » (ex. "12 345 €"). Distinct de
+ * formatCurrency (style Intl currency) pour préserver l'affichage existant.
+ * Valeur absente → "0 €".
+ * @param {number} n @returns {string}
+ */
+export const fmtEur = (n) => `${(Number(n) || 0).toLocaleString(FR_LOCALE)} €`
+
+/**
+ * Fourchette de prix : "12 345 €" si min == max (ou max absent), sinon
+ * "12 345 € – 15 000 €".
+ * @param {number} min @param {number} [max] @returns {string}
+ */
+export const fmtRange = (min, max) =>
+  (min === max || max == null ? fmtEur(min) : `${fmtEur(min)} – ${fmtEur(max)}`)

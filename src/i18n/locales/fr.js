@@ -920,6 +920,8 @@ export default {
   // Copier le rapport (partage WhatsApp / e-mail)
   copy_btn: 'Copier',
   copy_done: 'Résumé copié — prêt à coller (WhatsApp, e-mail…)',
+  email_btn: 'Email',
+  email_opened: 'Brouillon d\'email ouvert',
   // Historique — épinglage & recherche
   history_pin: 'Épingler',
   history_unpin: 'Désépingler',

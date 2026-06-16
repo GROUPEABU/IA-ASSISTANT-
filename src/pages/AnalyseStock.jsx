@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Boxes, Link2, Upload, Search, RefreshCw, RotateCcw, Download, Copy, Bell, ChevronDown, FileText } from 'lucide-react'
+import { Boxes, Link2, Upload, Search, RefreshCw, RotateCcw, Download, Copy, Mail, Bell, ChevronDown, FileText } from 'lucide-react'
 import { analyzeStock, scrapeStockWithSearch } from '@/services/stockAnalysis'
 import { computeStockStats } from '@/utils/stockStats'
 import { extractVehiclesSmart, toStockVehicles } from '@/services/smartImport'
 import { sendToTool, takeBridgePayload } from '@/utils/toolBridge'
-import { copyReportText } from '@/utils/mdToPlainText'
+import { copyReportText, shareReportByEmail } from '@/utils/mdToPlainText'
+import { fmtEur } from '@/utils/formatters'
 import { downloadCsv } from '@/utils/exportCsv'
 import { MILEAGE_MIN_VALUES, MILEAGE_MAX_VALUES } from '@/data/vehicleFilters'
 import Spinner from '@/components/ui/Spinner'
@@ -63,7 +64,7 @@ function vehicleToPwFilters(v) {
 function VehiclesList({ vehicles, t, onPriceWatch }) {
   const [open, setOpen] = useState(false)
   if (!vehicles?.length) return null
-  const eur = (n) => (Number(n) || 0).toLocaleString('fr-FR') + ' €'
+  const eur = fmtEur
   return (
     <div className="glass-card overflow-hidden">
       <button
@@ -251,12 +252,17 @@ export default function AnalyseStock() {
     toast(t('copy_done'), 'success')
   }
 
+  const handleEmail = async () => {
+    await shareReportByEmail(report, t('tool_stock_title'))
+    toast(t('email_opened'), 'success')
+  }
+
   // Pont sortant : un véhicule du stock → Veille Prix pré-remplie et lancée.
   const toPriceWatch = (v) => sendToTool(navigate, '/price-watch', { filters: vehicleToPwFilters(v) })
 
   const retry = () => (mode === 'url' ? analyzeFromUrl() : fileRef.current?.click())
 
-  const eur = (n) => (Number(n) || 0).toLocaleString('fr-FR') + ' €'
+  const eur = fmtEur
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -368,6 +374,10 @@ export default function AnalyseStock() {
                 <button onClick={handleCopy}
                   className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50 px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition">
                   <Copy size={12} /> {t('copy_btn')}
+                </button>
+                <button onClick={handleEmail}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50 px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition">
+                  <Mail size={12} /> {t('email_btn')}
                 </button>
                 <button onClick={handlePdf} disabled={exporting}
                   className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50 px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition">

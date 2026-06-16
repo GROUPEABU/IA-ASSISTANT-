@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { ShieldCheck, RefreshCw, RotateCcw, Download, Copy } from 'lucide-react'
+import { ShieldCheck, RefreshCw, RotateCcw, Download, Copy, Mail } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { takeBridgePayload } from '@/utils/toolBridge'
-import { copyReportText } from '@/utils/mdToPlainText'
+import { copyReportText, shareReportByEmail } from '@/utils/mdToPlainText'
 import Spinner from '@/components/ui/Spinner'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
@@ -47,6 +47,7 @@ export default function Objections() {
     const p = takeBridgePayload('/objections')
     if (!p) return
     if (p.details) setDetails((d) => ({ ...d, ...p.details }))
+    if (p.vehicleId) setVehicleId(p.vehicleId)
     if (p.restoreId != null) {
       const item = history.find((h) => (h.id ?? h.savedAt) === p.restoreId)
       if (item) restore(item)
@@ -110,6 +111,11 @@ ${productContext || ''}`
   const handleCopy = async () => {
     await copyReportText(report)
     toast(t('copy_done'), 'success')
+  }
+
+  const handleEmail = async () => {
+    await shareReportByEmail(report, `${vehicleName} — ${t('page_objections_title')}`)
+    toast(t('email_opened'), 'success')
   }
 
   const reset = () => { setReport(''); setVehicleId(''); setDetails(EMPTY_DETAILS); setGeneratedFor('') }
@@ -188,6 +194,13 @@ ${productContext || ''}`
                              px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition"
                 >
                   <Copy size={12} /> {t('copy_btn')}
+                </button>
+                <button
+                  onClick={handleEmail}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                             px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition"
+                >
+                  <Mail size={12} /> {t('email_btn')}
                 </button>
                 <button
                   onClick={handlePdf}
