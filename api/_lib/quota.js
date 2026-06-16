@@ -182,3 +182,27 @@ export function meterStream(body, uid, model) {
     cancel(reason) { try { reader.cancel(reason) } catch { /* no-op */ } },
   })
 }
+
+// ── Stockage de données par compte (historiques, fiches générées) ─────────────
+// Mêmes identifiants KV que le quota. Scopé par compte (session.id) → partagé
+// entre tous les appareils. Clés : abudata:{uid}:{key}.
+const DATA_TTL_S = 365 * 24 * 60 * 60 // 1 an, rafraîchi à chaque écriture
+
+/** Lit une valeur JSON du compte. @returns {Promise<any|null>} */
+export async function storeGet(uid, key) {
+  if (!quotaEnabled() || uid == null) return null
+  try {
+    const out = await pipeline([['GET', `abudata:${uid}:${key}`]])
+    const raw = out?.[0]?.result
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
+/** Écrit une valeur JSON (chaîne déjà sérialisée) du compte. @returns {Promise<boolean>} */
+export async function storePut(uid, key, valueStr) {
+  if (!quotaEnabled() || uid == null) return false
+  try {
+    await pipeline([['SET', `abudata:${uid}:${key}`, valueStr, 'EX', String(DATA_TTL_S)]])
+    return true
+  } catch { return false }
+}
