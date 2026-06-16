@@ -16,6 +16,7 @@
 export const config = { runtime: 'edge' }
 
 import { getAuthSecret, verifyToken, clientIp, rateLimit } from './_lib/auth.js'
+import { quotaEnabled, readSpend, meterStream } from './_lib/quota.js'
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const API_VERSION   = '2023-06-01'
@@ -766,16 +767,31 @@ export default async function handler(req) {
     return json({ error: { message: 'Trop de requêtes. Patientez une minute puis réessayez.' } }, 429)
   }
 
-  // Quota de dépense mensuel/quotidien (signalé par le client, best-effort).
-  // Ignoré si l'utilisateur utilise sa propre clé API.
+  // Quota de dépense mensuel/quotidien — ignoré si l'utilisateur utilise sa
+  // propre clé API. Deux modes :
+  //   • KV configuré → compteur AUTORITAIRE attaché au compte (session.id),
+  //     partagé entre appareils, incontournable.
+  //   • sinon → repli déclaratif historique (en-têtes signalés par le client).
+  // serverSpend (pré-appel) est renvoyé au client pour synchroniser ses jauges.
+  let serverSpend = null
   if (!req.headers.get('x-user-api-key')) {
-    const mSpend = parseFloat(req.headers.get('x-user-spend-month') || '0')
-    const dSpend = parseFloat(req.headers.get('x-user-spend-day')   || '0')
-    if (mSpend >= SPEND_MONTHLY_CAP) {
-      return json({ error: { message: `Limite mensuelle de ${SPEND_MONTHLY_CAP} € atteinte. Votre quota se réinitialise le 1er du mois prochain.` } }, 429)
-    }
-    if (dSpend >= SPEND_DAILY_CAP) {
-      return json({ error: { message: `Limite quotidienne de ${SPEND_DAILY_CAP} € atteinte. Votre quota se réinitialise à minuit.` } }, 429)
+    if (quotaEnabled()) {
+      serverSpend = await readSpend(session.id)
+      if (serverSpend.month >= SPEND_MONTHLY_CAP) {
+        return json({ error: { message: `Limite mensuelle de ${SPEND_MONTHLY_CAP} € atteinte. Votre quota se réinitialise le 1er du mois prochain.` } }, 429)
+      }
+      if (serverSpend.day >= SPEND_DAILY_CAP) {
+        return json({ error: { message: `Limite quotidienne de ${SPEND_DAILY_CAP} € atteinte. Votre quota se réinitialise à minuit.` } }, 429)
+      }
+    } else {
+      const mSpend = parseFloat(req.headers.get('x-user-spend-month') || '0')
+      const dSpend = parseFloat(req.headers.get('x-user-spend-day')   || '0')
+      if (mSpend >= SPEND_MONTHLY_CAP) {
+        return json({ error: { message: `Limite mensuelle de ${SPEND_MONTHLY_CAP} € atteinte. Votre quota se réinitialise le 1er du mois prochain.` } }, 429)
+      }
+      if (dSpend >= SPEND_DAILY_CAP) {
+        return json({ error: { message: `Limite quotidienne de ${SPEND_DAILY_CAP} € atteinte. Votre quota se réinitialise à minuit.` } }, 429)
+      }
     }
   }
 
@@ -900,11 +916,23 @@ export default async function handler(req) {
     return json({ error: { message: `Proxy: échec de connexion à l'API (${err.message}).` } }, 502)
   }
 
-  return new Response(upstream.body, {
-    status: upstream.status,
-    headers: {
-      'Content-Type': upstream.headers.get('content-type') || 'application/json',
-      'Cache-Control': 'no-store',
-    },
-  })
+  const respHeaders = {
+    'Content-Type': upstream.headers.get('content-type') || 'application/json',
+    'Cache-Control': 'no-store',
+  }
+  // Synchronise les jauges du client sur le compteur autoritaire (pré-appel).
+  if (serverSpend) {
+    respHeaders['x-spend-month'] = String(serverSpend.month)
+    respHeaders['x-spend-day']   = String(serverSpend.day)
+  }
+
+  // Mesure serveur de l'usage réel → incrément du quota du compte. Activée
+  // seulement si KV configuré, appel facturé (pas de clé perso) et flux présent.
+  const meter =
+    quotaEnabled() && !req.headers.get('x-user-api-key') && upstream.ok && upstream.body
+  const responseBody = meter
+    ? meterStream(upstream.body, session.id, parsed.model)
+    : upstream.body
+
+  return new Response(responseBody, { status: upstream.status, headers: respHeaders })
 }

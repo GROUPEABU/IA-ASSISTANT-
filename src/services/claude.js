@@ -98,6 +98,7 @@ async function fetchResilient(url, options, { timeoutMs = REQUEST_TIMEOUT_MS, re
       throw lastErr
     }
     clearTimeout(timer)
+    reconcileServerSpend(res)
     if (res.ok) return res
     if (RETRYABLE_STATUS.has(res.status) && attempt < retries) {
       lastErr = await httpError(res)
@@ -107,6 +108,23 @@ async function fetchResilient(url, options, { timeoutMs = REQUEST_TIMEOUT_MS, re
     throw await httpError(res)
   }
   throw lastErr ?? new Error('Le service IA est indisponible. Réessayez dans un instant.')
+}
+
+/**
+ * Synchronise les jauges locales sur le compteur autoritaire renvoyé par le
+ * proxy (en-têtes x-spend-month / x-spend-day) quand le quota serveur est actif.
+ * Sans ces en-têtes (KV non configuré) : sans effet.
+ */
+function reconcileServerSpend(res) {
+  try {
+    const m = res.headers.get('x-spend-month')
+    const d = res.headers.get('x-spend-day')
+    if (m == null && d == null) return
+    setServerSpend(getSessionUserId(), {
+      month: parseFloat(m || '0') || 0,
+      day:   parseFloat(d || '0') || 0,
+    })
+  } catch { /* no-op */ }
 }
 
 /**
@@ -163,7 +181,7 @@ import { auditResponse } from './antiBullshit'
 // Suivi coût API par outil (estimation locale, aucun envoi externe).
 import { trackCost, computeCost } from '@/utils/apiCost'
 // Plafond de dépense mensuel/quotidien (enforcement côté client + best-effort côté serveur).
-import { getSpend, addSpend, checkLimits, MONTHLY_CAP, DAILY_CAP, quotaErrorMessage } from '@/utils/spendTracker'
+import { getSpend, addSpend, setServerSpend, checkLimits, MONTHLY_CAP, DAILY_CAP, quotaErrorMessage } from '@/utils/spendTracker'
 
 /**
  * @typedef {object} Attachment

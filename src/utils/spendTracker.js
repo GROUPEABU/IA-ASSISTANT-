@@ -35,6 +35,24 @@ export function addSpend(uid, amount) {
   } catch {}
 }
 
+/**
+ * Synchronise les jauges locales sur le compteur AUTORITAIRE du serveur (quota
+ * par compte). On prend le MAX(local, serveur) par période : aucun double
+ * comptage en usage normal (le local est déjà en avance du coût de l'appel en
+ * cours), mais après un vidage de cache ou sur un nouvel appareil, le plancher
+ * serveur restaure le vrai total du compte. Inerte si le serveur ne fournit pas
+ * de compteur (KV non configuré).
+ */
+export function setServerSpend(uid, { month, day } = {}) {
+  if (uid == null) return
+  try {
+    const mkey = mk(uid), dkey = dk(uid)
+    if (month > parseFloat(localStorage.getItem(mkey) || '0')) localStorage.setItem(mkey, month.toFixed(6))
+    if (day   > parseFloat(localStorage.getItem(dkey) || '0')) localStorage.setItem(dkey, day.toFixed(6))
+    try { window.dispatchEvent(new Event('abu:spend')) } catch { /* SSR/no-op */ }
+  } catch {}
+}
+
 export function checkLimits(uid) {
   if (uid == null) return { ok: true }
   const { month, day } = getSpend(uid)
