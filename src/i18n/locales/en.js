@@ -577,6 +577,7 @@ export default {
     settings_quota_reset_month: 'Resets on the 1st',
     settings_quota_reset_day: 'Resets at midnight',
     quota_daily_label: 'Today’s usage',
+    quota_daily_tooltip: 'View usage details',
     quota_daily_reached: 'Daily limit reached — resets at midnight',
     settings_legal_section: 'Legal',
     settings_legal_mentions_desc: 'Publisher, hosting, intellectual property',

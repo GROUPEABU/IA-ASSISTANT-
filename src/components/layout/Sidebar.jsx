@@ -96,7 +96,7 @@ export default function Sidebar({ isOpen, onClose }) {
       {/* Footer */}
       <div className="px-3 pb-4 pt-3 border-t border-navy-700/50 space-y-2">
         {/* Consommation IA du jour — visible en continu (façon Claude) */}
-        <DailyQuotaBar />
+        <DailyQuotaBar onNavigate={onClose} />
 
         <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border"
              style={{ background: 'linear-gradient(135deg, rgba(80,229,229,0.07) 0%, rgba(52,211,153,0.07) 100%)', borderColor: 'rgba(52,211,153,0.20)' }}>

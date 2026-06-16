@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { Key, Palette, Globe, Check, Monitor, Sun, Laptop, Scale, ChevronRight, Wifi, BarChart2, RotateCcw, Info } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -61,6 +61,19 @@ export default function Settings() {
   const aiPowerKey  = ukey(user?.id ?? null, 'ai_power')
   const [theme,      setTheme]      = useState(() => localStorage.getItem(themeKey)   || 'dark')
   const [aiPower,    setAiPower]    = useState(() => localStorage.getItem(aiPowerKey) || 'performance')
+
+  // Défilement vers la section « Utilisation API » quand on arrive via la jauge
+  // de la sidebar (lien /settings#usage), avec un bref surlignage.
+  const location  = useLocation()
+  const usageRef  = useRef(null)
+  const [usageHighlight, setUsageHighlight] = useState(false)
+  useEffect(() => {
+    if (location.hash !== '#usage' || !usageRef.current) return
+    usageRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setUsageHighlight(true)
+    const id = setTimeout(() => setUsageHighlight(false), 1600)
+    return () => clearTimeout(id)
+  }, [location.hash])
 
   function applyThemeValue(v) {
     if (v === 'light') {
@@ -211,7 +224,13 @@ export default function Settings() {
       </div>
 
       {/* Row 3: API cost counter + quota */}
-      <div className="mt-4">
+      <div
+        id="usage"
+        ref={usageRef}
+        className={`mt-4 scroll-mt-20 rounded-2xl transition-shadow duration-500 ${
+          usageHighlight ? 'ring-2 ring-cyan-400/40' : ''
+        }`}
+      >
         <Section icon={BarChart2} title={t('settings_cost_section')}>
           {/* Quota gauges — toujours visibles */}
           <div className="space-y-3 pb-3 border-b border-navy-700/40">
@@ -250,7 +269,7 @@ export default function Settings() {
                 <div className="flex items-end justify-between mb-3">
                   <div>
                     <p className="text-xs text-slate-500">{t('settings_cost_total')}</p>
-                    <p className="text-2xl font-bold text-white">${total.toFixed(3)}</p>
+                    <p className="text-2xl font-bold text-white">€{total.toFixed(3)}</p>
                     <p className="text-[10px] text-slate-600">{t('settings_cost_since')}</p>
                   </div>
                   <button
@@ -269,7 +288,7 @@ export default function Settings() {
                         <div className="flex items-center justify-between mb-0.5">
                           <span className="text-xs text-slate-300">{TOOL_LABELS[tool] || tool}</span>
                           <span className="text-xs text-slate-400 tabular-nums">
-                            ${v.cost.toFixed(3)} · {v.calls} {v.calls > 1 ? t('settings_cost_calls') : t('settings_cost_call')}
+                            €{v.cost.toFixed(3)} · {v.calls} {v.calls > 1 ? t('settings_cost_calls') : t('settings_cost_call')}
                           </span>
                         </div>
                         <div className="h-1 rounded-full bg-navy-700/50">
