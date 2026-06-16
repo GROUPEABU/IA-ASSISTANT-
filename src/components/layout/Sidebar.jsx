@@ -1,6 +1,6 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import {
-  MessageSquare, Zap, X, Home, BookOpen, Gauge, Bell, ShieldCheck, Mic, LogOut,
+  MessageSquare, X, Home, BookOpen, Gauge, Bell, ShieldCheck, Mic, LogOut,
   Calculator, Ruler, Boxes, Truck,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -98,40 +98,31 @@ export default function Sidebar({ isOpen, onClose }) {
         {/* Consommation IA du jour — visible en continu (façon Claude) */}
         <DailyQuotaBar onNavigate={onClose} />
 
-        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border"
-             style={{ background: 'linear-gradient(135deg, rgba(80,229,229,0.07) 0%, rgba(52,211,153,0.07) 100%)', borderColor: 'rgba(52,211,153,0.20)' }}>
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-               style={{ background: 'linear-gradient(135deg, rgba(80,229,229,0.20) 0%, rgba(52,211,153,0.20) 100%)' }}>
-            <Zap size={14} className="text-emerald-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold leading-tight"
-               style={{ background: 'linear-gradient(90deg, #50E5E5, #34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Autobuyunion
-            </p>
-            <div className="flex items-center gap-1 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-slow flex-shrink-0" />
-              <p className="text-[10px] font-medium text-emerald-400/80 leading-tight">{t('connected_label')}</p>
-            </div>
-          </div>
-        </div>
-
-{user && (
-          <div className="flex items-center gap-2.5 px-2 py-2">
+        {/* Profil + statut « en ligne » fusionnés (footer compact, libère la nav) */}
+        {user && (
+          <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-navy-800/40 transition-colors">
             <Link
               to="/settings"
               onClick={onClose}
               className="flex items-center gap-2.5 flex-1 min-w-0 group"
               title={t('nav_settings')}
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
-                              flex items-center justify-center text-navy-900 text-[11px] font-bold flex-shrink-0
-                              shadow-sm shadow-cyan-400/30 group-hover:scale-105 transition-transform">
-                {user.initials}
+              <div className="relative flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
+                                flex items-center justify-center text-navy-900 text-[11px] font-bold
+                                shadow-sm shadow-cyan-400/30 group-hover:scale-105 transition-transform">
+                  {user.initials}
+                </div>
+                {/* Pastille « connecté » — remplace l'ancienne carte de statut */}
+                <span
+                  className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 ring-2 ring-navy-900 animate-pulse-slow"
+                  title={t('connected_label')}
+                  aria-label={t('connected_label')}
+                />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-white truncate leading-tight group-hover:text-cyan-400 transition-colors">{user.name}</p>
-                <p className="text-[10px] text-slate-500 capitalize">{user.role}</p>
+                <p className="text-[10px] text-slate-500 capitalize leading-tight">{user.role}</p>
               </div>
             </Link>
             <button
