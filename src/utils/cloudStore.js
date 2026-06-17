@@ -95,6 +95,36 @@ export async function listSharedVeilles() {
   } catch { return [] }
 }
 
+/** Supprime une veille partagée (réservé à son auteur côté serveur). @returns {Promise<boolean>} */
+export async function deleteSharedVeille(id) {
+  const token = sessionToken()
+  if (!token) return false
+  try {
+    const res = await fetch(SHARED_ENDPOINT, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ op: 'delete', id }),
+    })
+    const data = await res.json().catch(() => null)
+    return res.ok && data?.ok === true
+  } catch { return false }
+}
+
+/** Renouvelle le stockage d'une veille (+45 j, réservé à son auteur). @returns {Promise<boolean>} */
+export async function renewSharedVeille(id) {
+  const token = sessionToken()
+  if (!token) return false
+  try {
+    const res = await fetch(SHARED_ENDPOINT, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ op: 'renew', id }),
+    })
+    const data = await res.json().catch(() => null)
+    return res.ok && data?.ok === true
+  } catch { return false }
+}
+
 /**
  * Pousse une seule fois toutes les données locales vers le compte serveur.
  * Flag `abu_u{uid}_cloud_bulk_seeded_v1` évite tout rejeu.

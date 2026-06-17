@@ -12,7 +12,7 @@
 export const config = { runtime: 'edge' }
 
 import { getAuthSecret, verifyToken } from './_lib/auth.js'
-import { quotaEnabled, sharedPush, sharedList } from './_lib/quota.js'
+import { quotaEnabled, sharedPush, sharedList, sharedDelete, sharedRenew } from './_lib/quota.js'
 
 const MAX_ITEM_BYTES = 200 * 1024
 
@@ -65,6 +65,22 @@ export default async function handler(req) {
     }
     const ok = await sharedPush(item)
     return json({ enabled: true, ok }, 200)
+  }
+
+  if (op === 'delete') {
+    const id = String(body.id || '')
+    if (!id) return json({ error: { message: 'Identifiant requis.' } }, 400)
+    const res = await sharedDelete(id, session.id)
+    if (!res.ok && res.reason === 'forbidden') return json({ error: { message: 'Seul l’auteur peut supprimer cette veille.' } }, 403)
+    return json({ enabled: true, ok: res.ok }, 200)
+  }
+
+  if (op === 'renew') {
+    const id = String(body.id || '')
+    if (!id) return json({ error: { message: 'Identifiant requis.' } }, 400)
+    const res = await sharedRenew(id, session.id)
+    if (!res.ok && res.reason === 'forbidden') return json({ error: { message: 'Seul l’auteur peut renouveler cette veille.' } }, 403)
+    return json({ enabled: true, ok: res.ok, expiresAt: res.expiresAt }, 200)
   }
 
   return json({ error: { message: 'Opération inconnue.' } }, 400)

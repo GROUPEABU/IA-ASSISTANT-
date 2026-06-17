@@ -4,7 +4,7 @@ import {
   Bell, Search, RotateCcw, ExternalLink, Clock, Download, FileText,
   Wifi, WifiOff, Calculator, Sparkles, ShieldCheck, Copy, Mic, TrendingDown, TrendingUp,
   FileSpreadsheet, ChevronDown, CheckSquare, Square, StopCircle, X, AlertTriangle, Share2,
-  Users, RefreshCw,
+  Users, RefreshCw, Trash2,
 } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { buildPrompt } from '@/services/veillePrixPrompt'
@@ -20,7 +20,7 @@ import { stripLeadingReasoning, hasStructuredContent } from '@/utils/stripReport
 import { downloadCsv } from '@/utils/exportCsv'
 import { getMarginTarget, setMarginTarget, MARGIN_DEFAULT, MARGIN_MIN, MARGIN_MAX } from '@/utils/marginTarget'
 import { getSessionUserId, ukey } from '@/utils/userStorage'
-import { shareVeille, listSharedVeilles } from '@/utils/cloudStore'
+import { shareVeille, listSharedVeilles, deleteSharedVeille, renewSharedVeille } from '@/utils/cloudStore'
 import Spinner from '@/components/ui/Spinner'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
@@ -237,9 +237,10 @@ function EvolutionCard({ evolution, t }) {
 // Flux commun à tous les membres : chaque veille terminée y apparaît, avec son
 // auteur et sa date. Conservé 50 max / 45 jours côté serveur. Aucune action de
 // suppression (auto-purge) — on clique pour consulter le rapport.
-function TeamWatchPanel({ items, loading, onRefresh, onView, t, dragActive, onDropShare, open, onToggle }) {
+function TeamWatchPanel({ items, loading, onRefresh, onView, t, dragActive, onDropShare, open, onToggle, currentUserId, onDelete, onRenew }) {
   const [over, setOver] = useState(false)
   const expanded = open || dragActive // s'ouvre tout seul quand on glisse une veille
+  const fmtDate = (ts) => { try { return new Date(ts).toLocaleDateString() } catch { return '' } }
 
   const relDate = (ts) => {
     const d = Math.floor((Date.now() - ts) / 86400000)
@@ -297,25 +298,51 @@ function TeamWatchPanel({ items, loading, onRefresh, onView, t, dragActive, onDr
             <p className="px-4 py-6 text-center text-xs text-slate-600">{t('pw_team_empty')}</p>
           ) : (
             <ul className="divide-y divide-navy-700/40 max-h-96 overflow-y-auto">
-              {items.map((item) => (
-                <li key={item.id}>
-                  <button
-                    onClick={() => onView(item)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-navy-800/30 transition group"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-slate-200 truncate group-hover:text-cyan-400 transition">
-                        {item.searchLabel || '—'}
-                      </p>
-                      <p className="text-[10px] text-slate-500 truncate">
-                        {item.authorName || '—'} · {relDate(item.sharedAt)}
-                        {item.hasLiveData && <span className="text-emerald-400"> · {t('price_live_badge')}</span>}
-                      </p>
-                    </div>
-                    <ExternalLink size={13} className="text-slate-600 group-hover:text-cyan-400 transition flex-shrink-0" />
-                  </button>
-                </li>
-              ))}
+              {items.map((item) => {
+                const isAuthor = currentUserId != null && String(item.authorId) === String(currentUserId)
+                return (
+                  <li key={item.id} className="group flex items-center gap-2 px-4 py-2.5 hover:bg-navy-800/30 transition">
+                    <button onClick={() => onView(item)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-slate-200 truncate group-hover:text-cyan-400 transition">
+                          {item.searchLabel || '—'}
+                        </p>
+                        <p className="text-[10px] text-slate-500 truncate">
+                          {item.authorName || '—'} · {relDate(item.sharedAt)}
+                          {item.hasLiveData && <span className="text-emerald-400"> · {t('price_live_badge')}</span>}
+                        </p>
+                        {item.expiresAt && (
+                          <p className="text-[10px] text-slate-600 truncate flex items-center gap-1 mt-0.5">
+                            <Clock size={9} className="flex-shrink-0" />
+                            {t('pw_team_until').replace('{date}', fmtDate(item.expiresAt))}
+                          </p>
+                        )}
+                      </div>
+                      <ExternalLink size={13} className="text-slate-600 group-hover:text-cyan-400 transition flex-shrink-0" />
+                    </button>
+                    {isAuthor && (
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <button
+                          onClick={() => onRenew?.(item)}
+                          title={t('pw_team_renew')}
+                          aria-label={t('pw_team_renew')}
+                          className="text-slate-500 hover:text-cyan-400 transition p-1.5 rounded-lg hover:bg-cyan-400/10"
+                        >
+                          <RefreshCw size={13} />
+                        </button>
+                        <button
+                          onClick={() => onDelete?.(item)}
+                          title={t('pw_team_delete')}
+                          aria-label={t('pw_team_delete')}
+                          className="text-slate-500 hover:text-red-400 transition p-1.5 rounded-lg hover:bg-red-400/10"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>
@@ -515,6 +542,19 @@ export default function PriceWatch() {
     searchLabel, country, type, report,
     figures: extractReportFigures(report), margin: reportMargin ?? getMarginTarget(), hasLiveData,
   })
+  const removeTeamVeille = async (item) => {
+    // Retrait optimiste, puis confirmation serveur (l'auteur seul est autorisé).
+    setTeamWatches((prev) => prev.filter((x) => x.id !== item.id))
+    const ok = await deleteSharedVeille(item.id)
+    if (ok) toast(t('pw_team_deleted'), 'success')
+    else { toast(t('pw_team_action_denied'), 'error'); refreshTeam() }
+  }
+  const renewTeamVeille = async (item) => {
+    const ok = await renewSharedVeille(item.id)
+    if (ok) { toast(t('pw_team_renewed'), 'success'); refreshTeam() }
+    else toast(t('pw_team_action_denied'), 'error')
+  }
+  const currentUserId = getSessionUserId()
 
   // Synchronise le formulaire avec un jeu de filtres (restauration / pont inter-outils).
   const applyFilters = (f) => {
@@ -1708,6 +1748,9 @@ export default function PriceWatch() {
           onToggle={() => setTeamOpen((o) => !o)}
           dragActive={!!draggedVeille}
           onDropShare={() => { if (draggedVeille) { shareHistoryItem(draggedVeille); setDraggedVeille(null) } }}
+          currentUserId={currentUserId}
+          onDelete={removeTeamVeille}
+          onRenew={renewTeamVeille}
         />
       </div>
     </div>

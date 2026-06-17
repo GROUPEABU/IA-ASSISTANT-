@@ -240,5 +240,57 @@ export async function sharedList() {
     return raw
       .map((s) => { try { return JSON.parse(s) } catch { return null } })
       .filter((x) => x && (x.sharedAt || 0) >= cutoff)
+      .map((x) => ({ ...x, expiresAt: (x.sharedAt || 0) + SHARED_TTL_S * 1000 }))
   } catch { return [] }
+}
+
+/** Lit les chaînes brutes de la liste partagée. @returns {Promise<string[]>} */
+async function sharedReadRaw() {
+  const out = await pipeline([['LRANGE', SHARED_KEY, '0', '-1']])
+  const raw = out?.[0]?.result
+  return Array.isArray(raw) ? raw : []
+}
+
+/**
+ * Supprime une veille partagée. Seul son auteur peut le faire.
+ * @returns {Promise<{ ok: boolean, reason?: string }>}
+ */
+export async function sharedDelete(id, requesterId) {
+  if (!quotaEnabled()) return { ok: false, reason: 'disabled' }
+  try {
+    const raw = await sharedReadRaw()
+    const idx = raw.findIndex((s) => { try { return JSON.parse(s)?.id === id } catch { return false } })
+    if (idx === -1) return { ok: false, reason: 'not_found' }
+    const item = JSON.parse(raw[idx])
+    if (String(item.authorId) !== String(requesterId)) return { ok: false, reason: 'forbidden' }
+    const kept = raw.filter((_, i) => i !== idx)
+    const cmds = [['DEL', SHARED_KEY]]
+    if (kept.length) {
+      cmds.push(['RPUSH', SHARED_KEY, ...kept])
+      cmds.push(['EXPIRE', SHARED_KEY, String(SHARED_TTL_S)])
+    }
+    await pipeline(cmds)
+    return { ok: true }
+  } catch { return { ok: false, reason: 'error' } }
+}
+
+/**
+ * Renouvelle la durée de stockage (+45 j) d'une veille. Seul son auteur peut le faire.
+ * @returns {Promise<{ ok: boolean, reason?: string, expiresAt?: number }>}
+ */
+export async function sharedRenew(id, requesterId) {
+  if (!quotaEnabled()) return { ok: false, reason: 'disabled' }
+  try {
+    const raw = await sharedReadRaw()
+    const idx = raw.findIndex((s) => { try { return JSON.parse(s)?.id === id } catch { return false } })
+    if (idx === -1) return { ok: false, reason: 'not_found' }
+    const item = JSON.parse(raw[idx])
+    if (String(item.authorId) !== String(requesterId)) return { ok: false, reason: 'forbidden' }
+    item.sharedAt = Date.now()
+    await pipeline([
+      ['LSET', SHARED_KEY, String(idx), JSON.stringify(item)],
+      ['EXPIRE', SHARED_KEY, String(SHARED_TTL_S)],
+    ])
+    return { ok: true, expiresAt: item.sharedAt + SHARED_TTL_S * 1000 }
+  } catch { return { ok: false, reason: 'error' } }
 }
