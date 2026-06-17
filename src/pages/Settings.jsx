@@ -233,30 +233,29 @@ export default function Settings() {
   ]
 
   return (
-    <div className="w-full max-w-6xl mx-auto animate-fade-in">
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Navigation latérale (onglets) */}
-        <nav className="lg:w-60 flex-shrink-0">
-          <div className="glass-card p-2 flex lg:flex-col gap-1 overflow-x-auto lg:sticky lg:top-6">
-            {TABS.map(({ key, icon: Icon, labelKey }) => (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
-                  activeTab === key
-                    ? 'bg-cyan-400/15 text-cyan-400'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-navy-800/40'
-                }`}
-              >
-                <Icon size={16} className="flex-shrink-0" />
-                {t(labelKey)}
-              </button>
-            ))}
-          </div>
-        </nav>
+    <div className="w-full max-w-5xl mx-auto animate-fade-in">
+      {/* Onglets — barre horizontale en haut */}
+      <nav className="mb-6">
+        <div className="glass-card p-1.5 flex gap-1 overflow-x-auto">
+          {TABS.map(({ key, icon: Icon, labelKey }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
+                activeTab === key
+                  ? 'bg-cyan-400/15 text-cyan-400'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-navy-800/40'
+              }`}
+            >
+              <Icon size={16} className="flex-shrink-0" />
+              {t(labelKey)}
+            </button>
+          ))}
+        </div>
+      </nav>
 
-        {/* Contenu de l'onglet actif */}
-        <div className="flex-1 min-w-0 space-y-6">
+      {/* Contenu de l'onglet actif */}
+      <div className="space-y-6">
 
       {activeTab === 'profile' && (
       <Section icon={User} title={t('settings_profile_section')}>
@@ -677,7 +676,6 @@ export default function Settings() {
           </div>
       </Section>
       )}
-        </div>
       </div>
 
       {/* Marqueur de build — vérifie que l'appareil charge la dernière version */}
