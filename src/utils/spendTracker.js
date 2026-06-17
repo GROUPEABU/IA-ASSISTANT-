@@ -5,8 +5,8 @@
  */
 import { ukey } from './userStorage'
 
-export const MONTHLY_CAP = 25  // €/mois
-export const DAILY_CAP   = 2   // €/jour
+export const MONTHLY_CAP = 15    // €/mois
+export const DAILY_CAP   = 1.2   // €/jour
 
 function monthKey() { return new Date().toISOString().slice(0, 7)  } // '2026-06'
 function dayKey()   { return new Date().toISOString().slice(0, 10) } // '2026-06-15'

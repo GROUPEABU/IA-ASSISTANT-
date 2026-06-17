@@ -40,8 +40,8 @@ const CHAT_LIMIT     = 30
 const CHAT_WINDOW_MS = 60 * 1000
 
 // Quotas de dépense (déclarés par le client en en-tête, best-effort).
-const SPEND_MONTHLY_CAP = 25  // €/mois
-const SPEND_DAILY_CAP   = 2   // €/jour
+const SPEND_MONTHLY_CAP = 15    // €/mois
+const SPEND_DAILY_CAP   = 1.2   // €/jour
 
 const json = (obj, status) =>
   new Response(JSON.stringify(obj), {
