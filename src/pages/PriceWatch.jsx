@@ -521,6 +521,8 @@ export default function PriceWatch() {
     } else if (p.restoreId != null) {
       const item = history.find((h) => (h.id ?? h.savedAt) === p.restoreId)
       if (item) restore(item)
+    } else if (p.sharedVeille) {
+      viewShared(p.sharedVeille)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

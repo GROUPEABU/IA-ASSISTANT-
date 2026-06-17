@@ -967,6 +967,7 @@ export default {
   hub_recent_title: 'Reprendre',
   hub_pinned_title: 'Veilles épinglées',
   hub_rerun_last: 'Relancer ma dernière veille',
+  hub_team_all: 'Tout voir',
   hub_rerun: 'Relancer',
   // Veille Prix — analyse par lot (import CSV / Excel)
   pw_mode_search: 'Recherche',

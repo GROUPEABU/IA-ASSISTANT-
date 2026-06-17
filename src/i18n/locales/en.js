@@ -939,6 +939,7 @@ export default {
   hub_recent_title: 'Resume',
   hub_pinned_title: 'Pinned watches',
   hub_rerun_last: 'Re-run my last price watch',
+  hub_team_all: 'View all',
   hub_rerun: 'Re-run',
   // Price Watch — batch analysis (CSV / Excel import)
   pw_mode_search: 'Search',

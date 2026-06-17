@@ -1,10 +1,10 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck, Calculator, Mic, Globe, Zap, TrendingUp, Ruler, Boxes, Truck, History, Pin, RefreshCw } from 'lucide-react'
+import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck, Calculator, Mic, Globe, Zap, TrendingUp, Ruler, Boxes, Truck, History, Pin, RefreshCw, Users, ExternalLink } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 import { sendToTool } from '@/utils/toolBridge'
 import { ukey, getSessionUserId } from '@/utils/userStorage'
-import { cloudGet, cloudPut } from '@/utils/cloudStore'
+import { cloudGet, cloudPut, listSharedVeilles } from '@/utils/cloudStore'
 
 const colorMap = {
   cyan:    { bg: 'bg-cyan-400/10',    border: 'border-cyan-400/20',    icon: 'text-cyan-400',    badge: 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20',       hoverBorder: '#50E5E5' },
@@ -70,6 +70,14 @@ export default function Hub() {
       cloudPut(`history_${ns}`, merged)
       return true
     })).then((res) => { if (alive && res.some(Boolean)) setSynced((n) => n + 1) })
+    return () => { alive = false }
+  }, [])
+
+  // Veilles partagées par l'équipe (flux commun, lecture seule).
+  const [teamWatches, setTeamWatches] = useState([])
+  useEffect(() => {
+    let alive = true
+    listSharedVeilles().then((items) => { if (alive) setTeamWatches(items.slice(0, 6)) })
     return () => { alive = false }
   }, [])
 
@@ -207,6 +215,46 @@ export default function Hub() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Veilles de l'équipe (flux partagé, lecture seule) ────────────────── */}
+      {teamWatches.length > 0 && (
+        <div className="glass-card p-4">
+          <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Users size={13} className="text-cyan-400" />
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('pw_team_title')}</span>
+            </div>
+            <button
+              onClick={() => navigate('/price-watch')}
+              className="flex items-center gap-1.5 text-[11px] font-bold text-cyan-400 border border-cyan-400/30
+                         px-2.5 py-1 rounded-lg hover:bg-cyan-400/10 transition"
+            >
+              {t('hub_team_all')} <ArrowRight size={11} />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            {teamWatches.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => sendToTool(navigate, '/price-watch', { sharedVeille: item })}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-navy-900/40 border border-navy-700/30
+                           hover:border-cyan-400/30 hover:bg-cyan-400/5 transition text-left group"
+              >
+                <Bell size={13} className="text-slate-500 group-hover:text-cyan-400 flex-shrink-0 transition-colors" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-slate-300 group-hover:text-cyan-300 truncate transition-colors">
+                    {item.searchLabel || '—'}
+                  </p>
+                  <p className="text-[10px] text-slate-600 truncate">
+                    {item.authorName || '—'} · {new Date(item.sharedAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <ExternalLink size={12} className="text-slate-600 group-hover:text-cyan-400 flex-shrink-0 transition-colors" />
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
