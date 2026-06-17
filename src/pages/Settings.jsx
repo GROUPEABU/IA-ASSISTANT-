@@ -276,8 +276,7 @@ export default function Settings() {
             <p className="text-lg font-bold text-white leading-tight">
               {[profileFirstname, profileLastname].filter(Boolean).join(' ') || user?.name}
             </p>
-            <p className="text-sm text-slate-400 mt-1">{user?.username}</p>
-            <div className="flex flex-wrap gap-2 mt-4">
+            <div className="flex flex-wrap gap-2 mt-3">
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={avatarLoading}
