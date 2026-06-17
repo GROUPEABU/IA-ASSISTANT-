@@ -75,7 +75,8 @@ export default function Sidebar({ isOpen, onClose }) {
         { to: '/price-watch', icon: Bell,        labelKey: 'nav_price_watch' },
         { to: '/objections',  icon: ShieldCheck, labelKey: 'nav_objections' },
         { to: '/pitch',       icon: Mic,         labelKey: 'nav_pitch' },
-        { to: '/tco',         icon: Calculator,  labelKey: 'nav_tco' },
+        // TCO masqué temporairement — réafficher en décommentant cette ligne.
+        // { to: '/tco',         icon: Calculator,  labelKey: 'nav_tco' },
         { to: '/compare',     icon: Ruler,       labelKey: 'nav_compare' },
         { to: '/stock-analysis', icon: Boxes,    labelKey: 'nav_stock' },
         { to: '/logistics',      icon: Truck,    labelKey: 'nav_logistics' },

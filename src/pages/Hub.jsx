@@ -100,7 +100,9 @@ export default function Hub() {
     { to: '/co2-malus',  icon: Gauge,         color: 'emerald',titleKey: 'tool_co2_title',       descKey: 'tool_co2_desc',        badgeKey: 'hub_badge_40_countries' },
     { to: '/price-watch',icon: Bell,          color: 'amber',  titleKey: 'tool_price_title',     descKey: 'tool_price_desc',      badgeKey: 'hub_badge_used_new' },
     { to: '/objections', icon: ShieldCheck,   color: 'rose',   titleKey: 'tool_objections_title',descKey: 'tool_objections_desc', badgeKey: 'hub_badge_btob_btoc' },
-    { to: '/tco',        icon: Calculator,    color: 'teal',   titleKey: 'tool_tco_title',       descKey: 'tool_tco_desc',        badgeKey: 'hub_badge_3_5_years' },
+    // TCO masqué temporairement (pas utilisé pour le moment) — réafficher en
+    // décommentant cette ligne. La page et la route restent en place.
+    // { to: '/tco',        icon: Calculator,    color: 'teal',   titleKey: 'tool_tco_title',       descKey: 'tool_tco_desc',        badgeKey: 'hub_badge_3_5_years' },
     { to: '/pitch',      icon: Mic,           color: 'indigo', titleKey: 'tool_pitch_title',     descKey: 'tool_pitch_desc',      badgeKey: 'hub_badge_ai' },
     { to: '/compare',    icon: Ruler,         color: 'blue',   titleKey: 'tool_compare_title',   descKey: 'tool_compare_desc',    badgeKey: 'hub_badge_ai' },
     { to: '/stock-analysis', icon: Boxes,     color: 'sky',    titleKey: 'tool_stock_title',     descKey: 'tool_stock_desc',      badgeKey: 'hub_badge_stock' },
@@ -226,7 +228,7 @@ export default function Hub() {
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('pw_team_title')}</span>
           </div>
           <button
-            onClick={() => navigate('/price-watch')}
+            onClick={() => sendToTool(navigate, '/price-watch', { openTeam: true })}
             className="flex items-center gap-1.5 text-[11px] font-bold text-cyan-400 border border-cyan-400/30
                        px-2.5 py-1 rounded-lg hover:bg-cyan-400/10 transition"
           >

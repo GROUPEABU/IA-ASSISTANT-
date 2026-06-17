@@ -237,8 +237,7 @@ function EvolutionCard({ evolution, t }) {
 // Flux commun à tous les membres : chaque veille terminée y apparaît, avec son
 // auteur et sa date. Conservé 50 max / 45 jours côté serveur. Aucune action de
 // suppression (auto-purge) — on clique pour consulter le rapport.
-function TeamWatchPanel({ items, loading, onRefresh, onView, t, dragActive, onDropShare }) {
-  const [open, setOpen] = useState(false)
+function TeamWatchPanel({ items, loading, onRefresh, onView, t, dragActive, onDropShare, open, onToggle }) {
   const [over, setOver] = useState(false)
   const expanded = open || dragActive // s'ouvre tout seul quand on glisse une veille
 
@@ -257,7 +256,7 @@ function TeamWatchPanel({ items, loading, onRefresh, onView, t, dragActive, onDr
       onDrop={dragActive ? (e) => { e.preventDefault(); setOver(false); onDropShare?.() } : undefined}
     >
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={onToggle}
         className="w-full flex items-center justify-between gap-2 px-4 py-3 hover:bg-navy-800/30 transition"
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-white">
@@ -492,6 +491,8 @@ export default function PriceWatch() {
   const [teamLoading, setTeamLoading] = useState(false)
   const [draggedVeille, setDraggedVeille] = useState(null) // veille tirée depuis l'historique
   const [shareMenuOpen, setShareMenuOpen] = useState(false) // menu du bouton « Partager »
+  const [teamOpen, setTeamOpen] = useState(false)           // panneau « Veilles de l'équipe »
+  const teamRef = useRef(null)
   const refreshTeam = async () => {
     setTeamLoading(true)
     try { setTeamWatches(await listSharedVeilles()) } finally { setTeamLoading(false) }
@@ -547,6 +548,9 @@ export default function PriceWatch() {
       if (item) restore(item)
     } else if (p.sharedVeille) {
       viewShared(p.sharedVeille)
+    } else if (p.openTeam) {
+      setTeamOpen(true)
+      setTimeout(() => teamRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1693,15 +1697,19 @@ export default function PriceWatch() {
         )}
       />
 
-      <TeamWatchPanel
-        items={teamWatches}
-        loading={teamLoading}
-        onRefresh={refreshTeam}
-        onView={viewShared}
-        t={t}
-        dragActive={!!draggedVeille}
-        onDropShare={() => { if (draggedVeille) { shareHistoryItem(draggedVeille); setDraggedVeille(null) } }}
-      />
+      <div ref={teamRef}>
+        <TeamWatchPanel
+          items={teamWatches}
+          loading={teamLoading}
+          onRefresh={refreshTeam}
+          onView={viewShared}
+          t={t}
+          open={teamOpen}
+          onToggle={() => setTeamOpen((o) => !o)}
+          dragActive={!!draggedVeille}
+          onDropShare={() => { if (draggedVeille) { shareHistoryItem(draggedVeille); setDraggedVeille(null) } }}
+        />
+      </div>
     </div>
   )
 }
