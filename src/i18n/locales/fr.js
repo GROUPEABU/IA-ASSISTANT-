@@ -633,7 +633,7 @@ export default {
     pw_too_short: 'Le mot de passe doit contenir au moins 8 caractères.',
     pw_all_required: 'Tous les champs sont requis.',
     pw_error: 'Erreur. Réessayez.',
-    settings_cost_disclaimer: 'Estimation locale calculée à partir des tokens retournés par l\'API. Le coût réel et le total multi-utilisateurs sont visibles sur console.anthropic.com.',
+    settings_cost_disclaimer: 'Estimation locale calculée à partir des tokens retournés par l\'API. Le coût réel et le total multi-utilisateurs sont visibles par l\'administrateur.',
     settings_quota_month: 'Ce mois-ci',
     settings_quota_day: "Aujourd'hui",
     settings_quota_reset_month: 'Réinit. le 1er du mois',
