@@ -146,6 +146,7 @@ export default function Settings() {
     const data = { firstname: profileFirstname.trim(), lastname: profileLastname.trim(), phone: profilePhone.trim() }
     try { localStorage.setItem(profileKey, JSON.stringify(data)) } catch {}
     import('@/utils/cloudStore').then(({ cloudPut }) => cloudPut('profile', data))
+    try { window.dispatchEvent(new Event('abu:profile')) } catch {} // rafraîchit la sidebar
     setProfileSaved(true)
     setTimeout(() => setProfileSaved(false), 2000)
   }
@@ -160,6 +161,7 @@ export default function Settings() {
         if (remote.lastname  !== undefined) setProfileLastname(remote.lastname)
         if (remote.phone     !== undefined) setProfilePhone(remote.phone)
         try { localStorage.setItem(profileKey, JSON.stringify(remote)) } catch {}
+        try { window.dispatchEvent(new Event('abu:profile')) } catch {}
       })
     )
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -232,12 +234,6 @@ export default function Settings() {
 
   return (
     <div className="w-full max-w-6xl mx-auto animate-fade-in">
-      {/* En-tête de page */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">{t('nav_settings')}</h1>
-        <p className="text-sm text-slate-500 mt-1">{t('settings_page_subtitle')}</p>
-      </div>
-
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Navigation latérale (onglets) */}
         <nav className="lg:w-60 flex-shrink-0">

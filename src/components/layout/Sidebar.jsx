@@ -10,6 +10,7 @@ import { useSettings } from '@/contexts/SettingsContext'
 import Logo from '@/components/ui/Logo'
 import DailyQuotaBar from '@/components/ui/DailyQuotaBar'
 import { getAvatar } from '@/utils/avatarStore'
+import { displayName, displayInitials } from '@/utils/profileStore'
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth()
@@ -17,11 +18,19 @@ export default function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate()
 
   const [avatar, setAvatar] = useState(() => getAvatar(user?.id ?? null))
+  const [, forceRefresh] = useState(0)
   useEffect(() => {
-    const refresh = () => setAvatar(getAvatar(user?.id ?? null))
+    const refresh = () => { setAvatar(getAvatar(user?.id ?? null)); forceRefresh(n => n + 1) }
     window.addEventListener('abu:avatar', refresh)
-    return () => window.removeEventListener('abu:avatar', refresh)
+    window.addEventListener('abu:profile', refresh)
+    return () => {
+      window.removeEventListener('abu:avatar', refresh)
+      window.removeEventListener('abu:profile', refresh)
+    }
   }, [user?.id])
+
+  const name = displayName(user)
+  const initials = displayInitials(user)
 
   const navGroups = [
     {
@@ -124,7 +133,7 @@ export default function Sidebar({ isOpen, onClose }) {
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
                                     flex items-center justify-center text-navy-900 text-[11px] font-bold
                                     shadow-sm shadow-cyan-400/30 group-hover:scale-105 transition-transform">
-                      {user.initials}
+                      {initials}
                     </div>
                   )
                 }
@@ -136,7 +145,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-white truncate leading-tight group-hover:text-cyan-400 transition-colors">{user.name}</p>
+                <p className="text-xs font-semibold text-white truncate leading-tight group-hover:text-cyan-400 transition-colors">{name}</p>
                 <p className="text-[10px] text-slate-500 capitalize leading-tight">{user.role}</p>
               </div>
             </Link>
