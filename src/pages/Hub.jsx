@@ -113,7 +113,7 @@ export default function Hub() {
   const stats = [
     // À synchroniser avec COUNTRIES de malusWorld.js (non importé ici : trop lourd pour le chunk Hub)
     { label: '52 pays',        value: '52',  icon: Globe,      color: '#50E5E5', sub: t('stat_countries') },
-    { label: '10 outils',      value: '10',  icon: Zap,        color: '#a78bfa', sub: t('stat_tools') },
+    { label: `${tools.length} outils`, value: String(tools.length), icon: Zap, color: '#a78bfa', sub: t('stat_tools') },
     { label: 'Marchés',        value: '2',   icon: TrendingUp, color: '#34d399', sub: t('stat_markets') },
   ]
 
