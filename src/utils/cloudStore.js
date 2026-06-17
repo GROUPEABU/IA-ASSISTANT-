@@ -62,6 +62,39 @@ export function cloudPut(key, value) {
   }, 400))
 }
 
+// ── Flux partagé « Veilles de l'équipe » (/api/shared) ────────────────────────
+const SHARED_ENDPOINT = '/api/shared'
+
+/** Partage une veille prix avec toute l'équipe (best-effort, ne lève jamais). */
+export async function shareVeille(item) {
+  if (syncEnabled === false) return
+  const token = sessionToken()
+  if (!token) return
+  try {
+    await fetch(SHARED_ENDPOINT, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ op: 'push', item }),
+    })
+  } catch { /* no-op */ }
+}
+
+/** Lit les veilles partagées par l'équipe (50 dernières, < 45 jours). @returns {Promise<Array>} */
+export async function listSharedVeilles() {
+  const token = sessionToken()
+  if (!token) return []
+  try {
+    const res = await fetch(SHARED_ENDPOINT, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ op: 'list' }),
+    })
+    if (!res.ok) return []
+    const data = await res.json().catch(() => null)
+    return Array.isArray(data?.items) ? data.items : []
+  } catch { return [] }
+}
+
 /**
  * Pousse une seule fois toutes les données locales vers le compte serveur.
  * Flag `abu_u{uid}_cloud_bulk_seeded_v1` évite tout rejeu.

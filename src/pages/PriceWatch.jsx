@@ -4,6 +4,7 @@ import {
   Bell, Search, RotateCcw, ExternalLink, Clock, Download, FileText,
   Wifi, WifiOff, Calculator, Sparkles, ShieldCheck, Copy, Mic, TrendingDown, TrendingUp,
   FileSpreadsheet, ChevronDown, CheckSquare, Square, StopCircle, X, AlertTriangle, Share2,
+  Users, RefreshCw,
 } from 'lucide-react'
 import { sendMessage } from '@/services/claude'
 import { buildPrompt } from '@/services/veillePrixPrompt'
@@ -19,6 +20,7 @@ import { stripLeadingReasoning, hasStructuredContent } from '@/utils/stripReport
 import { downloadCsv } from '@/utils/exportCsv'
 import { getMarginTarget, setMarginTarget, MARGIN_DEFAULT, MARGIN_MIN, MARGIN_MAX } from '@/utils/marginTarget'
 import { getSessionUserId, ukey } from '@/utils/userStorage'
+import { shareVeille, listSharedVeilles } from '@/utils/cloudStore'
 import Spinner from '@/components/ui/Spinner'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
@@ -236,6 +238,84 @@ function EvolutionCard({ evolution, t }) {
   )
 }
 
+// ── Veilles partagées par l'équipe (lecture seule) ───────────────────────────
+// Flux commun à tous les membres : chaque veille terminée y apparaît, avec son
+// auteur et sa date. Conservé 50 max / 45 jours côté serveur. Aucune action de
+// suppression (auto-purge) — on clique pour consulter le rapport.
+function TeamWatchPanel({ items, loading, onRefresh, onView, t }) {
+  const [open, setOpen] = useState(false)
+
+  const relDate = (ts) => {
+    const d = Math.floor((Date.now() - ts) / 86400000)
+    if (d <= 0) return t('history_today') || "Aujourd'hui"
+    if (d === 1) return t('history_yesterday') || 'Hier'
+    return `${d} ${t('history_days_ago') || 'j'}`
+  }
+
+  return (
+    <div className="glass-card overflow-hidden">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between gap-2 px-4 py-3 hover:bg-navy-800/30 transition"
+      >
+        <span className="flex items-center gap-2 text-sm font-semibold text-white">
+          <Users size={15} className="text-cyan-400" />
+          {t('pw_team_title')}
+          {items.length > 0 && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-cyan-400/10 text-cyan-400 border border-cyan-400/20">
+              {items.length}
+            </span>
+          )}
+        </span>
+        <ChevronDown size={16} className={`text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="border-t border-navy-700/50">
+          <div className="flex items-center justify-between gap-2 px-4 py-2">
+            <p className="text-[11px] text-slate-500">{t('pw_team_hint')}</p>
+            <button
+              onClick={onRefresh}
+              disabled={loading}
+              title={t('pw_team_refresh')}
+              className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-cyan-400 transition disabled:opacity-40"
+            >
+              <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+              {t('pw_team_refresh')}
+            </button>
+          </div>
+
+          {items.length === 0 ? (
+            <p className="px-4 py-6 text-center text-xs text-slate-600">{t('pw_team_empty')}</p>
+          ) : (
+            <ul className="divide-y divide-navy-700/40 max-h-96 overflow-y-auto">
+              {items.map((item) => (
+                <li key={item.id}>
+                  <button
+                    onClick={() => onView(item)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-navy-800/30 transition group"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-slate-200 truncate group-hover:text-cyan-400 transition">
+                        {item.searchLabel || '—'}
+                      </p>
+                      <p className="text-[10px] text-slate-500 truncate">
+                        {item.authorName || '—'} · {relDate(item.sharedAt)}
+                        {item.hasLiveData && <span className="text-emerald-400"> · {t('price_live_badge')}</span>}
+                      </p>
+                    </div>
+                    <ExternalLink size={13} className="text-slate-600 group-hover:text-cyan-400 transition flex-shrink-0" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Page principale ───────────────────────────────────────────────────────────
 export default function PriceWatch() {
   const { t, lang } = useSettings()
@@ -392,6 +472,15 @@ export default function PriceWatch() {
   const { history, add: addHistory, remove: removeHistory, clear: clearHistory, togglePin } = useHistory('pricewatch')
   const { save: saveLastVehicle } = useLastVehicle()
   const { exporting, withExporting } = useExport()
+
+  // Veilles partagées par l'équipe (lecture seule, flux commun).
+  const [teamWatches, setTeamWatches] = useState([])
+  const [teamLoading, setTeamLoading] = useState(false)
+  const refreshTeam = async () => {
+    setTeamLoading(true)
+    try { setTeamWatches(await listSharedVeilles()) } finally { setTeamLoading(false) }
+  }
+  useEffect(() => { refreshTeam() }, [])
 
   // Synchronise le formulaire avec un jeu de filtres (restauration / pont inter-outils).
   const applyFilters = (f) => {
@@ -580,6 +669,8 @@ export default function PriceWatch() {
 
       const filtersSnapshot = { ...filters, country: ctry.code }
       addHistory({ searchLabel: label, country: ctry.code, type: filters.type, report: cleanText, hasLiveData: !!usedWebSearch, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '', filters: filtersSnapshot, figures, margin: marginUsed })
+      // Partage avec l'équipe (lecture seule, flux commun 50 dernières / 45 j).
+      shareVeille({ searchLabel: label, country: ctry.code, type: filters.type, report: cleanText, figures, margin: marginUsed, hasLiveData: !!usedWebSearch })
 
       // Comparaison multi-marchés : même véhicule, mêmes filtres, autres pays.
       const extras = extraCountries.filter((code) => code !== ctry.code)
@@ -618,6 +709,7 @@ export default function PriceWatch() {
                 hasLiveData: !!xLive, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '',
                 filters: { ...filters, country: exCtry.code }, figures: xFig, margin: marginUsed,
               })
+              shareVeille({ searchLabel: exLabel, country: exCtry.code, type: filters.type, report: xText, figures: xFig, margin: marginUsed, hasLiveData: !!xLive })
             } catch (e) {
               multi[k] = { ...multi[k], status: 'error', error: e.message }
             }
@@ -734,6 +826,7 @@ export default function PriceWatch() {
           fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '',
           filters: { ...filters, country: ctry.code }, figures, margin: rowMargin,
         })
+        shareVeille({ searchLabel: `${results[i].label} · ${ctry.label}`, country: ctry.code, type: 'vo', report: text, figures, margin: rowMargin, hasLiveData: !!usedWebSearch })
       } catch (err) {
         results[i] = { ...results[i], status: 'error', error: err.message }
       }
@@ -840,6 +933,23 @@ export default function PriceWatch() {
     setReportMargin(item.margin ?? MARGIN_DEFAULT)
     // Resynchronise le formulaire : le bouton « Analyser » relance la même veille.
     if (item.filters) applyFilters(item.filters)
+  }
+
+  // Affiche une veille partagée par l'équipe (lecture seule — pas de filtres,
+  // pas de relance automatique : on ne fait que consulter le rapport).
+  const viewShared = (item) => {
+    setReport(item.report || '')
+    setTruncated(false)
+    setSearchLabel(item.searchLabel || '')
+    setType(item.type || 'vo')
+    setCountry(item.country || 'FR')
+    setHasLiveData(!!item.hasLiveData)
+    setFetchedAt(item.sharedAt ? new Date(item.sharedAt).toISOString() : null)
+    setSources([]); setCentraleUrl('')
+    setEvolution(null); setMultiResults(null); setMultiOpen(null)
+    setReportMargin(item.margin ?? MARGIN_DEFAULT)
+    setError(null)
+    requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
   // Pont sortant : véhicule courant → Pitch / Objections (champs VehicleDetails).
@@ -1517,6 +1627,14 @@ export default function PriceWatch() {
             item.type === 'vo' ? 'bg-warn/10 text-warn' : 'bg-emerald-400/10 text-emerald-400'
           }`}>{item.type?.toUpperCase()}</span>
         )}
+      />
+
+      <TeamWatchPanel
+        items={teamWatches}
+        loading={teamLoading}
+        onRefresh={refreshTeam}
+        onView={viewShared}
+        t={t}
       />
     </div>
   )

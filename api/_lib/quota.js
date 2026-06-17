@@ -206,3 +206,39 @@ export async function storePut(uid, key, valueStr) {
     return true
   } catch { return false }
 }
+
+// ── Flux partagé « Veilles de l'équipe » ──────────────────────────────────────
+// Une LISTE Redis commune à tout l'espace : chaque veille prix terminée y est
+// empilée (LPUSH), tronquée aux 50 dernières (LTRIM), et la clé expire 45 jours
+// après la dernière écriture. Filtrage par date à la lecture pour que chaque
+// veille disparaisse 45 jours après SA création, indépendamment des suivantes.
+const SHARED_KEY    = 'abushared:pricewatch'
+const SHARED_MAX    = 50
+const SHARED_TTL_S  = 45 * 24 * 60 * 60 // 45 jours
+
+/** Empile une veille dans le flux partagé. @returns {Promise<boolean>} */
+export async function sharedPush(item) {
+  if (!quotaEnabled() || !item) return false
+  try {
+    await pipeline([
+      ['LPUSH', SHARED_KEY, JSON.stringify(item)],
+      ['LTRIM', SHARED_KEY, '0', String(SHARED_MAX - 1)],
+      ['EXPIRE', SHARED_KEY, String(SHARED_TTL_S)],
+    ])
+    return true
+  } catch { return false }
+}
+
+/** Lit le flux partagé, en écartant les veilles de plus de 45 jours. @returns {Promise<Array>} */
+export async function sharedList() {
+  if (!quotaEnabled()) return []
+  try {
+    const out = await pipeline([['LRANGE', SHARED_KEY, '0', String(SHARED_MAX - 1)]])
+    const raw = out?.[0]?.result
+    if (!Array.isArray(raw)) return []
+    const cutoff = Date.now() - SHARED_TTL_S * 1000
+    return raw
+      .map((s) => { try { return JSON.parse(s) } catch { return null } })
+      .filter((x) => x && (x.sharedAt || 0) >= cutoff)
+  } catch { return [] }
+}
