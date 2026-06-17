@@ -219,21 +219,23 @@ export default function Hub() {
       )}
 
       {/* ── Veilles de l'équipe (flux partagé, lecture seule) ────────────────── */}
-      {teamWatches.length > 0 && (
-        <div className="glass-card p-4">
-          <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Users size={13} className="text-cyan-400" />
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('pw_team_title')}</span>
-            </div>
-            <button
-              onClick={() => navigate('/price-watch')}
-              className="flex items-center gap-1.5 text-[11px] font-bold text-cyan-400 border border-cyan-400/30
-                         px-2.5 py-1 rounded-lg hover:bg-cyan-400/10 transition"
-            >
-              {t('hub_team_all')} <ArrowRight size={11} />
-            </button>
+      <div className="glass-card p-4">
+        <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Users size={13} className="text-cyan-400" />
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('pw_team_title')}</span>
           </div>
+          <button
+            onClick={() => navigate('/price-watch')}
+            className="flex items-center gap-1.5 text-[11px] font-bold text-cyan-400 border border-cyan-400/30
+                       px-2.5 py-1 rounded-lg hover:bg-cyan-400/10 transition"
+          >
+            {t('hub_team_all')} <ArrowRight size={11} />
+          </button>
+        </div>
+        {teamWatches.length === 0 ? (
+          <p className="text-xs text-slate-500 px-1 py-1">{t('hub_team_empty')}</p>
+        ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             {teamWatches.map((item) => (
               <button
@@ -255,8 +257,8 @@ export default function Hub() {
               </button>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* ── Tools grid ───────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

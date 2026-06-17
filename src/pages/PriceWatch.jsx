@@ -33,11 +33,6 @@ import { pdfFileName } from '@/utils/exportPdf'
 import { exportReportPdf } from '@/utils/exportReportPdf'
 import { useToast } from '@/components/ui/Toast'
 
-const PW_SESSION = 'abu_pw_filters'
-function readPwSession(field, def) {
-  try { return JSON.parse(sessionStorage.getItem(PW_SESSION))?.[field] ?? def } catch { return def }
-}
-
 // État du lot persisté par utilisateur : un import interrompu (navigation,
 // fermeture) se retrouve intact au retour, avec reprise des lignes restantes.
 function readBatchStore() {
@@ -419,20 +414,23 @@ export default function PriceWatch() {
     { label: '< 500 ch', value: '500' },
   ]
 
-  const [type, setType]           = useState(() => readPwSession('type', 'vo'))
-  const [make, setMake]           = useState(() => readPwSession('make', ''))
-  const [model, setModel]         = useState(() => readPwSession('model', ''))
-  const [finition, setFinition]   = useState(() => readPwSession('finition', ''))
-  const [carrosserie, setCarrosserie] = useState(() => readPwSession('carrosserie', ''))
-  const [yearMin, setYearMin]     = useState(() => readPwSession('yearMin', ''))
-  const [yearMax, setYearMax]     = useState(() => readPwSession('yearMax', ''))
-  const [mileageMin, setMileageMin] = useState(() => readPwSession('mileageMin', ''))
-  const [mileageMax, setMileageMax] = useState(() => readPwSession('mileageMax', ''))
-  const [fuel, setFuel]           = useState(() => readPwSession('fuel', ''))
-  const [gearbox, setGearbox]     = useState(() => readPwSession('gearbox', ''))
-  const [powerMin, setPowerMin]   = useState(() => readPwSession('powerMin', ''))
-  const [powerMax, setPowerMax]   = useState(() => readPwSession('powerMax', ''))
-  const [country, setCountry]     = useState(() => readPwSession('country', 'FR'))
+  // Formulaire toujours vierge à l'arrivée sur la page (aucun préremplissage).
+  // Le préremplissage n'a lieu que via un pont inter-outils explicite (Hub,
+  // Analyse de stock…) qui appelle applyFilters() après le montage.
+  const [type, setType]           = useState('vo')
+  const [make, setMake]           = useState('')
+  const [model, setModel]         = useState('')
+  const [finition, setFinition]   = useState('')
+  const [carrosserie, setCarrosserie] = useState('')
+  const [yearMin, setYearMin]     = useState('')
+  const [yearMax, setYearMax]     = useState('')
+  const [mileageMin, setMileageMin] = useState('')
+  const [mileageMax, setMileageMax] = useState('')
+  const [fuel, setFuel]           = useState('')
+  const [gearbox, setGearbox]     = useState('')
+  const [powerMin, setPowerMin]   = useState('')
+  const [powerMax, setPowerMax]   = useState('')
+  const [country, setCountry]     = useState('FR')
   const [pwMode, setPwMode]       = useState('search') // 'search' | 'file'
   const [margin, setMargin]       = useState(getMarginTarget)
 
@@ -525,15 +523,6 @@ export default function PriceWatch() {
     setGearbox(f.gearbox || ''); setPowerMin(f.powerMin || ''); setPowerMax(f.powerMax || '')
     setCountry(f.country || 'FR')
   }
-
-  // Persist filter state across page navigations (session-scoped)
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(PW_SESSION, JSON.stringify(
-        { type, make, model, finition, carrosserie, yearMin, yearMax, mileageMin, mileageMax, fuel, gearbox, powerMin, powerMax, country }
-      ))
-    } catch {}
-  }, [type, make, model, finition, carrosserie, yearMin, yearMax, mileageMin, mileageMax, fuel, gearbox, powerMin, powerMax, country])
 
   // Persiste l'état du lot (fichier, sélection, résultats) — reprise possible
   // après navigation ou fermeture. Supprimé quand le lot est fermé.

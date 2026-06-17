@@ -940,6 +940,7 @@ export default {
   hub_pinned_title: 'Pinned watches',
   hub_rerun_last: 'Re-run my last price watch',
   hub_team_all: 'View all',
+  hub_team_empty: 'No shared price watch yet. Share one from the Price watch tool (Share button or drag & drop).',
   hub_rerun: 'Re-run',
   // Price Watch — batch analysis (CSV / Excel import)
   pw_mode_search: 'Search',

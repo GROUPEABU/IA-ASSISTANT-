@@ -968,6 +968,7 @@ export default {
   hub_pinned_title: 'Veilles épinglées',
   hub_rerun_last: 'Relancer ma dernière veille',
   hub_team_all: 'Tout voir',
+  hub_team_empty: 'Aucune veille partagée pour l’instant. Partagez-en une depuis l’outil Veille prix (bouton Partager ou glisser-déposer).',
   hub_rerun: 'Relancer',
   // Veille Prix — analyse par lot (import CSV / Excel)
   pw_mode_search: 'Recherche',
