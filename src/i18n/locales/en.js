@@ -17,6 +17,8 @@ export default {
   
 
     nav_settings: 'Settings',
+    sidebar_collapse: 'Collapse menu',
+    sidebar_expand: 'Expand menu',
     bn_hub: 'Hub',
     bn_products: 'Products',
     bn_price: 'Price',

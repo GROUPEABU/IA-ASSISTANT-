@@ -19,6 +19,8 @@ export default {
   
 
     nav_settings: 'Paramètres',
+    sidebar_collapse: 'Réduire le menu',
+    sidebar_expand: 'Agrandir le menu',
     // Bottom nav
     bn_hub: 'Hub',
     bn_products: 'Produits',

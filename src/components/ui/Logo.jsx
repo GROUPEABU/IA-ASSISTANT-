@@ -1,4 +1,4 @@
-export default function Logo({ size = 'md', className = '' }) {
+export default function Logo({ size = 'md', className = '', iconOnly = false }) {
   const configs = {
     sm:  { iconS: 22, fontSize: 18, gap: 8,  letterSpacing: '-0.5px' },
     md:  { iconS: 30, fontSize: 24, gap: 10, letterSpacing: '-0.6px' },
@@ -8,6 +8,26 @@ export default function Logo({ size = 'md', className = '' }) {
   const c = configs[size] ?? configs.md
   const totalW = c.iconS + c.gap + c.fontSize * 7.6
   const h = Math.max(c.iconS, c.fontSize)
+
+  // Mode icône seule (sidebar repliée) — juste le pictogramme infini.
+  if (iconOnly) {
+    return (
+      <svg
+        viewBox="0 0 100 100"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{ width: c.iconS, height: c.iconS }}
+        className={`logo-svg ${className}`}
+      >
+        <circle cx="50" cy="50" r="50" fill="#393F4A" />
+        <path
+          d="M 14 50 a 18 18 0 1 0 36 0 a 18 18 0 1 0 36 0 a 18 18 0 1 0 -36 0 a 18 18 0 1 0 -36 0"
+          stroke="#50E5E5" strokeWidth="11"
+          strokeLinecap="round" strokeLinejoin="round" fill="none"
+        />
+      </svg>
+    )
+  }
 
   return (
     <svg
