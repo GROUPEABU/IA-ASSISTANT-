@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Home, BookOpen, Bell, Gauge, ShieldCheck, MessageSquare } from 'lucide-react'
+import { Home, BookOpen, TrendingUp, Gauge, ShieldCheck, MessageSquare } from 'lucide-react'
 import clsx from 'clsx'
 import { useSettings } from '@/contexts/SettingsContext'
 
@@ -9,7 +9,7 @@ export default function BottomNav() {
   const items = [
     { to: '/hub',         icon: Home,          labelKey: 'bn_hub' },
     { to: '/products',    icon: BookOpen,      labelKey: 'bn_products' },
-    { to: '/price-watch', icon: Bell,          labelKey: 'bn_price' },
+    { to: '/price-watch', icon: TrendingUp,    labelKey: 'bn_price' },
     { to: '/co2-malus',   icon: Gauge,         labelKey: 'bn_malus' },
     { to: '/objections',  icon: ShieldCheck,   labelKey: 'bn_objections' },
     { to: '/chat',        icon: MessageSquare, labelKey: 'bn_chat' },

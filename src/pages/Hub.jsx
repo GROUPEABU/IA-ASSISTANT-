@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, Bell, ShieldCheck, Calculator, Mic, Globe, Zap, TrendingUp, Ruler, Boxes, Truck, History, Pin, RefreshCw, Users, ExternalLink } from 'lucide-react'
+import { BookOpen, Gauge, MessageSquare, ArrowRight, Sparkles, ShieldCheck, Calculator, Mic, Globe, Zap, TrendingUp, Ruler, Boxes, Truck, History, Pin, RefreshCw, Users, ExternalLink } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 import { sendToTool } from '@/utils/toolBridge'
 import { ukey, getSessionUserId } from '@/utils/userStorage'
@@ -28,7 +28,7 @@ function readHist(ns) {
 }
 
 const ACTIVITY_SOURCES = [
-  { ns: 'pricewatch',   route: '/price-watch',    icon: Bell,        titleKey: 'tool_price_title',      label: (i) => i.searchLabel },
+  { ns: 'pricewatch',   route: '/price-watch',    icon: TrendingUp,  titleKey: 'tool_price_title',      label: (i) => i.searchLabel },
   { ns: 'analysestock', route: '/stock-analysis', icon: Boxes,       titleKey: 'tool_stock_title',      label: (i) => i.generatedFor },
   { ns: 'objections',   route: '/objections',     icon: ShieldCheck, titleKey: 'tool_objections_title', label: (i) => i.generatedFor },
   { ns: 'pitch',        route: '/pitch',          icon: Mic,         titleKey: 'tool_pitch_title',      label: (i) => i.generatedFor },
@@ -98,7 +98,7 @@ export default function Hub() {
   const tools = [
     { to: '/products',   icon: BookOpen,      color: 'cyan',   titleKey: 'tool_products_title',  descKey: 'tool_products_desc',   badgeKey: 'hub_badge_ai_reports' },
     { to: '/co2-malus',  icon: Gauge,         color: 'emerald',titleKey: 'tool_co2_title',       descKey: 'tool_co2_desc',        badgeKey: 'hub_badge_40_countries' },
-    { to: '/price-watch',icon: Bell,          color: 'amber',  titleKey: 'tool_price_title',     descKey: 'tool_price_desc',      badgeKey: 'hub_badge_used_new' },
+    { to: '/price-watch',icon: TrendingUp,    color: 'amber',  titleKey: 'tool_price_title',     descKey: 'tool_price_desc',      badgeKey: 'hub_badge_used_new' },
     { to: '/objections', icon: ShieldCheck,   color: 'rose',   titleKey: 'tool_objections_title',descKey: 'tool_objections_desc', badgeKey: 'hub_badge_btob_btoc' },
     // TCO masqué temporairement (pas utilisé pour le moment) — réafficher en
     // décommentant cette ligne. La page et la route restent en place.
@@ -246,7 +246,7 @@ export default function Hub() {
                 className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-navy-900/40 border border-navy-700/30
                            hover:border-cyan-400/30 hover:bg-cyan-400/5 transition text-left group"
               >
-                <Bell size={13} className="text-slate-500 group-hover:text-cyan-400 flex-shrink-0 transition-colors" />
+                <TrendingUp size={13} className="text-slate-500 group-hover:text-cyan-400 flex-shrink-0 transition-colors" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold text-slate-300 group-hover:text-cyan-300 truncate transition-colors">
                     {item.searchLabel || '—'}

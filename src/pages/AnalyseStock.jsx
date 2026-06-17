@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Boxes, Link2, Upload, Search, RefreshCw, RotateCcw, Download, Copy, Braces, Bell, ChevronDown, FileText } from 'lucide-react'
+import { Boxes, Link2, Upload, Search, RefreshCw, RotateCcw, Download, Copy, Braces, TrendingUp, ChevronDown, FileText } from 'lucide-react'
 import { analyzeStock, scrapeStockWithSearch } from '@/services/stockAnalysis'
 import { computeStockStats } from '@/utils/stockStats'
 import { extractVehiclesSmart, toStockVehicles } from '@/services/smartImport'
@@ -94,7 +94,7 @@ function VehiclesList({ vehicles, t, onPriceWatch }) {
                 className="flex items-center gap-1 text-[10px] font-bold text-slate-400 border border-navy-600/50
                            px-2 py-1 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 transition flex-shrink-0"
               >
-                <Bell size={10} /> {t('stock_pw_btn')}
+                <TrendingUp size={10} /> {t('stock_pw_btn')}
               </button>
             </div>
           ))}

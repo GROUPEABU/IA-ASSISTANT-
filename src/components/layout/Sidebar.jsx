@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import {
-  MessageSquare, X, Home, BookOpen, Gauge, Bell, ShieldCheck, Mic, LogOut,
+  MessageSquare, X, Home, BookOpen, Gauge, TrendingUp, ShieldCheck, Mic, LogOut,
   Calculator, Ruler, Boxes, Truck, PanelLeftClose, PanelLeftOpen,
   Settings, ChevronsUpDown,
 } from 'lucide-react'
@@ -99,7 +99,7 @@ export default function Sidebar({ isOpen, onClose }) {
     {
       labelKey: 'nav_tools',
       items: [
-        { to: '/price-watch', icon: Bell,        labelKey: 'nav_price_watch' },
+        { to: '/price-watch', icon: TrendingUp,  labelKey: 'nav_price_watch' },
         { to: '/objections',  icon: ShieldCheck, labelKey: 'nav_objections' },
         { to: '/pitch',       icon: Mic,         labelKey: 'nav_pitch' },
         // TCO masqué temporairement — réafficher en décommentant cette ligne.

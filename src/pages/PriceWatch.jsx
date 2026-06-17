@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Bell, Search, RotateCcw, ExternalLink, Clock, Download, FileText,
+  Search, RotateCcw, ExternalLink, Clock, Download, FileText,
   Wifi, WifiOff, Calculator, Sparkles, ShieldCheck, Copy, Mic, TrendingDown, TrendingUp,
   FileSpreadsheet, ChevronDown, CheckSquare, Square, StopCircle, X, AlertTriangle, Share2,
   Users, RefreshCw, Trash2,
@@ -1055,7 +1055,7 @@ export default function PriceWatch() {
       {/* ── Filtres ─────────────────────────────────────────────────────────── */}
       <div className="glass-card p-4 md:p-5">
         <div className="flex items-center gap-2 mb-4">
-          <Bell size={15} className="text-cyan-400" />
+          <TrendingUp size={15} className="text-cyan-400" />
           <h2 className="text-sm font-semibold text-white">{t('tool_price_title')}</h2>
         </div>
 
@@ -1722,7 +1722,7 @@ export default function PriceWatch() {
       {/* ── Empty state ──────────────────────────────────────────────────────── */}
       {!showResult && !error && (
         <div className="glass-card p-10 text-center">
-          <Bell size={36} className="text-slate-700 mx-auto mb-3" />
+          <TrendingUp size={36} className="text-slate-700 mx-auto mb-3" />
           <p className="text-sm text-slate-400 mb-1">{t('select_brand_model')}</p>
           <p className="text-xs text-slate-600">{t('refine_filters')}</p>
         </div>
