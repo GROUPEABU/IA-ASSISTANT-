@@ -6,23 +6,31 @@ const LOCAL_KEY = 'avatar'
 const MAX_PX = 128  // carré max pour le stockage
 const QUALITY = 0.75
 
-/** Redimensionne et encode un File en data URL JPEG (max 128x128). */
+/**
+ * Redimensionne et encode un File en data URL JPEG (max 128×128).
+ * On passe par FileReader (URL `data:`) plutôt que URL.createObjectURL (`blob:`)
+ * car la Content Security Policy du site autorise `data:` mais pas `blob:` en
+ * img-src — un blob bloquerait silencieusement le chargement de l'image.
+ */
 export function resizeToDataUrl(file) {
   return new Promise((resolve, reject) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      const scale = Math.min(1, MAX_PX / Math.max(img.width, img.height))
-      const w = Math.round(img.width * scale)
-      const h = Math.round(img.height * scale)
-      const canvas = document.createElement('canvas')
-      canvas.width = w; canvas.height = h
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
-      resolve(canvas.toDataURL('image/jpeg', QUALITY))
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new Image()
+      img.onload = () => {
+        const scale = Math.min(1, MAX_PX / Math.max(img.width, img.height))
+        const w = Math.round(img.width * scale)
+        const h = Math.round(img.height * scale)
+        const canvas = document.createElement('canvas')
+        canvas.width = w; canvas.height = h
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+        resolve(canvas.toDataURL('image/jpeg', QUALITY))
+      }
+      img.onerror = reject
+      img.src = reader.result // data: URL — autorisée par la CSP
     }
-    img.onerror = reject
-    img.src = url
+    reader.onerror = reject
+    reader.readAsDataURL(file)
   })
 }
 
