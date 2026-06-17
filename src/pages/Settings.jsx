@@ -11,13 +11,13 @@ import { getAvatar, saveAvatar, removeAvatar, resizeToDataUrl, syncAvatar } from
 
 const Section = ({ icon: Icon, title, children }) => (
   <div className="glass-card overflow-hidden">
-    <div className="flex items-center gap-2.5 px-5 py-4 border-b border-navy-700/50 bg-navy-900/20">
-      <div className="w-8 h-8 rounded-lg bg-cyan-400/10 border border-cyan-400/15 flex items-center justify-center flex-shrink-0">
-        <Icon size={15} className="text-cyan-400" />
+    <div className="flex items-center gap-3 px-6 py-4 border-b border-navy-700/50 bg-navy-900/20">
+      <div className="w-9 h-9 rounded-xl bg-cyan-400/10 border border-cyan-400/15 flex items-center justify-center flex-shrink-0">
+        <Icon size={16} className="text-cyan-400" />
       </div>
-      <h3 className="text-sm font-semibold text-white">{title}</h3>
+      <h3 className="text-base font-semibold text-white">{title}</h3>
     </div>
-    <div className="p-5 space-y-5">
+    <div className="p-6 space-y-6">
       {children}
     </div>
   </div>
@@ -227,7 +227,13 @@ export default function Settings() {
   }
 
   return (
-    <div className="w-full max-w-5xl animate-fade-in">
+    <div className="w-full max-w-5xl animate-fade-in space-y-6">
+      {/* En-tête de page */}
+      <div>
+        <h1 className="text-2xl font-bold text-white">{t('nav_settings')}</h1>
+        <p className="text-sm text-slate-500 mt-1">{t('settings_page_subtitle')}</p>
+      </div>
+
       {/* Profil */}
       <Section icon={User} title={t('settings_profile_section')}>
         {/* Photo + identité */}
@@ -471,7 +477,7 @@ export default function Settings() {
       </Section>
 
       {/* Row 2: Appearance + Data side by side on desktop */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Section icon={Palette} title={t('settings_appearance')}>
           <Field label={t('settings_theme_label')} description={t('settings_theme_desc')}>
             <div className="flex gap-2">
@@ -544,7 +550,7 @@ export default function Settings() {
       <div
         id="usage"
         ref={usageRef}
-        className={`mt-4 scroll-mt-20 rounded-2xl transition-shadow duration-500 ${
+        className={`scroll-mt-20 rounded-2xl transition-shadow duration-500 ${
           usageHighlight ? 'ring-2 ring-cyan-400/40' : ''
         }`}
       >
@@ -627,7 +633,7 @@ export default function Settings() {
       </div>
 
       {/* Row 4: Legal — full width */}
-      <div className="mt-4">
+      <div>
         <Section icon={Scale} title={t('settings_legal_section')}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
             {[
@@ -653,7 +659,7 @@ export default function Settings() {
       </div>
 
       {/* Marqueur de build — vérifie que l'appareil charge la dernière version */}
-      <p className="text-[10px] text-slate-600 text-center mt-4">
+      <p className="text-[10px] text-slate-600 text-center">
         Build {typeof __APP_BUILD__ !== 'undefined' ? __APP_BUILD__ : '—'}
       </p>
     </div>

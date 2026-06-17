@@ -584,6 +584,7 @@ export default {
     settings_profile_phone: 'Phone',
     settings_profile_save: 'Save',
     settings_profile_saved: 'Saved',
+    settings_page_subtitle: 'Manage your account and preferences.',
     settings_security_section: 'Security',
     settings_security_desc: 'Update your password to keep your account secure.',
     pw_current: 'Current password',

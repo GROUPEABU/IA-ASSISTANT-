@@ -610,6 +610,7 @@ export default {
     settings_profile_phone: 'Téléphone',
     settings_profile_save: 'Enregistrer',
     settings_profile_saved: 'Enregistré',
+    settings_page_subtitle: 'Gérez votre compte et vos préférences.',
     settings_security_section: 'Sécurité',
     settings_security_desc: 'Mettez à jour votre mot de passe pour sécuriser votre compte.',
     pw_current: 'Mot de passe actuel',
