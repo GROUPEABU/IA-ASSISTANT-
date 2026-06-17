@@ -10,14 +10,12 @@ import { getSpend, MONTHLY_CAP, DAILY_CAP, migrateToQuota } from '@/utils/spendT
 import { getAvatar, saveAvatar, removeAvatar, resizeToDataUrl, syncAvatar } from '@/utils/avatarStore'
 
 const Section = ({ icon: Icon, title, children }) => (
-  <div className="glass-card overflow-hidden">
-    <div className="flex items-center gap-3 px-6 py-4 border-b border-navy-700/50 bg-navy-900/20">
-      <div className="w-9 h-9 rounded-xl bg-cyan-400/10 border border-cyan-400/15 flex items-center justify-center flex-shrink-0">
-        <Icon size={16} className="text-cyan-400" />
-      </div>
-      <h3 className="text-base font-semibold text-white">{title}</h3>
+  <div className="glass-card p-6 sm:p-8">
+    <div className="flex items-center gap-2.5 mb-7">
+      <Icon size={18} className="text-cyan-400/80 flex-shrink-0" />
+      <h2 className="text-lg font-semibold text-white tracking-tight">{title}</h2>
     </div>
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {children}
     </div>
   </div>
@@ -267,7 +265,7 @@ export default function Settings() {
       {activeTab === 'profile' && (
       <Section icon={User} title={t('settings_profile_section')}>
         {/* Photo + identité */}
-        <div className="flex items-start gap-6 pb-6 border-b border-navy-700/40">
+        <div className="flex items-start gap-6 pb-6 border-b border-white/5">
           <div className="flex-shrink-0">
             {avatar
               ? <img src={avatar} alt="avatar" className="w-24 h-24 rounded-full object-cover ring-2 ring-cyan-400/30 shadow-xl" />
@@ -314,7 +312,7 @@ export default function Settings() {
         {/* Formulaire — 2 colonnes */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">{t('settings_profile_firstname')}</label>
+            <label className="block text-[13px] font-medium text-slate-400">{t('settings_profile_firstname')}</label>
             <input
               type="text"
               value={profileFirstname}
@@ -326,7 +324,7 @@ export default function Settings() {
             />
           </div>
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">{t('settings_profile_lastname')}</label>
+            <label className="block text-[13px] font-medium text-slate-400">{t('settings_profile_lastname')}</label>
             <input
               type="text"
               value={profileLastname}
@@ -338,7 +336,7 @@ export default function Settings() {
             />
           </div>
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">{t('settings_profile_email')}</label>
+            <label className="block text-[13px] font-medium text-slate-400">{t('settings_profile_email')}</label>
             <input
               type="email"
               value={user?.username || ''}
@@ -349,7 +347,7 @@ export default function Settings() {
             <p className="text-[11px] text-slate-600">{t('settings_profile_email_readonly')}</p>
           </div>
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">{t('settings_profile_phone')}</label>
+            <label className="block text-[13px] font-medium text-slate-400">{t('settings_profile_phone')}</label>
             <input
               type="tel"
               value={profilePhone}
@@ -378,12 +376,12 @@ export default function Settings() {
 
       {activeTab === 'security' && (
       <Section icon={Lock} title={t('settings_security_section')}>
-        <p className="text-sm text-slate-400 -mt-1 mb-2">{t('settings_security_desc')}</p>
+        <p className="text-sm text-slate-400 -mt-2">{t('settings_security_desc')}</p>
 
         <div className="space-y-4">
           {/* Mot de passe actuel */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">{t('pw_current')}</label>
+            <label className="block text-[13px] font-medium text-slate-400">{t('pw_current')}</label>
             <div className="relative">
               <input
                 type={pwShowCur ? 'text' : 'password'}
@@ -404,7 +402,7 @@ export default function Settings() {
           {/* Nouveau + confirmation — côte à côte sur desktop */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">{t('pw_new')}</label>
+              <label className="block text-[13px] font-medium text-slate-400">{t('pw_new')}</label>
               <div className="relative">
                 <input
                   type={pwShowNew ? 'text' : 'password'}
@@ -422,7 +420,7 @@ export default function Settings() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">{t('pw_confirm')}</label>
+              <label className="block text-[13px] font-medium text-slate-400">{t('pw_confirm')}</label>
               <div className="relative">
                 <input
                   type={pwShowConf ? 'text' : 'password'}
