@@ -1,11 +1,18 @@
 import { useState } from 'react'
-import { History, Trash2, X, Pin, Search } from 'lucide-react'
+import { History, Trash2, X, Pin, Search, Users } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 
-export default function HistoryPanel({ items, onRestore, onRemove, onClear, onTogglePin, primary, badge }) {
+export default function HistoryPanel({
+  items, onRestore, onRemove, onClear, onTogglePin, primary, badge,
+  onShareItem, shareTitle, onItemDragStart, onItemDragEnd,
+}) {
   const { t } = useSettings()
   const [query, setQuery] = useState('')
   if (!items || items.length === 0) return null
+
+  // Largeur réservée aux boutons d'action à droite (pin / partager / supprimer).
+  const actionCount = (onTogglePin ? 1 : 0) + (onShareItem ? 1 : 0) + (onRemove ? 1 : 0)
+  const padRight = actionCount >= 3 ? 'pr-[5.25rem]' : actionCount === 2 ? 'pr-14' : 'pr-8'
 
   // Filtre sur le libellé principal — les index d'origine sont conservés pour
   // que suppression / épinglage visent toujours le bon élément.
@@ -45,10 +52,16 @@ export default function HistoryPanel({ items, onRestore, onRemove, onClear, onTo
           <p className="text-xs text-slate-600 px-1 py-2">{t('history_no_match')}</p>
         )}
         {visible.map(({ item, index }) => (
-          <div key={item.id ?? item.savedAt ?? index} className="group relative">
+          <div
+            key={item.id ?? item.savedAt ?? index}
+            className="group relative"
+            draggable={!!onShareItem}
+            onDragStart={onShareItem ? (e) => { e.dataTransfer.effectAllowed = 'copy'; try { e.dataTransfer.setData('text/plain', String(primary(item) || '')) } catch {} onItemDragStart?.(item) } : undefined}
+            onDragEnd={onShareItem ? () => onItemDragEnd?.() : undefined}
+          >
             <button
               onClick={() => onRestore(item)}
-              className={`w-full text-left px-3 py-2 ${onTogglePin ? 'pr-14' : 'pr-8'} rounded-xl bg-navy-900/40 border transition ${
+              className={`w-full text-left px-3 py-2 ${padRight} rounded-xl bg-navy-900/40 border transition ${
                 item.pinned ? 'border-cyan-400/25 bg-cyan-400/5' : 'border-navy-700/30 hover:border-cyan-400/30 hover:bg-cyan-400/5'
               }`}
             >
@@ -62,6 +75,16 @@ export default function HistoryPanel({ items, onRestore, onRemove, onClear, onTo
               <p className="text-[10px] text-slate-600">{new Date(item.savedAt).toLocaleString()}</p>
             </button>
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+              {onShareItem && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onShareItem(item) }}
+                  className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-slate-600 hover:text-cyan-400 transition p-1 rounded-lg"
+                  aria-label={shareTitle || t('pw_share_team')}
+                  title={shareTitle || t('pw_share_team')}
+                >
+                  <Users size={12} />
+                </button>
+              )}
               {onTogglePin && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onTogglePin(index) }}

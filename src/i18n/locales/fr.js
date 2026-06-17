@@ -1029,6 +1029,10 @@ export default {
   pw_team_hint: 'Les veilles de tous les membres, conservées 45 jours (50 dernières).',
   pw_team_refresh: 'Actualiser',
   pw_team_empty: 'Aucune veille partagée pour le moment.',
+  pw_team_drop: 'Déposez ici pour partager avec l’équipe',
+  pw_team_shared: 'Veille partagée avec l’équipe',
+  pw_share_pdf: 'Exporter / partager le PDF',
+  pw_share_team: 'Partager à l’équipe',
   pw_evol_margin_warn: 'Marge cible différente entre les deux analyses ({a} € → {b} € HT) — les prix d\u2019achat ne sont pas directement comparables.',
   page_stock_sub: 'Diagnostic du stock BtoB · prix, rotation, véhicules à repricer',
   // Logistique — plan de chargement camions

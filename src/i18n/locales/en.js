@@ -1001,6 +1001,10 @@ export default {
   pw_team_hint: 'Price watches from all members, kept for 45 days (latest 50).',
   pw_team_refresh: 'Refresh',
   pw_team_empty: 'No shared price watch yet.',
+  pw_team_drop: 'Drop here to share with the team',
+  pw_team_shared: 'Price watch shared with the team',
+  pw_share_pdf: 'Export / share PDF',
+  pw_share_team: 'Share with the team',
   pw_evol_margin_warn: 'Different target margin between the two analyses ({a} € → {b} € excl. VAT) — purchase prices are not directly comparable.',
   page_stock_sub: 'B2B stock diagnosis · pricing, rotation, vehicles to reprice',
   // Logistics — truck loading plan

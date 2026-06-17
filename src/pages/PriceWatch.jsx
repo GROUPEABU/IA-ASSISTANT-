@@ -242,8 +242,10 @@ function EvolutionCard({ evolution, t }) {
 // Flux commun à tous les membres : chaque veille terminée y apparaît, avec son
 // auteur et sa date. Conservé 50 max / 45 jours côté serveur. Aucune action de
 // suppression (auto-purge) — on clique pour consulter le rapport.
-function TeamWatchPanel({ items, loading, onRefresh, onView, t }) {
+function TeamWatchPanel({ items, loading, onRefresh, onView, t, dragActive, onDropShare }) {
   const [open, setOpen] = useState(false)
+  const [over, setOver] = useState(false)
+  const expanded = open || dragActive // s'ouvre tout seul quand on glisse une veille
 
   const relDate = (ts) => {
     const d = Math.floor((Date.now() - ts) / 86400000)
@@ -253,7 +255,12 @@ function TeamWatchPanel({ items, loading, onRefresh, onView, t }) {
   }
 
   return (
-    <div className="glass-card overflow-hidden">
+    <div
+      className={`glass-card overflow-hidden transition ${over ? 'ring-2 ring-cyan-400/60' : dragActive ? 'ring-1 ring-cyan-400/30' : ''}`}
+      onDragOver={dragActive ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setOver(true) } : undefined}
+      onDragLeave={dragActive ? () => setOver(false) : undefined}
+      onDrop={dragActive ? (e) => { e.preventDefault(); setOver(false); onDropShare?.() } : undefined}
+    >
       <button
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between gap-2 px-4 py-3 hover:bg-navy-800/30 transition"
@@ -270,8 +277,15 @@ function TeamWatchPanel({ items, loading, onRefresh, onView, t }) {
         <ChevronDown size={16} className={`text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {open && (
+      {expanded && (
         <div className="border-t border-navy-700/50">
+          {dragActive && (
+            <div className={`mx-4 my-3 rounded-xl border-2 border-dashed py-4 text-center text-xs font-semibold transition ${
+              over ? 'border-cyan-400 text-cyan-400 bg-cyan-400/5' : 'border-navy-600/60 text-slate-500'
+            }`}>
+              {t('pw_team_drop')}
+            </div>
+          )}
           <div className="flex items-center justify-between gap-2 px-4 py-2">
             <p className="text-[11px] text-slate-500">{t('pw_team_hint')}</p>
             <button
@@ -322,6 +336,8 @@ export default function PriceWatch() {
   const { toast } = useToast()
   const navigate = useNavigate()
   const resultRef = useRef(null)
+  const shareBtnRef = useRef(null)
+  const [shareMenuPos, setShareMenuPos] = useState(null)
 
   const FUELS = [
     { label: t('price_fuel_all'), code: '' },
@@ -476,11 +492,30 @@ export default function PriceWatch() {
   // Veilles partagées par l'équipe (lecture seule, flux commun).
   const [teamWatches, setTeamWatches] = useState([])
   const [teamLoading, setTeamLoading] = useState(false)
+  const [draggedVeille, setDraggedVeille] = useState(null) // veille tirée depuis l'historique
+  const [shareMenuOpen, setShareMenuOpen] = useState(false) // menu du bouton « Partager »
   const refreshTeam = async () => {
     setTeamLoading(true)
     try { setTeamWatches(await listSharedVeilles()) } finally { setTeamLoading(false) }
   }
   useEffect(() => { refreshTeam() }, [])
+
+  // Partage explicite (choix de l'utilisateur) — depuis le rapport courant,
+  // l'historique, ou par glisser-déposer vers le panneau « Veilles de l'équipe ».
+  const shareToTeam = async (payload) => {
+    if (!payload?.report) return
+    await shareVeille(payload)
+    toast(t('pw_team_shared'), 'success')
+    refreshTeam()
+  }
+  const shareHistoryItem = (item) => shareToTeam({
+    searchLabel: item.searchLabel, country: item.country, type: item.type,
+    report: item.report, figures: item.figures, margin: item.margin, hasLiveData: item.hasLiveData,
+  })
+  const shareCurrentToTeam = () => shareToTeam({
+    searchLabel, country, type, report,
+    figures: extractReportFigures(report), margin: reportMargin ?? getMarginTarget(), hasLiveData,
+  })
 
   // Synchronise le formulaire avec un jeu de filtres (restauration / pont inter-outils).
   const applyFilters = (f) => {
@@ -671,8 +706,6 @@ export default function PriceWatch() {
 
       const filtersSnapshot = { ...filters, country: ctry.code }
       addHistory({ searchLabel: label, country: ctry.code, type: filters.type, report: cleanText, hasLiveData: !!usedWebSearch, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '', filters: filtersSnapshot, figures, margin: marginUsed })
-      // Partage avec l'équipe (lecture seule, flux commun 50 dernières / 45 j).
-      shareVeille({ searchLabel: label, country: ctry.code, type: filters.type, report: cleanText, figures, margin: marginUsed, hasLiveData: !!usedWebSearch })
 
       // Comparaison multi-marchés : même véhicule, mêmes filtres, autres pays.
       const extras = extraCountries.filter((code) => code !== ctry.code)
@@ -711,7 +744,6 @@ export default function PriceWatch() {
                 hasLiveData: !!xLive, fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '',
                 filters: { ...filters, country: exCtry.code }, figures: xFig, margin: marginUsed,
               })
-              shareVeille({ searchLabel: exLabel, country: exCtry.code, type: filters.type, report: xText, figures: xFig, margin: marginUsed, hasLiveData: !!xLive })
             } catch (e) {
               multi[k] = { ...multi[k], status: 'error', error: e.message }
             }
@@ -828,7 +860,6 @@ export default function PriceWatch() {
           fetchedAt: new Date().toISOString(), sources: [], centraleUrl: '',
           filters: { ...filters, country: ctry.code }, figures, margin: rowMargin,
         })
-        shareVeille({ searchLabel: `${results[i].label} · ${ctry.label}`, country: ctry.code, type: 'vo', report: text, figures, margin: rowMargin, hasLiveData: !!usedWebSearch })
       } catch (err) {
         results[i] = { ...results[i], status: 'error', error: err.message }
       }
@@ -1448,11 +1479,49 @@ export default function PriceWatch() {
                   {exporting ? <Spinner size="sm" /> : <Download size={12} />}
                   {t('download_pdf')}
                 </button>
-                <button onClick={handleShare} disabled={exporting}
+                <button
+                  ref={shareBtnRef}
+                  onClick={() => {
+                    if (shareMenuOpen) { setShareMenuOpen(false); return }
+                    const r = shareBtnRef.current?.getBoundingClientRect()
+                    if (r) setShareMenuPos({ top: r.bottom + 4, left: r.left })
+                    setShareMenuOpen(true)
+                  }}
+                  disabled={exporting}
+                  aria-haspopup="menu"
+                  aria-expanded={shareMenuOpen}
                   className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
                              px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition flex-shrink-0">
                   <Share2 size={12} /> {t('pw_share')}
+                  <ChevronDown size={11} className={`transition-transform ${shareMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
+                {shareMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShareMenuOpen(false)} />
+                    <div
+                      role="menu"
+                      style={{ position: 'fixed', top: shareMenuPos?.top, left: shareMenuPos?.left }}
+                      className="z-50 w-52 rounded-xl border border-navy-700/70 bg-navy-800 shadow-xl shadow-black/40 overflow-hidden py-1 animate-fade-in"
+                    >
+                      <button
+                        role="menuitem"
+                        onClick={() => { setShareMenuOpen(false); handleShare() }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-slate-200 hover:bg-navy-700/60 hover:text-white transition-colors text-left"
+                      >
+                        <Download size={14} className="flex-shrink-0 text-slate-400" />
+                        {t('pw_share_pdf')}
+                      </button>
+                      <button
+                        role="menuitem"
+                        onClick={() => { setShareMenuOpen(false); shareCurrentToTeam() }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-slate-200 hover:bg-cyan-400/10 hover:text-cyan-400 transition-colors text-left"
+                      >
+                        <Users size={14} className="flex-shrink-0 text-cyan-400" />
+                        {t('pw_share_team')}
+                      </button>
+                    </div>
+                  </>
+                )}
                 <button onClick={() => sendToTool(navigate, '/pitch', vehicleDetailsPayload())}
                   className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
                              px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition flex-shrink-0">
@@ -1623,6 +1692,10 @@ export default function PriceWatch() {
         onRemove={removeHistory}
         onClear={clearHistory}
         onTogglePin={togglePin}
+        onShareItem={shareHistoryItem}
+        shareTitle={t('pw_share_team')}
+        onItemDragStart={(item) => setDraggedVeille(item)}
+        onItemDragEnd={() => setDraggedVeille(null)}
         primary={(item) => item.searchLabel}
         badge={(item) => (
           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${
@@ -1637,6 +1710,8 @@ export default function PriceWatch() {
         onRefresh={refreshTeam}
         onView={viewShared}
         t={t}
+        dragActive={!!draggedVeille}
+        onDropShare={() => { if (draggedVeille) { shareHistoryItem(draggedVeille); setDraggedVeille(null) } }}
       />
     </div>
   )
