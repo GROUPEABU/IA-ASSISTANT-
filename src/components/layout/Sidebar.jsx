@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import {
   MessageSquare, X, Home, BookOpen, Gauge, Bell, ShieldCheck, Mic, LogOut,
@@ -8,11 +9,19 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
 import Logo from '@/components/ui/Logo'
 import DailyQuotaBar from '@/components/ui/DailyQuotaBar'
+import { getAvatar } from '@/utils/avatarStore'
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth()
   const { t } = useSettings()
   const navigate = useNavigate()
+
+  const [avatar, setAvatar] = useState(() => getAvatar(user?.id ?? null))
+  useEffect(() => {
+    const refresh = () => setAvatar(getAvatar(user?.id ?? null))
+    window.addEventListener('abu:avatar', refresh)
+    return () => window.removeEventListener('abu:avatar', refresh)
+  }, [user?.id])
 
   const navGroups = [
     {
@@ -108,11 +117,17 @@ export default function Sidebar({ isOpen, onClose }) {
               title={t('nav_settings')}
             >
               <div className="relative flex-shrink-0">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
-                                flex items-center justify-center text-navy-900 text-[11px] font-bold
-                                shadow-sm shadow-cyan-400/30 group-hover:scale-105 transition-transform">
-                  {user.initials}
-                </div>
+                {avatar
+                  ? <img src={avatar} alt="avatar"
+                         className="w-8 h-8 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform ring-1 ring-cyan-400/30" />
+                  : (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
+                                    flex items-center justify-center text-navy-900 text-[11px] font-bold
+                                    shadow-sm shadow-cyan-400/30 group-hover:scale-105 transition-transform">
+                      {user.initials}
+                    </div>
+                  )
+                }
                 {/* Pastille « connecté » — remplace l'ancienne carte de statut */}
                 <span
                   className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 ring-2 ring-navy-900 animate-pulse-slow"

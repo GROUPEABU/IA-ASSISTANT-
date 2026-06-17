@@ -13,7 +13,7 @@ import { getAuthSecret, verifyToken } from './_lib/auth.js'
 import { quotaEnabled, storeGet, storePut } from './_lib/quota.js'
 
 // Seules ces clés sont synchronisables (anti-écriture arbitraire dans le KV).
-const KEY_RE = /^(history_[a-z0-9_-]{1,40}|generated_products)$/
+const KEY_RE = /^(history_[a-z0-9_-]{1,40}|generated_products|avatar)$/
 const MAX_VALUE_BYTES = 800 * 1024 // marge sous la limite de requête Upstash REST
 
 const json = (obj, status) =>

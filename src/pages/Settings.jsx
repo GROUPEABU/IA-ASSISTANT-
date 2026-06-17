@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Key, Palette, Globe, Check, Monitor, Sun, Laptop, Scale, ChevronRight, Wifi, BarChart2, RotateCcw, Info } from 'lucide-react'
+import { Key, Palette, Globe, Check, Monitor, Sun, Laptop, Scale, ChevronRight, Wifi, BarChart2, RotateCcw, Info, User, Camera, Trash2 } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { ukey } from '@/utils/userStorage'
 import { getCosts, resetCosts } from '@/utils/apiCost'
 import { seedServerSpend } from '@/services/claude'
 import { getSpend, MONTHLY_CAP, DAILY_CAP, migrateToQuota } from '@/utils/spendTracker'
+import { getAvatar, saveAvatar, removeAvatar, resizeToDataUrl, syncAvatar } from '@/utils/avatarStore'
 
 const Section = ({ icon: Icon, title, children }) => (
   <div className="glass-card overflow-hidden">
@@ -58,6 +59,9 @@ export default function Settings() {
   const { user } = useAuth()
   const [costs, setCosts] = useState(() => getCosts())
   const [spend, setSpend] = useState(() => user?.id != null ? getSpend(user.id) : { month: 0, day: 0 })
+  const [avatar, setAvatar] = useState(() => getAvatar(user?.id ?? null))
+  const fileInputRef = useRef(null)
+  const [avatarLoading, setAvatarLoading] = useState(false)
   const themeKey    = ukey(user?.id ?? null, 'theme')
   const aiPowerKey  = ukey(user?.id ?? null, 'ai_power')
   const [theme,      setTheme]      = useState(() => localStorage.getItem(themeKey)   || 'dark')
@@ -96,6 +100,31 @@ export default function Settings() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 
+  // Sync avatar depuis le serveur si aucun avatar local
+  useEffect(() => {
+    if (user?.id == null) return
+    syncAvatar(user.id).then(() => setAvatar(getAvatar(user.id)))
+  }, [user?.id])
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || user?.id == null) return
+    setAvatarLoading(true)
+    try {
+      const dataUrl = await resizeToDataUrl(file)
+      saveAvatar(user.id, dataUrl)
+      setAvatar(dataUrl)
+    } catch {}
+    setAvatarLoading(false)
+    e.target.value = ''
+  }
+
+  const handleAvatarRemove = () => {
+    if (user?.id == null) return
+    removeAvatar(user.id)
+    setAvatar(null)
+  }
+
   function applyThemeValue(v) {
     if (v === 'light') {
       document.documentElement.classList.add('light')
@@ -132,6 +161,70 @@ export default function Settings() {
 
   return (
     <div className="w-full max-w-5xl animate-fade-in">
+      {/* Row 0: Profil — photo de compte */}
+      <Section icon={User} title={t('settings_profile_section')}>
+        <div className="flex items-center gap-6">
+          {/* Avatar */}
+          <div className="relative flex-shrink-0">
+            {avatar
+              ? <img src={avatar} alt="avatar" className="w-20 h-20 rounded-full object-cover ring-2 ring-cyan-400/40 shadow-lg" />
+              : (
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
+                                flex items-center justify-center text-navy-900 text-2xl font-bold
+                                shadow-lg shadow-cyan-400/20">
+                  {user?.initials || '?'}
+                </div>
+              )
+            }
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-navy-800 border border-navy-600
+                         flex items-center justify-center hover:border-cyan-400/50 hover:text-cyan-400
+                         text-slate-400 transition-all shadow-md"
+              title={t('settings_avatar_change')}
+            >
+              <Camera size={13} />
+            </button>
+          </div>
+
+          {/* Infos + actions */}
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-semibold text-white">{user?.name}</p>
+            <p className="text-xs text-slate-500 capitalize mt-0.5">{user?.role}</p>
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={avatarLoading}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
+                           bg-cyan-400/10 border border-cyan-400/20 text-cyan-400
+                           hover:bg-cyan-400/20 transition disabled:opacity-50"
+              >
+                <Camera size={12} />
+                {avatarLoading ? t('settings_avatar_loading') : t('settings_avatar_change')}
+              </button>
+              {avatar && (
+                <button
+                  onClick={handleAvatarRemove}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
+                             bg-red-400/10 border border-red-400/20 text-red-400
+                             hover:bg-red-400/20 transition"
+                >
+                  <Trash2 size={12} />
+                  {t('settings_avatar_remove')}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleAvatarChange}
+        />
+      </Section>
+
       {/* Row 1: API — full width */}
       <Section icon={Key} title={t('settings_api_section')}>
         <div className="space-y-5">
