@@ -63,6 +63,9 @@ export default function Settings() {
   const fileInputRef = useRef(null)
   const [avatarLoading, setAvatarLoading] = useState(false)
 
+  // Onglet actif (navigation latérale)
+  const [activeTab, setActiveTab] = useState('profile')
+
   // Champs de profil éditables
   const profileKey = ukey(user?.id ?? null, 'profile')
   const loadProfile = () => {
@@ -89,17 +92,11 @@ export default function Settings() {
   const [theme,      setTheme]      = useState(() => localStorage.getItem(themeKey)   || 'dark')
   const [aiPower,    setAiPower]    = useState(() => localStorage.getItem(aiPowerKey) || 'performance')
 
-  // Défilement vers la section « Utilisation API » quand on arrive via la jauge
-  // de la sidebar (lien /settings#usage), avec un bref surlignage.
-  const location  = useLocation()
-  const usageRef  = useRef(null)
-  const [usageHighlight, setUsageHighlight] = useState(false)
+  // Arrivée via la jauge de la sidebar (lien /settings#usage) → ouvre l'onglet
+  // Utilisation directement.
+  const location = useLocation()
   useEffect(() => {
-    if (location.hash !== '#usage' || !usageRef.current) return
-    usageRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    setUsageHighlight(true)
-    const id = setTimeout(() => setUsageHighlight(false), 1600)
-    return () => clearTimeout(id)
+    if (location.hash === '#usage') setActiveTab('usage')
   }, [location.hash])
 
   // Migration one-shot : si des coûts historiques existent mais que les jauges
@@ -226,15 +223,48 @@ export default function Settings() {
     setTimeout(() => setSaved(false), 2000)
   }
 
+  const TABS = [
+    { key: 'profile',  icon: User,      labelKey: 'settings_tab_profile' },
+    { key: 'security', icon: Lock,      labelKey: 'settings_tab_security' },
+    { key: 'ai',       icon: Key,       labelKey: 'settings_tab_ai' },
+    { key: 'prefs',    icon: Palette,   labelKey: 'settings_tab_prefs' },
+    { key: 'usage',    icon: BarChart2, labelKey: 'settings_tab_usage' },
+    { key: 'legal',    icon: Scale,     labelKey: 'settings_tab_legal' },
+  ]
+
   return (
-    <div className="w-full max-w-5xl animate-fade-in space-y-6">
+    <div className="w-full max-w-6xl mx-auto animate-fade-in">
       {/* En-tête de page */}
-      <div>
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-white">{t('nav_settings')}</h1>
         <p className="text-sm text-slate-500 mt-1">{t('settings_page_subtitle')}</p>
       </div>
 
-      {/* Profil */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Navigation latérale (onglets) */}
+        <nav className="lg:w-60 flex-shrink-0">
+          <div className="glass-card p-2 flex lg:flex-col gap-1 overflow-x-auto lg:sticky lg:top-6">
+            {TABS.map(({ key, icon: Icon, labelKey }) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
+                  activeTab === key
+                    ? 'bg-cyan-400/15 text-cyan-400'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-navy-800/40'
+                }`}
+              >
+                <Icon size={16} className="flex-shrink-0" />
+                {t(labelKey)}
+              </button>
+            ))}
+          </div>
+        </nav>
+
+        {/* Contenu de l'onglet actif */}
+        <div className="flex-1 min-w-0 space-y-6">
+
+      {activeTab === 'profile' && (
       <Section icon={User} title={t('settings_profile_section')}>
         {/* Photo + identité */}
         <div className="flex items-start gap-6 pb-6 border-b border-navy-700/40">
@@ -344,8 +374,9 @@ export default function Settings() {
         </div>
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
       </Section>
+      )}
 
-      {/* Sécurité — changement de mot de passe */}
+      {activeTab === 'security' && (
       <Section icon={Lock} title={t('settings_security_section')}>
         <p className="text-sm text-slate-400 -mt-1 mb-2">{t('settings_security_desc')}</p>
 
@@ -433,8 +464,9 @@ export default function Settings() {
           </div>
         </div>
       </Section>
+      )}
 
-      {/* Row 1: API — full width */}
+      {activeTab === 'ai' && (
       <Section icon={Key} title={t('settings_api_section')}>
         <div className="space-y-5">
           {/* API key — statut connexion (champ masqué, clé gérée côté serveur) */}
@@ -475,8 +507,9 @@ export default function Settings() {
           </div>
         </div>
       </Section>
+      )}
 
-      {/* Row 2: Appearance + Data side by side on desktop */}
+      {activeTab === 'prefs' && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Section icon={Palette} title={t('settings_appearance')}>
           <Field label={t('settings_theme_label')} description={t('settings_theme_desc')}>
@@ -545,16 +578,10 @@ export default function Settings() {
           </Field>
         </Section>
       </div>
+      )}
 
-      {/* Row 3: API cost counter + quota */}
-      <div
-        id="usage"
-        ref={usageRef}
-        className={`scroll-mt-20 rounded-2xl transition-shadow duration-500 ${
-          usageHighlight ? 'ring-2 ring-cyan-400/40' : ''
-        }`}
-      >
-        <Section icon={BarChart2} title={t('settings_cost_section')}>
+      {activeTab === 'usage' && (
+      <Section icon={BarChart2} title={t('settings_cost_section')}>
           {/* Quota gauges — toujours visibles */}
           <div className="space-y-3 pb-3 border-b border-navy-700/40">
             {[
@@ -629,12 +656,11 @@ export default function Settings() {
               </>
             )
           })()}
-        </Section>
-      </div>
+      </Section>
+      )}
 
-      {/* Row 4: Legal — full width */}
-      <div>
-        <Section icon={Scale} title={t('settings_legal_section')}>
+      {activeTab === 'legal' && (
+      <Section icon={Scale} title={t('settings_legal_section')}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
             {[
               { to: '/mentions-legales',          labelKey: 'legal_mentions',  descKey: 'settings_legal_mentions_desc' },
@@ -655,11 +681,13 @@ export default function Settings() {
               </Link>
             ))}
           </div>
-        </Section>
+      </Section>
+      )}
+        </div>
       </div>
 
       {/* Marqueur de build — vérifie que l'appareil charge la dernière version */}
-      <p className="text-[10px] text-slate-600 text-center">
+      <p className="text-[10px] text-slate-600 text-center mt-6">
         Build {typeof __APP_BUILD__ !== 'undefined' ? __APP_BUILD__ : '—'}
       </p>
     </div>
