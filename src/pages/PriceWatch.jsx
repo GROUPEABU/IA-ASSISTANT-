@@ -21,6 +21,7 @@ import { downloadCsv } from '@/utils/exportCsv'
 import { getMarginTarget, setMarginTarget, MARGIN_DEFAULT, MARGIN_MIN, MARGIN_MAX } from '@/utils/marginTarget'
 import { getSessionUserId, ukey } from '@/utils/userStorage'
 import { shareVeille, listSharedVeilles, deleteSharedVeille, renewSharedVeille } from '@/utils/cloudStore'
+import { markTeamSeen } from '@/utils/teamNotify'
 import Spinner from '@/components/ui/Spinner'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import HistoryPanel from '@/components/ui/HistoryPanel'
@@ -525,6 +526,14 @@ export default function PriceWatch() {
     try { setTeamWatches(await listSharedVeilles()) } finally { setTeamLoading(false) }
   }
   useEffect(() => { refreshTeam() }, [])
+
+  // Panneau équipe ouvert + veilles chargées → marque le flux comme « vu »
+  // (jusqu'au partage le plus récent), ce qui efface le badge de la sidebar.
+  useEffect(() => {
+    if (!teamOpen || teamWatches.length === 0) return
+    const latest = teamWatches.reduce((m, it) => Math.max(m, Number(it.sharedAt) || 0), 0)
+    markTeamSeen(latest)
+  }, [teamOpen, teamWatches])
 
   // Partage explicite (choix de l'utilisateur) — depuis le rapport courant,
   // l'historique, ou par glisser-déposer vers le panneau « Veilles de l'équipe ».

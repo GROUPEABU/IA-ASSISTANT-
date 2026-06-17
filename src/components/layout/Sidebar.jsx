@@ -12,6 +12,7 @@ import Logo from '@/components/ui/Logo'
 import DailyQuotaBar from '@/components/ui/DailyQuotaBar'
 import { getAvatar } from '@/utils/avatarStore'
 import { displayName, displayInitials } from '@/utils/profileStore'
+import { countUnseenTeamVeilles } from '@/utils/teamNotify'
 
 const COLLAPSE_KEY = 'abu_sidebar_collapsed'
 
@@ -34,6 +35,32 @@ export default function Sidebar({ isOpen, onClose }) {
 
   const name = displayName(user)
   const initials = displayInitials(user)
+
+  // Badge « nouvelles veilles d'équipe » sur la cloche (outil Veille Prix).
+  // Recalculé au montage, au retour sur l'onglet, sur événement « vu » et
+  // périodiquement. Compte uniquement les veilles partagées par d'autres membres.
+  const [teamUnseen, setTeamUnseen] = useState(0)
+  useEffect(() => {
+    if (!user) return
+    let alive = true
+    const refresh = () => { countUnseenTeamVeilles().then((n) => { if (alive) setTeamUnseen(n) }) }
+    refresh()
+    const onFocus = () => { if (document.visibilityState === 'visible') refresh() }
+    const onSeen = () => { if (alive) setTeamUnseen(0) }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    window.addEventListener('abu:team-seen', onSeen)
+    window.addEventListener('abu:team-shared', refresh)
+    const iv = setInterval(refresh, 90_000)
+    return () => {
+      alive = false
+      clearInterval(iv)
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+      window.removeEventListener('abu:team-seen', onSeen)
+      window.removeEventListener('abu:team-shared', refresh)
+    }
+  }, [user?.id])
 
   // Repli de la sidebar (mode icônes) — desktop uniquement, mémorisé.
   const [collapsed, setCollapsed] = useState(() => {
@@ -151,7 +178,9 @@ export default function Sidebar({ isOpen, onClose }) {
             {/* Séparateur fin entre groupes en mode replié (desktop) */}
             {collapsed && gi > 0 && <div className="hidden md:block h-px bg-navy-700/50 mx-2 mb-3 -mt-2" />}
             <div className="space-y-0.5">
-              {group.items.map(({ to, icon: Icon, labelKey }) => (
+              {group.items.map(({ to, icon: Icon, labelKey }) => {
+                const badge = to === '/price-watch' && teamUnseen > 0 ? teamUnseen : 0
+                return (
                 <NavLink
                   key={to}
                   to={to}
@@ -163,10 +192,30 @@ export default function Sidebar({ isOpen, onClose }) {
                     collapsed && 'md:justify-center md:px-0',
                   )}
                 >
-                  <Icon size={16} className="flex-shrink-0" />
+                  <span className="relative flex-shrink-0">
+                    <Icon size={16} />
+                    {/* Pastille en mode replié (desktop) — l'item est réduit à l'icône */}
+                    {badge > 0 && collapsed && (
+                      <span className="hidden md:block absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-1
+                                       rounded-full bg-rose-500 text-white text-[9px] font-bold leading-[15px]
+                                       text-center ring-2 ring-navy-900">
+                        {badge > 9 ? '9+' : badge}
+                      </span>
+                    )}
+                  </span>
                   <span className={hideOnCollapse}>{t(labelKey)}</span>
+                  {/* Pastille en fin de ligne (déplié / mobile) */}
+                  {badge > 0 && (
+                    <span className={clsx(
+                      'ml-auto min-w-[18px] h-[18px] px-1.5 rounded-full bg-rose-500 text-white text-[10px]',
+                      'font-bold leading-[18px] text-center shadow-sm shadow-rose-500/30', hideOnCollapse,
+                    )}>
+                      {badge > 99 ? '99+' : badge}
+                    </span>
+                  )}
                 </NavLink>
-              ))}
+                )
+              })}
             </div>
           </div>
         ))}
