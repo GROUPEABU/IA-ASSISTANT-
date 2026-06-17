@@ -12,6 +12,7 @@
 export const config = { runtime: 'edge' }
 
 import { getAuthSecret, signToken, sha256Hex, clientIp, rateLimit } from './_lib/auth.js'
+import { quotaEnabled, storeGet } from './_lib/quota.js'
 
 const PW_SALT      = 'abu_v1'
 const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 jours
@@ -74,7 +75,17 @@ export default async function handler(req) {
 
   // Réponse identique que le compte existe ou non (pas d'énumération).
   const expired = user?.expiresAt ? Date.now() > new Date(user.expiresAt).getTime() : false
-  if (!user || expired || inputHash !== user.passwordHash) {
+  if (!user || expired) return json({ error: { message: 'Identifiants incorrects.' } }, 401)
+
+  // Vérifie d'abord si le compte a un hash personnalisé (changement de mot de passe).
+  let expectedHash = user.passwordHash
+  if (quotaEnabled()) {
+    try {
+      const override = await storeGet(user.id, 'pwdhash')
+      if (override && typeof override === 'string') expectedHash = override
+    } catch {}
+  }
+  if (inputHash !== expectedHash) {
     return json({ error: { message: 'Identifiants incorrects.' } }, 401)
   }
 
