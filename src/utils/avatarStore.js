@@ -53,14 +53,26 @@ export function removeAvatar(uid) {
   window.dispatchEvent(new Event('abu:avatar'))
 }
 
-/** Récupère la photo du compte depuis le serveur et la met en cache local. */
+/**
+ * Aligne la photo locale sur celle du compte (serveur, source de vérité partagée).
+ * - remote string  → on met en cache local.
+ * - remote null    → le compte n'a pas de photo : on efface le cache local
+ *   (propagation de suppression → les initiales reviennent par défaut).
+ * - remote undefined → synchro indisponible : on ne touche à rien.
+ */
 export async function syncAvatar(uid) {
   if (uid == null) return
   const remote = await cloudGet(CLOUD_KEY)
-  if (remote === undefined || remote === null) return
+  if (remote === undefined) return // synchro inactive — on garde le local
   const local = getAvatar(uid)
-  if (!local && typeof remote === 'string') {
-    localStorage.setItem(ukey(uid, LOCAL_KEY), remote)
+  if (typeof remote === 'string' && remote) {
+    if (local !== remote) {
+      localStorage.setItem(ukey(uid, LOCAL_KEY), remote)
+      window.dispatchEvent(new Event('abu:avatar'))
+    }
+  } else if (local) {
+    // Pas de photo sur le compte → on retire la copie locale obsolète.
+    localStorage.removeItem(ukey(uid, LOCAL_KEY))
     window.dispatchEvent(new Event('abu:avatar'))
   }
 }
