@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Key, Mail } from 'lucide-react'
+import { ArrowLeft, Key, Mail, Copy, Check } from 'lucide-react'
 import Logo from '@/components/ui/Logo'
 import { useSettings } from '@/contexts/SettingsContext'
 
@@ -11,6 +12,25 @@ const ADMIN_EMAIL = 'hubert.saget@aafgroup.eu'
 
 export default function ForgotPassword() {
   const { t } = useSettings()
+  const [copied, setCopied] = useState(false)
+
+  const copyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(ADMIN_EMAIL)
+    } catch {
+      // Fallback si l'API Clipboard est indisponible (http, anciens navigateurs)
+      try {
+        const ta = document.createElement('textarea')
+        ta.value = ADMIN_EMAIL
+        ta.style.position = 'fixed'; ta.style.opacity = '0'
+        document.body.appendChild(ta); ta.select()
+        document.execCommand('copy')
+        document.body.removeChild(ta)
+      } catch {}
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className="min-h-[100dvh] bg-navy-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -39,19 +59,34 @@ export default function ForgotPassword() {
             </div>
           </div>
 
-          <p className="text-xs text-slate-400 leading-relaxed mb-5">
+          <p className="text-xs text-slate-400 leading-relaxed mb-4">
             {t('forgot_admin_msg')}
           </p>
 
+          {/* Adresse de l'administrateur — cliquable pour copier */}
+          <button
+            type="button"
+            onClick={copyEmail}
+            className="w-full mb-3 flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl
+                       bg-navy-900/60 border border-navy-700/50 hover:border-cyan-400/40 transition group"
+            title={t('forgot_admin_copy')}
+          >
+            <span className="text-sm text-slate-200 truncate">{ADMIN_EMAIL}</span>
+            {copied
+              ? <Check size={15} className="text-emerald-400 flex-shrink-0" />
+              : <Copy size={15} className="text-slate-500 group-hover:text-cyan-400 flex-shrink-0" />}
+          </button>
+
           <a
             href={`mailto:${ADMIN_EMAIL}?subject=${encodeURIComponent(t('forgot_admin_mail_subject'))}`}
+            onClick={copyEmail}
             className="w-full py-3 rounded-xl text-sm font-bold
                        bg-gradient-to-r from-cyan-400 to-cyan-500 text-navy-900
                        hover:from-cyan-300 hover:to-cyan-400 active:scale-[0.98] transition-all
                        flex items-center justify-center gap-2 shadow-lg shadow-cyan-400/20"
           >
-            <Mail size={14} />
-            {t('forgot_admin_contact_btn')}
+            {copied ? <Check size={14} /> : <Mail size={14} />}
+            {copied ? t('forgot_admin_email_copied') : t('forgot_admin_contact_btn')}
           </a>
 
           <Link

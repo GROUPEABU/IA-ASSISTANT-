@@ -350,6 +350,8 @@ export default {
     forgot_admin_msg: 'Pour des raisons de sécurité, la réinitialisation de votre mot de passe est effectuée par l\'administrateur du portail. Contactez-le en précisant votre identifiant : il vous communiquera un nouveau mot de passe.',
     forgot_admin_mail_subject: 'Réinitialisation de mot de passe — Portail Autobuyunion',
     forgot_admin_contact_btn: 'Contacter l\'administrateur',
+    forgot_admin_copy: 'Copier l\'adresse e-mail',
+    forgot_admin_email_copied: 'Adresse e-mail copiée',
     forgot_back_login: 'Retour à la connexion',
     // Cookie consent
     cookie_title: 'Paramètres des cookies',

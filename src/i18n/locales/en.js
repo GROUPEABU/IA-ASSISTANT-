@@ -333,6 +333,8 @@ export default {
     forgot_admin_msg: 'For security reasons, password resets are handled by the portal administrator. Contact them with your username and they will provide you with a new password.',
     forgot_admin_mail_subject: 'Password reset — Autobuyunion portal',
     forgot_admin_contact_btn: 'Contact the administrator',
+    forgot_admin_copy: 'Copy email address',
+    forgot_admin_email_copied: 'Email address copied',
     forgot_back_login: 'Back to login',
     cookie_title: 'Cookie settings',
     cookie_desc: "We only use cookies essential to the portal\'s operation. No data is shared with third parties for advertising purposes.",
