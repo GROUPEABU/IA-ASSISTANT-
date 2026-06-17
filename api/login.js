@@ -25,6 +25,8 @@ const LOGIN_WINDOW_MS = 15 * 60 * 1000
 const DEFAULT_USERS = [
   { id: 1, username: 'hubert.saget@aafgroup.eu', passwordHash: 'ed74e595563f0f76da37eebc8eeb20afb8fac7ee82d8e550104392fe975d4dcb', name: 'HUBERT SAGET', role: 'admin',  initials: 'HS' },
   { id: 3, username: 'demo@autobuyunion.eu',     passwordHash: '092c365fd32a2be2ef2631fafc3a8df0e75aaafbc1b87f69480abc170f8816e8', name: 'Compte Démo',  role: 'membre', initials: 'DM' },
+  { id: 4, username: 'pascal.lopez@aafgroup.eu',     passwordHash: 'df36b23ebcf05dbadaf0e53e951d33c09facecb6caf8ed6d5e3d25b9664dd64f', name: 'PASCAL LOPEZ',     role: 'membre', initials: 'PL' },
+  { id: 5, username: 'olivier.amengual@aafgroup.eu', passwordHash: 'bb96d19f4b23599db74c46ab9dd6183e5a0a40b1a8d39f7fcef872bf99577cf7', name: 'OLIVIER AMENGUAL', role: 'membre', initials: 'OA' },
 ]
 
 function getUsers() {
