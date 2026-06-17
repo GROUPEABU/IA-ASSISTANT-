@@ -234,14 +234,14 @@ export default function Settings() {
 
   return (
     <div className="w-full max-w-5xl mx-auto animate-fade-in">
-      {/* Onglets — barre horizontale en haut */}
+      {/* Onglets — barre horizontale en haut, répartis sur toute la largeur */}
       <nav className="mb-6">
         <div className="glass-card p-1.5 flex gap-1 overflow-x-auto">
           {TABS.map(({ key, icon: Icon, labelKey }) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
+              className={`relative flex-1 min-w-fit flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
                 activeTab === key
                   ? 'bg-cyan-400/15 text-cyan-400'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-navy-800/40'
@@ -249,6 +249,10 @@ export default function Settings() {
             >
               <Icon size={16} className="flex-shrink-0" />
               {t(labelKey)}
+              {/* Barre indicatrice cyan sous l'onglet actif */}
+              {activeTab === key && (
+                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 h-[3px] w-2/3 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(80,229,229,0.7)]" />
+              )}
             </button>
           ))}
         </div>
