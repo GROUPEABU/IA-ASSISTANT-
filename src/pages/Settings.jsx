@@ -62,6 +62,18 @@ export default function Settings() {
   const [avatar, setAvatar] = useState(() => getAvatar(user?.id ?? null))
   const fileInputRef = useRef(null)
   const [avatarLoading, setAvatarLoading] = useState(false)
+
+  // Champs de profil éditables
+  const profileKey = ukey(user?.id ?? null, 'profile')
+  const loadProfile = () => {
+    try { return JSON.parse(localStorage.getItem(profileKey) || '{}') } catch { return {} }
+  }
+  const nameParts = (user?.name || '').split(' ')
+  const [profileFirstname, setProfileFirstname] = useState(() => loadProfile().firstname ?? nameParts[0] ?? '')
+  const [profileLastname,  setProfileLastname]  = useState(() => loadProfile().lastname  ?? nameParts.slice(1).join(' ') ?? '')
+  const [profilePhone,     setProfilePhone]     = useState(() => loadProfile().phone ?? '')
+  const [profilePost,      setProfilePost]      = useState(() => loadProfile().post  ?? '')
+  const [profileSaved,     setProfileSaved]     = useState(false)
   const themeKey    = ukey(user?.id ?? null, 'theme')
   const aiPowerKey  = ukey(user?.id ?? null, 'ai_power')
   const [theme,      setTheme]      = useState(() => localStorage.getItem(themeKey)   || 'dark')
@@ -125,6 +137,31 @@ export default function Settings() {
     setAvatar(null)
   }
 
+  const handleProfileSave = () => {
+    const data = { firstname: profileFirstname.trim(), lastname: profileLastname.trim(), phone: profilePhone.trim(), post: profilePost.trim() }
+    try { localStorage.setItem(profileKey, JSON.stringify(data)) } catch {}
+    // Sync cloud
+    import('@/utils/cloudStore').then(({ cloudPut }) => cloudPut('profile', data))
+    setProfileSaved(true)
+    setTimeout(() => setProfileSaved(false), 2000)
+  }
+
+  // Sync profil depuis le serveur au montage
+  useEffect(() => {
+    if (user?.id == null) return
+    import('@/utils/cloudStore').then(({ cloudGet }) =>
+      cloudGet('profile').then((remote) => {
+        if (!remote || typeof remote !== 'object') return
+        if (remote.firstname !== undefined) setProfileFirstname(remote.firstname)
+        if (remote.lastname  !== undefined) setProfileLastname(remote.lastname)
+        if (remote.phone     !== undefined) setProfilePhone(remote.phone)
+        if (remote.post      !== undefined) setProfilePost(remote.post)
+        try { localStorage.setItem(profileKey, JSON.stringify(remote)) } catch {}
+      })
+    )
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
+
   function applyThemeValue(v) {
     if (v === 'light') {
       document.documentElement.classList.add('light')
@@ -161,43 +198,33 @@ export default function Settings() {
 
   return (
     <div className="w-full max-w-5xl animate-fade-in">
-      {/* Row 0: Profil — photo de compte */}
+      {/* Row 0: Profil */}
       <Section icon={User} title={t('settings_profile_section')}>
-        <div className="flex items-center gap-6">
-          {/* Avatar */}
+        {/* Photo + identité */}
+        <div className="flex items-center gap-5 pb-5 border-b border-navy-700/40">
           <div className="relative flex-shrink-0">
             {avatar
-              ? <img src={avatar} alt="avatar" className="w-20 h-20 rounded-full object-cover ring-2 ring-cyan-400/40 shadow-lg" />
+              ? <img src={avatar} alt="avatar" className="w-20 h-20 rounded-full object-cover ring-2 ring-cyan-400/30 shadow-lg" />
               : (
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
-                                flex items-center justify-center text-navy-900 text-2xl font-bold
-                                shadow-lg shadow-cyan-400/20">
+                                flex items-center justify-center text-navy-900 text-2xl font-bold shadow-lg">
                   {user?.initials || '?'}
                 </div>
               )
             }
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-navy-800 border border-navy-600
-                         flex items-center justify-center hover:border-cyan-400/50 hover:text-cyan-400
-                         text-slate-400 transition-all shadow-md"
-              title={t('settings_avatar_change')}
-            >
-              <Camera size={13} />
-            </button>
           </div>
-
-          {/* Infos + actions */}
           <div className="flex-1 min-w-0">
-            <p className="text-base font-semibold text-white">{user?.name}</p>
-            <p className="text-xs text-slate-500 capitalize mt-0.5">{user?.role}</p>
-            <div className="flex gap-2 mt-3">
+            <p className="text-base font-bold text-white leading-snug">
+              {[profileFirstname, profileLastname].filter(Boolean).join(' ') || user?.name}
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">{user?.username}</p>
+            <div className="flex flex-wrap gap-2 mt-3">
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={avatarLoading}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
-                           bg-cyan-400/10 border border-cyan-400/20 text-cyan-400
-                           hover:bg-cyan-400/20 transition disabled:opacity-50"
+                           border border-navy-600/60 text-slate-300 hover:border-cyan-400/40 hover:text-cyan-400
+                           transition disabled:opacity-50"
               >
                 <Camera size={12} />
                 {avatarLoading ? t('settings_avatar_loading') : t('settings_avatar_change')}
@@ -206,23 +233,98 @@ export default function Settings() {
                 <button
                   onClick={handleAvatarRemove}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
-                             bg-red-400/10 border border-red-400/20 text-red-400
-                             hover:bg-red-400/20 transition"
+                             border border-navy-600/60 text-slate-500 hover:border-red-400/40 hover:text-red-400 transition"
                 >
                   <Trash2 size={12} />
                   {t('settings_avatar_remove')}
                 </button>
               )}
             </div>
+            <p className="text-[10px] text-slate-600 mt-1.5">{t('settings_avatar_hint')}</p>
           </div>
         </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleAvatarChange}
-        />
+
+        {/* Formulaire */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+          {/* Prénom */}
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">{t('settings_profile_firstname')}</label>
+            <input
+              type="text"
+              value={profileFirstname}
+              onChange={e => setProfileFirstname(e.target.value)}
+              placeholder={t('settings_profile_firstname')}
+              className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+                         text-sm text-slate-200 placeholder-slate-600
+                         focus:outline-none focus:border-cyan-400/50 transition"
+            />
+          </div>
+          {/* Nom */}
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">{t('settings_profile_lastname')}</label>
+            <input
+              type="text"
+              value={profileLastname}
+              onChange={e => setProfileLastname(e.target.value)}
+              placeholder={t('settings_profile_lastname')}
+              className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+                         text-sm text-slate-200 placeholder-slate-600
+                         focus:outline-none focus:border-cyan-400/50 transition"
+            />
+          </div>
+          {/* E-mail (lecture seule) */}
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">{t('settings_profile_email')}</label>
+            <input
+              type="email"
+              value={user?.username || ''}
+              readOnly
+              className="w-full bg-navy-950/60 border border-navy-700/30 rounded-xl px-3 py-2.5
+                         text-sm text-slate-500 cursor-not-allowed"
+            />
+            <p className="text-[10px] text-slate-600 mt-1">{t('settings_profile_email_readonly')}</p>
+          </div>
+          {/* Téléphone */}
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">{t('settings_profile_phone')}</label>
+            <input
+              type="tel"
+              value={profilePhone}
+              onChange={e => setProfilePhone(e.target.value)}
+              placeholder="+33 1 23 45 67 89"
+              className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+                         text-sm text-slate-200 placeholder-slate-600
+                         focus:outline-none focus:border-cyan-400/50 transition"
+            />
+          </div>
+          {/* Poste */}
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">{t('settings_profile_post')}</label>
+            <input
+              type="text"
+              value={profilePost}
+              onChange={e => setProfilePost(e.target.value)}
+              placeholder={t('settings_profile_post_placeholder')}
+              className="w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
+                         text-sm text-slate-200 placeholder-slate-600
+                         focus:outline-none focus:border-cyan-400/50 transition"
+            />
+          </div>
+        </div>
+
+        {/* Enregistrer */}
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={handleProfileSave}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold
+                       bg-gradient-to-r from-cyan-400 to-cyan-500 text-navy-900
+                       hover:from-cyan-300 hover:to-cyan-400 active:scale-95 transition-all"
+          >
+            {profileSaved ? <><Check size={14} /> {t('settings_profile_saved')}</> : t('settings_profile_save')}
+          </button>
+        </div>
+
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
       </Section>
 
       {/* Row 1: API — full width */}
