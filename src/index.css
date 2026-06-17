@@ -124,12 +124,19 @@
   }
 
   .nav-item {
-    @apply flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium
+    @apply relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium
            text-slate-300 hover:text-white hover:bg-navy-700/40 transition-all duration-150 cursor-pointer;
   }
 
   .nav-item-active {
     @apply text-cyan-400 bg-gradient-to-r from-cyan-400/15 to-cyan-400/5 font-semibold;
+  }
+
+  /* Accent vertical cyan à gauche de l'item actif (déplié + replié). */
+  .nav-item-active::before {
+    content: '';
+    @apply absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full
+           bg-cyan-400 shadow-[0_0_8px_rgba(80,229,229,0.6)];
   }
 
   .input-field {
@@ -604,7 +611,8 @@ html.light textarea::placeholder {
 /* ── Nav items — refined hover and active states ─────────────────────────── */
 html.light .nav-item        { color: var(--text-subtle) !important; }
 html.light .nav-item:hover  { background: var(--accent-soft) !important; color: var(--text-strong) !important; }
-html.light .nav-item-active { color: var(--accent-primary) !important; background: var(--accent-soft) !important; border-left: 2px solid var(--accent-primary) !important; }
+html.light .nav-item-active { color: var(--accent-primary) !important; background: var(--accent-soft) !important; }
+html.light .nav-item-active::before { background: var(--accent-primary) !important; box-shadow: none !important; }
 
 /* ── Borders — using tokens ──────────────────────────────────────────────── */
 html.light [class*="border-navy"],

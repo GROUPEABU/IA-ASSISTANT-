@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import {
   MessageSquare, X, Home, BookOpen, Gauge, Bell, ShieldCheck, Mic, LogOut,
   Calculator, Ruler, Boxes, Truck, PanelLeftClose, PanelLeftOpen,
+  Settings, ChevronsUpDown,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '@/contexts/AuthContext'
@@ -43,6 +44,21 @@ export default function Sidebar({ isOpen, onClose }) {
     try { localStorage.setItem(COLLAPSE_KEY, nv ? '1' : '0') } catch {}
     return nv
   })
+
+  // Menu profil déroulant (Paramètres / Déconnexion) — fermé au clic extérieur.
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
+  useEffect(() => {
+    if (!menuOpen) return
+    const onDocClick = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false) }
+    const onEsc = (e) => { if (e.key === 'Escape') setMenuOpen(false) }
+    document.addEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onEsc)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onEsc)
+    }
+  }, [menuOpen])
 
   const navGroups = [
     {
@@ -173,17 +189,19 @@ export default function Sidebar({ isOpen, onClose }) {
           </Link>
         )}
 
-        {/* Profil + statut « en ligne » */}
+        {/* Profil — déclencheur d'un menu déroulant (Paramètres / Déconnexion) */}
         {user && (
-          <div className={clsx(
-            'flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-navy-800/40 transition-colors',
-            collapsed && 'md:flex-col md:gap-2 md:px-0',
-          )}>
-            <Link
-              to="/settings"
-              onClick={onClose}
-              className={clsx('flex items-center gap-2.5 flex-1 min-w-0 group', collapsed && 'md:flex-none')}
-              title={t('nav_settings')}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              title={collapsed ? name : undefined}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              className={clsx(
+                'w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl transition-colors group',
+                menuOpen ? 'bg-navy-800/60' : 'hover:bg-navy-800/40',
+                collapsed && 'md:justify-center md:px-0',
+              )}
             >
               <div className="relative flex-shrink-0">
                 {avatar
@@ -203,18 +221,42 @@ export default function Sidebar({ isOpen, onClose }) {
                   aria-label={t('connected_label')}
                 />
               </div>
-              <div className={clsx('flex-1 min-w-0', hideOnCollapse)}>
+              <div className={clsx('flex-1 min-w-0 text-left', hideOnCollapse)}>
                 <p className="text-xs font-semibold text-white truncate leading-tight group-hover:text-cyan-400 transition-colors">{name}</p>
                 <p className="text-[10px] text-slate-500 capitalize leading-tight">{user.role}</p>
               </div>
-            </Link>
-            <button
-              onClick={handleLogout}
-              title={t('logout')}
-              className="text-slate-500 hover:text-red-400 transition p-1.5 rounded-lg hover:bg-red-400/10 flex-shrink-0"
-            >
-              <LogOut size={14} />
+              <ChevronsUpDown size={14} className={clsx('text-slate-500 group-hover:text-slate-300 flex-shrink-0 transition-colors', hideOnCollapse)} />
             </button>
+
+            {/* Popover du menu */}
+            {menuOpen && (
+              <div
+                role="menu"
+                className={clsx(
+                  'absolute z-50 bottom-full mb-2 rounded-xl border border-navy-700/70 bg-navy-800 shadow-xl shadow-black/40 overflow-hidden py-1 animate-fade-in',
+                  collapsed ? 'left-0 md:left-full md:bottom-0 md:mb-0 md:ml-2 w-52' : 'left-0 right-0',
+                )}
+              >
+                <Link
+                  to="/settings"
+                  role="menuitem"
+                  onClick={() => { setMenuOpen(false); onClose?.() }}
+                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-200 hover:bg-navy-700/60 hover:text-white transition-colors"
+                >
+                  <Settings size={15} className="flex-shrink-0 text-slate-400" />
+                  {t('nav_settings')}
+                </Link>
+                <div className="h-px bg-navy-700/60 my-1" />
+                <button
+                  role="menuitem"
+                  onClick={() => { setMenuOpen(false); handleLogout() }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-200 hover:bg-red-400/10 hover:text-red-400 transition-colors"
+                >
+                  <LogOut size={15} className="flex-shrink-0" />
+                  {t('logout')}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
