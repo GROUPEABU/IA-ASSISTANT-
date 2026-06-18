@@ -23,7 +23,14 @@ export function lazyWithReload(factory) {
       try { sessionStorage.removeItem(RELOAD_KEY) } catch {}
       return mod
     } catch (err) {
-      const stale = /dynamically imported module|Importing a module script failed|Failed to fetch/i
+      // Couvre toutes les formulations selon le navigateur quand un chunk hashé
+      // a disparu après déploiement (le serveur renvoie alors l'index.html) :
+      //  - Chrome/Edge : « Failed to fetch dynamically imported module »
+      //  - Firefox     : « error loading dynamically imported module »
+      //  - Safari/iOS  : « 'text/html' is not a valid JavaScript MIME type »
+      //                  / « Importing a module script failed » / « Load failed »
+      //  - HTML parsé comme JS : « Unexpected token '<' »
+      const stale = /dynamically imported module|module script|Failed to fetch|load failed|MIME type|Unexpected token/i
         .test(err?.message || '')
       let alreadyReloaded = false
       try { alreadyReloaded = sessionStorage.getItem(RELOAD_KEY) === '1' } catch {}
