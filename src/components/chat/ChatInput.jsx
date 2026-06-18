@@ -48,7 +48,7 @@ export default function ChatInput({ onSend, disabled }) {
   const autoResize = (e) => {
     const el = e.target
     el.style.height = '48px'
-    el.style.height = Math.min(el.scrollHeight, 160) + 'px'
+    if (el.scrollHeight > 48) el.style.height = Math.min(el.scrollHeight, 160) + 'px'
   }
 
   const isImage = attachment?.type?.startsWith('image/')
@@ -80,12 +80,14 @@ export default function ChatInput({ onSend, disabled }) {
                        text-sm text-slate-200 placeholder-slate-600 resize-none
                        focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/20
                        disabled:opacity-50 transition-all"
-            style={{ height: '48px', maxHeight: '160px', paddingTop: '14px', paddingBottom: '14px', lineHeight: '1.5', overflowY: 'auto' }}
+            /* lineHeight fixe en px : 1 ligne = 14 + 20 + 14 = 48px, identique au
+               bouton d'envoi (h-12), que la police soit 14px (desktop) ou 16px (mobile). */
+            style={{ height: '48px', maxHeight: '160px', paddingTop: '14px', paddingBottom: '14px', lineHeight: '20px', overflowY: 'auto' }}
           />
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="absolute right-3 bottom-3 text-slate-600 hover:text-cyan-400 transition"
+            className="absolute right-3 bottom-4 text-slate-600 hover:text-cyan-400 transition"
             title={t('chat_file_tip')}
             aria-label={t('attach_file')}
           >
