@@ -113,11 +113,10 @@ export default function Hub() {
 
   // Tirer pour rafraîchir (mobile) — recharge la page d'accueil. Amplitude large :
   // le contenu descend beaucoup, façon « élastique » iOS.
-  const { distance, refreshing, threshold } = usePullToRefresh(
+  const { distance, refreshing } = usePullToRefresh(
     () => window.location.reload(),
     { threshold: 80, maxPull: 200, resistance: 0.85 },
   )
-  const pullPct = Math.min(1, distance / threshold)
 
   const stats = [
     // À synchroniser avec COUNTRIES de malusWorld.js (non importé ici : trop lourd pour le chunk Hub)
@@ -127,38 +126,19 @@ export default function Hub() {
   ]
 
   // Décalage vertical du contenu pendant le geste (suit le doigt, ressort au relâchement).
+  // Aucun indicateur : seul le contenu glisse, façon élastique iOS.
   const pullOffset = refreshing ? 80 : distance
 
   return (
-    <>
-      {/* ── Indicateur « tirer pour rafraîchir » (mobile, style iOS) ──────────────
-          Hors du conteneur transformé : un parent `transform` casserait `fixed`.
-          Le spinner se révèle dans l'espace qui s'ouvre au-dessus du contenu. */}
-      {(distance > 0 || refreshing) && (
-        <div
-          className="md:hidden fixed left-1/2 z-30 pointer-events-none"
-          style={{
-            top: `calc(3.5rem + ${pullOffset / 2}px)`,
-            transform: `translate(-50%, -50%) scale(${refreshing ? 1 : 0.7 + 0.3 * pullPct})`,
-            opacity: refreshing ? 1 : pullPct,
-          }}
-        >
-          <RefreshCw
-            size={22}
-            className={`text-cyan-400 ${refreshing ? 'animate-spin' : ''}`}
-            style={{
-              filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.4))',
-              ...(refreshing ? {} : { transform: `rotate(${distance * 2.4}deg)` }),
-            }}
-          />
-        </div>
-      )}
-
       <div
         className="space-y-4 animate-fade-in"
         style={{
           transform: `translateY(${pullOffset}px)`,
-          transition: refreshing || distance === 0 ? 'transform 0.4s cubic-bezier(0.22,1,0.36,1)' : 'none',
+          // Ressort souple au relâchement, léger lissage pendant le tirage (plus fluide).
+          transition: refreshing || distance === 0
+            ? 'transform 0.6s cubic-bezier(0.22,1,0.36,1)'
+            : 'transform 0.14s cubic-bezier(0.33,1,0.68,1)',
+          willChange: 'transform',
         }}
       >
 
@@ -344,7 +324,6 @@ export default function Hub() {
           )
         })}
       </div>
-      </div>
-    </>
+    </div>
   )
 }
