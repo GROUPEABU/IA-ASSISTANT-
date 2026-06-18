@@ -66,7 +66,7 @@ export default function ChatInput({ onSend, disabled }) {
           </button>
         </div>
       )}
-      <form onSubmit={handleSubmit} className="flex items-center gap-2">
+      <form onSubmit={handleSubmit} className="flex items-end gap-2">
         <div className="flex-1 relative">
           <textarea
             ref={textareaRef}
@@ -80,9 +80,10 @@ export default function ChatInput({ onSend, disabled }) {
                        text-sm text-slate-200 placeholder-slate-600 resize-none
                        focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/20
                        disabled:opacity-50 transition-all"
-            /* lineHeight fixe en px : 1 ligne = 14 + 20 + 14 = 48px, identique au
-               bouton d'envoi (h-12), que la police soit 14px (desktop) ou 16px (mobile). */
-            style={{ height: '48px', maxHeight: '160px', paddingTop: '14px', paddingBottom: '14px', lineHeight: '20px', overflowY: 'auto' }}
+            /* Hauteur fixe 48px (= bouton d'envoi h-12) avec texte centré verticalement :
+               bordure 1px + padding 13px + ligne 20px + padding 13px + bordure 1px = 48px,
+               quelle que soit la police (14px desktop / 16px mobile anti-zoom). */
+            style={{ height: '48px', maxHeight: '160px', paddingTop: '13px', paddingBottom: '13px', lineHeight: '20px', overflowY: 'auto' }}
           />
           <button
             type="button"

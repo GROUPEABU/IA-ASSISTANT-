@@ -122,23 +122,41 @@ export default function Hub() {
     { label: 'Marchés',        value: '2',   icon: TrendingUp, color: '#34d399', sub: t('stat_markets') },
   ]
 
+  // Décalage vertical du contenu pendant le geste (1:1 au doigt, ressort au relâchement).
+  const pullOffset = refreshing ? 56 : distance
+
   return (
-    <div className="space-y-4 animate-fade-in">
-      {/* ── Indicateur « tirer pour rafraîchir » (mobile) ────────────────────── */}
+    <>
+      {/* ── Indicateur « tirer pour rafraîchir » (mobile, style iOS) ──────────────
+          Hors du conteneur transformé : un parent `transform` casserait `fixed`.
+          Le spinner se révèle dans l'espace qui s'ouvre au-dessus du contenu. */}
       {(distance > 0 || refreshing) && (
         <div
-          className="md:hidden fixed left-1/2 -translate-x-1/2 z-30 pointer-events-none transition-[top] duration-75"
-          style={{ top: `calc(3.25rem + ${Math.min(distance, 90)}px)`, opacity: refreshing ? 1 : pullPct }}
+          className="md:hidden fixed left-1/2 z-30 pointer-events-none"
+          style={{
+            top: `calc(3.5rem + ${Math.min(pullOffset, 90) / 2}px)`,
+            transform: `translate(-50%, -50%) scale(${refreshing ? 1 : 0.7 + 0.3 * pullPct})`,
+            opacity: refreshing ? 1 : pullPct,
+          }}
         >
-          <div className="w-9 h-9 rounded-full bg-navy-800 border border-cyan-400/30 shadow-lg shadow-black/40 flex items-center justify-center">
-            <RefreshCw
-              size={16}
-              className={`text-cyan-400 ${refreshing ? 'animate-spin' : ''}`}
-              style={refreshing ? undefined : { transform: `rotate(${distance * 2.6}deg)` }}
-            />
-          </div>
+          <RefreshCw
+            size={22}
+            className={`text-cyan-400 ${refreshing ? 'animate-spin' : ''}`}
+            style={{
+              filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.4))',
+              ...(refreshing ? {} : { transform: `rotate(${distance * 2.4}deg)` }),
+            }}
+          />
         </div>
       )}
+
+      <div
+        className="space-y-4 animate-fade-in"
+        style={{
+          transform: `translateY(${pullOffset}px)`,
+          transition: refreshing || distance === 0 ? 'transform 0.4s cubic-bezier(0.22,1,0.36,1)' : 'none',
+        }}
+      >
 
       {/* ── Hero ─────────────────────────────────────────────────────────────── */}
       <div className="glass-card relative overflow-hidden p-5 md:p-8">
@@ -322,6 +340,7 @@ export default function Hub() {
           )
         })}
       </div>
-    </div>
+      </div>
+    </>
   )
 }
