@@ -6,6 +6,10 @@ export default {
       fontFamily: {
         sans: ['Poppins', 'sans-serif'],
       },
+      fontSize: {
+        label:   ['10px', { lineHeight: '1.4' }],
+        caption: ['11px', { lineHeight: '1.4' }],
+      },
       colors: {
         navy: {
           900: '#0D273C',
@@ -19,7 +23,6 @@ export default {
           200: '#a3f3f3',
           500: '#2ed8d8',
         },
-        // Token unique « attention » — or doré sobre, accordé à la palette froide
         warn: '#E6B450',
         surface: {
           DEFAULT: '#102f47',
@@ -37,17 +40,22 @@ export default {
         'cyan-lg': '0 0 40px rgba(80, 229, 229, 0.25)',
       },
       animation: {
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'fade-in': 'fadeIn 0.3s ease-in-out',
-        'slide-up': 'slideUp 0.4s ease-out',
+        'pulse-slow':  'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'fade-in':     'fadeIn 0.3s ease-in-out',
+        'fade-in-up':  'fadeInUp 0.35s ease-out both',
+        'slide-up':    'slideUp 0.4s ease-out',
       },
       keyframes: {
         fadeIn: {
-          '0%': { opacity: '0' },
+          '0%':   { opacity: '0' },
           '100%': { opacity: '1' },
         },
+        fadeInUp: {
+          '0%':   { opacity: '0', transform: 'translateY(7px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
         slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(12px)' },
+          '0%':   { opacity: '0', transform: 'translateY(12px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
       },

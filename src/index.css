@@ -90,15 +90,12 @@
     transition: border-color 160ms ease, box-shadow 160ms ease;
   }
 
+  /* Variante avec halo cyan au survol — pour les cartes interactives */
   .glass-card-glow {
-    @apply backdrop-blur-sm rounded-xl;
-    background: rgba(22, 36, 54, 0.96);
-    border: 1px solid rgba(255,255,255,0.11);
-    box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.09) inset, 0 -1px 0 rgba(0,0,0,0.25) inset;
-    transition: border-color 160ms ease, box-shadow 160ms ease;
+    @apply glass-card;
   }
   .glass-card-glow:hover {
-    border-color: rgba(255,255,255,0.14);
+    border-color: rgba(255,255,255,0.15);
     box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(80,229,229,0.12), 0 1px 0 rgba(255,255,255,0.08) inset;
   }
 
@@ -147,6 +144,13 @@
 
   .section-label {
     @apply text-[10px] font-bold text-slate-400 uppercase tracking-widest;
+  }
+
+  /* Bouton-ligne récurrent : activité récente, veilles équipe, historiques */
+  .card-row {
+    @apply flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition
+           bg-navy-900/40 border border-navy-700/30
+           hover:border-cyan-400/30 hover:bg-cyan-400/5;
   }
 
   /* iOS safe-area bottom padding */

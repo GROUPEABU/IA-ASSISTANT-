@@ -142,13 +142,17 @@ export default function Hub() {
 
       {/* ── Stats ────────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-2">
-        {stats.map(({ label, value, icon: Icon, color, sub }) => (
-          <div key={label} className="glass-card px-2 py-3 text-center flex flex-col items-center gap-1">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${color}15` }}>
-              <Icon size={13} style={{ color }} />
+        {stats.map(({ label, value, icon: Icon, color, sub }, i) => (
+          <div
+            key={label}
+            className="glass-card px-2 py-4 text-center flex flex-col items-center gap-1.5 animate-fade-in-up"
+            style={{ animationDelay: `${i * 60}ms` }}
+          >
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${color}18` }}>
+              <Icon size={16} style={{ color }} />
             </div>
-            <p className="text-base font-bold leading-none" style={{ color }}>{value}</p>
-            <p className="text-xs text-slate-500 leading-tight">{sub}</p>
+            <p className="text-lg font-bold leading-none" style={{ color }}>{value}</p>
+            <p className="text-[11px] text-slate-500 leading-tight">{sub}</p>
           </div>
         ))}
       </div>
@@ -178,8 +182,7 @@ export default function Hub() {
                 <button
                   key={`${src.ns}-${item.id ?? item.savedAt}`}
                   onClick={() => sendToTool(navigate, src.route, { restoreId: item.id ?? item.savedAt })}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-navy-900/40 border border-navy-700/30
-                             hover:border-cyan-400/30 hover:bg-cyan-400/5 transition text-left group"
+                  className="card-row group"
                 >
                   <Icon size={13} className="text-slate-500 group-hover:text-cyan-400 flex-shrink-0 transition-colors" />
                   <div className="min-w-0 flex-1">
@@ -243,8 +246,7 @@ export default function Hub() {
               <button
                 key={item.id}
                 onClick={() => sendToTool(navigate, '/price-watch', { sharedVeille: item })}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-navy-900/40 border border-navy-700/30
-                           hover:border-cyan-400/30 hover:bg-cyan-400/5 transition text-left group"
+                className="card-row group"
               >
                 <TrendingUp size={13} className="text-slate-500 group-hover:text-cyan-400 flex-shrink-0 transition-colors" />
                 <div className="min-w-0 flex-1">
@@ -264,15 +266,16 @@ export default function Hub() {
 
       {/* ── Tools grid ───────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {tools.map(({ to, icon: Icon, color, titleKey, descKey, badgeKey }) => {
+        {tools.map(({ to, icon: Icon, color, titleKey, descKey, badgeKey }, i) => {
           const c = colorMap[color]
           return (
             <button
               key={to}
               onClick={() => navigate(to)}
-              className="glass-card p-4 md:p-5 text-left active:scale-[0.98]
+              className="glass-card p-4 md:p-5 text-left active:scale-[0.98] animate-fade-in-up
                          transition-all duration-200 group flex flex-col gap-3"
-              onMouseEnter={e => { e.currentTarget.style.borderColor = `${c.hoverBorder}30`; e.currentTarget.style.boxShadow = `0 4px 24px rgba(0,0,0,0.2), 0 0 0 1px ${c.hoverBorder}08` }}
+              style={{ animationDelay: `${i * 40}ms` }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = `${c.hoverBorder}30`; e.currentTarget.style.boxShadow = `0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px ${c.hoverBorder}12` }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = ''; e.currentTarget.style.boxShadow = '' }}
             >
               <div className="flex items-center justify-between w-full">
@@ -285,10 +288,7 @@ export default function Hub() {
               </div>
 
               <div>
-                <h3 className="text-sm font-bold text-white mb-1 transition-colors duration-200"
-                  onMouseEnter={e => e.currentTarget.style.color = c.hoverBorder}
-                  onMouseLeave={e => e.currentTarget.style.color = 'white'}
-                >
+                <h3 className="text-sm font-bold text-white mb-1 transition-colors duration-200 group-hover:text-slate-100">
                   {t(titleKey)}
                 </h3>
                 <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{t(descKey)}</p>
