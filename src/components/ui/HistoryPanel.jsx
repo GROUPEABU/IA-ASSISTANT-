@@ -14,12 +14,18 @@ export default function HistoryPanel({
   const actionCount = (onTogglePin ? 1 : 0) + (onShareItem ? 1 : 0) + (onRemove ? 1 : 0)
   const padRight = actionCount >= 3 ? 'pr-[5.25rem]' : actionCount === 2 ? 'pr-14' : 'pr-8'
 
-  // Filtre sur le libellé principal — les index d'origine sont conservés pour
-  // que suppression / épinglage visent toujours le bon élément.
+  // Filtre sur le libellé principal ET la date affichée — les index d'origine
+  // sont conservés pour que suppression / épinglage visent toujours le bon élément.
   const q = query.trim().toLowerCase()
+  const haystack = (item) => {
+    const main = String(primary(item) || '')
+    let date = ''
+    try { date = item.savedAt ? new Date(item.savedAt).toLocaleString() : '' } catch {}
+    return `${main} ${date}`.toLowerCase()
+  }
   const visible = items
     .map((item, index) => ({ item, index }))
-    .filter(({ item }) => !q || String(primary(item) || '').toLowerCase().includes(q))
+    .filter(({ item }) => !q || haystack(item).includes(q))
 
   return (
     <div className="glass-card p-4">
@@ -27,7 +33,7 @@ export default function HistoryPanel({
         <div className="flex items-center gap-2 flex-shrink-0">
           <History size={13} className="text-slate-500" />
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-            {t('history_title')} ({items.length})
+            {t('history_title')} ({q ? `${visible.length}/${items.length}` : items.length})
           </span>
         </div>
         <button onClick={onClear} className="flex items-center gap-1 text-[10px] text-slate-600 hover:text-red-400 transition flex-shrink-0">
@@ -41,9 +47,18 @@ export default function HistoryPanel({
           <input
             type="text" value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder={t('history_search_ph')}
-            className="w-full bg-navy-900/60 border border-navy-700/40 rounded-lg pl-8 pr-3 py-1.5
+            className="w-full bg-navy-900/60 border border-navy-700/40 rounded-lg pl-8 pr-8 py-1.5
                        text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:border-cyan-400/40 transition"
           />
+          {q && (
+            <button
+              onClick={() => setQuery('')}
+              aria-label={t('close') || 'Effacer'}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 hover:text-cyan-400 transition p-0.5 rounded"
+            >
+              <X size={12} />
+            </button>
+          )}
         </div>
       )}
 
