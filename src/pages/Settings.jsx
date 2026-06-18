@@ -8,7 +8,6 @@ import { getCosts, resetCosts } from '@/utils/apiCost'
 import { seedServerSpend } from '@/services/claude'
 import { getSpend, MONTHLY_CAP, DAILY_CAP, migrateToQuota } from '@/utils/spendTracker'
 import { getAvatar, saveAvatar, removeAvatar, resizeToDataUrl, syncAvatar } from '@/utils/avatarStore'
-import Logo from '@/components/ui/Logo'
 
 const Section = ({ icon: Icon, title, children }) => (
   <div className="glass-card p-6 sm:p-8">
@@ -548,36 +547,6 @@ export default function Settings() {
             </div>
           </Field>
         </Section>
-
-        {/* ── Logo variants — visible uniquement pour l'admin ─────────────── */}
-        {user?.role === 'admin' && (
-        <div className="lg:col-span-2">
-        <Section icon={Palette} title="Propositions de logo">
-          <p className="text-xs text-slate-500 mb-4">Cliquez sur une variante pour la voir en taille réelle. L'originale est toujours active dans l'app.</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { v: 'original',   label: 'Original',   desc: '∞ uniforme cyan' },
-              { v: 'a-crossbar', label: 'A•O subtil',  desc: '∞ + barre (A implicite)' },
-              { v: 'bicolor',    label: 'A•O bicolore',desc: 'A blanc / O cyan' },
-              { v: 'glyphs',     label: 'A•O glyphes', desc: 'A + O typographiques' },
-            ].map(({ v, label, desc }) => (
-              <div key={v} className="glass-card p-4 flex flex-col items-center gap-3 hover:border-cyan-400/30 transition cursor-default">
-                <div className="bg-navy-900/60 rounded-xl p-3 flex items-center justify-center">
-                  <Logo size="lg" iconOnly variant={v} />
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-semibold text-white">{label}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">{desc}</p>
-                </div>
-                <div className="w-full overflow-hidden flex justify-center">
-                  <Logo size="sm" variant={v} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </Section>
-        </div>
-        )}
 
         <Section icon={Globe} title={t('settings_data')}>
           <Field label={t('settings_currency_label')} description={t('settings_currency_desc')}>
