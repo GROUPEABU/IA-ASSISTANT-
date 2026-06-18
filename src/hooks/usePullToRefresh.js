@@ -8,11 +8,13 @@ import { useEffect, useRef, useState } from 'react'
  * Tactile uniquement (no-op sur souris/desktop). Renvoie `{ distance, refreshing }`
  * pour piloter un indicateur visuel.
  */
-const THRESHOLD = 70   // px de tirage pour déclencher
-const MAX_PULL = 110   // tirage visuel maximal
-const RESISTANCE = 0.5 // résistance du glissement
-
-export function usePullToRefresh(onRefresh, { scrollSelector = '.layout-scroll-main', enabled = true } = {}) {
+export function usePullToRefresh(onRefresh, {
+  scrollSelector = '.layout-scroll-main',
+  enabled = true,
+  threshold = 70,    // px de tirage pour déclencher
+  maxPull = 110,     // tirage visuel maximal
+  resistance = 0.5,  // 0→1 : part du déplacement du doigt suivie par le contenu
+} = {}) {
   const [distance, setDistance] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   const cb = useRef(onRefresh); cb.current = onRefresh
@@ -38,15 +40,15 @@ export function usePullToRefresh(onRefresh, { scrollSelector = '.layout-scroll-m
       const delta = e.touches[0].clientY - startY.current
       if (delta <= 0) { set(0); return }
       e.preventDefault() // supprime le rebond natif pendant le tirage
-      set(Math.min(delta * RESISTANCE, MAX_PULL))
+      set(Math.min(delta * resistance, maxPull))
     }
     const onEnd = () => {
       if (!pulling.current) return
       pulling.current = false
-      if (distRef.current >= THRESHOLD) {
+      if (distRef.current >= threshold) {
         busy.current = true
         setRefreshing(true)
-        set(THRESHOLD * 0.8) // garde l'indicateur visible le temps du rafraîchissement
+        set(threshold) // garde l'indicateur visible le temps du rafraîchissement
         Promise.resolve().then(() => cb.current?.()).catch(() => {})
       } else {
         set(0)
@@ -63,7 +65,7 @@ export function usePullToRefresh(onRefresh, { scrollSelector = '.layout-scroll-m
       el.removeEventListener('touchend', onEnd)
       el.removeEventListener('touchcancel', onEnd)
     }
-  }, [enabled, scrollSelector])
+  }, [enabled, scrollSelector, threshold, maxPull, resistance])
 
-  return { distance, refreshing, threshold: THRESHOLD }
+  return { distance, refreshing, threshold }
 }

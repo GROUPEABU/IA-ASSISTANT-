@@ -111,8 +111,12 @@ export default function Hub() {
     { to: '/chat',       icon: MessageSquare, color: 'violet', titleKey: 'tool_chat_title',      descKey: 'tool_chat_desc',       badgeKey: 'hub_badge_ai' },
   ]
 
-  // Tirer pour rafraîchir (mobile) — recharge la page d'accueil.
-  const { distance, refreshing, threshold } = usePullToRefresh(() => window.location.reload())
+  // Tirer pour rafraîchir (mobile) — recharge la page d'accueil. Amplitude large :
+  // le contenu descend beaucoup, façon « élastique » iOS.
+  const { distance, refreshing, threshold } = usePullToRefresh(
+    () => window.location.reload(),
+    { threshold: 80, maxPull: 200, resistance: 0.85 },
+  )
   const pullPct = Math.min(1, distance / threshold)
 
   const stats = [
@@ -122,8 +126,8 @@ export default function Hub() {
     { label: 'Marchés',        value: '2',   icon: TrendingUp, color: '#34d399', sub: t('stat_markets') },
   ]
 
-  // Décalage vertical du contenu pendant le geste (1:1 au doigt, ressort au relâchement).
-  const pullOffset = refreshing ? 56 : distance
+  // Décalage vertical du contenu pendant le geste (suit le doigt, ressort au relâchement).
+  const pullOffset = refreshing ? 80 : distance
 
   return (
     <>
@@ -134,7 +138,7 @@ export default function Hub() {
         <div
           className="md:hidden fixed left-1/2 z-30 pointer-events-none"
           style={{
-            top: `calc(3.5rem + ${Math.min(pullOffset, 90) / 2}px)`,
+            top: `calc(3.5rem + ${pullOffset / 2}px)`,
             transform: `translate(-50%, -50%) scale(${refreshing ? 1 : 0.7 + 0.3 * pullPct})`,
             opacity: refreshing ? 1 : pullPct,
           }}
