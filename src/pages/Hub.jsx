@@ -5,6 +5,7 @@ import { useSettings } from '@/contexts/SettingsContext'
 import { sendToTool } from '@/utils/toolBridge'
 import { ukey, getSessionUserId } from '@/utils/userStorage'
 import { cloudGet, cloudPut, listSharedVeilles } from '@/utils/cloudStore'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
 const colorMap = {
   cyan:    { bg: 'bg-cyan-400/10',    border: 'border-cyan-400/20',    icon: 'text-cyan-400',    badge: 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20',       hoverBorder: '#50E5E5' },
@@ -110,6 +111,10 @@ export default function Hub() {
     { to: '/chat',       icon: MessageSquare, color: 'violet', titleKey: 'tool_chat_title',      descKey: 'tool_chat_desc',       badgeKey: 'hub_badge_ai' },
   ]
 
+  // Tirer pour rafraîchir (mobile) — recharge la page d'accueil.
+  const { distance, refreshing, threshold } = usePullToRefresh(() => window.location.reload())
+  const pullPct = Math.min(1, distance / threshold)
+
   const stats = [
     // À synchroniser avec COUNTRIES de malusWorld.js (non importé ici : trop lourd pour le chunk Hub)
     { label: '52 pays',        value: '52',  icon: Globe,      color: '#50E5E5', sub: t('stat_countries') },
@@ -119,6 +124,22 @@ export default function Hub() {
 
   return (
     <div className="space-y-4 animate-fade-in">
+      {/* ── Indicateur « tirer pour rafraîchir » (mobile) ────────────────────── */}
+      {(distance > 0 || refreshing) && (
+        <div
+          className="md:hidden fixed left-1/2 -translate-x-1/2 z-30 pointer-events-none transition-[top] duration-75"
+          style={{ top: `calc(3.25rem + ${Math.min(distance, 90)}px)`, opacity: refreshing ? 1 : pullPct }}
+        >
+          <div className="w-9 h-9 rounded-full bg-navy-800 border border-cyan-400/30 shadow-lg shadow-black/40 flex items-center justify-center">
+            <RefreshCw
+              size={16}
+              className={`text-cyan-400 ${refreshing ? 'animate-spin' : ''}`}
+              style={refreshing ? undefined : { transform: `rotate(${distance * 2.6}deg)` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* ── Hero ─────────────────────────────────────────────────────────────── */}
       <div className="glass-card relative overflow-hidden p-5 md:p-8">
         <div className="absolute inset-0 dot-grid opacity-40 pointer-events-none" />
