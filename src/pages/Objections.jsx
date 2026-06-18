@@ -18,6 +18,7 @@ import { useResultFocus } from '@/hooks/useResultFocus'
 import { pdfFileName } from '@/utils/exportPdf'
 import { exportReportPdf } from '@/utils/exportReportPdf'
 import { useToast } from '@/components/ui/Toast'
+import { BTN_TERTIARY, BTN_QUIET } from '@/utils/buttonStyles'
 
 const SEGMENTS = [
   { id: 'btoc', labelKey: 'btoc', subKey: 'btoc_sub' },
@@ -188,37 +189,20 @@ ${productContext || ''}`
             </div>
             {report && !streaming && (
               <div className="flex items-center gap-2">
-                <button
-                  onClick={handleCopy}
-                  className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
-                             px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition"
-                >
+                <button onClick={handleCopy} className={BTN_TERTIARY}>
                   <Copy size={12} /> {t('copy_btn')}
                 </button>
-                <button
-                  onClick={handleRaw}
-                  className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
-                             px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition"
-                >
+                <button onClick={handleRaw} className={BTN_TERTIARY}>
                   <Braces size={12} /> {t('data_raw_btn')}
                 </button>
-                <button
-                  onClick={handlePdf}
-                  disabled={exporting}
-                  className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
-                             px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition"
-                >
+                <button onClick={handlePdf} disabled={exporting} className={BTN_TERTIARY}>
                   {exporting ? <Spinner size="sm" /> : <Download size={12} />}
                   {t('download_pdf')}
                 </button>
-                <button onClick={generate}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition">
+                <button onClick={generate} className={BTN_QUIET}>
                   <RefreshCw size={11} /> {t('regenerate')}
                 </button>
-                <button
-                  onClick={reset}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30"
-                >
+                <button onClick={reset} className={BTN_QUIET}>
                   <RotateCcw size={11} /> {t('new_analysis_btn')}
                 </button>
               </div>

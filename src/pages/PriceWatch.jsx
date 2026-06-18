@@ -33,13 +33,7 @@ import { useExport } from '@/hooks/useExport'
 import { pdfFileName } from '@/utils/exportPdf'
 import { exportReportPdf } from '@/utils/exportReportPdf'
 import { useToast } from '@/components/ui/Toast'
-
-// Hiérarchie d'emphase des boutons de la barre du rapport (cf. Button.jsx) :
-// `secondary` = action de soutien la plus visible (contour cyan) ;
-// `tertiary` = options discrètes (contour neutre, cyan au survol seulement).
-const PW_BTN_BASE = 'flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl transition flex-shrink-0'
-const PW_BTN_SECONDARY = `${PW_BTN_BASE} text-cyan-400 border border-cyan-400/30 hover:bg-cyan-400/10`
-const PW_BTN_TERTIARY  = `${PW_BTN_BASE} text-slate-400 border border-white/10 hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5`
+import { BTN_SECONDARY, BTN_TERTIARY, BTN_QUIET } from '@/utils/buttonStyles'
 
 // État du lot persisté par utilisateur : un import interrompu (navigation,
 // fermeture) se retrouve intact au retour, avec reprise des lignes restantes.
@@ -1517,10 +1511,10 @@ export default function PriceWatch() {
 
             {report && !streaming && (
               <div className="flex items-center gap-2 overflow-x-auto pb-0.5 w-full sm:w-auto">
-                <button onClick={handleCopy} className={PW_BTN_TERTIARY}>
+                <button onClick={handleCopy} className={BTN_TERTIARY}>
                   <Copy size={12} /> {t('copy_btn')}
                 </button>
-                <button onClick={handlePdf} disabled={exporting} className={PW_BTN_TERTIARY}>
+                <button onClick={handlePdf} disabled={exporting} className={BTN_TERTIARY}>
                   {exporting ? <Spinner size="sm" /> : <Download size={12} />}
                   {t('download_pdf')}
                 </button>
@@ -1535,7 +1529,7 @@ export default function PriceWatch() {
                   disabled={exporting}
                   aria-haspopup="menu"
                   aria-expanded={shareMenuOpen}
-                  className={PW_BTN_SECONDARY}>
+                  className={BTN_SECONDARY}>
                   <Share2 size={12} /> {t('pw_share')}
                   <ChevronDown size={11} className={`transition-transform ${shareMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -1566,17 +1560,16 @@ export default function PriceWatch() {
                     </div>
                   </>
                 )}
-                <button onClick={() => sendToTool(navigate, '/pitch', vehicleDetailsPayload())} className={PW_BTN_TERTIARY}>
+                <button onClick={() => sendToTool(navigate, '/pitch', vehicleDetailsPayload())} className={BTN_TERTIARY}>
                   <Mic size={12} /> {t('bridge_pitch')}
                 </button>
-                <button onClick={() => sendToTool(navigate, '/objections', vehicleDetailsPayload())} className={PW_BTN_TERTIARY}>
+                <button onClick={() => sendToTool(navigate, '/objections', vehicleDetailsPayload())} className={BTN_TERTIARY}>
                   <ShieldCheck size={12} /> {t('bridge_objections')}
                 </button>
-                <button onClick={() => search()} className={PW_BTN_TERTIARY}>
+                <button onClick={() => search()} className={BTN_TERTIARY}>
                   <Search size={12} /> {t('analyze_btn')}
                 </button>
-                <button onClick={reset}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-2 rounded-xl hover:bg-navy-700/30 flex-shrink-0">
+                <button onClick={reset} className={BTN_QUIET}>
                   <RotateCcw size={11} /> {t('new_analysis_btn')}
                 </button>
               </div>

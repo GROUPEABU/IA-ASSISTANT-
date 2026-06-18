@@ -10,6 +10,7 @@ import Spinner from '@/components/ui/Spinner'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useToast } from '@/components/ui/Toast'
+import { BTN_SECONDARY, BTN_TERTIARY } from '@/utils/buttonStyles'
 
 const inputClass = `w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
   text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition`
@@ -219,14 +220,10 @@ export default function Logistics() {
               {plan.trucks.length} {t('lg_trucks')} · {vehicles.length} {t('pw_batch_vehicles')}
             </h3>
             <div className="flex items-center gap-2">
-              <button onClick={handleExcel}
-                className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
-                           px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition">
+              <button onClick={handleExcel} className={BTN_TERTIARY}>
                 <FileText size={12} /> Excel
               </button>
-              <button onClick={handlePdf} disabled={exporting}
-                className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
-                           px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5 transition">
+              <button onClick={handlePdf} disabled={exporting} className={BTN_SECONDARY}>
                 {exporting ? <Spinner size="sm" /> : <Download size={12} />} {t('download_pdf')}
               </button>
             </div>

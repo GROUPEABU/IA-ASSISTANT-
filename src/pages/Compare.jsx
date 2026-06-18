@@ -8,6 +8,7 @@ import Spinner from '@/components/ui/Spinner'
 import { MAKES, YEARS } from '@/data/vehicleFilters'
 import { useExport } from '@/hooks/useExport'
 import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
+import { BTN_SECONDARY, BTN_QUIET } from '@/utils/buttonStyles'
 
 const EMPTY = { make: '', model: '', year: '', version: '' }
 
@@ -272,13 +273,10 @@ export default function Compare() {
           </div>
           {data && (
             <div className="flex items-center gap-2 flex-shrink-0">
-              <button onClick={handlePdf} disabled={exporting}
-                className="flex items-center gap-1.5 text-xs font-semibold text-cyan-400 border border-cyan-400/30
-                           px-2.5 py-1.5 rounded-lg hover:bg-cyan-400/10 transition disabled:opacity-40 disabled:pointer-events-none">
+              <button onClick={handlePdf} disabled={exporting} className={`${BTN_SECONDARY} font-semibold disabled:opacity-40 disabled:pointer-events-none`}>
                 {exporting ? <Spinner size="sm" /> : <FileDown size={12} />} {t('download_pdf')}
               </button>
-              <button onClick={reset}
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30">
+              <button onClick={reset} className={BTN_QUIET}>
                 <RotateCcw size={11} /> {t('dim_new_search')}
               </button>
             </div>
