@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react'
-import { Truck, FileSpreadsheet, Sparkles, RotateCcw, Download, FileText, MapPin, AlertTriangle } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Truck, FileSpreadsheet, Sparkles, RotateCcw, Download, FileText, MapPin, AlertTriangle, Send, MessageSquare, RefreshCw } from 'lucide-react'
 import { extractVehiclesSmart } from '@/services/smartImport'
-import { planTrucks } from '@/services/logistics'
+import { planTrucks, askLogisticsChat } from '@/services/logistics'
 import { downloadCsv } from '@/utils/exportCsv'
 import { exportReportPdf } from '@/utils/exportReportPdf'
 import { pdfFileName } from '@/utils/exportPdf'
@@ -17,6 +17,14 @@ const inputClass = `w-full bg-navy-900/60 border border-navy-700/50 rounded-xl p
 
 const fmtKm = (n) => (n != null ? `${Number(n).toLocaleString('fr-FR')} km` : '—')
 
+function stripJsonBlock(text) {
+  return text.replace(/```json[\s\S]*?```/g, '').trim()
+}
+
+function hasPlanJson(text) {
+  return /```json/.test(text) && /"trucks"/.test(text)
+}
+
 export default function Logistics() {
   const { t, lang } = useSettings()
   const { toast } = useToast()
@@ -31,8 +39,19 @@ export default function Logistics() {
   const [notes, setNotes] = useState('')
 
   const [planning, setPlanning] = useState(false)
-  const [plan, setPlan] = useState(null) // { trucks, unassignedIdx, summary }
+  const [plan, setPlan] = useState(null)
   const [error, setError] = useState(null)
+
+  // ── Chat state ─────────────────────────────────────────────────────────────
+  const [chatMessages, setChatMessages] = useState([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
+  const chatEndRef = useRef(null)
+  const chatInputRef = useRef(null)
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [chatMessages])
 
   const onFile = async (e) => {
     const file = e.target.files?.[0]
@@ -48,6 +67,7 @@ export default function Logistics() {
       setVehicles(usable)
       setFileName(file.name)
       setSmartUsed(source === 'ai')
+      setChatMessages([]) // reset chat on new import
       if (!usable.some((v) => v.location)) {
         toast(t('lg_no_location_warn'), 'info', 6000)
       }
@@ -75,7 +95,73 @@ export default function Logistics() {
   }
 
   const reset = () => {
-    setVehicles([]); setFileName(''); setPlan(null); setError(null); setNotes(''); setSmartUsed(false)
+    setVehicles([]); setFileName(''); setPlan(null); setError(null)
+    setNotes(''); setSmartUsed(false); setChatMessages([])
+  }
+
+  // ── Chat send ──────────────────────────────────────────────────────────────
+  const sendChat = async (text) => {
+    const msg = (text || chatInput).trim()
+    if (!msg || chatLoading) return
+
+    const userMsg = { role: 'user', content: msg }
+    const historyForAPI = [...chatMessages, userMsg]
+    setChatMessages(prev => [...prev, userMsg, { role: 'assistant', content: '', streaming: true }])
+    setChatInput('')
+
+    setChatLoading(true)
+    let accum = ''
+
+    try {
+      await askLogisticsChat(
+        historyForAPI,
+        vehicles,
+        {
+          lang,
+          onChunk: (chunk) => {
+            accum += chunk
+            setChatMessages(prev => {
+              const msgs = [...prev]
+              msgs[msgs.length - 1] = { role: 'assistant', content: accum, streaming: true }
+              return msgs
+            })
+          },
+        }
+      )
+
+      setChatMessages(prev => {
+        const msgs = [...prev]
+        msgs[msgs.length - 1] = { role: 'assistant', content: accum }
+        return msgs
+      })
+
+      // Extract plan JSON if present
+      if (hasPlanJson(accum)) {
+        const m = accum.match(/```json\s*([\s\S]*?)\s*```/)
+        if (m) {
+          try {
+            const parsed = JSON.parse(m[1])
+            if (Array.isArray(parsed.trucks) && parsed.trucks.length > 0) {
+              setPlan({ trucks: parsed.trucks, unassignedIdx: parsed.unassignedIdx || [], summary: parsed.summary || '' })
+              setError(null)
+              toast(t('lg_chat_plan_updated'), 'success')
+            }
+          } catch { /* malformed JSON — ignore */ }
+        }
+      }
+    } catch (err) {
+      setChatMessages(prev => {
+        const msgs = [...prev]
+        msgs[msgs.length - 1] = { role: 'assistant', content: err.message, error: true }
+        return msgs
+      })
+    } finally {
+      setChatLoading(false)
+    }
+  }
+
+  const handleChatKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat() }
   }
 
   const vehicleLabel = (v) =>
@@ -131,6 +217,11 @@ export default function Logistics() {
       exportReportPdf(md, pdfFileName('plan-camions', 'Logistique'), { title: t('lg_pdf_title'), subtitle: `${plan.trucks.length} ${t('lg_trucks')} · ${fileName}` }))
   }
 
+  // ── Suggestions contextuelle ───────────────────────────────────────────────
+  const suggestions = vehicles.length
+    ? [t('lg_chat_s1'), t('lg_chat_s2'), t('lg_chat_s3'), t('lg_chat_s4')]
+    : [t('lg_chat_s_nofile1'), t('lg_chat_s_nofile2'), t('lg_chat_s_nofile3')]
+
   return (
     <div className="space-y-4 animate-fade-in">
       {/* ── Configuration ───────────────────────────────────────────────────── */}
@@ -169,9 +260,6 @@ export default function Logistics() {
               </span>
             </div>
 
-            {/* Demande libre — comme sur Claude chat : décrivez ce que vous
-                voulez faire du fichier, les consignes priment sur les règles.
-                Capacités par pays (DE=7…) et gabarits : gérés par le moteur. */}
             <div className="mb-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('lg_notes_label')}</label>
               <textarea
@@ -294,8 +382,121 @@ export default function Logistics() {
         </>
       )}
 
+      {/* ── Assistant logistique (chat) ───────────────────────────────────── */}
+      <div className="glass-card overflow-hidden">
+        <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-3 border-b border-navy-700/40">
+          <div className="flex items-center gap-2">
+            <MessageSquare size={14} className="text-cyan-400" />
+            <span className="text-xs font-semibold text-white">{t('lg_chat_title')}</span>
+            {vehicles.length > 0 && (
+              <span className="text-[10px] text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded-full">
+                {vehicles.length} {t('pw_batch_vehicles')}
+              </span>
+            )}
+          </div>
+          {chatMessages.length > 0 && (
+            <button
+              onClick={() => setChatMessages([])}
+              className="text-[10px] text-slate-600 hover:text-slate-400 transition flex items-center gap-1"
+            >
+              <RotateCcw size={10} /> Effacer
+            </button>
+          )}
+        </div>
+
+        {/* Messages */}
+        <div className="px-3 py-3 space-y-2 max-h-72 overflow-y-auto">
+          {chatMessages.length === 0 && (
+            <div className="py-2 space-y-2">
+              <p className="text-[11px] text-slate-500 text-center pb-1">
+                {vehicles.length > 0
+                  ? 'Donnez une consigne ou posez une question sur le plan'
+                  : 'Posez une question ou importez un fichier pour organiser les camions'}
+              </p>
+              <div className="flex flex-wrap gap-1.5 justify-center">
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => sendChat(s)}
+                    disabled={chatLoading}
+                    className="text-[11px] px-2.5 py-1 rounded-lg bg-navy-800/60 border border-navy-700/40
+                               text-slate-400 hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5
+                               transition disabled:opacity-40"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {chatMessages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'bg-cyan-400/15 border border-cyan-400/20 text-slate-200 rounded-br-sm'
+                    : msg.error
+                      ? 'bg-red-500/10 border border-red-500/20 text-red-400 rounded-bl-sm'
+                      : 'bg-navy-800/60 border border-navy-700/40 text-slate-300 rounded-bl-sm'
+                }`}
+              >
+                {msg.role === 'assistant' ? (
+                  <>
+                    <span className="whitespace-pre-wrap">{stripJsonBlock(msg.content) || (msg.streaming ? '' : '…')}</span>
+                    {hasPlanJson(msg.content) && !msg.streaming && (
+                      <span className="flex items-center gap-1 text-[10px] text-cyan-400 mt-1.5 font-medium">
+                        <RefreshCw size={9} /> {t('lg_chat_plan_updated')}
+                      </span>
+                    )}
+                    {msg.streaming && (
+                      <span className="inline-block w-1.5 h-3 bg-cyan-400/70 rounded-sm ml-0.5 animate-pulse" />
+                    )}
+                  </>
+                ) : (
+                  <span className="whitespace-pre-wrap">{msg.content}</span>
+                )}
+              </div>
+            </div>
+          ))}
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* Input */}
+        <div className="px-3 pb-3 pt-1 border-t border-navy-700/30">
+          <form
+            onSubmit={(e) => { e.preventDefault(); sendChat() }}
+            className="flex items-end gap-2"
+          >
+            <textarea
+              ref={chatInputRef}
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={handleChatKeyDown}
+              placeholder={t('lg_chat_ph')}
+              rows={1}
+              disabled={chatLoading}
+              className="flex-1 bg-navy-800/60 border border-navy-700/50 rounded-xl px-3
+                         text-xs text-slate-200 placeholder-slate-600 resize-none
+                         focus:outline-none focus:border-cyan-400/50 transition
+                         disabled:opacity-50"
+              style={{ height: '38px', paddingTop: '10px', paddingBottom: '10px', lineHeight: '18px', overflowY: 'hidden' }}
+            />
+            <button
+              type="submit"
+              disabled={chatLoading || !chatInput.trim()}
+              className="w-9 h-9 rounded-xl bg-cyan-400 text-navy-900 flex items-center justify-center
+                         hover:bg-cyan-300 active:scale-95 transition-all
+                         disabled:opacity-40 disabled:pointer-events-none flex-shrink-0"
+            >
+              {chatLoading ? <Spinner size="sm" /> : <Send size={14} />}
+            </button>
+          </form>
+        </div>
+      </div>
+
       {/* Empty state */}
-      {!vehicles.length && !parsing && (
+      {!vehicles.length && !parsing && chatMessages.length === 0 && (
         <div className="glass-card p-10 text-center">
           <Truck size={36} className="text-slate-700 mx-auto mb-3" />
           <p className="text-sm text-slate-400 mb-1">{t('lg_empty_title')}</p>

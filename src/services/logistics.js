@@ -51,6 +51,41 @@ Réponds uniquement avec le JSON demandé.`
   return { trucks: plan.trucks, unassignedIdx: plan.unassignedIdx || [], summary: plan.summary || '' }
 }
 
+/**
+ * Mode chat : répond à une question ou régénère un plan selon les instructions.
+ * Les véhicules importés sont injectés comme contexte dans le premier échange.
+ * Retourne le texte brut (peut contenir un bloc ```json``` si l'IA génère un plan).
+ *
+ * @param {Array<{role,content}>} messages — historique du chat (sans le contexte véhicules)
+ * @param {object[]} vehicles — liste canonique courante (peut être vide)
+ * @param {{ lang?: string, onChunk?: (t: string) => void }} opts
+ * @returns {Promise<string>}
+ */
+export async function askLogisticsChat(messages, vehicles, { lang = 'fr', onChunk = null } = {}) {
+  const compact = vehicles?.length
+    ? vehicles.map((v, idx) => ({
+        idx,
+        v: [v.make, v.model, v.version].filter(Boolean).join(' '),
+        km: v.mileageKm ?? null,
+        parc: v.location || null,
+      }))
+    : null
+
+  const apiMessages = compact
+    ? [
+        { role: 'user', content: `[Contexte — ${compact.length} véhicules importés] : ${JSON.stringify(compact)}` },
+        { role: 'assistant', content: `Compris, j'ai ${compact.length} véhicule${compact.length > 1 ? 's' : ''} en mémoire.` },
+        ...messages,
+      ]
+    : messages
+
+  return sendMessage(apiMessages, {
+    lang, expert: true, temperature: 0.1, tool: 'logistique',
+    maxTokens: 4000, systemStaticKey: 'logistics_chat',
+    stream: true, onChunk,
+  })
+}
+
 /** Capacités par défaut selon le pays de destination. */
 export const DEST_COUNTRIES = [
   { code: 'DE', label: 'Allemagne', capacity: 7 },
