@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useToolTasks } from '@/contexts/ToolTasksContext'
 
-const TOOL_BY_ROUTE = { '/objections': 'objections', '/chat': 'chat' }
+const TOOL_BY_ROUTE = { '/price-watch': 'pricewatch', '/objections': 'objections', '/chat': 'chat' }
 
 export default function BottomNav() {
   const { t } = useSettings()

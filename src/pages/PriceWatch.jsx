@@ -34,6 +34,14 @@ import { pdfFileName } from '@/utils/exportPdf'
 import { exportReportPdf } from '@/utils/exportReportPdf'
 import { useToast } from '@/components/ui/Toast'
 import { BTN_SECONDARY, BTN_TERTIARY, BTN_QUIET } from '@/utils/buttonStyles'
+import { useToolBackground } from '@/contexts/ToolTasksContext'
+
+const TOOL = 'pricewatch'
+const EMPTY_SESSION = {
+  report: '', searchLabel: '', error: null,
+  hasLiveData: false, fetchedAt: null, sources: [], centraleUrl: '',
+  truncated: false, reportMargin: null,
+}
 
 // État du lot persisté par utilisateur : un import interrompu (navigation,
 // fermeture) se retrouve intact au retour, avec reprise des lignes restantes.
@@ -477,18 +485,11 @@ export default function PriceWatch() {
     }
   }
 
-  const [loading, setLoading]     = useState(false)   // avant le 1er token
-  const [streaming, setStreaming] = useState(false)   // tokens en cours d'arrivée
-  const [report, setReport]       = useState('')      // texte Markdown streamé
-  const [hasLiveData, setHasLiveData] = useState(false)
-  const [truncated, setTruncated] = useState(false)   // rapport coupé (plafond de tokens atteint)
-  const [fetchedAt, setFetchedAt] = useState(null)
-  const [sources, setSources]     = useState([])
-  const [error, setError]         = useState(null)
-  const [centraleUrl, setCentraleUrl] = useState('')
-  const [searchLabel, setSearchLabel] = useState('')
-  const [evolution, setEvolution] = useState(null) // diff vs analyse précédente du même véhicule
-  const [reportMargin, setReportMargin] = useState(null) // marge utilisée pour le rapport affiché
+  const [loading, setLoading]     = useState(false)
+  const [streaming, setStreaming] = useState(false)
+  const [evolution, setEvolution] = useState(null)
+  const { s, patch, reset: resetSession, running, start, finish } = useToolBackground(TOOL, EMPTY_SESSION)
+  const { report, searchLabel, error, hasLiveData, fetchedAt, sources, centraleUrl, truncated, reportMargin } = s
 
   // Analyse par lot (fichier CSV / Excel)
   const batchFileRef = useRef(null)
@@ -656,13 +657,10 @@ export default function PriceWatch() {
     ].filter(Boolean).join(' · ')
 
     saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '))
-    setSearchLabel(label)
+    patch({ searchLabel: label, error: null, report: '', hasLiveData: false, truncated: false, sources: [], centraleUrl: '', fetchedAt: null })
+    start(label)
     setLoading(true)
     setStreaming(false)
-    setError(null)
-    setReport('')
-    setHasLiveData(false)
-    setTruncated(false)
     setEvolution(null)
     setMultiResults(null)
     setMultiOpen(null)
@@ -672,9 +670,7 @@ export default function PriceWatch() {
       // Liens de référence — for non-France markets, use AutoScout24 country URL.
       if (ctry.code === 'FR') {
         const meta = await fetchSources(filters)
-        setFetchedAt(meta.fetchedAt)
-        setCentraleUrl(meta.centraleUrl || '')
-        setSources(meta.sources || [])
+        patch({ fetchedAt: meta.fetchedAt, centraleUrl: meta.centraleUrl || '', sources: meta.sources || [] })
       } else {
         const as24Url = buildAs24Url(ctry, filters)
         const q = encodeURIComponent([filters.make, filters.model].filter(Boolean).join(' '))
@@ -696,17 +692,15 @@ export default function PriceWatch() {
           TN: { name: 'Tayara.tn', url: `https://www.tayara.tn/search/?q=${q}` },
           DZ: { name: 'Ouedkniss.com', url: `https://www.ouedkniss.com/auto-vehicule-occasion?q=${q}` },
         }
-        setFetchedAt(new Date().toISOString())
+        const nowIso = new Date().toISOString()
         if (as24Url) {
-          setCentraleUrl(as24Url)
-          setSources([
+          patch({ fetchedAt: nowIso, centraleUrl: as24Url, sources: [
             { name: `AutoScout24 ${ctry.label}`, url: as24Url },
             ...(SECONDARY[ctry.code] ? [SECONDARY[ctry.code]] : []),
-          ])
+          ] })
         } else {
           const sec = SECONDARY[ctry.code]
-          setCentraleUrl(sec?.url || '')
-          setSources(sec ? [sec] : [])
+          patch({ fetchedAt: nowIso, centraleUrl: sec?.url || '', sources: sec ? [sec] : [] })
         }
       }
 
@@ -722,16 +716,14 @@ export default function PriceWatch() {
           returnMeta: true, stream: true,
           onChunk: (full) => {
             if (first) { first = false; setLoading(false); setStreaming(true) }
-            setReport(full)
+            patch({ report: full })
           },
         }
       )
       const cleanText = stripLeadingReasoning(text)
-      setReport(cleanText)
-      setHasLiveData(!!usedWebSearch)
-      setTruncated(!!wasTruncated)
+      patch({ report: cleanText, hasLiveData: !!usedWebSearch, truncated: !!wasTruncated, reportMargin: marginUsed })
       setStreaming(false)
-      setReportMargin(marginUsed)
+      finish('done')
 
       saveLastVehicle([rawMake, model, finition].filter(Boolean).join(' '))
 
@@ -797,7 +789,8 @@ export default function PriceWatch() {
         }
       }
     } catch (err) {
-      setError(err.message)
+      patch({ error: err.message })
+      finish('error')
       toast(err.message, 'error')
     } finally {
       setLoading(false)
@@ -986,45 +979,50 @@ export default function PriceWatch() {
   })
 
   const reset = () => {
-    setReport(''); setMake(''); setModel(''); setFinition(''); setCarrosserie('')
+    resetSession()
+    setMake(''); setModel(''); setFinition(''); setCarrosserie('')
     setYearMin(''); setYearMax(''); setMileageMin(''); setMileageMax(''); setFuel(''); setGearbox(''); setPowerMin(''); setPowerMax('')
     setCountry('FR')
-    setSearchLabel(''); setCentraleUrl(''); setFetchedAt(null); setSources([]); setHasLiveData(false); setReportMargin(null)
-    setTruncated(false)
+    setEvolution(null)
     setMultiResults(null); setMultiOpen(null); setExtraCountries([])
   }
 
   const restore = (item) => {
-    setReport(item.report || '')
-    setTruncated(false)
-    setSearchLabel(item.searchLabel)
+    patch({
+      report: item.report || '',
+      truncated: false,
+      searchLabel: item.searchLabel,
+      hasLiveData: !!item.hasLiveData,
+      fetchedAt: item.fetchedAt || null,
+      sources: item.sources || [],
+      centraleUrl: item.centraleUrl || '',
+      reportMargin: item.margin ?? MARGIN_DEFAULT,
+      error: null,
+    })
     setType(item.type)
     setCountry(item.country || 'FR')
-    setHasLiveData(!!item.hasLiveData)
-    setFetchedAt(item.fetchedAt || null)
-    setSources(item.sources || [])
-    setCentraleUrl(item.centraleUrl || '')
     setEvolution(null)
     setMultiResults(null); setMultiOpen(null)
-    setReportMargin(item.margin ?? MARGIN_DEFAULT)
-    // Resynchronise le formulaire : le bouton « Analyser » relance la même veille.
     if (item.filters) applyFilters(item.filters)
   }
 
   // Affiche une veille partagée par l'équipe (lecture seule — pas de filtres,
   // pas de relance automatique : on ne fait que consulter le rapport).
   const viewShared = (item) => {
-    setReport(item.report || '')
-    setTruncated(false)
-    setSearchLabel(item.searchLabel || '')
+    patch({
+      report: item.report || '',
+      truncated: false,
+      searchLabel: item.searchLabel || '',
+      hasLiveData: !!item.hasLiveData,
+      fetchedAt: item.sharedAt ? new Date(item.sharedAt).toISOString() : null,
+      sources: [],
+      centraleUrl: '',
+      reportMargin: item.margin ?? MARGIN_DEFAULT,
+      error: null,
+    })
     setType(item.type || 'vo')
     setCountry(item.country || 'FR')
-    setHasLiveData(!!item.hasLiveData)
-    setFetchedAt(item.sharedAt ? new Date(item.sharedAt).toISOString() : null)
-    setSources([]); setCentraleUrl('')
     setEvolution(null); setMultiResults(null); setMultiOpen(null)
-    setReportMargin(item.margin ?? MARGIN_DEFAULT)
-    setError(null)
     requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
@@ -1044,11 +1042,11 @@ export default function PriceWatch() {
   // Score d'opportunité du rapport affiché — dérivé du texte (recherche,
   // restauration d'historique…), donc rien à stocker.
   const oppScore = useMemo(
-    () => (report && !streaming ? computeOpportunityScore(report, reportMargin ?? MARGIN_DEFAULT) : null),
-    [report, streaming, reportMargin]
+    () => (report && !running ? computeOpportunityScore(report, reportMargin ?? MARGIN_DEFAULT) : null),
+    [report, running, reportMargin]
   )
 
-  const showResult = (loading || streaming || report) && !error
+  const showResult = (loading || streaming || running || report) && !error
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -1241,12 +1239,12 @@ export default function PriceWatch() {
         {/* Bouton */}
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => search()} disabled={!canSearch || loading || streaming || multiRunning}
+            onClick={() => search()} disabled={!canSearch || running || multiRunning}
             className="flex items-center gap-2 px-5 py-2.5 bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
                        hover:bg-cyan-300 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
           >
-            {(loading || streaming) ? <Spinner size="sm" /> : <Search size={14} />}
-            {(loading || streaming) ? t('analyzing') : t('analyze_btn')}
+            {running ? <Spinner size="sm" /> : <Search size={14} />}
+            {running ? t('analyzing') : t('analyze_btn')}
           </button>
 
           {centraleUrl && !loading && !streaming && (
@@ -1475,7 +1473,7 @@ export default function PriceWatch() {
                   type === 'vo' ? 'bg-warn/10 text-warn' : 'bg-emerald-400/10 text-emerald-400'
                 }`}>{type === 'vo' ? t('used_vehicle') : t('new_vehicle')}</span>
 
-                {streaming ? (
+                {(streaming || running) ? (
                   <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-400/10 text-cyan-400 border border-cyan-400/20 animate-pulse">
                     <Sparkles size={9} /> {t('price_live_refreshing')}
                   </span>
@@ -1509,7 +1507,7 @@ export default function PriceWatch() {
               </div>
             </div>
 
-            {report && !streaming && (
+            {report && !running && !streaming && (
               <div className="flex items-center gap-2 overflow-x-auto pb-0.5 w-full sm:w-auto">
                 <button onClick={handleCopy} className={BTN_TERTIARY}>
                   <Copy size={12} /> {t('copy_btn')}
@@ -1577,7 +1575,7 @@ export default function PriceWatch() {
           </div>
 
           {/* Loading avant 1er token */}
-          {loading && !report && (
+          {(loading || (running && !report)) && (
             <div className="glass-card p-8 flex flex-col items-center gap-3 text-center">
               <Spinner />
               <p className="text-sm text-slate-400">{t('price_step_calculating')}</p>
@@ -1586,7 +1584,7 @@ export default function PriceWatch() {
           )}
 
           {/* Évolution vs dernière analyse du même véhicule */}
-          {report && !streaming && evolution && (
+          {report && !running && !streaming && evolution && (
             <EvolutionCard evolution={evolution} t={t} />
           )}
 
@@ -1659,13 +1657,13 @@ export default function PriceWatch() {
               <div className="glass-card p-6 md:p-8">
                 <div className="report-md text-slate-200"
                      dangerouslySetInnerHTML={{ __html: mdToHtml(report) }} />
-                {streaming && (
+                {(streaming || running) && (
                   <span className="inline-block w-0.5 h-[1em] animate-pulse align-middle ml-0.5 opacity-80 bg-cyan-400" />
                 )}
               </div>
 
               {/* Avertissement : rapport tronqué (plafond de tokens atteint) */}
-              {!streaming && truncated && (
+              {!streaming && !running && truncated && (
                 <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-warn/10 border border-warn/30">
                   <AlertTriangle size={15} className="text-warn flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-warn leading-relaxed">{t('price_truncated_warn')}</p>
@@ -1673,7 +1671,7 @@ export default function PriceWatch() {
               )}
 
               {/* Malus — lien centré vers le calculateur */}
-              {!streaming && (
+              {!streaming && !running && (
                 <div className="glass-card p-4 flex justify-center">
                   <Link to="/co2-malus"
                     className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-warn/10 border border-warn/30
@@ -1684,7 +1682,7 @@ export default function PriceWatch() {
               )}
 
               {/* Sources */}
-              {!streaming && (sources.length > 0 || centraleUrl) && (
+              {!streaming && !running && (sources.length > 0 || centraleUrl) && (
                 <div className="glass-card p-4">
                   <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">{t('sources_consulted')}</p>
                   <div className="flex flex-wrap gap-2">

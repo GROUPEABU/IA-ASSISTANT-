@@ -19,6 +19,7 @@ const COLLAPSE_KEY = 'abu_sidebar_collapsed'
 
 // Routes dont les tâches IA continuent en fond (cf. ToolTasksContext).
 const TOOL_BY_ROUTE = {
+  '/price-watch':    'pricewatch',
   '/logistics':      'logistics',
   '/pitch':          'pitch',
   '/objections':     'objections',
