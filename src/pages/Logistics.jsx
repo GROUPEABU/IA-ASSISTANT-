@@ -1,19 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
-import { Truck, FileSpreadsheet, Sparkles, RotateCcw, Download, FileText, MapPin, AlertTriangle, Send, MessageSquare, RefreshCw } from 'lucide-react'
+import { Truck, FileSpreadsheet, Sparkles, RotateCcw, Download, FileText, MapPin, AlertTriangle, Send, RefreshCw } from 'lucide-react'
 import { extractVehiclesSmart } from '@/services/smartImport'
-import { planTrucks, askLogisticsChat } from '@/services/logistics'
+import { askLogisticsChat } from '@/services/logistics'
 import { downloadCsv } from '@/utils/exportCsv'
 import { exportReportPdf } from '@/utils/exportReportPdf'
 import { pdfFileName } from '@/utils/exportPdf'
 import { useExport } from '@/hooks/useExport'
 import Spinner from '@/components/ui/Spinner'
-import ErrorAlert from '@/components/ui/ErrorAlert'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useToast } from '@/components/ui/Toast'
 import { BTN_SECONDARY, BTN_TERTIARY } from '@/utils/buttonStyles'
-
-const inputClass = `w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
-  text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition`
 
 const fmtKm = (n) => (n != null ? `${Number(n).toLocaleString('fr-FR')} km` : '—')
 
@@ -36,11 +32,7 @@ export default function Logistics() {
   const [smartUsed, setSmartUsed] = useState(false)
   const [parsing, setParsing] = useState(false)
 
-  const [notes, setNotes] = useState('')
-
-  const [planning, setPlanning] = useState(false)
   const [plan, setPlan] = useState(null)
-  const [error, setError] = useState(null)
 
   // ── Chat state ─────────────────────────────────────────────────────────────
   const [chatMessages, setChatMessages] = useState([])
@@ -58,7 +50,6 @@ export default function Logistics() {
     e.target.value = ''
     if (!file) return
     setParsing(true)
-    setError(null)
     setPlan(null)
     try {
       const { vehicles: rows, source } = await extractVehiclesSmart(file, { lang })
@@ -78,25 +69,9 @@ export default function Logistics() {
     }
   }
 
-  const organize = async () => {
-    if (!vehicles.length || planning) return
-    setPlanning(true)
-    setError(null)
-    setPlan(null)
-    try {
-      const result = await planTrucks(vehicles, { notes }, { lang })
-      setPlan(result)
-    } catch (err) {
-      setError(err.message)
-      toast(err.message, 'error')
-    } finally {
-      setPlanning(false)
-    }
-  }
-
   const reset = () => {
-    setVehicles([]); setFileName(''); setPlan(null); setError(null)
-    setNotes(''); setSmartUsed(false); setChatMessages([])
+    setVehicles([]); setFileName(''); setPlan(null)
+    setSmartUsed(false); setChatMessages([])
   }
 
   // ── Chat send ──────────────────────────────────────────────────────────────
@@ -143,7 +118,6 @@ export default function Logistics() {
             const parsed = JSON.parse(m[1])
             if (Array.isArray(parsed.trucks) && parsed.trucks.length > 0) {
               setPlan({ trucks: parsed.trucks, unassignedIdx: parsed.unassignedIdx || [], summary: parsed.summary || '' })
-              setError(null)
               toast(t('lg_chat_plan_updated'), 'success')
             }
           } catch { /* malformed JSON — ignore */ }
@@ -194,7 +168,7 @@ export default function Logistics() {
     if (!plan) return
     const md = [
       `# ${t('lg_pdf_title')}`,
-      `${vehicles.length} ${t('pw_batch_vehicles')} · ${plan.trucks.length} ${t('lg_trucks')}${notes ? ` · « ${notes} »` : ''}`,
+      `${vehicles.length} ${t('pw_batch_vehicles')} · ${plan.trucks.length} ${t('lg_trucks')}`,
       '',
       ...plan.trucks.flatMap((truck) => [
         `## ${t('lg_truck')} ${truck.id} — ${truck.vehicleIdx.length} ${t('pw_batch_vehicles')} · ${t('lg_km_avg')} ${fmtKm(truck.kmAvg)}`,
@@ -217,14 +191,14 @@ export default function Logistics() {
       exportReportPdf(md, pdfFileName('plan-camions', 'Logistique'), { title: t('lg_pdf_title'), subtitle: `${plan.trucks.length} ${t('lg_trucks')} · ${fileName}` }))
   }
 
-  // ── Suggestions contextuelle ───────────────────────────────────────────────
+  // ── Suggestions contextuelles ───────────────────────────────────────────────
   const suggestions = vehicles.length
-    ? [t('lg_chat_s1'), t('lg_chat_s2'), t('lg_chat_s3'), t('lg_chat_s4')]
+    ? [t('lg_chat_auto'), t('lg_chat_s1'), t('lg_chat_s2'), t('lg_chat_s3'), t('lg_chat_s4')]
     : [t('lg_chat_s_nofile1'), t('lg_chat_s_nofile2'), t('lg_chat_s_nofile3')]
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* ── Configuration ───────────────────────────────────────────────────── */}
+      {/* ── Import + pavé d'instructions ─────────────────────────────────────── */}
       <div className="glass-card p-4 md:p-5">
         <div className="flex items-center gap-2 mb-4">
           <Truck size={16} className="text-cyan-400" />
@@ -234,7 +208,7 @@ export default function Logistics() {
         {/* Fichier */}
         <button
           onClick={() => fileRef.current?.click()}
-          disabled={parsing || planning}
+          disabled={parsing || chatLoading}
           className="w-full flex items-center justify-center gap-2 px-4 py-6 rounded-xl border border-dashed border-navy-600/60
                      text-sm text-slate-400 hover:text-cyan-400 hover:border-cyan-400/40 transition disabled:opacity-40 mb-1.5"
         >
@@ -245,63 +219,124 @@ export default function Logistics() {
         <input ref={fileRef} type="file" accept=".csv,.xlsx,.xlsm,.txt,text/csv" className="hidden" onChange={onFile} />
 
         {vehicles.length > 0 && (
-          <>
-            <div className="flex items-center gap-2 flex-wrap mb-4">
-              <span className="text-xs font-bold text-cyan-400 bg-cyan-400/10 px-2.5 py-1 rounded-full">
-                {t('pw_batch_detected').replace('{n}', vehicles.length)}
+          <div className="flex items-center gap-2 flex-wrap mb-3">
+            <span className="text-xs font-bold text-cyan-400 bg-cyan-400/10 px-2.5 py-1 rounded-full">
+              {t('pw_batch_detected').replace('{n}', vehicles.length)}
+            </span>
+            {smartUsed && (
+              <span className="flex items-center gap-1 text-[10px] text-violet-300 bg-violet-400/10 border border-violet-400/20 px-2 py-1 rounded-full">
+                <Sparkles size={10} /> {t('import_smart_badge')}
               </span>
-              {smartUsed && (
-                <span className="flex items-center gap-1 text-[10px] text-violet-300 bg-violet-400/10 border border-violet-400/20 px-2 py-1 rounded-full">
-                  <Sparkles size={10} /> {t('import_smart_badge')}
-                </span>
-              )}
-              <span className="text-[10px] text-slate-500">
-                {vehicles.filter((v) => v.location).length}/{vehicles.length} {t('lg_with_location')}
-              </span>
-            </div>
-
-            <div className="mb-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t('lg_notes_label')}</label>
-              <textarea
-                value={notes} onChange={(e) => setNotes(e.target.value)}
-                placeholder={t('lg_notes_ph')} rows={3}
-                className={`${inputClass} resize-y min-h-[72px]`}
-              />
-            </div>
-            <p className="text-[10px] text-slate-600 mb-4">{t('lg_rules_hint')}</p>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={organize} disabled={planning}
-                className="flex items-center gap-2 px-5 py-2.5 bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
-                           hover:bg-cyan-300 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
-              >
-                {planning ? <Spinner size="sm" /> : <Truck size={14} />}
-                {planning ? t('lg_organizing') : t('lg_organize_btn')}
-              </button>
-              <button
-                onClick={reset}
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition px-2.5 py-1.5 rounded-lg hover:bg-navy-700/30"
-              >
-                <RotateCcw size={11} /> {t('new_analysis_btn')}
-              </button>
-            </div>
-          </>
+            )}
+            <span className="text-[10px] text-slate-500">
+              {vehicles.filter((v) => v.location).length}/{vehicles.length} {t('lg_with_location')}
+            </span>
+            <button
+              onClick={reset}
+              className="ml-auto flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 transition px-2 py-1 rounded-lg hover:bg-navy-700/30"
+            >
+              <RotateCcw size={10} /> {t('new_analysis_btn')}
+            </button>
+          </div>
         )}
+
+        {/* Légende du pavé */}
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t('lg_chat_label')}</p>
+
+        {/* ── PAVÉ D'INSTRUCTIONS (chat) — directement sous le fichier ───────── */}
+        <div className="rounded-xl border border-navy-700/40 bg-navy-900/30 overflow-hidden">
+          {/* Messages */}
+          {chatMessages.length > 0 && (
+            <div className="px-3 py-3 space-y-2 max-h-72 overflow-y-auto border-b border-navy-700/30">
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${
+                      msg.role === 'user'
+                        ? 'bg-cyan-400/15 border border-cyan-400/20 text-slate-200 rounded-br-sm'
+                        : msg.error
+                          ? 'bg-red-500/10 border border-red-500/20 text-red-400 rounded-bl-sm'
+                          : 'bg-navy-800/60 border border-navy-700/40 text-slate-300 rounded-bl-sm'
+                    }`}
+                  >
+                    {msg.role === 'assistant' ? (
+                      <>
+                        <span className="whitespace-pre-wrap">{stripJsonBlock(msg.content) || (msg.streaming ? '' : '…')}</span>
+                        {hasPlanJson(msg.content) && !msg.streaming && (
+                          <span className="flex items-center gap-1 text-[10px] text-cyan-400 mt-1.5 font-medium">
+                            <RefreshCw size={9} /> {t('lg_chat_plan_updated')}
+                          </span>
+                        )}
+                        {msg.streaming && (
+                          <span className="inline-block w-1.5 h-3 bg-cyan-400/70 rounded-sm ml-0.5 animate-pulse" />
+                        )}
+                      </>
+                    ) : (
+                      <span className="whitespace-pre-wrap">{msg.content}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+          )}
+
+          {/* Suggestions rapides */}
+          <div className="flex flex-wrap gap-1.5 px-3 pt-3">
+            {suggestions.map((s, i) => {
+              const primary = vehicles.length > 0 && i === 0
+              return (
+                <button
+                  key={s}
+                  onClick={() => sendChat(s)}
+                  disabled={chatLoading}
+                  className={`text-[11px] px-2.5 py-1 rounded-lg border transition disabled:opacity-40 ${
+                    primary
+                      ? 'bg-cyan-400/15 border-cyan-400/40 text-cyan-300 font-semibold hover:bg-cyan-400/25'
+                      : 'bg-navy-800/60 border-navy-700/40 text-slate-400 hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5'
+                  }`}
+                >
+                  {s}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Saisie */}
+          <form
+            onSubmit={(e) => { e.preventDefault(); sendChat() }}
+            className="flex items-end gap-2 p-3"
+          >
+            <textarea
+              ref={chatInputRef}
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={handleChatKeyDown}
+              placeholder={vehicles.length ? t('lg_chat_ph') : t('lg_chat_ph_nofile')}
+              rows={1}
+              disabled={chatLoading}
+              className="flex-1 bg-navy-800/60 border border-navy-700/50 rounded-xl px-3
+                         text-xs text-slate-200 placeholder-slate-600 resize-none
+                         focus:outline-none focus:border-cyan-400/50 transition
+                         disabled:opacity-50"
+              style={{ height: '40px', paddingTop: '11px', paddingBottom: '11px', lineHeight: '18px', overflowY: 'hidden' }}
+            />
+            <button
+              type="submit"
+              disabled={chatLoading || !chatInput.trim()}
+              className="w-10 h-10 rounded-xl bg-cyan-400 text-navy-900 flex items-center justify-center
+                         hover:bg-cyan-300 active:scale-95 transition-all
+                         disabled:opacity-40 disabled:pointer-events-none flex-shrink-0"
+            >
+              {chatLoading ? <Spinner size="sm" /> : <Send size={15} />}
+            </button>
+          </form>
+        </div>
+        <p className="text-[10px] text-slate-600 mt-2">{t('lg_rules_hint')}</p>
       </div>
 
-      {error && <ErrorAlert message={error} onRetry={organize} />}
-
-      {planning && (
-        <div className="glass-card p-8 flex flex-col items-center gap-3 text-center">
-          <Spinner />
-          <p className="text-sm text-slate-400">{t('lg_organizing')}</p>
-          <p className="text-xs text-slate-600">{t('lg_organizing_sub')}</p>
-        </div>
-      )}
-
       {/* ── Plan de chargement ─────────────────────────────────────────────── */}
-      {plan && !planning && (
+      {plan && (
         <>
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <h3 className="text-base font-bold text-white">
@@ -380,128 +415,6 @@ export default function Logistics() {
             </div>
           )}
         </>
-      )}
-
-      {/* ── Assistant logistique (chat) ───────────────────────────────────── */}
-      <div className="glass-card overflow-hidden">
-        <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-3 border-b border-navy-700/40">
-          <div className="flex items-center gap-2">
-            <MessageSquare size={14} className="text-cyan-400" />
-            <span className="text-xs font-semibold text-white">{t('lg_chat_title')}</span>
-            {vehicles.length > 0 && (
-              <span className="text-[10px] text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded-full">
-                {vehicles.length} {t('pw_batch_vehicles')}
-              </span>
-            )}
-          </div>
-          {chatMessages.length > 0 && (
-            <button
-              onClick={() => setChatMessages([])}
-              className="text-[10px] text-slate-600 hover:text-slate-400 transition flex items-center gap-1"
-            >
-              <RotateCcw size={10} /> Effacer
-            </button>
-          )}
-        </div>
-
-        {/* Messages */}
-        <div className="px-3 py-3 space-y-2 max-h-72 overflow-y-auto">
-          {chatMessages.length === 0 && (
-            <div className="py-2 space-y-2">
-              <p className="text-[11px] text-slate-500 text-center pb-1">
-                {vehicles.length > 0
-                  ? 'Donnez une consigne ou posez une question sur le plan'
-                  : 'Posez une question ou importez un fichier pour organiser les camions'}
-              </p>
-              <div className="flex flex-wrap gap-1.5 justify-center">
-                {suggestions.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => sendChat(s)}
-                    disabled={chatLoading}
-                    className="text-[11px] px-2.5 py-1 rounded-lg bg-navy-800/60 border border-navy-700/40
-                               text-slate-400 hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5
-                               transition disabled:opacity-40"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {chatMessages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div
-                className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${
-                  msg.role === 'user'
-                    ? 'bg-cyan-400/15 border border-cyan-400/20 text-slate-200 rounded-br-sm'
-                    : msg.error
-                      ? 'bg-red-500/10 border border-red-500/20 text-red-400 rounded-bl-sm'
-                      : 'bg-navy-800/60 border border-navy-700/40 text-slate-300 rounded-bl-sm'
-                }`}
-              >
-                {msg.role === 'assistant' ? (
-                  <>
-                    <span className="whitespace-pre-wrap">{stripJsonBlock(msg.content) || (msg.streaming ? '' : '…')}</span>
-                    {hasPlanJson(msg.content) && !msg.streaming && (
-                      <span className="flex items-center gap-1 text-[10px] text-cyan-400 mt-1.5 font-medium">
-                        <RefreshCw size={9} /> {t('lg_chat_plan_updated')}
-                      </span>
-                    )}
-                    {msg.streaming && (
-                      <span className="inline-block w-1.5 h-3 bg-cyan-400/70 rounded-sm ml-0.5 animate-pulse" />
-                    )}
-                  </>
-                ) : (
-                  <span className="whitespace-pre-wrap">{msg.content}</span>
-                )}
-              </div>
-            </div>
-          ))}
-          <div ref={chatEndRef} />
-        </div>
-
-        {/* Input */}
-        <div className="px-3 pb-3 pt-1 border-t border-navy-700/30">
-          <form
-            onSubmit={(e) => { e.preventDefault(); sendChat() }}
-            className="flex items-end gap-2"
-          >
-            <textarea
-              ref={chatInputRef}
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={handleChatKeyDown}
-              placeholder={t('lg_chat_ph')}
-              rows={1}
-              disabled={chatLoading}
-              className="flex-1 bg-navy-800/60 border border-navy-700/50 rounded-xl px-3
-                         text-xs text-slate-200 placeholder-slate-600 resize-none
-                         focus:outline-none focus:border-cyan-400/50 transition
-                         disabled:opacity-50"
-              style={{ height: '38px', paddingTop: '10px', paddingBottom: '10px', lineHeight: '18px', overflowY: 'hidden' }}
-            />
-            <button
-              type="submit"
-              disabled={chatLoading || !chatInput.trim()}
-              className="w-9 h-9 rounded-xl bg-cyan-400 text-navy-900 flex items-center justify-center
-                         hover:bg-cyan-300 active:scale-95 transition-all
-                         disabled:opacity-40 disabled:pointer-events-none flex-shrink-0"
-            >
-              {chatLoading ? <Spinner size="sm" /> : <Send size={14} />}
-            </button>
-          </form>
-        </div>
-      </div>
-
-      {/* Empty state */}
-      {!vehicles.length && !parsing && chatMessages.length === 0 && (
-        <div className="glass-card p-10 text-center">
-          <Truck size={36} className="text-slate-700 mx-auto mb-3" />
-          <p className="text-sm text-slate-400 mb-1">{t('lg_empty_title')}</p>
-          <p className="text-xs text-slate-600">{t('lg_empty_desc')}</p>
-        </div>
       )}
     </div>
   )

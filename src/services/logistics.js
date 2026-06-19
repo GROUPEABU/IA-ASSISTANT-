@@ -81,7 +81,7 @@ export async function askLogisticsChat(messages, vehicles, { lang = 'fr', onChun
 
   return sendMessage(apiMessages, {
     lang, expert: true, temperature: 0.1, tool: 'logistique',
-    maxTokens: 4000, systemStaticKey: 'logistics_chat',
+    maxTokens: 6000, systemStaticKey: 'logistics_chat',
     stream: true, onChunk,
   })
 }
