@@ -1079,7 +1079,7 @@ export default {
   lg_empty_desc: 'L\'outil les répartit en camions selon la capacité (7-8 par pays), la proximité des parcs et le mixte kilométrique.',
   lg_pdf_title: 'Plan de chargement',
   lg_chat_title: 'Assistant logistique',
-  lg_chat_label: 'Vos instructions — comme un chat',
+  lg_chat_label: 'Vos instructions',
   lg_chat_ph: '« Divise en 3 camions », « sépare les électriques », « 4 max par camion »…',
   lg_chat_ph_nofile: 'Posez une question logistique, ou importez un fichier à organiser…',
   lg_chat_auto: 'Organiser automatiquement',

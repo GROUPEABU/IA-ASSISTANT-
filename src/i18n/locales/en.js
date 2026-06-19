@@ -1051,7 +1051,7 @@ export default {
   lg_empty_desc: 'The tool splits them into trucks by capacity (7-8 per country), park proximity and mileage mix.',
   lg_pdf_title: 'Loading plan',
   lg_chat_title: 'Logistics assistant',
-  lg_chat_label: 'Your instructions — like a chat',
+  lg_chat_label: 'Your instructions',
   lg_chat_ph: '"Split into 3 trucks", "separate EVs", "max 4 per truck"…',
   lg_chat_ph_nofile: 'Ask a logistics question, or import a file to organise…',
   lg_chat_auto: 'Organise automatically',

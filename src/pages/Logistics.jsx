@@ -211,11 +211,6 @@ export default function Logistics() {
       exportReportPdf(md, pdfFileName('plan-camions', 'Logistique'), { title: t('lg_pdf_title'), subtitle: `${plan.trucks.length} ${t('lg_trucks')} · ${fileName}` }))
   }
 
-  // ── Suggestions contextuelles ───────────────────────────────────────────────
-  const suggestions = vehicles.length
-    ? [t('lg_chat_auto'), t('lg_chat_s1'), t('lg_chat_s2'), t('lg_chat_s3'), t('lg_chat_s4')]
-    : [t('lg_chat_s_nofile1'), t('lg_chat_s_nofile2'), t('lg_chat_s_nofile3')]
-
   return (
     <div className="space-y-4 animate-fade-in">
       {/* ── Import + pavé d'instructions ─────────────────────────────────────── */}
@@ -300,27 +295,6 @@ export default function Logistics() {
               <div ref={chatEndRef} />
             </div>
           )}
-
-          {/* Suggestions rapides */}
-          <div className="flex flex-wrap gap-1.5 px-3 pt-3">
-            {suggestions.map((sug, i) => {
-              const primary = vehicles.length > 0 && i === 0
-              return (
-                <button
-                  key={sug}
-                  onClick={() => sendChat(sug)}
-                  disabled={running}
-                  className={`text-[11px] px-2.5 py-1 rounded-lg border transition disabled:opacity-40 ${
-                    primary
-                      ? 'bg-cyan-400/15 border-cyan-400/40 text-cyan-300 font-semibold hover:bg-cyan-400/25'
-                      : 'bg-navy-800/60 border-navy-700/40 text-slate-400 hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5'
-                  }`}
-                >
-                  {sug}
-                </button>
-              )
-            })}
-          </div>
 
           {/* Saisie */}
           <form
