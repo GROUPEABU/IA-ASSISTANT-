@@ -2,6 +2,7 @@ import { Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { SettingsProvider } from '@/contexts/SettingsContext'
+import { ToolTasksProvider } from '@/contexts/ToolTasksContext'
 import { getSessionUserId } from '@/utils/userStorage'
 import { lazyWithReload, installPreloadErrorReload } from '@/utils/lazyWithReload'
 import { bulkSeedToCloud } from '@/utils/cloudStore'
@@ -135,7 +136,9 @@ export default function App() {
       <AuthProvider>
         <SettingsShell>
           <BrowserRouter>
-            <AppRoutes />
+            <ToolTasksProvider>
+              <AppRoutes />
+            </ToolTasksProvider>
           </BrowserRouter>
         </SettingsShell>
       </AuthProvider>

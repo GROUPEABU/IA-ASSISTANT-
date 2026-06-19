@@ -9,7 +9,11 @@ import { useExport } from '@/hooks/useExport'
 import Spinner from '@/components/ui/Spinner'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useToast } from '@/components/ui/Toast'
+import { useToolSession, useToolTasks } from '@/contexts/ToolTasksContext'
 import { BTN_SECONDARY, BTN_TERTIARY } from '@/utils/buttonStyles'
+
+const TOOL = 'logistics'
+const EMPTY_SESSION = { fileName: '', vehicles: [], smartUsed: false, plan: null, chatMessages: [] }
 
 const fmtKm = (n) => (n != null ? `${Number(n).toLocaleString('fr-FR')} km` : '—')
 
@@ -21,25 +25,48 @@ function hasPlanJson(text) {
   return /```json/.test(text) && /"trucks"/.test(text)
 }
 
+function extractPlan(text) {
+  if (!hasPlanJson(text)) return null
+  const m = text.match(/```json\s*([\s\S]*?)\s*```/)
+  if (!m) return null
+  try {
+    const p = JSON.parse(m[1])
+    if (Array.isArray(p.trucks) && p.trucks.length > 0) {
+      return { trucks: p.trucks, unassignedIdx: p.unassignedIdx || [], summary: p.summary || '' }
+    }
+  } catch { /* malformed JSON — ignore */ }
+  return null
+}
+
 export default function Logistics() {
   const { t, lang } = useSettings()
   const { toast } = useToast()
   const fileRef = useRef(null)
   const { exporting, withExporting } = useExport()
 
-  const [fileName, setFileName] = useState('')
-  const [vehicles, setVehicles] = useState([])
-  const [smartUsed, setSmartUsed] = useState(false)
+  // État métier persistant (survit à la navigation interne) ────────────────────
+  const [session, setSession] = useToolSession(TOOL)
+  const s = session ?? EMPTY_SESSION
+  const { fileName, vehicles, smartUsed, plan, chatMessages } = s
+
+  // Statut de la tâche de fond (pour l'indicateur de navigation + le spinner)
+  const { tasks, startTask, finishTask, clearTask } = useToolTasks()
+  const running = tasks[TOOL]?.status === 'running'
+
+  // États éphémères, propres à la vue (pas besoin de survivre à la navigation)
   const [parsing, setParsing] = useState(false)
-
-  const [plan, setPlan] = useState(null)
-
-  // ── Chat state ─────────────────────────────────────────────────────────────
-  const [chatMessages, setChatMessages] = useState([])
   const [chatInput, setChatInput] = useState('')
-  const [chatLoading, setChatLoading] = useState(false)
   const chatEndRef = useRef(null)
   const chatInputRef = useRef(null)
+
+  // Tant que la page est ouverte, l'indicateur du menu n'a pas lieu d'être :
+  // dès qu'une tâche est terminée (ou en erreur) et qu'on est sur l'outil, on
+  // l'efface. Si on était ailleurs à la fin, l'indicateur a persisté pour nous
+  // prévenir, puis se nettoie au retour (au montage de cette page).
+  useEffect(() => {
+    const status = tasks[TOOL]?.status
+    if (status === 'done' || status === 'error') clearTask(TOOL)
+  }, [tasks, clearTask])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
@@ -50,15 +77,12 @@ export default function Logistics() {
     e.target.value = ''
     if (!file) return
     setParsing(true)
-    setPlan(null)
     try {
       const { vehicles: rows, source } = await extractVehiclesSmart(file, { lang })
       const usable = rows.filter((v) => v.make || v.model)
       if (!usable.length) throw new Error(t('pw_batch_none'))
-      setVehicles(usable)
-      setFileName(file.name)
-      setSmartUsed(source === 'ai')
-      setChatMessages([]) // reset chat on new import
+      setSession({ fileName: file.name, vehicles: usable, smartUsed: source === 'ai', plan: null, chatMessages: [] })
+      clearTask(TOOL)
       if (!usable.some((v) => v.location)) {
         toast(t('lg_no_location_warn'), 'info', 6000)
       }
@@ -70,67 +94,63 @@ export default function Logistics() {
   }
 
   const reset = () => {
-    setVehicles([]); setFileName(''); setPlan(null)
-    setSmartUsed(false); setChatMessages([])
+    setSession(EMPTY_SESSION)
+    clearTask(TOOL)
   }
 
-  // ── Chat send ──────────────────────────────────────────────────────────────
+  // ── Chat send ───────────────────────────────────────────────────────────────
+  // Le flux écrit dans la SESSION du provider (toujours montée), pas dans l'état
+  // local : la réponse continue d'arriver et le plan se met à jour même si on a
+  // quitté la page entre-temps.
   const sendChat = async (text) => {
     const msg = (text || chatInput).trim()
-    if (!msg || chatLoading) return
+    if (!msg || running) return
 
+    const base = s
     const userMsg = { role: 'user', content: msg }
-    const historyForAPI = [...chatMessages, userMsg]
-    setChatMessages(prev => [...prev, userMsg, { role: 'assistant', content: '', streaming: true }])
+    const historyForAPI = [...base.chatMessages, userMsg]
+    const vehiclesSnapshot = base.vehicles
+
+    setSession((prev) => {
+      const b = prev ?? EMPTY_SESSION
+      return { ...b, chatMessages: [...b.chatMessages, userMsg, { role: 'assistant', content: '', streaming: true }] }
+    })
     setChatInput('')
+    startTask(TOOL, t('lg_chat_title'))
 
-    setChatLoading(true)
     let accum = ''
-
     try {
-      await askLogisticsChat(
-        historyForAPI,
-        vehicles,
-        {
-          lang,
-          onChunk: (chunk) => {
-            accum += chunk
-            setChatMessages(prev => {
-              const msgs = [...prev]
-              msgs[msgs.length - 1] = { role: 'assistant', content: accum, streaming: true }
-              return msgs
-            })
-          },
-        }
-      )
+      // onChunk reçoit le TEXTE COMPLET accumulé (pas un delta).
+      await askLogisticsChat(historyForAPI, vehiclesSnapshot, {
+        lang,
+        onChunk: (fullText) => {
+          accum = fullText
+          setSession((prev) => {
+            const b = prev ?? EMPTY_SESSION
+            const msgs = [...b.chatMessages]
+            msgs[msgs.length - 1] = { role: 'assistant', content: accum, streaming: true }
+            return { ...b, chatMessages: msgs }
+          })
+        },
+      })
 
-      setChatMessages(prev => {
-        const msgs = [...prev]
+      const nextPlan = extractPlan(accum)
+      setSession((prev) => {
+        const b = prev ?? EMPTY_SESSION
+        const msgs = [...b.chatMessages]
         msgs[msgs.length - 1] = { role: 'assistant', content: accum }
-        return msgs
+        return { ...b, chatMessages: msgs, plan: nextPlan ?? b.plan }
       })
-
-      // Extract plan JSON if present
-      if (hasPlanJson(accum)) {
-        const m = accum.match(/```json\s*([\s\S]*?)\s*```/)
-        if (m) {
-          try {
-            const parsed = JSON.parse(m[1])
-            if (Array.isArray(parsed.trucks) && parsed.trucks.length > 0) {
-              setPlan({ trucks: parsed.trucks, unassignedIdx: parsed.unassignedIdx || [], summary: parsed.summary || '' })
-              toast(t('lg_chat_plan_updated'), 'success')
-            }
-          } catch { /* malformed JSON — ignore */ }
-        }
-      }
+      finishTask(TOOL, 'done')
+      if (nextPlan) toast(t('lg_chat_plan_updated'), 'success')
     } catch (err) {
-      setChatMessages(prev => {
-        const msgs = [...prev]
+      setSession((prev) => {
+        const b = prev ?? EMPTY_SESSION
+        const msgs = [...b.chatMessages]
         msgs[msgs.length - 1] = { role: 'assistant', content: err.message, error: true }
-        return msgs
+        return { ...b, chatMessages: msgs }
       })
-    } finally {
-      setChatLoading(false)
+      finishTask(TOOL, 'error')
     }
   }
 
@@ -208,7 +228,7 @@ export default function Logistics() {
         {/* Fichier */}
         <button
           onClick={() => fileRef.current?.click()}
-          disabled={parsing || chatLoading}
+          disabled={parsing || running}
           className="w-full flex items-center justify-center gap-2 px-4 py-6 rounded-xl border border-dashed border-navy-600/60
                      text-sm text-slate-400 hover:text-cyan-400 hover:border-cyan-400/40 transition disabled:opacity-40 mb-1.5"
         >
@@ -283,20 +303,20 @@ export default function Logistics() {
 
           {/* Suggestions rapides */}
           <div className="flex flex-wrap gap-1.5 px-3 pt-3">
-            {suggestions.map((s, i) => {
+            {suggestions.map((sug, i) => {
               const primary = vehicles.length > 0 && i === 0
               return (
                 <button
-                  key={s}
-                  onClick={() => sendChat(s)}
-                  disabled={chatLoading}
+                  key={sug}
+                  onClick={() => sendChat(sug)}
+                  disabled={running}
                   className={`text-[11px] px-2.5 py-1 rounded-lg border transition disabled:opacity-40 ${
                     primary
                       ? 'bg-cyan-400/15 border-cyan-400/40 text-cyan-300 font-semibold hover:bg-cyan-400/25'
                       : 'bg-navy-800/60 border-navy-700/40 text-slate-400 hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-400/5'
                   }`}
                 >
-                  {s}
+                  {sug}
                 </button>
               )
             })}
@@ -314,7 +334,7 @@ export default function Logistics() {
               onKeyDown={handleChatKeyDown}
               placeholder={vehicles.length ? t('lg_chat_ph') : t('lg_chat_ph_nofile')}
               rows={1}
-              disabled={chatLoading}
+              disabled={running}
               className="flex-1 bg-navy-800/60 border border-navy-700/50 rounded-xl px-3
                          text-xs text-slate-200 placeholder-slate-600 resize-none
                          focus:outline-none focus:border-cyan-400/50 transition
@@ -323,12 +343,12 @@ export default function Logistics() {
             />
             <button
               type="submit"
-              disabled={chatLoading || !chatInput.trim()}
+              disabled={running || !chatInput.trim()}
               className="w-10 h-10 rounded-xl bg-cyan-400 text-navy-900 flex items-center justify-center
                          hover:bg-cyan-300 active:scale-95 transition-all
                          disabled:opacity-40 disabled:pointer-events-none flex-shrink-0"
             >
-              {chatLoading ? <Spinner size="sm" /> : <Send size={15} />}
+              {running ? <Spinner size="sm" /> : <Send size={15} />}
             </button>
           </form>
         </div>

@@ -1091,4 +1091,6 @@ export default {
   lg_chat_s_nofile2: 'Capacité pour l\'Allemagne ?',
   lg_chat_s_nofile3: 'Comment organiser un mixte km ?',
   lg_chat_plan_updated: 'Plan mis à jour par l\'assistant',
+  bg_task_running: 'Analyse en cours…',
+  bg_task_ready: 'Résultat prêt',
 }

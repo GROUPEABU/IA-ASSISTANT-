@@ -1063,4 +1063,6 @@ export default {
   lg_chat_s_nofile2: 'Germany truck capacity?',
   lg_chat_s_nofile3: 'How to balance mileage mix?',
   lg_chat_plan_updated: 'Plan updated by assistant',
+  bg_task_running: 'Analysis in progress…',
+  bg_task_ready: 'Result ready',
 }

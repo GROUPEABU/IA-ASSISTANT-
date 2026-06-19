@@ -13,13 +13,18 @@ import DailyQuotaBar from '@/components/ui/DailyQuotaBar'
 import { getAvatar } from '@/utils/avatarStore'
 import { displayName, displayInitials } from '@/utils/profileStore'
 import { countUnseenTeamVeilles } from '@/utils/teamNotify'
+import { useToolTasks } from '@/contexts/ToolTasksContext'
 
 const COLLAPSE_KEY = 'abu_sidebar_collapsed'
+
+// Routes dont les tâches IA continuent en fond (cf. ToolTasksContext).
+const TOOL_BY_ROUTE = { '/logistics': 'logistics' }
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth()
   const { t } = useSettings()
   const navigate = useNavigate()
+  const { tasks } = useToolTasks()
 
   const [avatar, setAvatar] = useState(() => getAvatar(user?.id ?? null))
   const [, forceRefresh] = useState(0)
@@ -180,12 +185,18 @@ export default function Sidebar({ isOpen, onClose }) {
             <div className="space-y-0.5">
               {group.items.map(({ to, icon: Icon, labelKey }) => {
                 const badge = to === '/price-watch' && teamUnseen > 0 ? teamUnseen : 0
+                const taskStatus = TOOL_BY_ROUTE[to] ? tasks[TOOL_BY_ROUTE[to]]?.status : null
+                const taskRunning = taskStatus === 'running'
+                const taskReady = taskStatus === 'done'
+                const itemTitle = taskRunning ? t('bg_task_running')
+                  : taskReady ? t('bg_task_ready')
+                  : (collapsed ? t(labelKey) : undefined)
                 return (
                 <NavLink
                   key={to}
                   to={to}
                   onClick={onClose}
-                  title={collapsed ? t(labelKey) : undefined}
+                  title={itemTitle}
                   className={({ isActive }) => clsx(
                     'nav-item',
                     isActive && 'nav-item-active',
@@ -202,8 +213,23 @@ export default function Sidebar({ isOpen, onClose }) {
                         {badge > 9 ? '9+' : badge}
                       </span>
                     )}
+                    {/* Indicateur de tâche de fond : spinner « en cours » / point « prêt » */}
+                    {taskRunning && (
+                      <span className="absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full border-2 border-cyan-400/30 border-t-cyan-400 animate-spin bg-navy-900" />
+                    )}
+                    {taskReady && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-navy-900 animate-pulse-slow" />
+                    )}
                   </span>
                   <span className={hideOnCollapse}>{t(labelKey)}</span>
+                  {/* Indicateur en fin de ligne (déplié / mobile) */}
+                  {(taskRunning || taskReady) && (
+                    <span className={clsx('ml-auto flex items-center', hideOnCollapse)}>
+                      {taskRunning
+                        ? <span className="w-3 h-3 rounded-full border-2 border-cyan-400/30 border-t-cyan-400 animate-spin" />
+                        : <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-slow" />}
+                    </span>
+                  )}
                   {/* Pastille en fin de ligne (déplié / mobile) */}
                   {badge > 0 && (
                     <span className={clsx(

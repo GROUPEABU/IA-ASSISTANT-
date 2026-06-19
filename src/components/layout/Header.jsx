@@ -2,11 +2,16 @@ import { useLocation, useNavigate, Link, NavLink } from 'react-router-dom'
 import { Menu, Settings } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useToolTasks } from '@/contexts/ToolTasksContext'
 
 export default function Header({ onMenuToggle }) {
   const { pathname } = useLocation()
   const { t } = useSettings()
   const { user } = useAuth()
+  const { tasks } = useToolTasks()
+  const taskList = Object.values(tasks)
+  const hasRunning = taskList.some((tk) => tk.status === 'running')
+  const hasReady = !hasRunning && taskList.some((tk) => tk.status === 'done')
 
   const pageMap = {
     '/hub':         { titleKey: 'page_hub_title',        subKey: 'page_hub_sub' },
@@ -32,10 +37,15 @@ export default function Header({ onMenuToggle }) {
       style={{ background: 'rgba(13,39,60,0.85)', backdropFilter: 'blur(12px)' }}>
       <button
         onClick={onMenuToggle}
-        aria-label="Ouvrir le menu de navigation"
-        className="md:hidden w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-navy-700/50 rounded-xl transition"
+        aria-label={hasRunning ? t('bg_task_running') : 'Ouvrir le menu de navigation'}
+        className="relative md:hidden w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-navy-700/50 rounded-xl transition"
       >
         <Menu size={20} aria-hidden="true" />
+        {(hasRunning || hasReady) && (
+          <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ring-2 ring-navy-900 ${
+            hasRunning ? 'bg-cyan-400 animate-pulse' : 'bg-emerald-400'
+          }`} />
+        )}
       </button>
 
       <div className="flex-1 min-w-0">
