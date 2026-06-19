@@ -18,7 +18,14 @@ import { useToolTasks } from '@/contexts/ToolTasksContext'
 const COLLAPSE_KEY = 'abu_sidebar_collapsed'
 
 // Routes dont les tâches IA continuent en fond (cf. ToolTasksContext).
-const TOOL_BY_ROUTE = { '/logistics': 'logistics' }
+const TOOL_BY_ROUTE = {
+  '/logistics':      'logistics',
+  '/pitch':          'pitch',
+  '/objections':     'objections',
+  '/compare':        'compare',
+  '/stock-analysis': 'stockanalysis',
+  '/chat':           'chat',
+}
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth()

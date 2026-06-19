@@ -17,6 +17,7 @@ import { useSettings } from '@/contexts/SettingsContext'
 import { useHistory } from '@/hooks/useHistory'
 import { useExport } from '@/hooks/useExport'
 import { useResultFocus } from '@/hooks/useResultFocus'
+import { useToolBackground } from '@/contexts/ToolTasksContext'
 import { pdfFileName } from '@/utils/exportPdf'
 import { exportReportPdf } from '@/utils/exportReportPdf'
 import { useToast } from '@/components/ui/Toast'
@@ -24,6 +25,12 @@ import { BTN_TERTIARY, BTN_QUIET } from '@/utils/buttonStyles'
 
 const inputClass = `w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px-3 py-2.5
   text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400/50 transition`
+
+const TOOL = 'stockanalysis'
+const EMPTY_SESSION = {
+  phase: 'idle', report: '', scrapeLog: '', stats: null,
+  vehiclesList: [], dealerName: '', ignored: 0, error: null, replay: null,
+}
 
 function StatCard({ label, value }) {
   return (
@@ -117,76 +124,62 @@ export default function AnalyseStock() {
   const [company, setCompany] = useState('')
   const [fileName, setFileName] = useState('')
 
-  const [phase, setPhase] = useState('idle') // idle | scraping | analyzing | streaming | done
-  const [report, setReport] = useState('')
-  const [scrapeLog, setScrapeLog] = useState('')
-  const [stats, setStats] = useState(null)
-  const [vehiclesList, setVehiclesList] = useState([])
-  const [dealerName, setDealerName] = useState('')
-  const [ignored, setIgnored] = useState(0)
-  const [error, setError] = useState(null)
+  // Résultat + phase persistés (analyse en fond + restauration au retour).
+  const { s, patch, reset: resetSession, running, start, finish } = useToolBackground(TOOL, EMPTY_SESSION)
+  const { phase, report, scrapeLog, stats, vehiclesList, dealerName, ignored, error } = s
 
   const { history, add: addHistory, remove: removeHistory, clear: clearHistory, togglePin } = useHistory('analysestock')
   const { exporting, withExporting } = useExport()
   const headingRef = useResultFocus(!!report && phase === 'done')
 
-  const busy = phase === 'scraping' || phase === 'analyzing' || phase === 'streaming'
+  const busy = running
 
-  const runAnalysis = async (dealer, vehicles) => {
+  // Analyse à proprement parler (stats + IA en streaming). Écrit dans la session.
+  const runAnalysisInner = async (dealer, vehicles, companyName) => {
+    const name = companyName || dealer.name || ''
     const computed = computeStockStats(vehicles)
-    setStats(computed)
-    setVehiclesList(vehicles)
-    setDealerName(dealer.name || company || '')
-    setPhase('analyzing')
-    setReport('')
-    setScrapeLog('')
-
-    let first = true
+    patch({ phase: 'analyzing', report: '', scrapeLog: '', stats: computed, vehiclesList: vehicles, dealerName: name })
     const text = await analyzeStock(
-      { dealer: { ...dealer, name: company || dealer.name }, vehicles, stats: computed },
-      {
-        lang,
-        onChunk: (full) => {
-          if (first) { first = false; setPhase('streaming') }
-          setReport(full)
-        },
-      }
+      { dealer: { ...dealer, name }, vehicles, stats: computed },
+      { lang, onChunk: (full) => patch({ phase: 'streaming', report: full }) },
     )
-    setReport(text)
-    setPhase('done')
-    const label = `${company || dealer.name || 'Stock'} · ${computed.total} véhicules`
-    addHistory({ generatedFor: label, report: text, stats: computed, dealerName: company || dealer.name || '', vehicles: vehicles.slice(0, 100) })
+    patch({ report: text, phase: 'done' })
+    const label = `${name || 'Stock'} · ${computed.total} véhicules`
+    addHistory({ generatedFor: label, report: text, stats: computed, dealerName: name, vehicles: vehicles.slice(0, 100) })
   }
 
-  const analyzeFromUrl = async () => {
-    if (!url.trim()) return
-    setError(null); setReport(''); setStats(null); setIgnored(0); setScrapeLog('')
-    setPhase('scraping')
+  const analyzeFromUrl = async (urlArg, companyArg) => {
+    const u = (urlArg ?? url).trim()
+    let co = companyArg ?? company
+    if (!u || running) return
+    patch({ phase: 'scraping', report: '', scrapeLog: '', stats: null, ignored: 0, error: null, replay: { mode: 'url', url: u, company: co } })
+    start(co || u)
     try {
-      const { vehicles, dealer } = await scrapeStockWithSearch(url.trim(), {
+      const { vehicles, dealer } = await scrapeStockWithSearch(u, {
         lang,
         onChunk: (raw) => {
           // Show narration before the JSON array — hide raw data extraction
           const cut = raw.search(/\n\[/)
           const narration = (cut >= 0 ? raw.slice(0, cut) : raw)
             .replace(/^DEALER:.*$/m, '').trim()
-          if (narration) setScrapeLog(narration)
+          if (narration) patch({ scrapeLog: narration })
         },
       })
-      if (!company && dealer?.name) setCompany(dealer.name)
-      await runAnalysis(dealer || { name: company }, vehicles)
+      if (!co && dealer?.name) { co = dealer.name; setCompany(dealer.name) }
+      await runAnalysisInner(dealer || { name: co }, vehicles, co)
+      finish('done')
     } catch (err) {
-      setPhase('idle')
-      setError(err.message)
+      patch({ phase: 'idle', error: err.message })
+      finish('error')
       toast(err.message, 'error')
     }
   }
 
   const analyzeFromFile = async (file) => {
-    if (!file) return
-    setError(null); setReport(''); setStats(null); setIgnored(0)
+    if (!file || running) return
     setFileName(file.name)
-    setPhase('scraping')
+    patch({ phase: 'scraping', report: '', scrapeLog: '', stats: null, ignored: 0, error: null, replay: { mode: 'csv', company } })
+    start(file.name)
     try {
       // Lecture adaptative : colonnes reconnues d'abord, sinon extraction IA
       // (le fichier n'a pas besoin de suivre un format imposé).
@@ -194,13 +187,14 @@ export default function AnalyseStock() {
       const { vehicles, ignored: ign1 } = source === 'ai' ? toStockVehicles(rawVehicles) : { vehicles: rawVehicles, ignored: 0 }
       const ign = ign0 + ign1
       if (!vehicles.length) throw new Error(t('pw_batch_none'))
-      setIgnored(ign)
+      patch({ ignored: ign })
       if (source === 'ai') toast(t('import_smart_badge'), 'info')
       if (ign) toast(`${ign} ligne(s) ignorée(s) (données incomplètes).`, 'info')
-      await runAnalysis(dealer, vehicles)
+      await runAnalysisInner(dealer, vehicles, company)
+      finish('done')
     } catch (err) {
-      setPhase('idle')
-      setError(err.message)
+      patch({ phase: 'idle', error: err.message })
+      finish('error')
       toast(err.message, 'error')
     }
   }
@@ -228,15 +222,15 @@ export default function AnalyseStock() {
   }
 
   const reset = () => {
-    setReport(''); setStats(null); setVehiclesList([]); setDealerName(''); setUrl(''); setCompany(''); setFileName(''); setIgnored(0); setError(null); setPhase('idle'); setScrapeLog('')
+    resetSession(); setUrl(''); setCompany(''); setFileName('')
   }
 
   const restore = (item) => {
-    setReport(item.report || '')
-    setStats(item.stats || null)
-    setVehiclesList(item.vehicles || [])
-    setDealerName(item.dealerName || '')
-    setPhase('done')
+    patch({
+      report: item.report || '', stats: item.stats || null,
+      vehiclesList: item.vehicles || [], dealerName: item.dealerName || '',
+      phase: 'done', error: null,
+    })
   }
 
   // Hub « Reprendre » → restaure l'analyse archivée correspondante.
@@ -261,7 +255,14 @@ export default function AnalyseStock() {
   // Pont sortant : un véhicule du stock → Veille Prix pré-remplie et lancée.
   const toPriceWatch = (v) => sendToTool(navigate, '/price-watch', { filters: vehicleToPwFilters(v) })
 
-  const retry = () => (mode === 'url' ? analyzeFromUrl() : fileRef.current?.click())
+  // Relance : réutilise la dernière requête (même après navigation, formulaire vidé).
+  const retry = () => {
+    if (running) return
+    const r = s.replay
+    if (r?.mode === 'url' && r.url) return analyzeFromUrl(r.url, r.company)
+    if (mode === 'url' && url.trim()) return analyzeFromUrl()
+    fileRef.current?.click()
+  }
 
   const eur = fmtEur
 
@@ -325,7 +326,7 @@ export default function AnalyseStock() {
 
         {mode === 'url' && (
           <button
-            onClick={analyzeFromUrl}
+            onClick={() => analyzeFromUrl()}
             disabled={!url.trim() || busy}
             className="flex items-center justify-center gap-2 px-5 py-2.5 bg-cyan-400 text-navy-900 text-sm font-bold rounded-xl
                        hover:bg-cyan-300 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"

@@ -7,7 +7,7 @@ import { useSettings } from '@/contexts/SettingsContext'
 
 export default function Chat() {
   const { t } = useSettings()
-  const { messages, isLoading, error, send, retry, clear } = useChat()
+  const { messages, isLoading, isBusy, error, send, retry, clear } = useChat()
   const isEmpty = messages.length === 0
 
   const suggestions = [
@@ -105,10 +105,10 @@ export default function Chat() {
           <ChatWindow messages={messages} isLoading={isLoading} />
         )}
 
-        {!isLoading && <ErrorAlert compact message={error} onRetry={retry} />}
+        {!isBusy && <ErrorAlert compact message={error} onRetry={retry} />}
 
         <div className="p-3 md:p-4 border-t border-navy-700/50 flex-shrink-0">
-          <ChatInput onSend={send} disabled={isLoading} />
+          <ChatInput onSend={send} disabled={isBusy} />
         </div>
       </div>
     </div>

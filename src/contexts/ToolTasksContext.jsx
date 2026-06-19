@@ -109,3 +109,44 @@ export function useToolTasks() {
   if (!ctx) throw new Error('useToolTasks must be used within ToolTasksProvider')
   return ctx
 }
+
+/**
+ * Combine session + statut pour un outil dont la tâche IA doit continuer en
+ * fond. Standardise le pattern utilisé par les pages :
+ *   const { s, patch, reset, running, start, finish } = useToolBackground(TOOL, EMPTY)
+ *
+ * • `s`        — session courante (jamais undefined, repli sur `empty`)
+ * • `patch`    — fusion partielle dans la session (valeur ou (prev)=>partial)
+ * • `reset`    — réinitialise la session à `empty`
+ * • `running`  — true tant que la tâche est en cours
+ * • `start/finish` — marque le statut (pour l'indicateur Sidebar/Header)
+ *
+ * `empty` DOIT être une constante stable (définie au niveau module).
+ */
+export function useToolBackground(tool, empty) {
+  const [session, setSession] = useToolSession(tool)
+  const { tasks, startTask, finishTask, clearTask } = useToolTasks()
+  const s = session ?? empty
+  const running = tasks[tool]?.status === 'running'
+
+  // Tant que la page est ouverte, l'indicateur du menu n'a pas lieu d'être :
+  // une tâche terminée/en erreur est effacée. Si on était ailleurs à la fin,
+  // l'indicateur a persisté pour prévenir, puis se nettoie au retour.
+  useEffect(() => {
+    const status = tasks[tool]?.status
+    if (status === 'done' || status === 'error') clearTask(tool)
+  }, [tasks, clearTask, tool])
+
+  const patch = useCallback((upd) => {
+    setSession((prev) => {
+      const base = prev ?? empty
+      return { ...base, ...(typeof upd === 'function' ? upd(base) : upd) }
+    })
+  }, [setSession, empty])
+
+  const reset = useCallback(() => setSession(empty), [setSession, empty])
+  const start = useCallback((label) => startTask(tool, label), [startTask, tool])
+  const finish = useCallback((status = 'done') => finishTask(tool, status), [finishTask, tool])
+
+  return { s, patch, setSession, reset, running, start, finish }
+}

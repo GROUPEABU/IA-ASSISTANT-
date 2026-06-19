@@ -3,6 +3,7 @@ import { Ruler, AlertCircle, RefreshCw, RotateCcw, Info, Sparkles, History, File
 import { sendMessage } from '@/services/claude'
 import { takeBridgePayload } from '@/utils/toolBridge'
 import { useSettings } from '@/contexts/SettingsContext'
+import { useToolBackground } from '@/contexts/ToolTasksContext'
 import AIProgress from '@/components/ui/AIProgress'
 import Spinner from '@/components/ui/Spinner'
 import { MAKES, YEARS } from '@/data/vehicleFilters'
@@ -11,6 +12,8 @@ import { exportToPdf, pdfFileName } from '@/utils/exportPdf'
 import { BTN_SECONDARY, BTN_QUIET } from '@/utils/buttonStyles'
 
 const EMPTY = { make: '', model: '', year: '', version: '' }
+const TOOL = 'compare'
+const EMPTY_SESSION = { data: null, error: null, replayLabel: '' }
 
 function parseAIJson(raw) {
   const s = raw.trim()
@@ -202,9 +205,12 @@ const selectCls = 'w-full bg-navy-900/60 border border-navy-700/50 rounded-xl px
 export default function Compare() {
   const { t, lang } = useSettings()
   const [form, setForm]       = useState(EMPTY)
-  const [loading, setLoading] = useState(false)
-  const [data, setData]       = useState(null)
-  const [error, setError]     = useState(null)
+
+  // Résultat + statut persistés (analyse en fond + restauration au retour).
+  const { s, patch, reset: resetSession, running, start, finish } = useToolBackground(TOOL, EMPTY_SESSION)
+  const data = s.data
+  const error = s.error
+
   const { exporting, withExporting } = useExport()
   const pdfRef = useRef(null)
 
@@ -221,16 +227,15 @@ export default function Compare() {
 
   const analyze = async (override) => {
     const name = (override || vehicleName).trim()
-    if (!name) return
+    if (!name || running) return
     const ctx = override ? '' : [
       form.year && `année ${form.year}`,
       form.version && `version ${form.version}`,
     ].filter(Boolean).join(', ')
     const label = [name, ctx].filter(Boolean).join(' — ')
 
-    setLoading(true)
-    setError(null)
-    setData(null)
+    patch({ data: null, error: null, replayLabel: label })
+    start(label)
 
     try {
       const prompt = `Analyse le véhicule "${label}". En t'appuyant sur des recherches web RÉELLES.`
@@ -240,15 +245,18 @@ export default function Compare() {
         { lang, maxTokens: 4500, expert: true, temperature: 0, tool: 'comparateur',
           webSearch: true, maxSearches: 5, systemStaticKey: 'compare' },
       )
-      setData(parseAIJson(result))
+      patch({ data: parseAIJson(result), error: null })
+      finish('done')
     } catch (err) {
-      setError(err.message || 'Erreur lors de l\'analyse')
-    } finally {
-      setLoading(false)
+      patch({ error: err.message || 'Erreur lors de l\'analyse' })
+      finish('error')
     }
   }
 
-  const reset = () => { setData(null); setError(null) }
+  // Relance : réutilise la dernière requête (fonctionne même après navigation).
+  const regenerate = () => { if (s.replayLabel && !running) analyze(s.replayLabel) }
+
+  const reset = () => resetSession()
 
   const veh    = data?.vehicle
   const compsN = data?.comparablesNew ?? []
@@ -283,7 +291,7 @@ export default function Compare() {
           )}
         </div>
 
-        {!loading && (
+        {!running && (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
               <div>
@@ -323,40 +331,40 @@ export default function Compare() {
           </>
         )}
 
-        {loading && (
+        {running && (
           <div className="p-4 rounded-xl bg-cyan-400/5 border border-cyan-400/10">
             <div className="flex items-center gap-3 mb-3">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse flex-shrink-0" />
               <p className="text-sm text-white font-medium">{t('dim_analyzing')}</p>
             </div>
-            <AIProgress active={loading}
+            <AIProgress active={running}
               stages={[t('ai_progress_connect'), t('dim_progress_photos'), t('ai_progress_format')]}
               estimatedMs={24000} persistKey="dimensions" />
           </div>
         )}
 
-        {error && (
+        {!running && error && (
           <div className="mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex gap-2 items-start">
             <AlertCircle size={14} className="text-red-400 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-red-400 flex-1 min-w-0">{error}</p>
-            <button onClick={() => analyze()}
+            <button onClick={regenerate}
               className="text-xs text-red-400 hover:text-white flex items-center gap-1 flex-shrink-0">
               <RefreshCw size={11} /> {t('dim_regenerate')}
             </button>
           </div>
         )}
 
-        {!loading && !data && (
+        {!running && !data && (
           <div className="mt-4">
             <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">
               {t('modal_suggestions')}
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {SUGGESTIONS.map(s => (
-                <button key={s} onClick={() => analyze(s)}
+              {SUGGESTIONS.map(sug => (
+                <button key={sug} onClick={() => analyze(sug)}
                   className="text-xs text-slate-400 bg-navy-700/50 border border-navy-600/50
                              px-2.5 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 transition">
-                  {s}
+                  {sug}
                 </button>
               ))}
             </div>
@@ -442,7 +450,7 @@ export default function Compare() {
       )}
 
       {/* Empty state */}
-      {!data && !loading && !error && (
+      {!data && !running && !error && (
         <div className="glass-card p-10 text-center">
           <Ruler size={36} className="text-slate-700 mx-auto mb-3" />
           <p className="text-sm text-slate-400 mb-1">{t('dim_empty_hint1')}</p>

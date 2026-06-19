@@ -16,10 +16,14 @@ import { useHistory } from '@/hooks/useHistory'
 import { useLastVehicle } from '@/hooks/useLastVehicle'
 import { useExport } from '@/hooks/useExport'
 import { useResultFocus } from '@/hooks/useResultFocus'
+import { useToolBackground } from '@/contexts/ToolTasksContext'
 import { pdfFileName } from '@/utils/exportPdf'
 import { exportReportPdf } from '@/utils/exportReportPdf'
 import { useToast } from '@/components/ui/Toast'
 import { BTN_TERTIARY, BTN_QUIET } from '@/utils/buttonStyles'
+
+const TOOL = 'pitch'
+const EMPTY_SESSION = { report: '', generatedFor: '', error: null, replay: null }
 
 const PROFILES = [
   { id: 'btoc_famille', labelKey: 'profile_family', subKey: 'profile_family_sub', icon: Users,     segment: 'btoc', color: '#50E5E5' },
@@ -36,11 +40,11 @@ export default function PitchGenerator() {
   const [profileId, setProfileId] = useState('btoc_famille')
   const [details, setDetails] = useState(EMPTY_DETAILS)
   const [context, setContext] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [streaming, setStreaming] = useState(false)
-  const [report, setReport] = useState('')
-  const [error, setError] = useState(null)
-  const [generatedFor, setGeneratedFor] = useState('')
+
+  // Résultat + statut : persistés au-dessus du routeur → la génération continue
+  // en fond et le pitch est restauré en revenant sur l'outil.
+  const { s, patch, reset: resetSession, running, start, finish } = useToolBackground(TOOL, EMPTY_SESSION)
+  const { report, generatedFor, error } = s
 
   const { toast } = useToast()
   const { generated } = useGeneratedProducts()
@@ -48,7 +52,7 @@ export default function PitchGenerator() {
   const { history, add: addHistory, remove: removeHistory, clear: clearHistory, togglePin } = useHistory('pitch')
   const { save: saveLastVehicle } = useLastVehicle()
   const { exporting, withExporting } = useExport()
-  const headingRef = useResultFocus(!!report && !loading && !streaming)
+  const headingRef = useResultFocus(!!report && !running)
 
   // Pont inter-outils : véhicule reçu (Veille Prix) ou restauration (Hub).
   useEffect(() => {
@@ -66,58 +70,60 @@ export default function PitchGenerator() {
   const vehicleName = selectedProduct?.fullName || vehicleNameOf(details)
   const profile = PROFILES.find((p) => p.id === profileId)
 
-  const generate = async () => {
-    if (!vehicleName.trim()) return
-    saveLastVehicle(vehicleName)
-    setLoading(true)
-    setStreaming(false)
-    setError(null)
-    setReport('')
-
+  // Exécute la génération en écrivant dans la session (survit à la navigation).
+  const runGenerate = async (replay) => {
+    patch({ report: '', generatedFor: '', error: null, replay })
+    start(replay.label)
     try {
-      const productContext = selectedProduct
-        ? [
-            'DONNÉES PRODUIT :',
-            `- Prix : ${selectedProduct.prix.base.toLocaleString('fr-FR')}€ – ${selectedProduct.prix.haut.toLocaleString('fr-FR')}€`,
-            `- Segment : ${selectedProduct.segment}`,
-            selectedProduct.specs?.motorisation && `- Motorisation : ${selectedProduct.specs.motorisation}`,
-            selectedProduct.specs?.consommation && `- Consommation WLTP : ${selectedProduct.specs.consommation}`,
-            `- CO₂ : ${selectedProduct.specs.co2_wltp} g/km`,
-            selectedProduct.specs?.autonomie_wltp ? `- Autonomie : ${selectedProduct.specs.autonomie_wltp} km` : null,
-            selectedProduct.garantie?.vehicule && `- Garantie : ${selectedProduct.garantie.vehicule}`,
-            selectedProduct[profile.segment]?.atouts && `- Atouts ${profile.segment === 'btob' ? 'BtoB' : 'BtoC'} : ${selectedProduct[profile.segment].atouts.join(' | ')}`,
-            `- Argument prix : ${selectedProduct[profile.segment]?.argument_prix || selectedProduct.btoc?.argument_prix || ''}`,
-            selectedProduct[profile.segment]?.objections && `- Objections courantes : ${selectedProduct[profile.segment].objections.join(' | ')}`,
-          ].filter(Boolean).join('\n')
-        : ''
+      const text = await sendMessage(replay.messages, {
+        ...replay.opts,
+        onChunk: (full) => patch({ report: full }),
+      })
+      patch({ report: text, generatedFor: replay.label, error: null })
+      finish('done')
+      addHistory({ generatedFor: replay.label, report: text })
+    } catch (err) {
+      patch({ error: err.message })
+      finish('error')
+      toast(err.message, 'error')
+    }
+  }
 
-      const prompt = `Génère un pitch de vente structuré et percutant pour le ${vehicleName}, destiné à : ${t(profile.subKey)} — ${t(profile.labelKey)}.
+  const generate = () => {
+    if (!vehicleName.trim() || running) return
+    saveLastVehicle(vehicleName)
+
+    const productContext = selectedProduct
+      ? [
+          'DONNÉES PRODUIT :',
+          `- Prix : ${selectedProduct.prix.base.toLocaleString('fr-FR')}€ – ${selectedProduct.prix.haut.toLocaleString('fr-FR')}€`,
+          `- Segment : ${selectedProduct.segment}`,
+          selectedProduct.specs?.motorisation && `- Motorisation : ${selectedProduct.specs.motorisation}`,
+          selectedProduct.specs?.consommation && `- Consommation WLTP : ${selectedProduct.specs.consommation}`,
+          `- CO₂ : ${selectedProduct.specs.co2_wltp} g/km`,
+          selectedProduct.specs?.autonomie_wltp ? `- Autonomie : ${selectedProduct.specs.autonomie_wltp} km` : null,
+          selectedProduct.garantie?.vehicule && `- Garantie : ${selectedProduct.garantie.vehicule}`,
+          selectedProduct[profile.segment]?.atouts && `- Atouts ${profile.segment === 'btob' ? 'BtoB' : 'BtoC'} : ${selectedProduct[profile.segment].atouts.join(' | ')}`,
+          `- Argument prix : ${selectedProduct[profile.segment]?.argument_prix || selectedProduct.btoc?.argument_prix || ''}`,
+          selectedProduct[profile.segment]?.objections && `- Objections courantes : ${selectedProduct[profile.segment].objections.join(' | ')}`,
+        ].filter(Boolean).join('\n')
+      : ''
+
+    const prompt = `Génère un pitch de vente structuré et percutant pour le ${vehicleName}, destiné à : ${t(profile.subKey)} — ${t(profile.labelKey)}.
 ${formatVehicleDetails(details) ? `Détails véhicule : ${formatVehicleDetails(details)}. Appuie-toi dessus pour des arguments PRÉCIS (motorisation, âge, kilométrage, finition).` : ''}
 ${context ? `Contexte client : ${context}` : ''}
 ${productContext || ''}${veillePrixRefBlock(vehicleName)}`
 
-      let first = true
-      const text = await sendMessage([{ role: 'user', content: prompt }], {
-        lang, maxTokens: 1800, expert: true, temperature: 0.85,
-        tool: 'pitch', stream: true, systemStaticKey: 'pitch',
-        onChunk: (full) => {
-          if (first) { first = false; setLoading(false); setStreaming(true) }
-          setReport(full)
-        },
-      })
-      const label = `${vehicleName} · ${t(profile.subKey)} ${t(profile.labelKey)}`
-      setReport(text)
-      setStreaming(false)
-      setGeneratedFor(label)
-      addHistory({ generatedFor: label, report: text })
-    } catch (err) {
-      setError(err.message)
-      toast(err.message, 'error')
-    } finally {
-      setLoading(false)
-      setStreaming(false)
-    }
+    runGenerate({
+      messages: [{ role: 'user', content: prompt }],
+      opts: { lang, maxTokens: 1800, expert: true, temperature: 0.85, tool: 'pitch', stream: true, systemStaticKey: 'pitch' },
+      label: `${vehicleName} · ${t(profile.subKey)} ${t(profile.labelKey)}`,
+    })
   }
+
+  // Relance : réutilise la dernière requête (fonctionne même après navigation,
+  // quand le formulaire a été réinitialisé).
+  const regenerate = () => { if (s.replay && !running) runGenerate(s.replay) }
 
   const handlePdf = () => withExporting(() =>
     exportReportPdf(report, pdfFileName(vehicleName, t('page_pitch_title')), { title: t('page_pitch_title'), subtitle: vehicleName })
@@ -133,11 +139,10 @@ ${productContext || ''}${veillePrixRefBlock(vehicleName)}`
     toast(t('data_raw_done'), 'success')
   }
 
-  const reset = () => { setReport(''); setVehicleId(''); setDetails(EMPTY_DETAILS); setContext(''); setGeneratedFor('') }
+  const reset = () => { resetSession(); setVehicleId(''); setDetails(EMPTY_DETAILS); setContext('') }
 
   const restore = (item) => {
-    setReport(item.report || '')
-    setGeneratedFor(item.generatedFor)
+    patch({ report: item.report || '', generatedFor: item.generatedFor, error: null, replay: null })
   }
 
   return (
@@ -209,27 +214,27 @@ ${productContext || ''}${veillePrixRefBlock(vehicleName)}`
 
         <button
           onClick={generate}
-          disabled={!vehicleName.trim() || loading || streaming}
+          disabled={!vehicleName.trim() || running}
           className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5
                      bg-gradient-to-r from-cyan-400 to-cyan-500 text-navy-900 text-sm font-bold rounded-xl
                      hover:from-cyan-300 hover:to-cyan-400 active:scale-95 transition-all
                      disabled:opacity-40 disabled:pointer-events-none shadow-lg shadow-cyan-400/15"
         >
-          {(loading || streaming) ? <Spinner size="sm" /> : <Mic size={14} />}
-          {(loading || streaming) ? t('generating') : t('generate_pitch_btn')}
+          {running ? <Spinner size="sm" /> : <Mic size={14} />}
+          {running ? t('generating') : t('generate_pitch_btn')}
         </button>
       </div>
 
-      {loading && !report && (
+      {running && !report && (
         <div className="glass-card p-8 flex flex-col items-center gap-3 text-center">
           <Spinner />
           <p className="text-sm text-slate-400">{t('generating')}</p>
         </div>
       )}
 
-      {!loading && !streaming && <ErrorAlert message={error} onRetry={generate} />}
+      {!running && <ErrorAlert message={error} onRetry={regenerate} />}
 
-      {(report || streaming) && (
+      {(report || running) && (
         <div className="space-y-3 animate-fade-in">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -237,7 +242,7 @@ ${productContext || ''}${veillePrixRefBlock(vehicleName)}`
               <p ref={headingRef} tabIndex={-1} className="text-sm font-semibold text-white outline-none">{generatedFor || t('page_pitch_title')}</p>
               <p className="text-xs text-slate-500">{t('pitch_ready')}</p>
             </div>
-            {report && !streaming && (
+            {report && !running && (
               <div className="flex items-center gap-2">
                 <button onClick={handleCopy} className={BTN_TERTIARY}>
                   <Copy size={12} /> {t('copy_btn')}
@@ -249,7 +254,7 @@ ${productContext || ''}${veillePrixRefBlock(vehicleName)}`
                   {exporting ? <Spinner size="sm" /> : <Download size={12} />}
                   {t('download_pdf')}
                 </button>
-                <button onClick={generate} className={BTN_QUIET}>
+                <button onClick={regenerate} className={BTN_QUIET}>
                   <RefreshCw size={11} /> {t('regenerate')}
                 </button>
                 <button onClick={reset} className={BTN_QUIET}>
@@ -261,7 +266,7 @@ ${productContext || ''}${veillePrixRefBlock(vehicleName)}`
 
           <div ref={pitchRef} className="glass-card p-6 md:p-8">
             <div className="report-md text-slate-200" dangerouslySetInnerHTML={{ __html: mdToHtml(report) }} />
-            {streaming && (
+            {running && (
               <span className="inline-block w-0.5 h-[1em] animate-pulse align-middle ml-0.5 opacity-80 bg-cyan-400" />
             )}
           </div>
