@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Key, Palette, Globe, Check, Monitor, Sun, Laptop, Scale, ChevronRight, Wifi, BarChart2, RotateCcw, Info, User, Camera, Trash2, Lock, Eye, EyeOff } from 'lucide-react'
+import { Key, Palette, Globe, Check, Monitor, Sun, Laptop, Scale, ChevronRight, Wifi, BarChart2, RotateCcw, Info, User, Camera, Trash2, Lock, Eye, EyeOff, Users, RefreshCw } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { ukey } from '@/utils/userStorage'
@@ -8,6 +8,7 @@ import { getCosts, resetCosts } from '@/utils/apiCost'
 import { seedServerSpend } from '@/services/claude'
 import { getSpend, MONTHLY_CAP, DAILY_CAP, migrateToQuota } from '@/utils/spendTracker'
 import { getAvatar, saveAvatar, removeAvatar, resizeToDataUrl, syncAvatar } from '@/utils/avatarStore'
+import { fetchTeamUsage } from '@/utils/cloudStore'
 
 const Section = ({ icon: Icon, title, children }) => (
   <div className="glass-card p-6 sm:p-8">
@@ -63,6 +64,26 @@ export default function Settings() {
 
   // Onglet actif (navigation latérale)
   const [activeTab, setActiveTab] = useState('profile')
+
+  // Vue admin : utilisation agrégée de tous les comptes (onglet réservé admin).
+  const isAdmin = user?.role === 'admin'
+  const [teamUsage, setTeamUsage] = useState(null) // { enabled, users } | null
+  const [teamLoading, setTeamLoading] = useState(false)
+  const [teamError, setTeamError] = useState('')
+  const loadTeamUsage = async () => {
+    setTeamLoading(true)
+    setTeamError('')
+    const res = await fetchTeamUsage()
+    if (res.error === 'forbidden') setTeamError(t('settings_team_forbidden'))
+    else if (!res.enabled && res.error) setTeamError(t('settings_team_unavailable'))
+    setTeamUsage(res)
+    setTeamLoading(false)
+  }
+  // Charge à l'ouverture de l'onglet « Équipe ».
+  useEffect(() => {
+    if (activeTab === 'team' && isAdmin && teamUsage === null) loadTeamUsage()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isAdmin])
 
   // Champs de profil éditables
   const profileKey = ukey(user?.id ?? null, 'profile')
@@ -229,6 +250,8 @@ export default function Settings() {
     { key: 'ai',       icon: Key,       labelKey: 'settings_tab_ai' },
     { key: 'prefs',    icon: Palette,   labelKey: 'settings_tab_prefs' },
     { key: 'usage',    icon: BarChart2, labelKey: 'settings_tab_usage' },
+    // Onglet réservé à l'administrateur : suivi de l'utilisation de tous les comptes.
+    ...(isAdmin ? [{ key: 'team', icon: Users, labelKey: 'settings_tab_team' }] : []),
     { key: 'legal',    icon: Scale,     labelKey: 'settings_tab_legal' },
   ]
 
@@ -652,6 +675,109 @@ export default function Settings() {
               </>
             )
           })()}
+      </Section>
+      )}
+
+      {activeTab === 'team' && isAdmin && (
+      <Section icon={Users} title={t('settings_team_section')}>
+        <div className="flex items-start justify-between gap-3 -mt-2">
+          <p className="text-sm text-slate-400 leading-relaxed">{t('settings_team_desc')}</p>
+          <button
+            onClick={loadTeamUsage}
+            disabled={teamLoading}
+            className="flex items-center gap-1.5 text-xs text-slate-400 border border-navy-600/50
+                       px-3 py-1.5 rounded-lg hover:text-cyan-400 hover:border-cyan-400/30 transition
+                       disabled:opacity-50 flex-shrink-0"
+          >
+            <RefreshCw size={12} className={teamLoading ? 'animate-spin' : ''} />
+            {t('settings_team_refresh')}
+          </button>
+        </div>
+
+        {teamError ? (
+          <p className="text-xs text-warn bg-warn/8 border border-warn/20 rounded-lg px-3 py-2.5">{teamError}</p>
+        ) : teamLoading && !teamUsage ? (
+          <p className="text-xs text-slate-500">{t('settings_team_loading')}</p>
+        ) : teamUsage?.enabled === false ? (
+          <p className="text-xs text-slate-500">{t('settings_team_unavailable')}</p>
+        ) : teamUsage?.users?.length ? (
+          <>
+            {/* Total équipe — mois en cours */}
+            {(() => {
+              const totalMonth = teamUsage.users.reduce((s, u) => s + (u.spend?.month || 0), 0)
+              const totalDay   = teamUsage.users.reduce((s, u) => s + (u.spend?.day || 0), 0)
+              return (
+                <div className="flex flex-wrap gap-6 pb-4 border-b border-navy-700/40">
+                  <div>
+                    <p className="text-xs text-slate-500">{t('settings_team_total_month')}</p>
+                    <p className="text-2xl font-bold text-white tabular-nums">€{totalMonth.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">{t('settings_team_total_day')}</p>
+                    <p className="text-2xl font-bold text-white tabular-nums">€{totalDay.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">{t('settings_team_accounts')}</p>
+                    <p className="text-2xl font-bold text-white tabular-nums">{teamUsage.users.length}</p>
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* Tableau par compte */}
+            <div className="space-y-2.5">
+              {teamUsage.users.map((u) => {
+                const monthPct = Math.min(100, ((u.spend?.month || 0) / MONTHLY_CAP) * 100)
+                const reached  = (u.spend?.month || 0) >= MONTHLY_CAP
+                return (
+                  <div key={u.id} className="rounded-xl border border-navy-700/40 bg-navy-900/30 px-4 py-3">
+                    <div className="flex items-center justify-between gap-3 mb-1.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500
+                                        flex items-center justify-center text-navy-900 text-[11px] font-bold flex-shrink-0">
+                          {u.initials || (u.name || '?').slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-200 truncate flex items-center gap-1.5">
+                            {u.name}
+                            {u.role === 'admin' && (
+                              <span className="text-[9px] font-bold uppercase tracking-wide text-cyan-400 bg-cyan-400/10 border border-cyan-400/20 px-1.5 py-0.5 rounded">
+                                {t('settings_team_admin_badge')}
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-[11px] text-slate-500 truncate">{u.username}</p>
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className={`text-sm font-mono tabular-nums ${reached ? 'text-red-400 font-semibold' : 'text-slate-200'}`}>
+                          €{(u.spend?.month || 0).toFixed(2)}
+                          <span className="text-slate-600"> / €{MONTHLY_CAP}</span>
+                        </p>
+                        <p className="text-[11px] text-slate-500 tabular-nums">
+                          {t('settings_quota_day')} : €{(u.spend?.day || 0).toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-navy-700/50">
+                      <div
+                        className={`h-1.5 rounded-full transition-all ${reached ? 'bg-red-400' : monthPct > 75 ? 'bg-warn/70' : 'bg-cyan-400/70'}`}
+                        style={{ width: `${monthPct}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="flex items-start gap-1.5 mt-1">
+              <Info size={11} className="text-slate-600 flex-shrink-0 mt-0.5" />
+              <p className="text-[10px] text-slate-600 leading-relaxed">{t('settings_team_disclaimer')}</p>
+            </div>
+          </>
+        ) : (
+          <p className="text-xs text-slate-500">{t('settings_team_empty')}</p>
+        )}
       </Section>
       )}
 

@@ -125,6 +125,32 @@ export async function renewSharedVeille(id) {
   } catch { return false }
 }
 
+// ── Utilisation de l'équipe (/api/team-usage, réservé admin) ──────────────────
+
+/**
+ * Lit la dépense (mois + jour) de tous les comptes. Réservé admin côté serveur.
+ * @returns {Promise<{ enabled: boolean, users: Array, error?: string }>}
+ */
+export async function fetchTeamUsage() {
+  const token = sessionToken()
+  if (!token) return { enabled: false, users: [], error: 'no_session' }
+  try {
+    const res = await fetch('/api/team-usage', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
+    })
+    if (res.status === 403) return { enabled: false, users: [], error: 'forbidden' }
+    if (!res.ok) return { enabled: false, users: [], error: `http_${res.status}` }
+    const data = await res.json().catch(() => null)
+    return {
+      enabled: data?.enabled === true,
+      users: Array.isArray(data?.users) ? data.users : [],
+    }
+  } catch {
+    return { enabled: false, users: [], error: 'network' }
+  }
+}
+
 /**
  * Pousse une seule fois toutes les données locales vers le compte serveur.
  * Flag `abu_u{uid}_cloud_bulk_seeded_v1` évite tout rejeu.
