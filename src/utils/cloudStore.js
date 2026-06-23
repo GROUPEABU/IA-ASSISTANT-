@@ -151,6 +151,36 @@ export async function fetchTeamUsage() {
   }
 }
 
+/** Réinitialise la dépense (mois + jour) d'un compte. Réservé admin. @returns {Promise<boolean>} */
+export async function resetUserSpend(targetId) {
+  const token = sessionToken()
+  if (!token) return false
+  try {
+    const res = await fetch('/api/team-usage', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ op: 'reset', targetId }),
+    })
+    const data = await res.json().catch(() => null)
+    return res.ok && data?.ok === true
+  } catch { return false }
+}
+
+/** Modifie les plafonds budgétaires d'un compte. Réservé admin. @returns {Promise<boolean>} */
+export async function setUserBudget(targetId, caps) {
+  const token = sessionToken()
+  if (!token) return false
+  try {
+    const res = await fetch('/api/team-usage', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ op: 'set-cap', targetId, caps }),
+    })
+    const data = await res.json().catch(() => null)
+    return res.ok && data?.ok === true
+  } catch { return false }
+}
+
 /**
  * Pousse une seule fois toutes les données locales vers le compte serveur.
  * Flag `abu_u{uid}_cloud_bulk_seeded_v1` évite tout rejeu.

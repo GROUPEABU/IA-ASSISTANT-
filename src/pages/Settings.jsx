@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Key, Palette, Globe, Check, Monitor, Sun, Laptop, Scale, ChevronRight, Wifi, BarChart2, RotateCcw, Info, User, Camera, Trash2, Lock, Eye, EyeOff, Users, RefreshCw } from 'lucide-react'
+import { Key, Palette, Globe, Check, Monitor, Sun, Laptop, Scale, ChevronRight, Wifi, BarChart2, RotateCcw, Info, User, Camera, Trash2, Lock, Eye, EyeOff, Users, RefreshCw, ChevronDown } from 'lucide-react'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { ukey } from '@/utils/userStorage'
@@ -8,7 +8,7 @@ import { getCosts, resetCosts } from '@/utils/apiCost'
 import { seedServerSpend } from '@/services/claude'
 import { getSpend, MONTHLY_CAP, DAILY_CAP, migrateToQuota } from '@/utils/spendTracker'
 import { getAvatar, saveAvatar, removeAvatar, resizeToDataUrl, syncAvatar } from '@/utils/avatarStore'
-import { fetchTeamUsage } from '@/utils/cloudStore'
+import { fetchTeamUsage, resetUserSpend, setUserBudget } from '@/utils/cloudStore'
 
 const Section = ({ icon: Icon, title, children }) => (
   <div className="glass-card p-6 sm:p-8">
@@ -84,6 +84,49 @@ export default function Settings() {
     if (activeTab === 'team' && isAdmin && teamUsage === null) loadTeamUsage()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, isAdmin])
+
+  // Gestion des cartes utilisateur (reset dépense + plafonds)
+  const [expandedIds,  setExpandedIds]  = useState({})
+  const [capEdits,     setCapEdits]     = useState({})
+  const [capSaving,    setCapSaving]    = useState({})
+  const [capSaved,     setCapSaved]     = useState({})
+  const [resetConfirm, setResetConfirm] = useState(null)
+  const [resetLoading, setResetLoading] = useState({})
+
+  const toggleExpand = (uid) => {
+    setExpandedIds(prev => ({ ...prev, [uid]: !prev[uid] }))
+  }
+
+  const handleResetSpend = async (uid) => {
+    setResetLoading(prev => ({ ...prev, [uid]: true }))
+    const ok = await resetUserSpend(uid)
+    if (ok) {
+      setTeamUsage(prev => ({
+        ...prev,
+        users: prev.users.map(u => u.id === uid ? { ...u, spend: { month: 0, day: 0 } } : u),
+      }))
+    }
+    setResetLoading(prev => ({ ...prev, [uid]: false }))
+    setResetConfirm(null)
+  }
+
+  const handleCapSave = async (uid, u) => {
+    const edit = capEdits[uid]
+    const month = parseFloat(edit?.month ?? String(u.cap?.month ?? MONTHLY_CAP))
+    const day   = parseFloat(edit?.day   ?? String(u.cap?.day   ?? DAILY_CAP))
+    if (isNaN(month) || isNaN(day) || month <= 0 || day <= 0) return
+    setCapSaving(prev => ({ ...prev, [uid]: true }))
+    const ok = await setUserBudget(uid, { month, day })
+    if (ok) {
+      setTeamUsage(prev => ({
+        ...prev,
+        users: prev.users.map(u2 => u2.id === uid ? { ...u2, cap: { month, day } } : u2),
+      }))
+      setCapSaved(prev => ({ ...prev, [uid]: true }))
+      setTimeout(() => setCapSaved(prev => ({ ...prev, [uid]: false })), 2000)
+    }
+    setCapSaving(prev => ({ ...prev, [uid]: false }))
+  }
 
   // Champs de profil éditables
   const profileKey = ukey(user?.id ?? null, 'profile')
@@ -727,8 +770,11 @@ export default function Settings() {
             {/* Tableau par compte */}
             <div className="space-y-2.5">
               {teamUsage.users.map((u) => {
-                const monthPct = Math.min(100, ((u.spend?.month || 0) / MONTHLY_CAP) * 100)
-                const reached  = (u.spend?.month || 0) >= MONTHLY_CAP
+                const effectiveMonthCap = u.cap?.month ?? MONTHLY_CAP
+                const effectiveDayCap   = u.cap?.day   ?? DAILY_CAP
+                const monthPct = Math.min(100, ((u.spend?.month || 0) / effectiveMonthCap) * 100)
+                const reached  = (u.spend?.month || 0) >= effectiveMonthCap
+                const isExpanded = !!expandedIds[u.id]
                 return (
                   <div key={u.id} className="rounded-xl border border-navy-700/40 bg-navy-900/30 px-4 py-3">
                     <div className="flex items-center justify-between gap-3 mb-1.5">
@@ -749,14 +795,23 @@ export default function Settings() {
                           <p className="text-[11px] text-slate-500 truncate">{u.username}</p>
                         </div>
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className={`text-sm font-mono tabular-nums ${reached ? 'text-red-400 font-semibold' : 'text-slate-200'}`}>
-                          €{(u.spend?.month || 0).toFixed(2)}
-                          <span className="text-slate-600"> / €{MONTHLY_CAP}</span>
-                        </p>
-                        <p className="text-[11px] text-slate-500 tabular-nums">
-                          {t('settings_quota_day')} : €{(u.spend?.day || 0).toFixed(2)}
-                        </p>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="text-right">
+                          <p className={`text-sm font-mono tabular-nums ${reached ? 'text-red-400 font-semibold' : 'text-slate-200'}`}>
+                            €{(u.spend?.month || 0).toFixed(2)}
+                            <span className="text-slate-600"> / €{effectiveMonthCap}</span>
+                          </p>
+                          <p className="text-[11px] text-slate-500 tabular-nums">
+                            {t('settings_quota_day')} : €{(u.spend?.day || 0).toFixed(2)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => toggleExpand(u.id)}
+                          className="p-1 rounded-lg text-slate-500 hover:text-cyan-400 hover:bg-cyan-400/10 transition"
+                          title="Gérer"
+                        >
+                          <ChevronDown size={14} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        </button>
                       </div>
                     </div>
                     <div className="h-1.5 rounded-full bg-navy-700/50">
@@ -765,6 +820,77 @@ export default function Settings() {
                         style={{ width: `${monthPct}%` }}
                       />
                     </div>
+
+                    {/* Panneau de gestion (expand) */}
+                    {isExpanded && (
+                      <div className="mt-3 pt-3 border-t border-navy-700/40 space-y-3">
+                        {/* Reset dépense */}
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[11px] text-slate-500">{t('settings_team_reset')}</p>
+                          {resetConfirm === u.id ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] text-warn">{t('settings_team_reset_confirm')}</span>
+                              <button
+                                onClick={() => handleResetSpend(u.id)}
+                                disabled={!!resetLoading[u.id]}
+                                className="text-[11px] font-semibold text-red-400 border border-red-400/30 px-2 py-0.5 rounded-lg hover:bg-red-400/10 transition disabled:opacity-50"
+                              >
+                                {resetLoading[u.id] ? '…' : t('settings_team_reset_ok')}
+                              </button>
+                              <button
+                                onClick={() => setResetConfirm(null)}
+                                className="text-[11px] text-slate-500 hover:text-slate-300 px-1 transition"
+                              >✕</button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setResetConfirm(u.id)}
+                              className="flex items-center gap-1.5 text-[11px] text-slate-400 border border-navy-600/50 px-2.5 py-1 rounded-lg hover:text-warn hover:border-warn/30 transition"
+                            >
+                              <RotateCcw size={11} /> {t('settings_team_reset')}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Plafonds budgétaires */}
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-medium text-slate-500">{t('settings_team_cap_title')}</p>
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <div className="flex items-center gap-1.5">
+                              <label className="text-[10px] text-slate-600 whitespace-nowrap">{t('settings_team_cap_month')}</label>
+                              <input
+                                type="number"
+                                min="0.1"
+                                step="0.5"
+                                value={capEdits[u.id]?.month ?? String(effectiveMonthCap)}
+                                onChange={e => setCapEdits(prev => ({ ...prev, [u.id]: { ...(prev[u.id] || {}), month: e.target.value } }))}
+                                className="w-16 bg-navy-900/60 border border-navy-700/50 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-cyan-400/60 transition"
+                              />
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <label className="text-[10px] text-slate-600 whitespace-nowrap">{t('settings_team_cap_day')}</label>
+                              <input
+                                type="number"
+                                min="0.1"
+                                step="0.1"
+                                value={capEdits[u.id]?.day ?? String(effectiveDayCap)}
+                                onChange={e => setCapEdits(prev => ({ ...prev, [u.id]: { ...(prev[u.id] || {}), day: e.target.value } }))}
+                                className="w-16 bg-navy-900/60 border border-navy-700/50 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-cyan-400/60 transition"
+                              />
+                            </div>
+                            <button
+                              onClick={() => handleCapSave(u.id, u)}
+                              disabled={!!capSaving[u.id]}
+                              className="flex items-center gap-1.5 text-[11px] font-semibold bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 px-2.5 py-1 rounded-lg hover:bg-cyan-400/20 transition disabled:opacity-50"
+                            >
+                              {capSaved[u.id]
+                                ? <><Check size={10} /> {t('settings_team_cap_saved')}</>
+                                : capSaving[u.id] ? '…' : t('settings_team_cap_save')}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )
               })}

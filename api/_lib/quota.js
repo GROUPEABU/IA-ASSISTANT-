@@ -207,6 +207,38 @@ export async function storePut(uid, key, valueStr) {
   } catch { return false }
 }
 
+const CAP_TTL_S = 365 * 24 * 60 * 60 // 1 an
+
+/** Lit les plafonds personnalisés d'un compte (null = utilise le plafond global). */
+export async function getUserCap(uid) {
+  if (!quotaEnabled() || uid == null) return { month: null, day: null }
+  try {
+    const out = await pipeline([
+      ['GET', `abuq:${uid}:cap:month`],
+      ['GET', `abuq:${uid}:cap:day`],
+    ])
+    return {
+      month: out?.[0]?.result != null ? parseFloat(out[0].result) || null : null,
+      day:   out?.[1]?.result != null ? parseFloat(out[1].result) || null : null,
+    }
+  } catch { return { month: null, day: null } }
+}
+
+/** Enregistre des plafonds personnalisés pour un compte. */
+export async function setUserCap(uid, { month, day } = {}) {
+  if (!quotaEnabled() || uid == null) return
+  const cmds = []
+  if (month != null && month > 0) cmds.push(['SET', `abuq:${uid}:cap:month`, String(month), 'EX', String(CAP_TTL_S)])
+  if (day   != null && day   > 0) cmds.push(['SET', `abuq:${uid}:cap:day`,   String(day),   'EX', String(CAP_TTL_S)])
+  if (cmds.length) { try { await pipeline(cmds) } catch { /* best-effort */ } }
+}
+
+/** Remet à zéro la dépense courante (mois + jour) d'un compte. */
+export async function resetSpend(uid) {
+  if (!quotaEnabled() || uid == null) return
+  try { await pipeline([['DEL', monthKey(uid)], ['DEL', dayKey(uid)]]) } catch { /* best-effort */ }
+}
+
 // ── Flux partagé « Veilles de l'équipe » ──────────────────────────────────────
 // Une LISTE Redis commune à tout l'espace : chaque veille prix terminée y est
 // empilée (LPUSH), tronquée aux 50 dernières (LTRIM), et la clé expire 45 jours
