@@ -804,7 +804,7 @@ export default function PriceWatch() {
     e.target.value = ''
     if (!file) return
     setBatchParsing(true)
-    setError(null)
+    patch({ error: null })
     try {
       const { vehicles, source } = await extractVehiclesSmart(file, { lang })
       const rows = vehicles.filter((v) => v.make || v.model)
