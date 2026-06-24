@@ -963,7 +963,7 @@ export default async function handler(req) {
   const meter =
     quotaEnabled() && !req.headers.get('x-user-api-key') && upstream.ok && upstream.body
   const responseBody = meter
-    ? meterStream(upstream.body, session.id, parsed.model)
+    ? meterStream(upstream.body, session.id, parsed.model, tool || 'chat')
     : upstream.body
 
   return new Response(responseBody, { status: upstream.status, headers: respHeaders })

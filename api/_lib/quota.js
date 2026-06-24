@@ -53,6 +53,15 @@ export async function pingKV() {
 function monthKey(uid) { return `abuq:${uid}:m:${new Date().toISOString().slice(0, 7)}` }
 function dayKey(uid)   { return `abuq:${uid}:d:${new Date().toISOString().slice(0, 10)}` }
 
+// Outils suivis individuellement pour la répartition par fonctionnalité (vue
+// admin). Aligné sur les identifiants `_tool` envoyés par le client (cf.
+// TOOL_LABELS de src/pages/Settings.jsx). Tout outil hors liste retombe sur 'chat'.
+export const KNOWN_TOOLS = [
+  'veilleprix', 'pitch', 'objections', 'comparateur', 'logistique',
+  'analysestock', 'ficheIA', 'importsmart', 'rapportcommercial', 'chat',
+]
+function toolMonthKey(uid, tool) { return `abuq:${uid}:t:${tool}:m:${new Date().toISOString().slice(0, 7)}` }
+
 async function pipeline(commands) {
   const res = await fetch(`${REST_URL}/pipeline`, {
     method: 'POST',
@@ -78,16 +87,42 @@ export async function readSpend(uid) {
   }
 }
 
-/** Incrémente la dépense du compte (best-effort, ne lève jamais). */
-export async function addSpend(uid, amount) {
+/**
+ * Incrémente la dépense du compte (best-effort, ne lève jamais).
+ * Si `tool` est fourni, incrémente aussi le compteur mensuel de cet outil pour
+ * la répartition par fonctionnalité (vue admin). Outil inconnu → 'chat'.
+ */
+export async function addSpend(uid, amount, tool) {
   if (!quotaEnabled() || uid == null || !(amount > 0)) return
   const amt = amount.toFixed(6)
+  const cmds = [
+    ['INCRBYFLOAT', monthKey(uid), amt], ['EXPIRE', monthKey(uid), MONTH_TTL_S],
+    ['INCRBYFLOAT', dayKey(uid),   amt], ['EXPIRE', dayKey(uid),   DAY_TTL_S],
+  ]
+  if (tool) {
+    const t = KNOWN_TOOLS.includes(tool) ? tool : 'chat'
+    cmds.push(['INCRBYFLOAT', toolMonthKey(uid, t), amt], ['EXPIRE', toolMonthKey(uid, t), MONTH_TTL_S])
+  }
   try {
-    await pipeline([
-      ['INCRBYFLOAT', monthKey(uid), amt], ['EXPIRE', monthKey(uid), MONTH_TTL_S],
-      ['INCRBYFLOAT', dayKey(uid),   amt], ['EXPIRE', dayKey(uid),   DAY_TTL_S],
-    ])
+    await pipeline(cmds)
   } catch { /* best-effort */ }
+}
+
+/**
+ * Répartition de la dépense du mois en cours par outil (vue admin).
+ * @returns {Promise<Record<string, number>>} { outil: montant€ } (seuls les > 0)
+ */
+export async function readToolBreakdown(uid) {
+  if (!quotaEnabled() || uid == null) return {}
+  try {
+    const out = await pipeline(KNOWN_TOOLS.map((t) => ['GET', toolMonthKey(uid, t)]))
+    const result = {}
+    KNOWN_TOOLS.forEach((t, i) => {
+      const v = parseFloat(out?.[i]?.result || '0') || 0
+      if (v > 0) result[t] = v
+    })
+    return result
+  } catch { return {} }
 }
 
 /**
@@ -152,7 +187,7 @@ export function parseUsageFromText(text) {
  * compte. La mesure est best-effort et ne peut jamais corrompre le flux.
  * Fenêtres bornées (head/tail) pour ne pas charger toute la réponse en mémoire.
  */
-export function meterStream(body, uid, model) {
+export function meterStream(body, uid, model, tool) {
   const reader  = body.getReader()
   const decoder = new TextDecoder()
   let head = '', tail = ''
@@ -164,7 +199,7 @@ export function meterStream(body, uid, model) {
           try {
             const { usage, searchCount } = parseUsageFromText(`${head}\n${tail}`)
             const cost = computeCost(model, usage, searchCount)
-            if (cost > 0) await addSpend(uid, cost)
+            if (cost > 0) await addSpend(uid, cost, tool)
           } catch { /* mesure best-effort */ }
           controller.close()
           return

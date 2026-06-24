@@ -824,6 +824,39 @@ export default function Settings() {
                     {/* Panneau de gestion (expand) */}
                     {isExpanded && (
                       <div className="mt-3 pt-3 border-t border-navy-700/40 space-y-3">
+                        {/* Répartition par outil — mois en cours */}
+                        {(() => {
+                          const tools = u.tools || {}
+                          const entries = Object.entries(tools).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1])
+                          const toolTotal = entries.reduce((s, [, v]) => s + v, 0)
+                          return (
+                            <div className="space-y-2">
+                              <p className="text-[11px] font-medium text-slate-500">{t('settings_team_breakdown')}</p>
+                              {entries.length === 0 ? (
+                                <p className="text-[11px] text-slate-600">{t('settings_team_breakdown_empty')}</p>
+                              ) : (
+                                <div className="space-y-1.5">
+                                  {entries.map(([tool, cost]) => {
+                                    const pct = toolTotal > 0 ? (cost / toolTotal) * 100 : 0
+                                    return (
+                                      <div key={tool}>
+                                        <div className="flex items-center justify-between mb-0.5">
+                                          <span className="text-[11px] text-slate-300">{TOOL_LABELS[tool] || tool}</span>
+                                          <span className="text-[11px] text-slate-400 tabular-nums">
+                                            €{cost.toFixed(3)} · {Math.round(pct)} %
+                                          </span>
+                                        </div>
+                                        <div className="h-1 rounded-full bg-navy-700/50">
+                                          <div className="h-1 rounded-full bg-cyan-400/60" style={{ width: `${pct}%` }} />
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                        )})()}
+
                         {/* Reset dépense */}
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-[11px] text-slate-500">{t('settings_team_reset')}</p>

@@ -643,6 +643,8 @@ export default {
     settings_team_cap_day: 'Journalier (€)',
     settings_team_cap_save: 'Enregistrer',
     settings_team_cap_saved: 'Enregistré',
+    settings_team_breakdown: 'Répartition par outil — ce mois',
+    settings_team_breakdown_empty: 'Aucune dépense par outil enregistrée ce mois-ci.',
     settings_security_section: 'Sécurité',
     settings_security_desc: 'Mettez à jour votre mot de passe pour sécuriser votre compte.',
     pw_current: 'Mot de passe actuel',

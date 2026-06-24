@@ -617,6 +617,8 @@ export default {
     settings_team_cap_day: 'Daily (€)',
     settings_team_cap_save: 'Save',
     settings_team_cap_saved: 'Saved',
+    settings_team_breakdown: 'By tool — this month',
+    settings_team_breakdown_empty: 'No per-tool spend recorded this month.',
     settings_security_section: 'Security',
     settings_security_desc: 'Update your password to keep your account secure.',
     pw_current: 'Current password',

@@ -13,7 +13,7 @@
 export const config = { runtime: 'edge' }
 
 import { getAuthSecret, verifyToken } from './_lib/auth.js'
-import { quotaEnabled, readSpend, getUserCap, setUserCap, resetSpend } from './_lib/quota.js'
+import { quotaEnabled, readSpend, getUserCap, setUserCap, resetSpend, readToolBreakdown } from './_lib/quota.js'
 import { getPublicUsers } from './_lib/users.js'
 
 const json = (obj, status) =>
@@ -75,7 +75,9 @@ export default async function handler(req) {
   const users = getPublicUsers()
   const rows = await Promise.all(
     users.map(async (u) => {
-      const [spend, cap] = await Promise.all([readSpend(u.id), getUserCap(u.id)])
+      const [spend, cap, tools] = await Promise.all([
+        readSpend(u.id), getUserCap(u.id), readToolBreakdown(u.id),
+      ])
       return {
         id: u.id,
         name: u.name,
@@ -84,6 +86,7 @@ export default async function handler(req) {
         initials: u.initials || '',
         spend, // { month, day }
         cap,   // { month: number|null, day: number|null } — null = plafond global
+        tools, // { outil: montant€ } — répartition du mois en cours
       }
     })
   )
